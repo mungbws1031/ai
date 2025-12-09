@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>개세니체 v2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; }
+        .serif-font { font-family: 'Noto Serif KR', serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1c1917; }
+        ::-webkit-scrollbar-thumb { background: #44403c; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #57534e; }
+
+        /* Animations */
+        @keyframes fade-in-up {
+            0% { opacity: 0; transform: translateY(10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-message { animation: fade-in-up 0.4s ease-out forwards; }
+        
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
+        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-stone-900 text-stone-200 h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-lg bg-stone-800 rounded-xl shadow-2xl overflow-hidden flex flex-col h-[85vh] border border-stone-700">
+        
+        <div class="bg-stone-900 p-5 border-b border-stone-700 flex items-center justify-between z-10 shadow-md">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-stone-200 rounded-full flex items-center justify-center overflow-hidden border-2 border-stone-500 shadow-sm">
+                    <svg viewBox="0 0 24 24" fill="none" class="w-9 h-9 text-stone-900" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 5C13.66 5 15 6.34 15 8C15 9.66 13.66 11 12 11C10.34 11 9 9.66 9 8C9 6.34 10.34 5 12 5ZM12 19.2C9.5 19.2 7.29 17.92 6 16C6.03 14 10 12.9 12 12.9C13.99 12.9 17.97 14 18 16C16.71 17.92 14.5 19.2 12 19.2Z" fill="currentColor"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-black text-2xl text-stone-100 tracking-tight leading-none">개세니체</h1>
+                    <p class="text-xs text-stone-400 mt-1 font-medium tracking-wide">독설과 철학 사이</p>
+                </div>
+            </div>
+            <button onclick="location.reload()" class="text-stone-500 hover:text-stone-300 transition p-2" title="대화 초기화">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+
+        <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-5 bg-stone-800 relative">
+            <div class="flex items-start gap-3 animate-message">
+                <div class="w-9 h-9 rounded-full bg-stone-700 flex-shrink-0 flex items-center justify-center text-sm font-serif font-bold text-stone-300 border border-stone-600">N</div>
+                <div class="flex flex-col gap-1 w-full max-w-[320px]">
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                        <span class="text-sm font-bold text-stone-300">개세니체</span>
+                        <span class="text-xs font-normal text-stone-500">AI</span>
+                    </div>
+                    <div class="flex flex-col leading-1.5 p-4 border-gray-200 bg-stone-700 rounded-e-xl rounded-es-xl shadow-sm">
+                        <p class="text-base font-normal text-stone-200 leading-relaxed">
+                            그래, 또 무슨 징징거리는 소리를 하러 왔나?<br><br>
+                            삶이 힘들다, 사람이 싫다, 돈이 없다... 뻔한 소리라면 집어치우게. 하지만 그대가 진정으로 자신의 껍질을 깨고 싶다면, 내 기꺼이 망치를 들어주지. 말해보게.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="typing-indicator" class="hidden px-4 pb-2 text-stone-400 text-xs items-center gap-1 ml-12">
+            <span class="font-medium">개세니체가 콧방귀 뀌는 중</span>
+            <div class="flex gap-1">
+                <div class="w-1.5 h-1.5 bg-stone-400 rounded-full typing-dot"></div>
+                <div class="w-1.5 h-1.5 bg-stone-400 rounded-full typing-dot"></div>
+                <div class="w-1.5 h-1.5 bg-stone-400 rounded-full typing-dot"></div>
+            </div>
+        </div>
+
+        <div class="p-4 bg-stone-900 border-t border-stone-700">
+            <form id="chat-form" class="flex items-end gap-3" onsubmit="handleUserSubmit(event)">
+                <div class="relative w-full">
+                    <textarea 
+                        id="user-input" 
+                        rows="1" 
+                        class="block p-4 w-full text-base text-stone-100 bg-stone-800 rounded-xl border border-stone-600 focus:ring-amber-600 focus:border-amber-600 placeholder-stone-500 resize-none overflow-hidden shadow-inner" 
+                        placeholder="고민을 입력하게..."
+                        oninput="autoResize(this)"
+                        onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); handleUserSubmit(event); }"
+                    ></textarea>
+                </div>
+                <button type="submit" class="inline-flex justify-center items-center w-12 h-12 text-stone-900 rounded-full cursor-pointer hover:bg-amber-600 bg-amber-700 transition duration-200 shadow-md shrink-0">
+                    <svg class="w-6 h-6 rotate-90 rtl:-rotate-90" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
+                        <path d="m17.914 18.594-8-18a1 1 0 0 0-1.828 0l-8 18a1 1 0 0 0 1.157 1.376L8 18.281V9a1 1 0 0 1 2 0v9.281l6.758 1.689a1 1 0 0 0 1.156-1.376Z"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ---------------------------------------------------------
+        // 1. 방대한 데이터베이스 (중복 방지 및 다양한 대응)
+        // ---------------------------------------------------------
+        
+        // 특정 키워드가 없을 때 출력할 일반/범용 답변 풀
+        const fallbackQuotes = [
+            {
+                quote: "인간은 짐승과 초인 사이에 놓인 밧줄이다.",
+                source: "차라투스트라는 이렇게 말했다",
+                advice: "그대의 말이 모호하군. 하지만 명심하게. 안주하는 것은 짐승으로 돌아가는 길이다. 불안하더라도 건너가라. 그 과정 자체가 인간이다."
+            },
+            {
+                quote: "너는 안일하게 살고자 하는가? 그렇다면 항상 군중 속에 머물러 있으라.",
+                source: "즐거운 학문",
+                advice: "내가 무슨 말을 해야 할지 모르겠군. 혹시 남들이 하는 대로 대충 답을 얻으려 했나? 자기 자신만의 문제를 들고 오게. 군중의 소음 말고."
+            },
+            {
+                quote: "춤추는 별을 잉태하려면 반드시 스스로의 내면에 혼돈을 지녀야 한다.",
+                source: "차라투스트라는 이렇게 말했다",
+                advice: "그대의 마음속이 복잡해 보이는군. 좋다! 정리가 안 된 그 혼돈이야말로 창조의 씨앗이다. 명확한 답을 찾기 전에 그 혼란을 즐겨라."
+            },
+            {
+                quote: "모든 신들은 죽었다. 이제 우리는 초인이 살기를 바란다.",
+                source: "차라투스트라는 이렇게 말했다",
+                advice: "누군가 답을 내려주길 기다리지 마라. 나(AI)조차도 믿지 마라. 그대의 가치는 그대가 직접 입법해야 한다."
+            }
+        ];
+
+        // 키워드별 답변 리스트 (같은 키워드라도 여러 답변 존재)
+        const database = [
+            // 주제: 허무, 의미
+            {
+                keywords: ['허무', '의미', '목적', '왜 사', '공허', '우울', '재미없'],
+                responses: [
+                    {
+                        quote: "살아야 할 이유를 아는 사람은, 어떠한 상황도 견뎌낼 수 있다.",
+                        source: "우상의 황혼",
+                        advice: "왜 사는지가 없으니 어떻게 살아야 할지 막막한 게다. 남들이 좋다는 거 쫓아다니다가 지쳤나? 이제 그대만의 '왜'를 만들어라. 발견하는 게 아니다, 창조하는 것이다!"
+                    },
+                    {
+                        quote: "사실이란 없다, 오직 해석만이 있을 뿐이다.",
+                        source: "권력에의 의지",
+                        advice: "인생이 원래 허무한 게 아니다. 그대가 지금 인생을 '허무하다'고 해석하고 있을 뿐이지. 관점을 바꿔라. 허무는 빈 도화지다. 무엇이든 그릴 수 있다는 뜻이란 말이다."
+                    }
+                ]
+            },
+            // 주제: 고통, 힘듦
+            {
+                keywords: ['고통', '힘들', '아파', '괴로', '불행', '시련', '상처', '죽고', '짜증'],
+                responses: [
+                    {
+                        quote: "나를 죽이지 못하는 것은 나를 더 강하게 만든다.",
+                        source: "우상의 황혼",
+                        advice: "엄살 부리지 마라. 지금 그 고통은 그대를 죽이지 못했다. 그렇다면 그대는 지금 근육이 찢어지고 더 커지는 과정에 있는 헬스장 안에 있는 것이다. 감사히 여겨라."
+                    },
+                    {
+                        quote: "최상의 글은 피로 쓰여진다.",
+                        source: "차라투스트라는 이렇게 말했다",
+                        advice: "편안한 삶에서 무슨 통찰이 나오겠는가? 그대의 피 흘리는 마음, 찢어진 가슴이 그대를 깊이 있는 인간으로 만들고 있다. 고통을 낭비하지 마라."
+                    }
+                ]
+            },
+            // 주제: 인간관계, 질투
+            {
+                keywords: ['질투', '비교', '열등감', '남들', '부러', '패배', '친구', '인간', '사람'],
+                responses: [
+                    {
+                        quote: "우리가 높이 올라가면 올라갈수록, 날 수 없는 사람들에게는 우리가 작아 보인다.",
+                        source: "아침놀",
+                        advice: "남들이 그대를 욕하거나 무시하나? 그건 그대가 날고 있다는 증거다. 땅바닥에 기어 다니는 자들에게 신경 쓰지 마라. 고독을 견디는 자만이 높이 간다."
+                    },
+                    {
+                        quote: "벗이여, 그대의 고독 속으로 달아나라! 나는 그대가 위대한 사람들의 소음에 귀가 먹고, 작은 사람들의 가시에 찔리는 것을 본다.",
+                        source: "차라투스트라는 이렇게 말했다",
+                        advice: "시끄러운 인간관계 좀 끊어라. 그대 옆에 있는 그 자질구레한 인간들이 그대의 영혼을 갉아먹고 있다. 혼자가 되어라. 그래야 진짜 자신을 만난다."
+                    }
+                ]
+            },
+            // 주제: 일, 성공, 돈
+            {
+                keywords: ['돈', '부자', '성공', '일', '직장', '퇴사', '커리어', '로또'],
+                responses: [
+                    {
+                        quote: "자신의 일에 마음을 쏟지 않는 사람은 노예다.",
+                        source: "즐거운 학문",
+                        advice: "돈 때문에 억지로 다니나? 그럼 노예지. 주인이 되어라. 그 일이 좋아서 미치든가, 아니면 때려치우고 굶더라도 그대의 길을 가든가. 어중간하게 불평만 하는 게 제일 추하다."
+                    },
+                    {
+                        quote: "위험하게 살아라!",
+                        source: "즐거운 학문",
+                        advice: "안정적인 월급, 따뜻한 밥... 그게 그대를 사육하고 있다. 야생으로 나가라. 베수비오 화산 비탈에 도시를 세워라! 위험을 감수하지 않으면 얻는 것도 쥐꼬리만 할 뿐이다."
+                    }
+                ]
+            },
+            // 주제: 사랑, 이별
+            {
+                keywords: ['사랑', '이별', '실연', '외로', '헤어', '연애', '남자', '여자'],
+                responses: [
+                    {
+                        quote: "사랑에는 늘 어느 정도 광기가 있다.",
+                        source: "차라투스트라는 이렇게 말했다",
+                        advice: "미친 듯이 사랑하고 미친 듯이 아파했나? 잘했다. 이성적인 척, 쿨한 척하는 사랑은 가짜다. 하지만 기억하라. 그 광기의 끝에는 다시 그대 자신을 찾는 이성이 있어야 한다."
+                    },
+                    {
+                        quote: "동정은 약함이다.",
+                        source: "안티크리스트",
+                        advice: "헤어진 연인이 불쌍해서, 혹은 혼자 남은 자신이 불쌍해서 질질 짜고 있나? 그건 사랑이 아니라 나약함이다. 강한 자만이 사랑할 자격이 있고, 떠낼 보낼 자격도 있다."
+                    }
+                ]
+            },
+            // 주제: 후회, 과거
+            {
+                keywords: ['후회', '과거', '실수', '자책', '미련', '돌리'],
+                responses: [
+                    {
+                        quote: "아모르 파티(Amor Fati), 네 운명을 사랑하라.",
+                        source: "즐거운 학문",
+                        advice: "과거를 지우개로 지우고 싶나? 비겁한 놈. 그 실수, 그 쪽팔림, 그 실패마저도 그대의 삶이다. '그것이 삶이었던가? 좋다! 다시 한번!'이라고 외칠 수 있을 때까지 운명을 껴안아라."
+                    }
+                ]
+            }
+        ];
+
+        let lastResponseIndex = -1; // 중복 방지용
+
+        // ---------------------------------------------------------
+        // 2. 핵심 로직: 점수 기반 매칭 + 랜덤 선택
+        // ---------------------------------------------------------
+        
+        function analyzeInput(text) {
+            let matches = [];
+
+            // 1. 모든 데이터베이스를 돌면서 키워드 매칭 점수 계산
+            database.forEach(topic => {
+                let score = 0;
+                topic.keywords.forEach(keyword => {
+                    if (text.includes(keyword)) score++;
+                });
+
+                if (score > 0) {
+                    // 해당 주제의 모든 답변을 후보군에 추가
+                    topic.responses.forEach(resp => matches.push(resp));
+                }
+            });
+
+            // 2. 매칭된 게 하나도 없으면 -> Fallback(동문서답 방지용 랜덤 철학)
+            if (matches.length === 0) {
+                const randomIndex = Math.floor(Math.random() * fallbackQuotes.length);
+                return fallbackQuotes[randomIndex];
+            }
+
+            // 3. 매칭된 후보들 중 랜덤으로 하나 선택
+            const randomIndex = Math.floor(Math.random() * matches.length);
+            return matches[randomIndex];
+        }
+
+        // ---------------------------------------------------------
+        // 3. UI 제어 (채팅창)
+        // ---------------------------------------------------------
+
+        const chatBox = document.getElementById('chat-box');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const userInput = document.getElementById('user-input');
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        async function handleUserSubmit(event) {
+            event.preventDefault();
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // 사용자 메시지 표시
+            addMessage(text, 'user');
+            userInput.value = '';
+            userInput.style.height = 'auto';
+
+            // 생각하는 척 (Typing)
+            showTyping();
+            scrollToBottom();
+
+            // 분석 및 답변 생성
+            const responseData = analyzeInput(text);
+            
+            // 딜레이 (1초 ~ 2초)
+            const delay = Math.floor(Math.random() * 1000) + 1000; 
+
+            setTimeout(() => {
+                hideTyping();
+                addBotMessage(responseData);
+                scrollToBottom();
+            }, delay);
+        }
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `flex items-start gap-3 animate-message ${sender === 'user' ? 'justify-end' : ''}`;
+            
+            if (sender === 'user') {
+                div.innerHTML = `
+                    <div class="flex flex-col gap-1 w-full max-w-[320px]">
+                        <div class="flex flex-col leading-relaxed p-4 border-gray-200 bg-amber-700 rounded-s-2xl rounded-ee-2xl text-white shadow-md">
+                            <p class="text-base font-normal whitespace-pre-wrap">${text}</p>
+                        </div>
+                    </div>
+                `;
+            }
+            chatBox.appendChild(div);
+        }
+
+        function addBotMessage(data) {
+            const div = document.createElement('div');
+            div.className = "flex items-start gap-3 animate-message";
+            div.innerHTML = `
+                <div class="w-9 h-9 rounded-full bg-stone-700 flex-shrink-0 flex items-center justify-center text-sm font-serif font-bold text-stone-300 border border-stone-600">N</div>
+                <div class="flex flex-col gap-1 w-full max-w-[320px]">
+                    <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                        <span class="text-sm font-bold text-stone-300">개세니체</span>
+                        <span class="text-xs font-normal text-stone-500">AI</span>
+                    </div>
+                    <div class="flex flex-col leading-1.5 p-5 border-gray-200 bg-stone-700 rounded-e-2xl rounded-es-2xl shadow-md">
+                        <div class="mb-4 pl-4 border-l-4 border-amber-600 italic text-stone-200 serif-font text-lg">
+                            "${data.quote}"
+                            <div class="text-sm text-stone-500 mt-2 not-italic font-sans">- ${data.source} -</div>
+                        </div>
+                        <p class="text-base font-normal text-stone-200 leading-8">
+                            ${data.advice}
+                        </p>
+                    </div>
+                </div>
+            `;
+            chatBox.appendChild(div);
+        }
+
+        function showTyping() {
+            typingIndicator.classList.remove('hidden');
+            typingIndicator.classList.add('flex');
+        }
+
+        function hideTyping() {
+            typingIndicator.classList.add('hidden');
+            typingIndicator.classList.remove('flex');
+        }
+
+        function scrollToBottom() {
+            // 스크롤이 자연스럽게 내려가도록 약간의 딜레이
+            setTimeout(() => {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 50);
+        }
+    </script>
+</body>
+</html>
