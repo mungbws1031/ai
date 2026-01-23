@@ -23,5 +23,5 @@ jobs:
           # 만약 다른 것도 필요하면 여기에 pip install 추가하면 됨
 
       - name: 안티그래비티 실행!
-        run: python main.py  
+        run: analyze_global_lh.py
         # 주의! 님이 만든 파이썬 파일 이름이 main.py가 아니면 이걸로 바꿔줘야 함
