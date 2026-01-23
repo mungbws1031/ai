@@ -1,0 +1,27 @@
+name: 매일 자동 실행
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 밤 12시(UTC)에 실행해! (한국 시간 오전 9시)
+  workflow_dispatch:      # 내가 버튼 누르면 바로 실행해!
+
+jobs:
+  run-antigravity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 가져오기
+        uses: actions/checkout@v3
+
+      - name: 파이썬 설치하기
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: 필요한 프로그램 깔기
+        run: |
+          pip install antigravity
+          # 만약 다른 것도 필요하면 여기에 pip install 추가하면 됨
+
+      - name: 안티그래비티 실행!
+        run: python main.py  
+        # 주의! 님이 만든 파이썬 파일 이름이 main.py가 아니면 이걸로 바꿔줘야 함
