@@ -1,5 +1,6 @@
 package com.example.simplemindmap
 
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.graphics.Bitmap
 import android.net.Uri
@@ -7,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.animateColorAsState
@@ -15,6 +15,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,11 +29,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ElevatedCard
@@ -53,14 +52,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
@@ -72,7 +71,9 @@ import org.json.JSONObject
 import java.io.OutputStream
 import java.util.Locale
 import java.util.UUID
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,9 +89,9 @@ class MainActivity : ComponentActivity() {
 data class MindMapNode(
     val id: String = UUID.randomUUID().toString(),
     val parentId: String?,
-    var text: String,
-    var x: Float,
-    var y: Float
+    val text: String,
+    val x: Float,
+    val y: Float
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -98,25 +99,25 @@ data class MindMapNode(
 private fun MindMapApp() {
     val context = LocalContext.current
     val view = LocalView.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var inputText by remember { mutableStateOf("") }
+    var sourceText by remember { mutableStateOf("") }
     val nodes = remember { mutableStateListOf<MindMapNode>() }
 
-    var selectedNodeId by remember { mutableStateOf<String?>(null) }
+    var editingNodeId by remember { mutableStateOf<String?>(null) }
     var editText by remember { mutableStateOf("") }
-    var addChildText by remember { mutableStateOf("") }
+    var childText by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         if (nodes.isEmpty()) {
-            nodes += MindMapNode(parentId = null, text = "중앙 주제", x = 500f, y = 700f)
+            nodes += MindMapNode(parentId = null, text = "중앙 주제", x = 460f, y = 700f)
         }
     }
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Simple Mind Map") }) },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -126,73 +127,64 @@ private fun MindMapApp() {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             OutlinedTextField(
-                value = inputText,
-                onValueChange = { inputText = it },
-                label = { Text("텍스트 입력 (긴 문장/키워드)") },
+                value = sourceText,
+                onValueChange = { sourceText = it },
+                label = { Text("텍스트 입력 (긴 문장 / 키워드)") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = {
-                    nodes.clear()
-                    nodes.addAll(generateMindMap(inputText))
+                    nodes.replaceAll(generateMindMap(sourceText))
                 })
             )
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { nodes.replaceAll(generateMindMap(sourceText)) }) {
+                    Text("자동 생성")
+                }
                 Button(onClick = {
-                    nodes.clear()
-                    nodes.addAll(generateMindMap(inputText))
-                }) { Text("자동 생성") }
-                Button(onClick = {
-                    val pngName = "mindmap_${System.currentTimeMillis()}.png"
                     val bitmap = view.drawToBitmap(Bitmap.Config.ARGB_8888)
-                    val uri = saveBitmap(context, bitmap, pngName)
-                    scope.launch {
-                        snackbarHostState.showSnackbar(if (uri != null) "PNG 저장 완료" else "PNG 저장 실패")
-                    }
-                }) { Text("PNG 내보내기") }
+                    val uri = saveBitmap(context.contentResolver, bitmap, "mindmap_${System.currentTimeMillis()}.png")
+                    scope.launch { snackbar.showSnackbar(if (uri != null) "PNG 저장 완료" else "PNG 저장 실패") }
+                }) {
+                    Text("PNG 내보내기")
+                }
             }
+
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
-                    val json = exportJson(nodes)
                     val uri = saveText(
-                        context,
+                        context.contentResolver,
                         "mindmap_${System.currentTimeMillis()}.json",
                         "application/json",
-                        json
+                        exportJson(nodes)
                     )
-                    scope.launch {
-                        snackbarHostState.showSnackbar(if (uri != null) "JSON 저장 완료" else "JSON 저장 실패")
-                    }
+                    scope.launch { snackbar.showSnackbar(if (uri != null) "JSON 저장 완료" else "JSON 저장 실패") }
                 }) { Text("JSON") }
+
                 Button(onClick = {
-                    val markdown = exportMarkdown(nodes)
                     val uri = saveText(
-                        context,
+                        context.contentResolver,
                         "mindmap_${System.currentTimeMillis()}.md",
                         "text/markdown",
-                        markdown
+                        exportMarkdown(nodes)
                     )
-                    scope.launch {
-                        snackbarHostState.showSnackbar(if (uri != null) "Markdown 저장 완료" else "Markdown 저장 실패")
-                    }
+                    scope.launch { snackbar.showSnackbar(if (uri != null) "Markdown 저장 완료" else "Markdown 저장 실패") }
                 }) { Text("Markdown") }
             }
 
             MindMapCanvas(
                 nodes = nodes,
                 onMove = { id, dx, dy ->
-                    nodes.indexOfFirst { it.id == id }
-                        .takeIf { it >= 0 }
-                        ?.let { index ->
-                            nodes[index] = nodes[index].copy(
-                                x = nodes[index].x + dx,
-                                y = nodes[index].y + dy
-                            )
-                        }
+                    val index = nodes.indexOfFirst { it.id == id }
+                    if (index != -1) {
+                        val n = nodes[index]
+                        nodes[index] = n.copy(x = n.x + dx, y = n.y + dy)
+                    }
                 },
                 onTapNode = { node ->
-                    selectedNodeId = node.id
+                    editingNodeId = node.id
                     editText = node.text
-                    addChildText = ""
+                    childText = ""
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,48 +196,44 @@ private fun MindMapApp() {
         }
     }
 
-    val selectedNode = nodes.find { it.id == selectedNodeId }
-    if (selectedNode != null) {
+    val selected = nodes.find { it.id == editingNodeId }
+    if (selected != null) {
         AlertDialog(
-            onDismissRequest = { selectedNodeId = null },
+            onDismissRequest = { editingNodeId = null },
             title = { Text("노드 편집") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = editText,
                         onValueChange = { editText = it },
-                        label = { Text("텍스트 수정") }
+                        label = { Text("텍스트") }
                     )
                     OutlinedTextField(
-                        value = addChildText,
-                        onValueChange = { addChildText = it },
+                        value = childText,
+                        onValueChange = { childText = it },
                         label = { Text("하위 노드 추가") }
                     )
                 }
             },
             confirmButton = {
                 TextButton(onClick = {
-                    val idx = nodes.indexOfFirst { it.id == selectedNode.id }
-                    if (idx >= 0) {
-                        nodes[idx] = nodes[idx].copy(text = editText.ifBlank { "(빈 노드)" })
-                    }
-                    if (addChildText.isNotBlank()) {
-                        val childCount = nodes.count { it.parentId == selectedNode.id }
+                    updateNode(nodes, selected.id, editText.ifBlank { "(빈 노드)" })
+                    if (childText.isNotBlank()) {
+                        val siblingCount = nodes.count { it.parentId == selected.id }
                         nodes += MindMapNode(
-                            parentId = selectedNode.id,
-                            text = addChildText,
-                            x = selectedNode.x + 220f,
-                            y = selectedNode.y + (childCount - 1) * 140f
+                            parentId = selected.id,
+                            text = childText.trim(),
+                            x = selected.x + 220f,
+                            y = selected.y + (siblingCount - 0.5f) * 120f
                         )
                     }
-                    selectedNodeId = null
-                    Toast.makeText(context, "노드가 업데이트되었습니다.", Toast.LENGTH_SHORT).show()
+                    editingNodeId = null
                 }) { Text("저장") }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    nodes.removeAll { it.id == selectedNode.id || isDescendantOf(it, selectedNode.id, nodes) }
-                    selectedNodeId = null
+                    nodes.removeAll { it.id == selected.id || isDescendantOf(it, selected.id, nodes) }
+                    editingNodeId = null
                 }) { Text("삭제") }
             }
         )
@@ -261,82 +249,51 @@ private fun MindMapCanvas(
 ) {
     Box(modifier = modifier) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            val map = nodes.associateBy { it.id }
+            val byId = nodes.associateBy { it.id }
             nodes.forEach { node ->
-                val parent = node.parentId?.let { map[it] }
-                if (parent != null) {
-                    val start = Offset(parent.x + 85f, parent.y + 24f)
-                    val end = Offset(node.x + 10f, node.y + 24f)
-                    val mid = (start.x + end.x) / 2f
-                    drawLine(
-                        color = Color(0xFF6C63FF),
-                        start = start,
-                        end = Offset(mid, start.y),
-                        strokeWidth = 6f,
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = Color(0xFF6C63FF),
-                        start = Offset(mid, start.y),
-                        end = Offset(mid, end.y),
-                        strokeWidth = 6f,
-                        cap = StrokeCap.Round
-                    )
-                    drawLine(
-                        color = Color(0xFF6C63FF),
-                        start = Offset(mid, end.y),
-                        end = end,
-                        strokeWidth = 6f,
-                        cap = StrokeCap.Round
-                    )
+                val parent = node.parentId?.let(byId::get) ?: return@forEach
+                val start = Offset(parent.x + 170f, parent.y + 26f)
+                val end = Offset(node.x, node.y + 26f)
+                val control1 = Offset((start.x + end.x) / 2f, start.y)
+                val control2 = Offset((start.x + end.x) / 2f, end.y)
+                val path = Path().apply {
+                    moveTo(start.x, start.y)
+                    cubicTo(control1.x, control1.y, control2.x, control2.y, end.x, end.y)
                 }
+                drawPath(path = path, color = Color(0xFF6C63FF), style = Stroke(width = 5f, cap = StrokeCap.Round))
             }
-            drawRect(
-                color = Color.Transparent,
-                style = Stroke(width = 1f)
-            )
         }
 
         nodes.forEach { node ->
-            val animatedX by animateFloatAsState(targetValue = node.x, label = "nodeX")
-            val animatedY by animateFloatAsState(targetValue = node.y, label = "nodeY")
-            val highlight by animateColorAsState(
-                if (node.parentId == null) Color(0xFFE2DDFF) else Color.White,
-                label = "nodeColor"
+            val animatedX by animateFloatAsState(node.x, label = "nodeX")
+            val animatedY by animateFloatAsState(node.y, label = "nodeY")
+            val cardColor by animateColorAsState(
+                targetValue = if (node.parentId == null) Color(0xFFE7E2FF) else Color.White,
+                label = "cardColor"
             )
 
             ElevatedCard(
                 modifier = Modifier
                     .offset { IntOffset(animatedX.roundToInt(), animatedY.roundToInt()) }
-                    .size(width = 170.dp, height = 52.dp)
+                    .size(170.dp, 52.dp)
                     .border(1.dp, Color(0xFF6C63FF), RoundedCornerShape(12.dp))
-                    .background(highlight, RoundedCornerShape(12.dp))
+                    .background(cardColor, RoundedCornerShape(12.dp))
+                    .clickable { onTapNode(node) }
                     .pointerInput(node.id) {
-                        detectDragGestures(
-                            onDragEnd = {},
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                onMove(node.id, dragAmount.x, dragAmount.y)
-                            },
-                            onDragStart = {
-                                onTapNode(node)
-                            }
-                        )
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            onMove(node.id, dragAmount.x, dragAmount.y)
+                        }
                     },
                 shape = RoundedCornerShape(12.dp)
             ) {
-                val density = LocalDensity.current
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(PaddingValues(horizontal = 10.dp, vertical = 6.dp)),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = node.text,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2
-                    )
+                    Text(text = node.text, style = MaterialTheme.typography.bodyMedium, maxLines = 2)
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = if (node.parentId == null) "중심" else "하위",
@@ -349,13 +306,24 @@ private fun MindMapCanvas(
     }
 }
 
+private fun MutableList<MindMapNode>.replaceAll(newNodes: List<MindMapNode>) {
+    clear()
+    addAll(newNodes)
+}
+
+private fun updateNode(nodes: MutableList<MindMapNode>, targetId: String, newText: String) {
+    val index = nodes.indexOfFirst { it.id == targetId }
+    if (index != -1) {
+        nodes[index] = nodes[index].copy(text = newText)
+    }
+}
+
 private fun generateMindMap(input: String): List<MindMapNode> {
-    val fallback = listOf(
-        "기획", "기능", "디자인", "개발", "테스트", "배포"
-    )
+    val fallback = listOf("기획", "기능", "디자인", "개발", "테스트", "배포")
     val clean = input.lowercase(Locale.getDefault()).replace("\n", " ")
     val tokens = Regex("[a-zA-Z가-힣0-9]{2,}").findAll(clean).map { it.value }.toList()
     val stopWords = setOf("그리고", "그러나", "합니다", "대한", "있는", "에서", "으로", "the", "and", "for", "with")
+
     val ranked = tokens
         .filterNot { it in stopWords }
         .groupingBy { it }
@@ -365,44 +333,51 @@ private fun generateMindMap(input: String): List<MindMapNode> {
         .map { it.key }
 
     val rootText = ranked.firstOrNull()?.replaceFirstChar { it.uppercase() } ?: "중앙 주제"
-    val children = (if (ranked.size > 1) ranked.drop(1) else fallback).take(6)
+    val firstNode = MindMapNode(parentId = null, text = rootText, x = 420f, y = 560f)
 
-    val nodes = mutableListOf(MindMapNode(parentId = null, text = rootText, x = 420f, y = 560f))
+    val children = (if (ranked.size > 1) ranked.drop(1) else fallback).take(6)
+    val nodes = mutableListOf(firstNode)
+
     children.forEachIndexed { index, keyword ->
         val angleStep = (Math.PI * 2) / children.size.coerceAtLeast(1)
         val radius = 320f
-        val x = 420f + (kotlin.math.cos(index * angleStep) * radius).toFloat()
-        val y = 560f + (kotlin.math.sin(index * angleStep) * radius).toFloat()
-        val child = MindMapNode(parentId = nodes.first().id, text = keyword, x = x, y = y)
+        val cx = 420f + (cos(index * angleStep) * radius).toFloat()
+        val cy = 560f + (sin(index * angleStep) * radius).toFloat()
+
+        val child = MindMapNode(parentId = firstNode.id, text = keyword, x = cx, y = cy)
         nodes += child
 
-        val subKeywords = ranked.filter { it != keyword && it != rootText.lowercase() }.drop(index).take(2)
-        subKeywords.forEachIndexed { subIndex, sub ->
-            nodes += MindMapNode(
-                parentId = child.id,
-                text = sub,
-                x = x + 180f,
-                y = y + (subIndex - 0.5f) * 110f
-            )
-        }
+        ranked
+            .filter { it != keyword && it != rootText.lowercase(Locale.getDefault()) }
+            .drop(index)
+            .take(2)
+            .forEachIndexed { subIndex, subKeyword ->
+                nodes += MindMapNode(
+                    parentId = child.id,
+                    text = subKeyword,
+                    x = cx + 180f,
+                    y = cy + (subIndex - 0.5f) * 110f
+                )
+            }
     }
+
     return nodes
 }
 
 private fun isDescendantOf(node: MindMapNode, parentId: String, nodes: List<MindMapNode>): Boolean {
-    var current = node.parentId
-    val map = nodes.associateBy { it.id }
-    while (current != null) {
-        if (current == parentId) return true
-        current = map[current]?.parentId
+    val byId = nodes.associateBy { it.id }
+    var currentParent = node.parentId
+    while (currentParent != null) {
+        if (currentParent == parentId) return true
+        currentParent = byId[currentParent]?.parentId
     }
     return false
 }
 
 private fun exportJson(nodes: List<MindMapNode>): String {
-    val arr = JSONArray()
+    val array = JSONArray()
     nodes.forEach { node ->
-        arr.put(
+        array.put(
             JSONObject()
                 .put("id", node.id)
                 .put("parentId", node.parentId)
@@ -411,81 +386,68 @@ private fun exportJson(nodes: List<MindMapNode>): String {
                 .put("y", node.y)
         )
     }
-    return JSONObject().put("nodes", arr).toString(2)
+    return JSONObject().put("nodes", array).toString(2)
 }
 
 private fun exportMarkdown(nodes: List<MindMapNode>): String {
     val byParent = nodes.groupBy { it.parentId }
     val root = nodes.firstOrNull { it.parentId == null } ?: return "# Empty MindMap"
 
-    fun render(node: MindMapNode, level: Int): String {
-        val prefix = if (level == 0) "#" else "  ".repeat(level - 1) + "-"
-        val line = "$prefix ${node.text}\n"
-        val children = byParent[node.id].orEmpty().joinToString("") { render(it, level + 1) }
-        return line + children
+    fun render(node: MindMapNode, depth: Int): String {
+        val line = if (depth == 0) "# ${node.text}\n" else "${"  ".repeat(depth - 1)}- ${node.text}\n"
+        return line + byParent[node.id].orEmpty().joinToString("") { child -> render(child, depth + 1) }
     }
 
     return render(root, 0)
 }
 
-private fun saveBitmap(context: android.content.Context, bitmap: Bitmap, fileName: String): Uri? {
-    val resolver = context.contentResolver
-    val contentValues = ContentValues().apply {
+private fun saveBitmap(resolver: ContentResolver, bitmap: Bitmap, fileName: String): Uri? {
+    val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
         put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/MindMap")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            put(MediaStore.MediaColumns.IS_PENDING, 1)
-        }
+        put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/MindMap")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) put(MediaStore.MediaColumns.IS_PENDING, 1)
     }
 
-    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-    uri ?: return null
-
+    val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
     return runCatching {
-        resolver.openOutputStream(uri).use { stream ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            contentValues.clear()
-            contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
-            resolver.update(uri, contentValues, null, null)
-        }
+        resolver.openOutputStream(uri)?.use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+        finalizePendingIfNeeded(resolver, uri, values)
         uri
     }.getOrNull()
 }
 
-private fun saveText(context: android.content.Context, fileName: String, mimeType: String, content: String): Uri? {
-    val resolver = context.contentResolver
+private fun saveText(resolver: ContentResolver, fileName: String, mimeType: String, content: String): Uri? {
     val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
         put(MediaStore.MediaColumns.MIME_TYPE, mimeType)
-        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOCUMENTS + "/MindMap")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            put(MediaStore.MediaColumns.IS_PENDING, 1)
-        }
+        put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOCUMENTS}/MindMap")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) put(MediaStore.MediaColumns.IS_PENDING, 1)
     }
 
     val uri = resolver.insert(MediaStore.Files.getContentUri("external"), values) ?: return null
-    return writeToUri(resolver.openOutputStream(uri), content, uri, resolver, values)
+    return writeToUri(resolver, uri, values, content)
 }
 
 private fun writeToUri(
-    outputStream: OutputStream?,
-    content: String,
+    resolver: ContentResolver,
     uri: Uri,
-    resolver: android.content.ContentResolver,
-    values: ContentValues
+    values: ContentValues,
+    content: String
 ): Uri? {
     return runCatching {
-        outputStream.use { stream ->
-            stream?.write(content.toByteArray())
+        resolver.openOutputStream(uri)?.use { output: OutputStream ->
+            output.write(content.toByteArray())
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            values.clear()
-            values.put(MediaStore.MediaColumns.IS_PENDING, 0)
-            resolver.update(uri, values, null, null)
-        }
+        finalizePendingIfNeeded(resolver, uri, values)
         uri
     }.getOrNull()
+}
+
+private fun finalizePendingIfNeeded(resolver: ContentResolver, uri: Uri, values: ContentValues) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        values.clear()
+        values.put(MediaStore.MediaColumns.IS_PENDING, 0)
+        resolver.update(uri, values, null, null)
+    }
 }
