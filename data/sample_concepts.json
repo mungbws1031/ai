@@ -1,0 +1,98 @@
+[
+  {
+    "name": "Metering Chamber + Overflow",
+    "summary": "Fixed metering cavity with controlled overflow return for more repeatable retained volume.",
+    "mechanism": "Dip fills a defined chamber. Excess sample exits through an overflow path while a vent path supports stable fill. Chamber outlet contacts LFA transfer zone.",
+    "assumed_retained_volume_ul": 122,
+    "overflow_strategy": "Dedicated overflow trench with return drain",
+    "vent_strategy": "Top-side vent notch near chamber roof",
+    "transfer_interface": "Direct chamber outlet to absorbent transfer pad",
+    "likely_failure_modes": [
+      "Vent notch partially blocked by molding flash",
+      "Overflow trench retains droplets after carry",
+      "Chamber outlet wets unevenly at low dip depth"
+    ],
+    "manufacturability_notes": [
+      "Moderate tooling complexity due to chamber and trench geometry",
+      "Needs tight control of vent notch dimensions",
+      "Draft angles must preserve metering cavity shape"
+    ],
+    "prototype_tests": [
+      "Retained-volume repeatability across dip angle and dwell time",
+      "Carry leakage test after 30 to 120 second delay",
+      "Transfer completeness into pad across temperature range"
+    ],
+    "scores": {
+      "metering_accuracy": 5,
+      "moldability": 4,
+      "bubble_robustness": 4,
+      "carry_stability": 4,
+      "transfer_quality": 5,
+      "ux_clarity": 4
+    }
+  },
+  {
+    "name": "Rib Reservoir + Drip Trap",
+    "summary": "Shallow rib channels retain sample with a drip trap to reduce hanging droplets.",
+    "mechanism": "Sample is retained between ribs during dip. A downstream pocket captures larger droplets before insertion and then feeds transfer region.",
+    "assumed_retained_volume_ul": 112,
+    "overflow_strategy": "Passive spill-back over rib tops (no dedicated overflow channel)",
+    "vent_strategy": "Open side vents along rib array",
+    "transfer_interface": "Rib outlets converge into a small transfer wick",
+    "likely_failure_modes": [
+      "Uneven wetting between ribs causes low retained volume",
+      "Drip trap overfills after long dip and leaks during carry",
+      "Orientation-sensitive transfer from rib array to wick"
+    ],
+    "manufacturability_notes": [
+      "Rib geometry is mold-friendly but needs consistent rib height",
+      "Drip trap pocket is easy to tool",
+      "Potential flash at narrow rib bases can alter flow"
+    ],
+    "prototype_tests": [
+      "Carry stability test under tilt and shake motions",
+      "Retained-volume distribution across short and long dips",
+      "Transfer timing test in horizontal vs vertical orientation"
+    ],
+    "scores": {
+      "metering_accuracy": 3,
+      "moldability": 4,
+      "bubble_robustness": 3,
+      "carry_stability": 4,
+      "transfer_quality": 3,
+      "ux_clarity": 4
+    }
+  },
+  {
+    "name": "Capillary Grid + Pad Transfer",
+    "summary": "Micro-grid capillary intake feeding a transfer pad for smoother delivery.",
+    "mechanism": "Grid cells prime during dip. Filled grid contacts a transfer pad that then supplies the LFA membrane over a short flow window.",
+    "assumed_retained_volume_ul": 118,
+    "overflow_strategy": "No explicit overflow feature; excess relies on capillary saturation limit",
+    "vent_strategy": "Distributed micro-vents between grid lanes",
+    "transfer_interface": "Grid-to-pad compression interface",
+    "likely_failure_modes": [
+      "Partial priming of grid cells reduces delivered volume",
+      "Bubble pockets remain in corners of micro-grid",
+      "Compression mismatch causes uneven release into pad"
+    ],
+    "manufacturability_notes": [
+      "Micro-features increase molding sensitivity",
+      "Tool wear can shift grid dimensions over time",
+      "Assembly pressure tolerance is critical at pad interface"
+    ],
+    "prototype_tests": [
+      "Bubble sensitivity test with repeated dip cycles",
+      "Micro-feature replication check across tooling lots",
+      "Pad-contact pressure sweep for transfer consistency"
+    ],
+    "scores": {
+      "metering_accuracy": 4,
+      "moldability": 3,
+      "bubble_robustness": 3,
+      "carry_stability": 3,
+      "transfer_quality": 4,
+      "ux_clarity": 4
+    }
+  }
+]
