@@ -1,0 +1,2 @@
+# Standard-library-only project.
+# This file is kept for beginner familiarity and future extensions.
