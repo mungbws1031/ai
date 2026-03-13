@@ -1,0 +1,16 @@
+[
+  {
+    "file_id": "evid-001",
+    "title": "Performance Study A",
+    "claim_support": ["Sensitivity", "Specificity"],
+    "quality": "medium",
+    "notes": "Contains limited subgroup analysis."
+  },
+  {
+    "file_id": "evid-002",
+    "title": "Analytical Sensitivity Report",
+    "claim_support": ["LoD"],
+    "quality": "high",
+    "notes": "Validated internal method."
+  }
+]
