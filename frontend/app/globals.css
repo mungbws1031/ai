@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body { font-family: Arial, sans-serif; background: #f7f7fb; color: #111; }
+.card { background: white; border-radius: 8px; padding: 12px; border: 1px solid #ddd; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }

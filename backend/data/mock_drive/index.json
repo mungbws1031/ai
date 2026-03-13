@@ -1,0 +1,10 @@
+{
+  "files": [
+    {"id": "tmpl-001", "name": "PEP_Template.docx", "type": "template", "folder": "Sources/Templates"},
+    {"id": "reg-001", "name": "IVDR_2017_746.pdf", "type": "regulation", "folder": "Sources/Regulations"},
+    {"id": "sop-001", "name": "SOP_RA_Writing.docx", "type": "sop", "folder": "Sources/SOPs"},
+    {"id": "evid-001", "name": "Performance_Study_A.pdf", "type": "evidence", "folder": "Sources/Evidence"},
+    {"id": "evid-002", "name": "Analytical_Sensitivity_Report.pdf", "type": "evidence", "folder": "Sources/Evidence"},
+    {"id": "prior-001", "name": "Prior_IFU_v3.docx", "type": "prior_submission", "folder": "Sources/PriorDocs"}
+  ]
+}

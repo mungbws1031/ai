@@ -1,0 +1,2 @@
+Place a .docx template named PEP_Template.docx in this folder for style-preserving generation.
+If missing, the system falls back to creating a new .docx document with safe structure.

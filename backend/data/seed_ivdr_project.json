@@ -1,0 +1,17 @@
+{
+  "project": {
+    "name": "AstraNova IVDR Demo",
+    "description": "Fake but realistic internal IVDR project",
+    "drive_mapping": {
+      "root": "mock-root",
+      "templates": "/Projects/AstraNova/Templates",
+      "regulations": "/Projects/AstraNova/Sources/Regulations",
+      "sops": "/Projects/AstraNova/Sources/SOPs",
+      "prior_docs": "/Projects/AstraNova/Sources/PriorDocs",
+      "evidence": "/Projects/AstraNova/Sources/Evidence",
+      "outputs_drafts": "/Projects/AstraNova/Outputs/Drafts",
+      "outputs_reviews": "/Projects/AstraNova/Outputs/Reviews",
+      "outputs_approved": "/Projects/AstraNova/Outputs/Approved"
+    }
+  }
+}
