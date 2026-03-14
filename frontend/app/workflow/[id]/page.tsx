@@ -54,14 +54,15 @@ export default function WorkflowRunDetail({ params }: { params: { id: string } }
 
   return (
     <div className="stack">
-      <Card title={`Workflow Run #${params.id}`} subtitle="Progress, findings, outputs, and rerun controls in one view.">
+      <Card title={`Workflow Run #${params.id}`} subtitle="Progress, findings, outputs, and rerun controls in one view. AI output remains draft until explicit human approval.">
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <StateBadge value={run.state} />
           <span className="badge badge-neutral">Stage: {run.current_stage}</span>
           <span className="badge badge-neutral">Version: {run.current_version}</span>
-          <span className="badge badge-warn">Unresolved findings: {unresolvedCount}</span>
+          <span className={unresolvedCount > 0 ? 'badge badge-critical' : 'badge badge-success'}>Unresolved findings: {unresolvedCount}</span>
         </div>
         <p className="muted" style={{ marginTop: 8 }}>Template: {run.template_name} · Source folders: {(run.source_folders || []).join(', ') || 'Not captured'}</p>
+        <p className="muted">Content status: {run.state === 'Approved Internally' ? 'Human-approved content' : 'AI-generated draft pending human decision'}</p>
         {error ? <p className="badge badge-critical">{error}</p> : null}
       </Card>
 

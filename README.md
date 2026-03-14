@@ -81,4 +81,5 @@ docker compose up --build
 
 ### Screen notes
 - Uses clear badges for state/severity, confirmation on sensitive actions, and empty/loading helper text to reduce reviewer confusion.
+- Review screens explicitly label AI-generated draft content versus human-approved sections, and visually distinguish locked sections and insufficient-evidence flags.
 - For local mode, Drive/Docs links and sync actions run with mock data where API credentials are not configured.
