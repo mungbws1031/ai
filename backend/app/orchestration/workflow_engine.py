@@ -313,14 +313,25 @@ class WorkflowEngine:
             section = item["section_title"]
             if selected_sections and section not in selected_sections:
                 continue
+
+            existing = db.query(SectionOutput).filter(SectionOutput.workflow_run_id == run.id, SectionOutput.section_title == section).first()
+            if existing and (existing.locked_by_human or existing.accepted_by_human):
+                drafted.append({
+                    "section_title": existing.section_title,
+                    "generated_text": existing.generated_text,
+                    "evidence_refs": existing.evidence_refs,
+                    "confidence": existing.confidence,
+                    "rationale": existing.rationale,
+                    "unresolved_gaps": existing.unresolved_gaps,
+                    "agent_name": existing.agent_name,
+                })
+                continue
+
             evidence = self.ai.retrieve_evidence(section, source_ids)
             section_draft = self.ai.draft_section(section, evidence)
             drafted.append(section_draft.model_dump())
 
-            existing = db.query(SectionOutput).filter(SectionOutput.workflow_run_id == run.id, SectionOutput.section_title == section).first()
             if existing:
-                if existing.locked_by_human or existing.accepted_by_human:
-                    continue
                 existing.generated_text = section_draft.generated_text
                 existing.evidence_refs = section_draft.evidence_refs
                 existing.confidence = section_draft.confidence
