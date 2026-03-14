@@ -41,7 +41,12 @@ class AIService:
 
     def draft_section(self, section: str, evidence: dict) -> SectionDraft:
         gaps = evidence.get("gaps", [])
-        refs = [item["file_id"] for item in evidence.get("ranked_sources", [])]
+        ranked_sources = evidence.get("ranked_sources", [])
+        refs = [item["file_id"] for item in ranked_sources]
+        metadata = [
+            {"file_id": item["file_id"], "score": item.get("score", 0), "section": section}
+            for item in ranked_sources
+        ]
 
         if refs:
             source_line = f"Substantial claim source(s): {', '.join(refs)}."
@@ -61,6 +66,7 @@ class AIService:
             section_title=section,
             generated_text=text,
             evidence_refs=refs,
+            evidence_metadata=metadata,
             confidence=evidence.get("confidence", 0.35),
             rationale=(
                 "Content was generated with evidence-linked statements only. "

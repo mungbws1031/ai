@@ -8,6 +8,8 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     google_drive_mode: str = "mock"
     google_drive_root_id: str = "mock-root"
+    google_service_account_json: str = ""
+    google_drive_shared_drive_id: str = ""
     storage_path: str = "./storage"
 
     class Config:

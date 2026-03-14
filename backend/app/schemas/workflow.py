@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProjectCreate(BaseModel):
@@ -24,6 +24,14 @@ class WorkflowRunCreate(BaseModel):
     source_folders: list[str] = Field(default_factory=list)
     custom_instructions: str = ""
     parent_version_id: int | None = None
+
+
+def _normalize_choice(value: str, allowed: set[str], field_name: str) -> str:
+    cleaned = (value or "").strip().lower()
+    if cleaned not in allowed:
+        supported = ", ".join(sorted(allowed))
+        raise ValueError(f"{field_name} must be one of: {supported}")
+    return cleaned
 
 
 class WorkflowRunRead(BaseModel):
@@ -52,10 +60,20 @@ class RerunRequest(BaseModel):
     refresh_evidence_from_drive: bool = False
     selected_sections: list[str] = Field(default_factory=list)
 
+    @field_validator("step")
+    @classmethod
+    def validate_step(cls, value: str) -> str:
+        return _normalize_choice(value, {"full", "drafting", "review", "revision", "evidence"}, "step")
+
 
 class HumanDecisionRequest(BaseModel):
     decision: str
     reason: str = ""
+
+    @field_validator("decision")
+    @classmethod
+    def validate_decision(cls, value: str) -> str:
+        return _normalize_choice(value, {"approve", "request_changes", "archive"}, "decision")
 
 
 class RevisionRequest(BaseModel):
@@ -78,6 +96,11 @@ class FindingDecisionRequest(BaseModel):
     reviewer_decision: str
     resolution_note: str = ""
 
+    @field_validator("reviewer_decision")
+    @classmethod
+    def validate_reviewer_decision(cls, value: str) -> str:
+        return _normalize_choice(value, {"accepted", "resolved", "rejected", "pending"}, "reviewer_decision")
+
 
 class CommentCreate(BaseModel):
     section_title: str = ""
@@ -89,6 +112,7 @@ class SectionDraft(BaseModel):
     section_title: str
     generated_text: str
     evidence_refs: list[str]
+    evidence_metadata: list[dict] = Field(default_factory=list)
     confidence: float
     rationale: str
     unresolved_gaps: list[str]
@@ -123,3 +147,54 @@ class RevisionChangeRead(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DriveConnectRequest(BaseModel):
+    folder_id: str
+
+
+class DriveConnectResponse(BaseModel):
+    mapping: dict
+
+
+class DriveTemplateRead(BaseModel):
+    id: str
+    name: str
+    folder: str = "templates"
+
+
+
+class DocCommentCreate(BaseModel):
+    body: str
+    author: str = "reviewer"
+    quoted_text: str = ""
+    evidence_refs: list[str] = Field(default_factory=list)
+    section_title: str = ""
+    finding_id: int | None = None
+    doc_file_id: str = ""
+    request_revision: bool = True
+    section_approved: bool = False
+
+
+class DocCommentResolveRequest(BaseModel):
+    resolution_note: str = "Resolved in document"
+
+
+class DocCommentThreadRead(BaseModel):
+    id: int
+    workflow_run_id: int
+    doc_file_id: str
+    doc_comment_id: str
+    section_title: str
+    finding_id: int | None
+    author: str
+    body: str
+    quoted_text: str
+    evidence_refs: list[str]
+    status: str
+    request_revision: bool
+    section_approved: bool
+
+    class Config:
+        from_attributes = True
+

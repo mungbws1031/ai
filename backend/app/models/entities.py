@@ -91,6 +91,7 @@ class SectionOutput(Base):
     section_title: Mapped[str] = mapped_column(String(255))
     generated_text: Mapped[str] = mapped_column(Text)
     evidence_refs: Mapped[list] = mapped_column(JSON, default=list)
+    evidence_metadata: Mapped[list] = mapped_column(JSON, default=list)
     confidence: Mapped[float] = mapped_column(Float)
     rationale: Mapped[str] = mapped_column(Text, default="")
     unresolved_gaps: Mapped[list] = mapped_column(JSON, default=list)
@@ -165,3 +166,22 @@ class AuditEvent(Base):
     entity_id: Mapped[str] = mapped_column(String(80))
     details: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class DocCommentThread(Base):
+    __tablename__ = "doc_comment_threads"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    workflow_run_id: Mapped[int] = mapped_column(ForeignKey("workflow_runs.id"))
+    doc_file_id: Mapped[str] = mapped_column(String(120), default="")
+    doc_comment_id: Mapped[str] = mapped_column(String(120), default="")
+    section_title: Mapped[str] = mapped_column(String(255), default="")
+    finding_id: Mapped[int | None] = mapped_column(ForeignKey("review_findings.id"), nullable=True)
+    author: Mapped[str] = mapped_column(String(120), default="reviewer")
+    body: Mapped[str] = mapped_column(Text)
+    quoted_text: Mapped[str] = mapped_column(Text, default="")
+    evidence_refs: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(40), default="open")
+    request_revision: Mapped[bool] = mapped_column(Boolean, default=True)
+    section_approved: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
