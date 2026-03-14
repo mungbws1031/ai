@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { rerunWorkflow } from '@/lib/api';
-
-const API = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8000/api';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { getRun, getRunFindings, getRunRevisionSummaries, getRunTimeline, getRunVersions, rerunWorkflow, updateDecision } from '@/lib/api';
+import { Card, DriveLink, SeverityBadge, StateBadge } from '@/components/ui';
 
 export default function WorkflowRunDetail({ params }: { params: { id: string } }) {
   const [run, setRun] = useState<any>(null);
@@ -11,14 +11,17 @@ export default function WorkflowRunDetail({ params }: { params: { id: string } }
   const [findings, setFindings] = useState<any[]>([]);
   const [versions, setVersions] = useState<any[]>([]);
   const [summaries, setSummaries] = useState<any[]>([]);
+  const [busy, setBusy] = useState('');
+  const [error, setError] = useState('');
+  const [sectionName, setSectionName] = useState('Purpose');
 
   async function load() {
     const [r, t, f, v, s] = await Promise.all([
-      fetch(`${API}/workflow-runs/${params.id}`).then((x) => x.json()),
-      fetch(`${API}/workflow-runs/${params.id}/timeline`).then((x) => x.json()),
-      fetch(`${API}/workflow-runs/${params.id}/findings`).then((x) => x.json()),
-      fetch(`${API}/workflow-runs/${params.id}/versions`).then((x) => x.json()),
-      fetch(`${API}/workflow-runs/${params.id}/revision-summaries`).then((x) => x.json()),
+      getRun(params.id),
+      getRunTimeline(params.id),
+      getRunFindings(params.id),
+      getRunVersions(params.id),
+      getRunRevisionSummaries(params.id),
     ]);
     setRun(r);
     setTimeline(t);
@@ -27,71 +30,112 @@ export default function WorkflowRunDetail({ params }: { params: { id: string } }
     setSummaries(s);
   }
 
-  async function decide(decision: string) {
-    await fetch(`${API}/workflow-runs/${params.id}/decision`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-actor': 'RA Manager' },
-      body: JSON.stringify({ decision, reason: 'Manual decision from UI' }),
-    });
-    await load();
-  }
-
-  async function rerun(step: string) {
-    await rerunWorkflow(params.id, {
-      step,
-      preserve_accepted_text: true,
-      preserve_approved_sections: true,
-      reuse_previous_evidence_set: true,
-      refresh_evidence_from_drive: step === 'evidence',
-      selected_sections: [],
-    });
-    await load();
+  async function runAction(label: string, action: () => Promise<any>) {
+    if (!confirm(`Confirm action: ${label}?`)) return;
+    setBusy(label);
+    setError('');
+    try {
+      await action();
+      await load();
+    } catch (err: any) {
+      setError(err.message || `${label} failed`);
+    } finally {
+      setBusy('');
+    }
   }
 
   useEffect(() => {
     load();
   }, [params.id]);
 
-  if (!run) return <div className="card">Loading...</div>;
+  const unresolvedCount = useMemo(() => findings.filter((x) => x.status === 'Open').length, [findings]);
+
+  if (!run) return <div className="card">Loading workflow run…</div>;
 
   return (
-    <div className="card">
-      <h2>Workflow Run #{params.id}</h2>
-      <p>State: {run.state}</p>
-      <p>Output: {run.output_path}</p>
-      <p>Stage/Version: {run.current_stage} / {run.current_version}</p>
-
-      <h3>Human decisions</h3>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={() => decide('approve')}>Approve</button>
-        <button onClick={() => decide('request_changes')}>Request changes</button>
-        <button onClick={() => decide('archive')}>Archive</button>
-      </div>
-
-      <h3>Selective reruns</h3>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={() => rerun('full')}>Rerun full workflow</button>
-        <button onClick={() => rerun('drafting')}>Rerun drafting</button>
-        <button onClick={() => rerun('review')}>Rerun review</button>
-        <button onClick={() => rerun('revision')}>Rerun revision</button>
-        <button onClick={() => rerun('evidence')}>Rerun evidence retrieval</button>
-      </div>
-
-      <h3>Execution timeline</h3>
-      {timeline.map((item) => <div key={item.id}>{item.step_name} - {item.agent_name}</div>)}
-
-      <h3>Findings</h3>
-      {findings.length === 0 ? <p>No findings.</p> : findings.map((f) => <div key={f.id}>{f.severity}: {f.issue_summary || f.rationale}</div>)}
-
-      <h3>Version lineage</h3>
-      {versions.map((v) => <div key={v.id}>{v.version_label} ({v.stage_label}) - {v.output_path}</div>)}
-
-      <h3>Revision summaries</h3>
-      {summaries.map((s) => (
-        <div key={s.id}>
-          <strong>{s.cycle_label}</strong> | evidence: {s.evidence_outcome}
+    <div className="stack">
+      <Card title={`Workflow Run #${params.id}`} subtitle="Progress, findings, outputs, and rerun controls in one view.">
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <StateBadge value={run.state} />
+          <span className="badge badge-neutral">Stage: {run.current_stage}</span>
+          <span className="badge badge-neutral">Version: {run.current_version}</span>
+          <span className="badge badge-warn">Unresolved findings: {unresolvedCount}</span>
         </div>
-      ))}
+        <p className="muted" style={{ marginTop: 8 }}>Template: {run.template_name} · Source folders: {(run.source_folders || []).join(', ') || 'Not captured'}</p>
+        {error ? <p className="badge badge-critical">{error}</p> : null}
+      </Card>
+
+      <div className="grid3">
+        <Card title="Rerun controls" subtitle="Use confirmation prompts before restarting steps.">
+          <div className="stack">
+            <button onClick={() => runAction('Rerun drafting', () => rerunWorkflow(params.id, { step: 'drafting', selected_sections: [] }))}>
+              {busy === 'Rerun drafting' ? 'Running…' : 'Rerun drafting'}
+            </button>
+            <button onClick={() => runAction('Rerun review', () => rerunWorkflow(params.id, { step: 'review' }))}>Rerun review</button>
+            <button onClick={() => runAction('Rerun revision', () => rerunWorkflow(params.id, { step: 'revision' }))}>Rerun revision</button>
+            <button onClick={() => runAction('Rerun evidence refresh', () => rerunWorkflow(params.id, { step: 'evidence', refresh_evidence_from_drive: true }))}>Refresh evidence only</button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input value={sectionName} onChange={(e) => setSectionName(e.target.value)} placeholder="Section title" />
+              <button className="secondary" onClick={() => runAction('Rerun selected section', () => rerunWorkflow(params.id, { step: 'drafting', section: sectionName }))}>Rerun selected section</button>
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Approvals" subtitle="Human decisions are always explicit and auditable.">
+          <div className="stack">
+            <button onClick={() => runAction('Approve', () => updateDecision(params.id, 'approve'))}>Approve</button>
+            <button onClick={() => runAction('Request changes', () => updateDecision(params.id, 'request_changes'))}>Request changes</button>
+            <button onClick={() => runAction('Archive', () => updateDecision(params.id, 'archive'))}>Archive</button>
+          </div>
+        </Card>
+
+        <Card title="Output documents" subtitle="Open generated outputs and downstream review views.">
+          {versions.length === 0 ? <p className="muted">No versions yet.</p> : null}
+          {versions.slice().reverse().map((v) => (
+            <div key={v.id} className="list-row">
+              <strong>{v.version_label}</strong> · {v.stage_label}
+              <div className="muted">{v.output_path}</div>
+              <DriveLink fileId={v.drive_file_id} label="Open in Google Drive" />
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <Link href={`/review/${params.id}`} className="text-link">Open review workspace</Link>
+            <Link href={`/traceability/${params.id}`} className="text-link">Open traceability</Link>
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid2">
+        <Card title="Findings summary" subtitle="Unresolved issues should be addressed before approval.">
+          {findings.length === 0 ? <p className="muted">No findings for this run.</p> : null}
+          {findings.map((f) => (
+            <div key={f.id} className="list-row">
+              <div style={{ display: 'flex', gap: 8 }}>
+                <SeverityBadge value={f.severity} />
+                <span className="badge badge-neutral">{f.category}</span>
+                <span className="badge badge-neutral">{f.status}</span>
+              </div>
+              <p>{f.issue_summary || f.rationale}</p>
+            </div>
+          ))}
+        </Card>
+
+        <Card title="Agent timeline" subtitle="Full execution history for transparency and audit readiness.">
+          {timeline.length === 0 ? <p className="muted">No timeline events available.</p> : null}
+          {timeline.map((item) => (
+            <div key={item.id} className="list-row">
+              <strong>{item.step_name}</strong> · {item.agent_name}
+              <div className="muted">{item.created_at}</div>
+            </div>
+          ))}
+          {summaries.length > 0 ? (
+            <details>
+              <summary>Latest revision summary</summary>
+              <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(summaries[0], null, 2)}</pre>
+            </details>
+          ) : null}
+        </Card>
+      </div>
     </div>
   );
 }

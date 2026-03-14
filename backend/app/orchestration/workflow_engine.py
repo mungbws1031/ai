@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.models.entities import (
@@ -27,6 +28,8 @@ class WorkflowEngine:
 
     def run_full_workflow(self, db: Session, run: WorkflowRun) -> WorkflowRun:
         project = db.get(Project, run.project_id)
+        mapping = project.drive_mapping if project else {}
+        template_override = self.drive.resolve_template_path(mapping, run.template_name)
 
         source_index = self._set_state_and_run_step(
             db,
@@ -34,7 +37,7 @@ class WorkflowEngine:
             WorkflowState.SOURCE_SYNCING,
             "Source Sync",
             "Evidence Retrieval Agent",
-            lambda: self.drive.sync_project(project.drive_mapping if project else {}, run.source_folders),
+            lambda: self.drive.sync_project(mapping, run.source_folders),
         )
         source_ids = [f["id"] for f in source_index.get("files", [])]
 
@@ -49,7 +52,7 @@ class WorkflowEngine:
 
         drafted_sections = self._draft_sections(db, run, source_ids, selected_sections=[])
         self._review_sections(db, run, drafted_sections)
-        self._create_output_version(db, run, stage="Draft", sections=drafted_sections, change_summary=self.ai.revision_summary(0))
+        self._create_output_version(db, run, stage="Draft", sections=drafted_sections, change_summary=self.ai.revision_summary(0), template_path_override=template_override)
 
         run.state = WorkflowState.PENDING_HUMAN_REVIEW
         run.updated_at = datetime.utcnow()
@@ -70,7 +73,7 @@ class WorkflowEngine:
             return self.run_full_workflow(db, run)
 
         if step == "drafting":
-            source_ids = self._get_source_ids(run)
+            source_ids = self._get_source_ids(db, run)
             sections = self._draft_sections(db, run, source_ids, selected_sections)
             self._create_output_version(db, run, stage="Draft", sections=sections, change_summary=["Drafting rerun completed."])
         elif step == "review":
@@ -82,11 +85,15 @@ class WorkflowEngine:
             self.revise_document(db, run, [], options)
             return run
         elif step == "evidence":
-            source_ids = self._get_source_ids(run)
+            source_ids = self._get_source_ids(db, run)
             for section in self._load_sections(db, run.id, selected_sections):
                 evidence = self.ai.retrieve_evidence(section.section_title, source_ids)
                 if not options.get("reuse_previous_evidence_set", True):
                     section.evidence_refs = [item["file_id"] for item in evidence.get("ranked_sources", [])]
+                    section.evidence_metadata = [
+                        {"file_id": item.get("file_id"), "score": item.get("score", 0), "section": section.section_title}
+                        for item in evidence.get("ranked_sources", [])
+                    ]
             db.commit()
             self._record_step(db, run.id, "Evidence Refresh", "Evidence Retrieval Agent", {"selected_sections": selected_sections})
         else:
@@ -121,7 +128,7 @@ class WorkflowEngine:
         findings_addressed: list[int] = []
 
         for section in sections:
-            if section.locked_by_human or section.accepted_by_human:
+            if section.locked_by_human:
                 continue
 
             related = finding_by_section.get(section.section_title, [])
@@ -201,6 +208,8 @@ class WorkflowEngine:
         if not section:
             raise ValueError("Section not found")
         section.accepted_by_human = accepted
+        if accepted:
+            section.locked_by_human = True
         db.commit()
         self._audit(db, "reviewer", "section_acceptance_updated", "section_output", str(section_id), {"accepted": accepted})
         db.refresh(section)
@@ -275,7 +284,7 @@ class WorkflowEngine:
         claim_map = []
         for section in outputs:
             open_count = len([f for f in findings if section.section_title in f.affected_sections and f.status == "Open"])
-            section_map.append({"section_title": section.section_title, "evidence_refs": section.evidence_refs, "open_findings": open_count})
+            section_map.append({"section_title": section.section_title, "evidence_refs": section.evidence_refs, "evidence_metadata": section.evidence_metadata, "open_findings": open_count})
             claim_map.append({"claim": section.generated_text[:100], "source_document_ids": section.evidence_refs})
 
         finding_to_revision = []
@@ -298,7 +307,11 @@ class WorkflowEngine:
             "finding_to_revision": finding_to_revision,
             "version_lineage": lineage,
             "claim_to_source": claim_map,
-            "source_to_drive_ref": [{"drive_file_id": ref, "origin": "mock_drive"} for item in outputs for ref in item.evidence_refs],
+            "source_to_drive_ref": [
+                {"drive_file_id": ref, "origin": "mock_drive", "section_title": item.section_title}
+                for item in outputs
+                for ref in item.evidence_refs
+            ],
         }
 
     def _draft_sections(self, db: Session, run: WorkflowRun, source_ids: list[str], selected_sections: list[str]) -> list[dict]:
@@ -319,10 +332,11 @@ class WorkflowEngine:
 
             existing = db.query(SectionOutput).filter(SectionOutput.workflow_run_id == run.id, SectionOutput.section_title == section).first()
             if existing:
-                if existing.locked_by_human or existing.accepted_by_human:
+                if existing.locked_by_human:
                     continue
                 existing.generated_text = section_draft.generated_text
                 existing.evidence_refs = section_draft.evidence_refs
+                existing.evidence_metadata = section_draft.evidence_metadata
                 existing.confidence = section_draft.confidence
                 existing.rationale = section_draft.rationale
                 existing.unresolved_gaps = section_draft.unresolved_gaps
@@ -350,16 +364,24 @@ class WorkflowEngine:
         db.commit()
         self._record_step(db, run.id, "Review", "IVDR Review Agent", {"total_findings": count})
 
-    def _create_output_version(self, db: Session, run: WorkflowRun, stage: str, sections: list[dict], change_summary: list[str]):
+    def _create_output_version(self, db: Session, run: WorkflowRun, stage: str, sections: list[dict], change_summary: list[str], template_path_override: str | None = None):
+        requested_output = Path(run.output_path or "backend/data/outputs")
+        output_root = requested_output.parent if requested_output.suffix.lower() == ".docx" else requested_output
+        if output_root.is_absolute() or ".." in output_root.parts:
+            output_root = Path("backend/data/outputs")
+
         placeholders = {"{{PROJECT_NAME}}": f"Project_{run.project_id}"}
+        revision_context = self._build_revision_context(db, run.id)
         output_path, version = self.template.generate_docx(
             run.template_name,
-            run.output_path,
+            str(output_root),
             run.document_type,
             stage,
             sections,
             placeholders,
             change_summary,
+            revision_context=revision_context,
+            template_path_override=template_path_override,
         )
         run.output_path = output_path
         run.current_stage = stage
@@ -367,6 +389,37 @@ class WorkflowEngine:
         db.add(DocumentVersion(workflow_run_id=run.id, version_label=version, stage_label=stage, output_path=output_path, created_by="system"))
         db.commit()
         self._audit(db, "system", "document_version_created", "workflow_run", str(run.id), {"version": version, "stage": stage, "output": output_path})
+
+        project = db.get(Project, run.project_id)
+        mapping = project.drive_mapping if project else {}
+        try:
+            upload_result = self.drive.upload_output(mapping, output_path)
+        except Exception as exc:
+            upload_result = {"uploaded": False, "error": str(exc)}
+        self._audit(db, "system", "document_output_synced", "workflow_run", str(run.id), upload_result)
+
+
+    def _build_revision_context(self, db: Session, run_id: int) -> dict:
+        findings = db.query(ReviewFinding).filter(ReviewFinding.workflow_run_id == run_id).all()
+        latest_summary = db.query(RevisionSummary).filter(RevisionSummary.workflow_run_id == run_id).order_by(RevisionSummary.created_at.desc()).first()
+
+        addressed_ids = latest_summary.findings_addressed if latest_summary else []
+        addressed = [
+            {"id": f.id, "category": f.category, "issue_summary": f.issue_summary}
+            for f in findings
+            if f.id in addressed_ids
+        ]
+        remaining = [
+            {"id": f.id, "category": f.category, "issue_summary": f.issue_summary}
+            for f in findings
+            if f.status == "Open"
+        ]
+        rationale = latest_summary.why_changed if latest_summary else []
+        return {
+            "addressed_findings": addressed,
+            "remaining_findings": remaining,
+            "change_rationale": rationale,
+        }
 
     def _load_sections(self, db: Session, run_id: int, selected_sections: list[str]) -> list[SectionOutput]:
         query = db.query(SectionOutput).filter(SectionOutput.workflow_run_id == run_id)
@@ -380,14 +433,17 @@ class WorkflowEngine:
                 "section_title": s.section_title,
                 "generated_text": s.generated_text,
                 "evidence_refs": s.evidence_refs,
+                "evidence_metadata": s.evidence_metadata,
                 "confidence": s.confidence,
                 "unresolved_gaps": s.unresolved_gaps,
             }
             for s in self._load_sections(db, run_id, selected_sections)
         ]
 
-    def _get_source_ids(self, run: WorkflowRun) -> list[str]:
-        project_index = self.drive.sync_project({}, run.source_folders)
+    def _get_source_ids(self, db: Session, run: WorkflowRun) -> list[str]:
+        project = db.get(Project, run.project_id)
+        mapping = project.drive_mapping if project else {}
+        project_index = self.drive.sync_project(mapping, run.source_folders)
         return [f["id"] for f in project_index.get("files", [])]
 
     def _classify_change(self, category: str) -> str:

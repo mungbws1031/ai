@@ -68,3 +68,17 @@ docker compose up --build
 - Template insertion is safer but still section-based; full OpenXML bookmarks/track-changes is future work.
 - Google Drive and Google Docs integrations are mock-first in local mode.
 - Celery/queue execution remains a boundary for future asynchronous scaling.
+
+
+## Frontend UX screens (desktop-first)
+- **Dashboard**: project portfolio, Drive connection status, recent workflow runs, pending reviews, and pending approvals.
+- **Project Settings / Drive Mapping**: mapped root and required subfolders (`templates`, `regulations`, `sop`, `evidence`, `outputs`), template inventory, and indexed source files.
+- **New Workflow Wizard**: guided 6-step run setup (project, document type, template, source folders, instructions, review-and-run).
+- **Workflow Run Detail**: workflow status badges, timeline, findings summary, versions, and rerun/approval controls.
+- **Document Review Workspace**: 3-panel layout (sections, draft content, findings/evidence/threads) with section actions and review decisions.
+- **Traceability View**: section→evidence, finding→revision, version lineage, and source links.
+- **Audit Log View**: timestamped user + AI actions and document lifecycle events.
+
+### Screen notes
+- Uses clear badges for state/severity, confirmation on sensitive actions, and empty/loading helper text to reduce reviewer confusion.
+- For local mode, Drive/Docs links and sync actions run with mock data where API credentials are not configured.
