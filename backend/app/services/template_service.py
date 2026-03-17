@@ -27,12 +27,19 @@ class TemplateService:
     def build_versioned_output_path(self, output_root: str, document_type: str, stage: str) -> tuple[str, str]:
         safe_doc_type = document_type.replace(" ", "_")
         version = self.STAGE_CODES.get(stage, "v0.1")
-        filename = f"{safe_doc_type}_{stage}_{version}.docx"
+        base_filename = f"{safe_doc_type}_{stage}_{version}"
         root = Path(output_root)
         if root.suffix.lower() == ".docx":
             root = root.parent
         root.mkdir(parents=True, exist_ok=True)
-        return str(root / filename), version
+
+        candidate = root / f"{base_filename}.docx"
+        rerun_index = 1
+        while candidate.exists():
+            candidate = root / f"{base_filename}_rerun{rerun_index}.docx"
+            rerun_index += 1
+
+        return str(candidate), version
 
     def generate_docx(
         self,
