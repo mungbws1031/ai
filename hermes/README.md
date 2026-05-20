@@ -35,11 +35,36 @@ reasons. They are ordered by how frequently they are the actual cause:
 
 ## Setup
 
+### Option A — Docker (recommended for "just run it")
+
+```bash
+cp hermes/.env.example .env       # then fill HERMES_BOT_TOKEN at minimum
+docker compose up -d hermes       # starts only the bot
+# or: docker compose up -d        # bot + backend + frontend together
+docker compose logs -f hermes     # follow logs
+```
+
+The bot reads `.env` from the repo root. The compose service overrides
+`HERMES_IVDR_API_URL` to `http://backend:8000/api` so `/status` works
+out of the box when the backend container is running.
+
+### Option B — local Python
+
 ```bash
 pip install -r hermes/requirements.txt
-cp hermes/.env.example .env      # then edit .env
+cp hermes/.env.example .env       # then edit .env
 python -m hermes
 ```
+
+### First-time BotFather steps
+
+1. Open [@BotFather](https://t.me/BotFather) → `/newbot` → name and username.
+2. Copy the token into `HERMES_BOT_TOKEN`.
+3. `/setprivacy` → select your bot → **Disable** (so it can read group
+   messages, mentions, and replies).
+4. Add the bot to your group, then in that group send `/id` — paste the
+   returned number into `HERMES_NOTIFY_CHAT_IDS`.
+5. Restart the bot.
 
 ## Commands
 
