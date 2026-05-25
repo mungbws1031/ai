@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LFA 테스터스틱 전문 위키 — 미리보기</title>
+<style>
+  :root{
+    --bg:#ffffff; --fg:#37352f; --muted:#787066; --line:#e9e7e2;
+    --side:#fbfaf8; --side-line:#ededeb; --accent:#2e6fb0; --hover:#f1f0ee;
+    --code:#eb5757;
+    --info-bg:#eef4fb; --info-bd:#9cc1e6;
+    --warn-bg:#fdf3e7; --warn-bd:#e6b87a;
+    --note-bg:#f4f3f1; --note-bd:#cfcbc4;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    color:var(--fg); background:var(--bg); line-height:1.7; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .layout{display:flex; min-height:100vh;}
+  /* Sidebar */
+  .sidebar{
+    width:268px; flex:0 0 268px; background:var(--side);
+    border-right:1px solid var(--side-line); padding:20px 12px;
+    position:sticky; top:0; height:100vh; overflow-y:auto;
+  }
+  .brand{padding:6px 10px 14px; }
+  .brand .emoji{font-size:26px;}
+  .brand h1{font-size:15px; margin:6px 0 2px; line-height:1.35;}
+  .brand p{font-size:11.5px; color:var(--muted); margin:0;}
+  .nav button{
+    display:flex; align-items:center; gap:9px; width:100%; text-align:left;
+    background:none; border:none; cursor:pointer; font:inherit;
+    color:var(--fg); padding:7px 10px; border-radius:7px; margin:1px 0;
+    font-size:14px;
+  }
+  .nav button:hover{background:var(--hover);}
+  .nav button.active{background:#e8edf4; color:var(--accent); font-weight:600;}
+  .nav .nemoji{width:20px; text-align:center; flex:0 0 20px;}
+  .nav .sec-label{font-size:11px; color:var(--muted); padding:14px 10px 4px; letter-spacing:.04em;}
+  /* Main */
+  .main{flex:1 1 auto; min-width:0; display:flex; justify-content:center;}
+  .page-wrap{max-width:820px; width:100%; padding:54px 60px 120px;}
+  .page{display:none; animation:fade .25s ease;}
+  .page.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+  .page-emoji{font-size:42px; line-height:1;}
+  h2.title{font-size:34px; font-weight:800; margin:8px 0 22px; letter-spacing:-.01em;}
+  h3{font-size:22px; font-weight:700; margin:34px 0 10px;}
+  h4{font-size:17px; font-weight:700; margin:22px 0 6px;}
+  p{margin:10px 0;}
+  ul,ol{margin:10px 0; padding-left:24px;}
+  li{margin:5px 0;}
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
+  strong{font-weight:700;}
+  code{background:#f1f0ee; color:var(--code); padding:1px 5px; border-radius:4px; font-size:.88em;
+       font-family:"SFMono-Regular",Consolas,monospace;}
+  hr{border:none; border-top:1px solid var(--line); margin:30px 0;}
+  /* tables */
+  .tbl-scroll{overflow-x:auto; margin:14px 0;}
+  table{border-collapse:collapse; width:100%; font-size:14px;}
+  th,td{border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top;}
+  th{background:#f7f6f4; font-weight:700;}
+  tbody tr:nth-child(even){background:#fcfbfa;}
+  /* callouts */
+  .callout{display:flex; gap:12px; padding:14px 16px; border-radius:8px; margin:16px 0;
+           border:1px solid var(--note-bd); background:var(--note-bg); font-size:14.5px;}
+  .callout .ico{font-size:18px; flex:0 0 auto; line-height:1.5;}
+  .callout.info{background:var(--info-bg); border-color:var(--info-bd);}
+  .callout.warn{background:var(--warn-bg); border-color:var(--warn-bd);}
+  .callout p{margin:0;}
+  .lede{background:linear-gradient(180deg,#faf8f5,#fff); border:1px solid var(--line);
+        border-radius:10px; padding:18px 20px; font-size:15px; margin:0 0 24px;}
+  /* page-link list */
+  .plinks{list-style:none; padding:0; margin:14px 0;}
+  .plinks li{margin:0; border-bottom:1px solid var(--line);}
+  .plinks button{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+     background:none; border:none; cursor:pointer; font:inherit; padding:12px 8px; border-radius:6px;}
+  .plinks button:hover{background:var(--hover);}
+  .plinks .pe{font-size:18px;}
+  .plinks .pt{font-weight:600;}
+  .plinks .pd{color:var(--muted); font-size:13px;}
+  /* badges */
+  .badge{display:inline-block; padding:1px 9px; border-radius:20px; font-size:12.5px; font-weight:600; white-space:nowrap;}
+  .b-green{background:#e3f3e8; color:#2a7b48;}
+  .b-blue{background:#e6eef8; color:#2f6bb0;}
+  .b-amber{background:#fbf0db; color:#9a6b16;}
+  .b-red{background:#fbe6e4; color:#bb3b32;}
+  .b-gray{background:#eeede9; color:#6b6459;}
+  .mech{display:inline-block; padding:1px 8px; border-radius:5px; font-size:12px; background:#eef0f4; color:#4a5568; margin:1px 2px 1px 0;}
+  .topbar{display:none;}
+  .footer-note{margin-top:60px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px;}
+  /* mobile */
+  @media(max-width:880px){
+    .layout{flex-direction:column;}
+    .sidebar{position:relative; width:100%; height:auto; flex:none; border-right:none; border-bottom:1px solid var(--side-line);}
+    .page-wrap{padding:30px 22px 90px;}
+    h2.title{font-size:27px;}
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="emoji">🧪</div>
+      <h1>LFA 테스터스틱 전문 위키</h1>
+      <p>슈얼리 오브제 · 단일 지식 베이스</p>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-target="home" class="active"><span class="nemoji">🏠</span>홈</button>
+      <div class="sec-label">SECTIONS</div>
+      <button data-target="p01"><span class="nemoji">📌</span>01 · 제품 정의 &amp; 핵심 사양</button>
+      <button data-target="p02"><span class="nemoji">🎯</span>02 · 요구사항 &amp; 인사이트</button>
+      <button data-target="p03"><span class="nemoji">🧩</span>03 · 설계 컨셉 카탈로그</button>
+      <button data-target="p04"><span class="nemoji">📊</span>04 · 컨셉 평가 &amp; 랭킹</button>
+      <button data-target="p05"><span class="nemoji">🏭</span>05 · 제조성 &amp; 검증 계획</button>
+      <button data-target="p06"><span class="nemoji">⚠️</span>06 · 리스크 분석 (FMEA)</button>
+      <button data-target="p07"><span class="nemoji">📖</span>07 · 용어집</button>
+      <button data-target="p08"><span class="nemoji">🔗</span>08 · 관련 자료 &amp; 변경 이력</button>
+    </nav>
+  </aside>
+
+  <main class="main">
+   <div class="page-wrap">
+
+    <!-- HOME -->
+    <section class="page active" id="home">
+      <div class="page-emoji">🧪</div>
+      <h2 class="title">LFA 테스터스틱 전문 위키</h2>
+      <div class="lede">
+        슈얼리 오브제(Surearly Objet)의 소변 딥핑(dipping) 테스터스틱에 대한 <em>정의 · 요구사항 · 설계 컨셉 · 평가 · 제조 · 리스크</em>를 한곳에 모은 단일 지식 베이스(Single Source of Truth)입니다. 새로 합류한 협업 팀도 이 페이지부터 읽으면 전체 그림을 파악할 수 있도록 구성했습니다.
+      </div>
+
+      <h3>📖 이 위키는 무엇인가요?</h3>
+      <p>테스터스틱은 <strong>사용자가 소변 컵에 담갔다(dip) 꺼내 리더기에 삽입하면, LFA(측면유동분석, Lateral Flow Assay) 스트립으로 정량(약 120 µL)의 시료를 전달</strong>하는 납작한 사출성형 부품입니다. 이 위키는 여러 문서에 흩어져 있던 설계 지식을 다음 관점으로 정리합니다.</p>
+      <ul>
+        <li><strong>무엇을(What):</strong> 제품 정의와 고정 제약(치수·부피)</li>
+        <li><strong>왜(Why):</strong> 사용 맥락·인체공학에서 도출된 요구사항</li>
+        <li><strong>어떻게(How):</strong> 설계 컨셉과 정량·누수·전달 메커니즘</li>
+        <li><strong>무엇을 선택(Decision):</strong> 평가 스코어카드와 추천 컨셉</li>
+        <li><strong>검증(Validation):</strong> 제조성 · 벤치 테스트 · 리스크(FMEA)</li>
+      </ul>
+
+      <h3>📐 핵심 사양 한눈에</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>항목</th><th>값</th><th>비고</th></tr></thead>
+        <tbody>
+          <tr><td>샘플링 방식</td><td>컵에 딥핑(dip)</td><td>사용자가 직접 담금</td></tr>
+          <tr><td>시료(sample)</td><td>소변(Urine)</td><td></td></tr>
+          <tr><td>목표 정량 부피</td><td>~120 µL</td><td>어세이 전달 기준</td></tr>
+          <tr><td>정량 여부</td><td>정량(metered)</td><td></td></tr>
+          <tr><td>폼팩터</td><td>납작한 스틱(flat)</td><td>사출성형 플라스틱</td></tr>
+          <tr><td>최대 두께</td><td>5.5 mm</td><td>고정 제약</td></tr>
+          <tr><td>폭(width)</td><td>17.89 mm</td><td>고정 제약</td></tr>
+          <tr><td>검사 항목</td><td>호르몬 4종 (LH · FSH · E3G · P3G)</td><td>리더기 연동</td></tr>
+          <tr><td>LFA 라인</td><td>컨트롤 포함 5라인</td><td></td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="callout warn"><span class="ico">⚠️</span><p><strong>주의:</strong> 본 위키의 컨셉 점수는 초기 설계 의사결정을 돕는 <strong>휴리스틱(heuristic) 평가</strong>이며 물리적 검증 결과가 아닙니다. 모든 수치는 프로토타입 · 벤치 테스트로 반드시 확인해야 합니다.</p></div>
+
+      <hr>
+
+      <h3>🗂️ 위키 구성</h3>
+      <ul class="plinks">
+        <li><button data-target="p01"><span class="pe">📌</span><span><span class="pt">01 · 제품 정의 &amp; 핵심 사양</span> — <span class="pd">제품 의도 · 고정 제약 · 성공 기준</span></span></button></li>
+        <li><button data-target="p02"><span class="pe">🎯</span><span><span class="pt">02 · 요구사항 &amp; 사용자 인사이트</span> — <span class="pd">사용 맥락·인체공학에서 도출한 설계 요구</span></span></button></li>
+        <li><button data-target="p03"><span class="pe">🧩</span><span><span class="pt">03 · 설계 컨셉 카탈로그</span> — <span class="pd">9종(현재 7종) 컨셉 비교 데이터베이스</span></span></button></li>
+        <li><button data-target="p04"><span class="pe">📊</span><span><span class="pt">04 · 컨셉 평가 &amp; 랭킹</span> — <span class="pd">2개 평가 체계 · 스코어카드 · 추천(#8)</span></span></button></li>
+        <li><button data-target="p05"><span class="pe">🏭</span><span><span class="pt">05 · 제조성 &amp; 검증 계획</span> — <span class="pd">사출성형 · 벤치/누수/전달 테스트</span></span></button></li>
+        <li><button data-target="p06"><span class="pe">⚠️</span><span><span class="pt">06 · 리스크 분석 (FMEA)</span> — <span class="pd">컨셉별·공통 리스크와 완화</span></span></button></li>
+        <li><button data-target="p07"><span class="pe">📖</span><span><span class="pt">07 · 용어집 (Glossary)</span> — <span class="pd">LFA · 정량 · 모세관 등 핵심 용어</span></span></button></li>
+        <li><button data-target="p08"><span class="pe">🔗</span><span><span class="pt">08 · 관련 자료 &amp; 변경 이력</span> — <span class="pd">워크스페이스/저장소 링크 · 체인지로그</span></span></button></li>
+      </ul>
+
+      <h3>🔗 관련 기존 자료 (워크스페이스)</h3>
+      <ul>
+        <li><a href="https://www.notion.so/2affe74498448062b751cdb0797c45cd" target="_blank">테스터스틱 — 사용맥락·인체공학·유체 인사이트 원본</a></li>
+        <li><a href="https://www.notion.so/272fe744984480e09140f50000bb75d5" target="_blank">00_슈얼리오브제 WiKi — 제품 전체(리더기·앱 포함)</a></li>
+        <li><a href="https://www.notion.so/30dfe7449844803c88b6f0d6ada187b8" target="_blank">타사 LFA 테스터기 자료</a></li>
+        <li><a href="https://www.notion.so/345fe744984481458f27e3032ee9d752" target="_blank">슈얼리 오브제 | 사용성 엔지니어링 계획서</a></li>
+        <li><a href="https://www.notion.so/345fe744984481e782dff221adcd7bd0" target="_blank">슈얼리 오브제 | 상태 머신 및 예외처리 표</a></li>
+        <li><a href="https://www.notion.so/35afe74498448116aa15df3174cec733" target="_blank">Surearly SMART | PRD v2.0</a></li>
+      </ul>
+
+      <h3>👥 협업 안내</h3>
+      <ul>
+        <li>이 위키는 <strong>테스터스틱 단일 부품</strong>에 집중합니다. 리더기·앱·전체 제품 사양은 위 <em>00_슈얼리오브제 WiKi</em>를 참고하세요.</li>
+        <li>수정·추가 제안은 각 페이지에서 <strong>댓글(Comment)</strong>로 남겨 주세요.</li>
+        <li>새 컨셉/실험 결과는 <strong>03 · 설계 컨셉 카탈로그</strong> 데이터베이스에 행을 추가해 관리합니다.</li>
+      </ul>
+    </section>
+
+    <!-- 01 -->
+    <section class="page" id="p01">
+      <div class="page-emoji">📌</div>
+      <h2 class="title">01 · 제품 정의 &amp; 핵심 사양</h2>
+
+      <h3>1. 제품 의도 (Product Intent)</h3>
+      <p><strong>컵에 담근 소변을 리더기로 옮겨 안정적으로 LFA를 구동</strong>하는, 납작한 사출성형 소변 채취 스틱을 설계한다. 사용자는 스틱을 컵에 딥핑 → 리더기로 이동 → 삽입하여 어세이를 시작한다.</p>
+
+      <h3>2. 고정 제약 (Fixed Constraints)</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>파라미터</th><th>값</th></tr></thead>
+        <tbody>
+          <tr><td>단면 폼팩터</td><td>납작(flat)</td></tr>
+          <tr><td>최대 두께</td><td>5.5 mm</td></tr>
+          <tr><td>폭(width)</td><td>17.89 mm</td></tr>
+          <tr><td>채취 방식</td><td>컵에 사용자 딥핑</td></tr>
+          <tr><td>정량 목표</td><td>어세이로 전달되는 순(net) 시료 ~120 µL</td></tr>
+          <tr><td>운반</td><td>삽입 전 이동 가능해야 함</td></tr>
+          <tr><td>전달</td><td>삽입 후 LFA 스트립으로 안정적 전달</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>3. 설계 성공 기준 (Success Criteria)</h3>
+      <ol>
+        <li>~120 µL 정량 재현성</li>
+        <li>낮은 사용자 부담(적은 단계, 직관적 신호)</li>
+        <li>운반 중 낮은 누수/드립 위험</li>
+        <li>견고한 LFA 스트립 적심 프로파일(볼러스 쇼크 최소화)</li>
+        <li>사출성형 + 실용적 조립을 통한 양산성</li>
+      </ol>
+
+      <h3>4. 본 위키의 컨셉 전개 프레임</h3>
+      <p>각 컨셉은 다음 관점으로 전개한다.</p>
+      <ul>
+        <li>내부 단면 구조 · 모세관 유로 · ~120 µL 저장부 부피 · 소변–LFA 상호작용 · 사용자 핸들링 · 누수 방지 · 성형·조립 타당성</li>
+      </ul>
+      <div class="callout info"><span class="ico">ℹ️</span><p>치수·부피는 EVT 초기 추정치이며 DFM·CFD·몰드플로우로 최적화 대상입니다.</p></div>
+    </section>
+
+    <!-- 02 -->
+    <section class="page" id="p02">
+      <div class="page-emoji">🎯</div>
+      <h2 class="title">02 · 요구사항 &amp; 사용자 인사이트</h2>
+      <p>사용 맥락에서 관찰된 사용자 행동을 엔지니어링 요구사항으로 번역한 결과입니다.</p>
+
+      <h3>1. 관찰된 사용자 행동 리스크 (가정·근거리 환경)</h3>
+      <ul>
+        <li>일관되지 않은 딥핑 깊이·시간</li>
+        <li>기울어진 딥핑, 부분 침수</li>
+        <li>딥핑 직후 즉시 이동(리더기로 걸어감)</li>
+        <li>"준비됨(ready)" 상태에 대한 불확실성</li>
+        <li>가끔 과도한 딥핑·재딥핑</li>
+      </ul>
+
+      <h3>2. UX에서 도출된 요구사항</h3>
+      <ul>
+        <li>채취는 <strong>방향·타이밍 변동에 관대</strong>해야 함</li>
+        <li><strong>"채워짐(filled)" 상태가 명확</strong>해야 함 (시각/촉각/시스템 안내)</li>
+        <li>제거 후 <strong>팁에 고인 액체 노출이 없어야</strong> 함</li>
+        <li>가능한 한 <strong>수동(passive)</strong> 동작 우선 — 능동 단계가 있다면 명확하고 이진적(binary)이어야 함</li>
+      </ul>
+
+      <h3>3. 인간공학 가이드 (컨셉 #6–#9 적용)</h3>
+      <ul>
+        <li>명확한 딥핑 라인·방향 표시 제공</li>
+        <li>리더기 삽입력·경로를 결정적으로 (single hard stop)</li>
+        <li>사용자가 부피·시간을 정밀 추정할 필요 없게</li>
+        <li>가능하면 어세이 타이밍을 사용자 운반 타이밍과 분리</li>
+      </ul>
+
+      <h3>4. 기하 설계에 직접 영향을 주는 요구사항</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>요구사항</th><th>설계 반영</th></tr></thead>
+        <tbody>
+          <tr><td>딥핑 깊이 변동 허용</td><td>명확한 딥핑 마커 + 모세관 정지(capillary stop) 기하</td></tr>
+          <tr><td>운반 중 누수 0</td><td>밀폐 챔버 + 좁은 목 + (옵션) 기계적 차단</td></tr>
+          <tr><td>과/저충전 방지</td><td>고정 정량 챔버 + 오버플로우/벤트 경로</td></tr>
+          <tr><td>볼러스 쇼크 최소화</td><td>전달 목(neck) 유동 저항 튜닝</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="callout"><span class="ico">📚</span><p>사용 맥락·인체공학·유체 관련 <strong>원시 인사이트(수백 건)</strong>는 워크스페이스의 <em>테스터스틱</em> 페이지에 정리되어 있습니다. 본 위키는 그 인사이트를 설계 요구사항으로 압축한 것이며, 원본 링크는 08 페이지에 있습니다.</p></div>
+    </section>
+
+    <!-- 03 -->
+    <section class="page" id="p03">
+      <div class="page-emoji">🧩</div>
+      <h2 class="title">03 · 설계 컨셉 카탈로그</h2>
+      <p>9종(현재 문서화된 7종) 설계 컨셉을 <strong>비교 가능한 데이터베이스</strong>로 정리합니다. <strong>추천 등급 · 정량 부피 · 메커니즘 유형</strong>으로 정렬·필터하여 비교하세요. 각 행(컨셉)을 열면 단면 구조 · 모세관 유로 · 저장부 부피 산정 · 누수 방지 · 성형성 · 실패 모드 · 프로토타입 테스트가 상세히 정리되어 있습니다.</p>
+      <div class="callout info"><span class="ico">ℹ️</span><p>두 가지 평가 체계(심화 /50, 휴리스틱 가중)가 공존하며 <strong>스케일이 달라 총점을 직접 비교할 수 없습니다.</strong> 점수 해석은 04 페이지를 참고하세요.</p></div>
+
+      <h3>설계 컨셉 카탈로그 (DB · 7행)</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr>
+          <th>식별</th><th>컨셉명</th><th>메커니즘</th><th>정량부피(µL)</th><th>정량정확도</th><th>종합점수</th><th>추천등급</th><th>평가체계</th><th>핵심 강점</th><th>핵심 리스크</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td>#8</td><td><strong>모세관 링 컬렉터</strong></td><td><span class="mech">모세관</span></td><td>120</td><td>9</td><td>44</td>
+            <td><span class="badge b-green">⭐ 1순위</span></td><td>심화 /50</td>
+            <td>방사 대칭 수동 구조 · 정밀·UX·양산성 균형 최고</td><td>외주 오염/부분 링 막힘 → 비대칭·느린 충전</td>
+          </tr>
+          <tr>
+            <td>#6</td><td>모세관 콤(Comb) 팁</td><td><span class="mech">모세관</span></td><td>120</td><td>8</td><td>39</td>
+            <td><span class="badge b-blue">보조 후보</span></td><td>심화 /50</td>
+            <td>수동 모세관 콤 충전 · 단순 2-쉘 성형 · 양산성 우수</td><td>이물/버블로 타인(tine) 막힘 → 저충전 변동</td>
+          </tr>
+          <tr>
+            <td>#9</td><td>슬라이딩 게이트 정량 팁</td><td><span class="mech">슬라이딩게이트</span><span class="mech">정량챔버</span></td><td>119.7</td><td>8</td><td>37</td>
+            <td><span class="badge b-blue">보조 후보</span></td><td>심화 /50</td>
+            <td>기계적 잠금으로 누수저항 최고(9) · 운반 안정성</td><td>사용자 잠금 누락/오결합 → 운반 중 누수</td>
+          </tr>
+          <tr>
+            <td>#7</td><td>사이펀 정량 포켓</td><td><span class="mech">사이펀</span></td><td>120</td><td>7</td><td>35</td>
+            <td><span class="badge b-amber">조건부</span></td><td>심화 /50</td>
+            <td>사이펀 트리거로 정량 포켓 일괄 전달 · 양호한 누수저항(8)</td><td>낮은 딥핑 깊이에서 불일치 프라이밍 → 무충전/지연</td>
+          </tr>
+          <tr>
+            <td>H1</td><td>Metering Chamber + Overflow</td><td><span class="mech">정량챔버</span><span class="mech">오버플로우</span></td><td>122</td><td>—</td><td>30.6</td>
+            <td><span class="badge b-green">prototype</span></td><td>휴리스틱</td>
+            <td>고정 정량 챔버 + 오버플로우로 과충전 방지 · 최고 가중총점</td><td>챔버 벤트/오버플로우 경로 막힘 시 충전 편차</td>
+          </tr>
+          <tr>
+            <td>H2</td><td>Capillary Grid + Pad Transfer</td><td><span class="mech">그리드</span><span class="mech">모세관</span></td><td>118</td><td>—</td><td>24.7</td>
+            <td><span class="badge b-red">폐기/보류</span></td><td>휴리스틱</td>
+            <td>모세관 그리드로 샘플 패드 전달 균일화 시도</td><td>임계값 미달 · 전달 재현성 부족</td>
+          </tr>
+          <tr>
+            <td>H3</td><td>Rib Reservoir + Drip Trap</td><td><span class="mech">리브</span><span class="mech">드립트랩</span></td><td>112</td><td>—</td><td>24.3</td>
+            <td><span class="badge b-red">폐기/보류</span></td><td>휴리스틱</td>
+            <td>리브 저장부 + 드립 트랩으로 운반 누수 억제 시도</td><td>목표 120 µL 미달(112) · 임계값 미달</td>
+          </tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><span class="ico">📎</span><p>실제 Notion에서는 위 표가 정렬·필터·갤러리 보기가 가능한 라이브 데이터베이스로 표시됩니다. 본 미리보기는 정적 스냅샷입니다.</p></div>
+    </section>
+
+    <!-- 04 -->
+    <section class="page" id="p04">
+      <div class="page-emoji">📊</div>
+      <h2 class="title">04 · 컨셉 평가 &amp; 랭킹</h2>
+
+      <h3>평가 프레임은 2가지</h3>
+      <p>본 프로젝트에는 서로 다른 두 평가 체계가 공존합니다. <strong>스케일이 다르므로 두 체계의 총점을 직접 비교하지 마세요.</strong></p>
+
+      <h3>A. 심화 스코어카드 (/50) — 컨셉 #6–#9</h3>
+      <p>5개 차원 × 각 1–10점, 합계 50점.</p>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>컨셉</th><th>정량정확도</th><th>누수저항</th><th>UX단순성</th><th>성형성</th><th>LFA적심견고성</th><th>합계(/50)</th></tr></thead>
+        <tbody>
+          <tr><td>#6 모세관 콤(Comb) 팁</td><td>8</td><td>7</td><td>8</td><td>8</td><td>8</td><td>39</td></tr>
+          <tr><td>#7 사이펀 정량 포켓</td><td>7</td><td>8</td><td>6</td><td>7</td><td>7</td><td>35</td></tr>
+          <tr><td>#8 모세관 링 컬렉터</td><td>9</td><td>8</td><td>9</td><td>9</td><td>9</td><td><strong>44 ⭐</strong></td></tr>
+          <tr><td>#9 슬라이딩 게이트 정량 팁</td><td>8</td><td>9</td><td>6</td><td>6</td><td>8</td><td>37</td></tr>
+        </tbody>
+      </table></div>
+      <p><strong>추천 1순위: #8 (모세관 링 컬렉터, 44/50)</strong> — 정량 정밀도·UX·양산성·LFA 일관성의 균형이 최고이며, 방사 대칭 수동 구조라 학습 부담·스케일업 리스크가 낮음.</p>
+      <ul>
+        <li><strong>#9</strong> 슬라이딩 게이트 → 누수 요건이 수동 설계 한계보다 엄격해질 경우 <strong>병행 리스크 완화 트랙</strong></li>
+        <li><strong>#6</strong> 모세관 콤 → 링 툴링/오염 엣지케이스 발생 시 <strong>백업 수동 아키텍처</strong></li>
+        <li><strong>#7</strong> 사이펀 → EVT에서 프라이밍 견고성이 입증되면 <strong>조건부 후보</strong></li>
+      </ul>
+
+      <h3>B. 휴리스틱 가중 평가 — 평가 툴(lfa_ai_lab)</h3>
+      <p>6개 차원(각 1–5점)에 가중치를 적용한 합. 임계값: 프로토타입 ≥ 29.0, 탐색 ≥ 24.0.</p>
+      <p>가중치 — 정량정확도 1.3 · 성형성 1.0 · 버블견고성 1.1 · 캐리안정성 1.2 · 전달품질 1.3 · UX명료성 1.1</p>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>순위</th><th>컨셉</th><th>정량부피(µL)</th><th>가중총점</th><th>판정</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Metering Chamber + Overflow</td><td>122</td><td>30.6</td><td><span class="badge b-green">prototype</span></td></tr>
+          <tr><td>2</td><td>Capillary Grid + Pad Transfer</td><td>118</td><td>24.7</td><td><span class="badge b-red">discard</span></td></tr>
+          <tr><td>3</td><td>Rib Reservoir + Drip Trap</td><td>112</td><td>24.3</td><td><span class="badge b-red">discard</span></td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout warn"><span class="ico">⚠️</span><p>점수는 초기 스크리닝용 휴리스틱이며 <strong>물리적 증거가 아닙니다</strong>(프로젝트 규칙: "휴리스틱 점수를 물리적 증명으로 제시하지 말 것"). 다운셀렉트는 반드시 EVT 결과로 재검증합니다.</p></div>
+
+      <h3>종합 다운셀렉트 (현재)</h3>
+      <ol>
+        <li><strong>EVT 우선:</strong> #8(주력), #6(백업) — 수동·저복잡도</li>
+        <li><strong>병행 트랙:</strong> #9 — 누수 제어</li>
+        <li><strong>조건부:</strong> #7 — 프라이밍 입증 시</li>
+      </ol>
+      <p>각 컨셉의 상세 비교는 <strong>03 · 설계 컨셉 카탈로그</strong> 데이터베이스에서 정렬·필터하여 확인하세요.</p>
+    </section>
+
+    <!-- 05 -->
+    <section class="page" id="p05">
+      <div class="page-emoji">🏭</div>
+      <h2 class="title">05 · 제조성 &amp; 검증 계획</h2>
+
+      <h3>1. 사출성형 타당성 (컨셉별 요약)</h3>
+      <ul>
+        <li><strong>#6 콤:</strong> 2-쉘 몰드 강한 타당성. 콤 미세형상은 경화 인서트 툴링, 밀폐는 초음파 웰드 권장.</li>
+        <li><strong>#7 사이펀:</strong> 분할 채널 아키텍처로 가능. 크레스트/브레이크 형상 공차가 #6보다 타이트.</li>
+        <li><strong>#8 링:</strong> 평면 대칭 채널로 매우 몰드 친화적. 방사 대칭으로 재현성↑, 고속 조립·초음파 밀폐 호환.</li>
+        <li><strong>#9 슬라이딩 게이트:</strong> 가능하나 #6–#9 중 최고 복잡도. 슬라이딩 마찰·실 신뢰성 공차 필요, PP+POM 소재쌍 권장.</li>
+      </ul>
+
+      <h3>2. 검증 계획 (Validation Plan)</h3>
+      <h4>2.1 벤치 정량 테스트</h4>
+      <ul>
+        <li>중량식(gravimetric) 충전 검증 (n ≥ 60/변형) @ 15 / 25 / 35 °C</li>
+        <li>딥핑 깊이·시간 DOE: 얕음/표준/깊음 × 짧음/표준/긺</li>
+        <li>수용 기준 시작점: 평균 <strong>120 µL ± 10 µL, CV ≤ 8%</strong> (어세이 요구로 튜닝)</li>
+      </ul>
+      <h4>2.2 운반/누수 테스트</h4>
+      <ul>
+        <li>60초 보행 모션 프로파일 캐리 시뮬레이션</li>
+        <li>충전 후 흔들기·전도(inversion) 챌린지</li>
+        <li>팁·바디 외부 드롭릿 스코어링</li>
+      </ul>
+      <h4>2.3 LFA 전달/어세이 커플링 테스트</h4>
+      <ul>
+        <li>고정 삽입력에서 스트립 적심 프론트 도달 시간</li>
+        <li>채취 부피 산포 대비 밴드 강도 재현성</li>
+        <li>과충전/저충전 조건 대비 invalid 비율 매핑</li>
+      </ul>
+      <h4>2.4 제조 검증</h4>
+      <ul>
+        <li>핵심 미세형상 몰드 능력 연구 (채널 폭/높이 <strong>Cpk</strong>)</li>
+        <li>웰드 무결성 버스트/리크 테스트</li>
+        <li>#9 슬라이더 내구 사이클 테스트</li>
+      </ul>
+
+      <h3>3. 권장 프로토타입 순서</h3>
+      <ol>
+        <li><strong>EVT:</strong> #6 · #8 수동 컨셉 우선 (속도·저복잡도)</li>
+        <li><strong>병행 리스크 프로토타입:</strong> #9 누수 제어 트랙</li>
+        <li><strong>DVT 수렴:</strong> 누수 + 어세이 재현성 결과 기반</li>
+      </ol>
+
+      <h3>4. 컨셉 #9 파라메트릭 단면 (EVT 초기 추정)</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>영역</th><th>치수</th></tr></thead>
+        <tbody>
+          <tr><td>전체 폭 / 최대 두께</td><td>17.89 mm / 5.5 mm (고정)</td></tr>
+          <tr><td>두께 배분</td><td>상단쉘 1.2 · 유체코어 1.0–1.2 · 하단쉘 1.2 · 슬라이더/리브 ~1.9–2.1 mm</td></tr>
+          <tr><td>정량 저장부 (옵션 A)</td><td>13.3 × 9.0 × 1.0 mm ≈ 119.7 mm³</td></tr>
+          <tr><td>흡입 슬릿 높이</td><td>0.25–0.40 mm</td></tr>
+          <tr><td>슬라이더 스트로크</td><td>2.5–3.5 mm, LOCK 시 ≥0.8 mm 실링 오버랩</td></tr>
+          <tr><td>출구 목(neck)</td><td>폭 0.6–1.0 · 높이 0.20–0.40 · 길이 2.0–4.0 mm (유동 저항)</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout info"><span class="ico">ℹ️</span><p>1 µL = 1 mm³. 저장부 목표 순부피 <strong>120 mm³ ≈ 120 µL</strong>. 슬라이더 침범 시 평면 면적으로 보정.</p></div>
+    </section>
+
+    <!-- 06 -->
+    <section class="page" id="p06">
+      <div class="page-emoji">⚠️</div>
+      <h2 class="title">06 · 리스크 분석 (FMEA)</h2>
+
+      <h3>1. 컨셉별 상위 리스크 (FMEA 스타일)</h3>
+      <h4>#6 모세관 콤</h4>
+      <ul>
+        <li><strong>리스크:</strong> 이물/버블에 의한 타인(tine) 막힘</li>
+        <li><strong>영향:</strong> 저충전 변동</li>
+        <li><strong>완화:</strong> 매니폴드 목 확대, 타인 수 중복, 필터 립</li>
+      </ul>
+      <h4>#7 사이펀</h4>
+      <ul>
+        <li><strong>리스크:</strong> 낮은 딥핑 깊이에서 불일치 프라이밍</li>
+        <li><strong>영향:</strong> 무충전/지연 충전 이벤트</li>
+        <li><strong>완화:</strong> 명확한 딥핑 깊이 마크, 크레스트 형상 튜닝, 프라이밍 인디케이터</li>
+      </ul>
+      <h4>#8 링</h4>
+      <ul>
+        <li><strong>리스크:</strong> 외주(perimeter) 오염 / 부분 링 막힘</li>
+        <li><strong>영향:</strong> 비대칭·느린 충전</li>
+        <li><strong>완화:</strong> 다중 방사 피더 + 큰 링 유압 중복</li>
+      </ul>
+      <h4>#9 슬라이딩 게이트</h4>
+      <ul>
+        <li><strong>리스크:</strong> 사용자 잠금 누락 / 오결합</li>
+        <li><strong>영향:</strong> 운반 중 누수</li>
+        <li><strong>완화:</strong> 고대비 잠금 상태, 청각 클릭 디텐트, 잠금 상태 확인 리더기 인터록</li>
+      </ul>
+
+      <h3>2. 공통 제조 리스크</h3>
+      <ul>
+        <li>미세채널 플래시/버 → 모세관 압력 변화</li>
+        <li>로트 간 표면에너지 드리프트 → 적심(wetting) 변화</li>
+        <li>웰드 편차 → 내부 누수 경로 생성</li>
+      </ul>
+
+      <h3>3. 공통 완화 제어</h3>
+      <ul>
+        <li>미세형상 무결성 <strong>인라인 머신 비전</strong></li>
+        <li>표면 처리 공정 관리 + 주기적 <strong>접촉각(contact-angle) QA</strong></li>
+        <li>침수/압력차 <strong>100% 리크 테스트</strong> (실용 범위)</li>
+      </ul>
+      <div class="callout"><span class="ico">🔁</span><p>본 표는 설계 단계 위험 식별용입니다. 정식 위험관리(ISO 14971)와 사용성 위험(IEC 62366) 연계는 규제 워크플로우에서 별도 관리하세요.</p></div>
+    </section>
+
+    <!-- 07 -->
+    <section class="page" id="p07">
+      <div class="page-emoji">📖</div>
+      <h2 class="title">07 · 용어집 (Glossary)</h2>
+      <p>테스터스틱 위키에서 반복되는 핵심 용어입니다.</p>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>용어</th><th>영문</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>LFA / 측면유동분석</td><td>Lateral Flow Assay</td><td>멤브레인 위 모세관 흐름으로 표적을 검출하는 신속 진단 방식</td></tr>
+          <tr><td>딥핑</td><td>Dipping</td><td>스틱을 시료(소변)에 담가 채취하는 방식</td></tr>
+          <tr><td>정량</td><td>Metering</td><td>일정한 부피(목표 ~120 µL)를 재현성 있게 확보·전달</td></tr>
+          <tr><td>모세관</td><td>Capillary</td><td>미세 채널에서 표면장력으로 액체가 스스로 차오르는 현상</td></tr>
+          <tr><td>모세관 정지</td><td>Capillary stop</td><td>기하 변화로 모세관 흐름을 정지시켜 충전량을 고정</td></tr>
+          <tr><td>사이펀</td><td>Siphon</td><td>크레스트(crest)를 넘겨 액체를 끌어오는 U자형 유로</td></tr>
+          <tr><td>벤트</td><td>Vent</td><td>충전 시 내부 공기를 배출하는 경로</td></tr>
+          <tr><td>볼러스 쇼크</td><td>Bolus shock</td><td>시료가 한꺼번에 쏟아져 컨주게이트 존이 범람하는 현상</td></tr>
+          <tr><td>컨주게이트</td><td>Conjugate</td><td>표지 입자가 결합된 시약 영역</td></tr>
+          <tr><td>샘플 패드</td><td>Sample pad</td><td>시료가 처음 닿아 스트립으로 전달되는 흡수 패드</td></tr>
+          <tr><td>적심 프론트</td><td>Wet-front</td><td>멤브레인을 따라 전진하는 액체 경계</td></tr>
+          <tr><td>캐리(운반) 안정성</td><td>Carry stability</td><td>충전 후 이동 중 누수·흔들림에 견디는 정도</td></tr>
+          <tr><td>오버플로우</td><td>Overflow</td><td>과충전 시 초과 시료를 배출하는 경로</td></tr>
+          <tr><td>디텐트</td><td>Detent</td><td>슬라이더의 OPEN/LOCK 안정 위치를 잡아주는 걸림</td></tr>
+          <tr><td>EVT / DVT</td><td>Engineering / Design Verification Test</td><td>엔지니어링 검증 / 설계 검증 단계</td></tr>
+          <tr><td>DFM</td><td>Design for Manufacturing</td><td>양산성을 고려한 설계 최적화</td></tr>
+          <tr><td>FMEA</td><td>Failure Mode and Effects Analysis</td><td>고장 모드·영향 분석</td></tr>
+          <tr><td>Cpk</td><td>Process Capability Index</td><td>공정 능력 지수(미세형상 치수 산포 평가)</td></tr>
+          <tr><td>CV</td><td>Coefficient of Variation</td><td>변동계수(정량 재현성 지표)</td></tr>
+          <tr><td>호르몬 4종</td><td>LH·FSH·E3G·P3G</td><td>본 제품의 검사 대상 호르몬</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <!-- 08 -->
+    <section class="page" id="p08">
+      <div class="page-emoji">🔗</div>
+      <h2 class="title">08 · 관련 자료 &amp; 변경 이력</h2>
+
+      <h3>1. 워크스페이스 관련 자료</h3>
+      <ul>
+        <li><a href="https://www.notion.so/2affe74498448062b751cdb0797c45cd" target="_blank">테스터스틱 — 사용맥락·인체공학·유체 인사이트 원본</a></li>
+        <li><a href="https://www.notion.so/272fe744984480e09140f50000bb75d5" target="_blank">00_슈얼리오브제 WiKi — 제품 전체(리더기·앱 포함)</a></li>
+        <li><a href="https://www.notion.so/30dfe7449844803c88b6f0d6ada187b8" target="_blank">타사 LFA 테스터기 자료</a></li>
+        <li><a href="https://www.notion.so/345fe744984481458f27e3032ee9d752" target="_blank">슈얼리 오브제 | 사용성 엔지니어링 계획서</a></li>
+        <li><a href="https://www.notion.so/345fe744984481e782dff221adcd7bd0" target="_blank">슈얼리 오브제 | 상태 머신 및 예외처리 표</a></li>
+        <li><a href="https://www.notion.so/35afe74498448116aa15df3174cec733" target="_blank">Surearly SMART | PRD v2.0</a></li>
+      </ul>
+
+      <h3>2. 엔지니어링 소스 (git 저장소 mungbws1031/ai)</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>파일</th><th>내용</th></tr></thead>
+        <tbody>
+          <tr><td><code>concept_6_9_expansion.md</code></td><td>컨셉 #6–#9 심화(단면·유로·저장부·FMEA·스코어카드)</td></tr>
+          <tr><td><code>outputs/final_report.md</code></td><td>휴리스틱 평가 리포트(3종 컨셉 랭킹)</td></tr>
+          <tr><td><code>data/sample_concepts.json</code></td><td>컨셉 원천 데이터(메커니즘·실패모드·테스트·점수)</td></tr>
+          <tr><td><code>data/project_config.json</code></td><td>고정 제약·가중치·임계값</td></tr>
+          <tr><td><code>agents/</code> · <code>main.py</code></td><td>컨셉 평가 자동화 툴(lfa_ai_lab)</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>3. 변경 이력 (Changelog)</h3>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>날짜</th><th>버전</th><th>변경 내용</th><th>작성</th></tr></thead>
+        <tbody>
+          <tr><td>2026-05-24</td><td>v0.1</td><td>위키 초판 — 정의/요구사항/컨셉 카탈로그/평가/제조·검증/리스크/용어집 구성</td><td>초기 구축</td></tr>
+        </tbody>
+      </table></div>
+      <div class="callout"><span class="ico">✍️</span><p>새 컨셉·실험 결과는 <strong>03 설계 컨셉 카탈로그</strong> DB에 행으로 추가하고, 주요 의사결정은 이 변경 이력에 한 줄씩 남겨 주세요.</p></div>
+
+      <div class="footer-note">이 파일은 Notion 위키의 정적 HTML 미리보기입니다 · 생성일 2026-05-25</div>
+    </section>
+
+   </div>
+  </main>
+</div>
+
+<script>
+  const buttons = document.querySelectorAll('[data-target]');
+  const navButtons = document.querySelectorAll('#nav button');
+  function show(id){
+    document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active', p.id===id));
+    navButtons.forEach(b=>b.classList.toggle('active', b.dataset.target===id));
+    document.querySelector('.main').scrollTo(0,0);
+    window.scrollTo(0,0);
+    if(history.replaceState) history.replaceState(null,'','#'+id);
+  }
+  buttons.forEach(b=> b.addEventListener('click', ()=> show(b.dataset.target)));
+  const initial = (location.hash||'#home').slice(1);
+  if(document.getElementById(initial)) show(initial);
+</script>
+</body>
+</html>
