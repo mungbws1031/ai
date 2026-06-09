@@ -1,0 +1,13 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^\\[\\[" },
+    { "pattern": "^#" },
+    { "pattern": "^mailto:" }
+  ],
+  "replacementPatterns": [],
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "timeout": "20s",
+  "aliveStatusCodes": [200, 206, 999]
+}

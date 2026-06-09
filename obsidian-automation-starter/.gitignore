@@ -1,0 +1,26 @@
+# --- Obsidian: workspace state(개인 환경) 제외, 설정·플러그인은 추적 ---
+.obsidian/workspace
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/.DS_Store
+
+# 플러그인별 일시 데이터 — 필요 시 주석 해제
+# .obsidian/plugins/*/data.json
+
+# --- 휴지통 ---
+.trash/
+**/.trash/
+
+# --- OS / 에디터 부산물 ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.tmp
+*.bak
+*~
+
+# --- 첨부 자동 정리 시 임시 파일 ---
+*.crdownload
+*.part

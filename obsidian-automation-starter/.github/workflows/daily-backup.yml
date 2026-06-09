@@ -1,0 +1,37 @@
+name: Daily Backup Tag
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # 매일 00:00 UTC (한국시간 09:00)
+  workflow_dispatch:       # 수동 실행 버튼
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create dated backup tag
+        run: |
+          set -euo pipefail
+          DATE=$(date -u +%Y-%m-%d)
+          TAG="backup/${DATE}"
+
+          if git rev-parse --verify "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — skipping."
+            exit 0
+          fi
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$TAG" -m "Daily vault backup ${DATE}"
+          git push origin "$TAG"
+
+          echo "Created backup tag: $TAG"
