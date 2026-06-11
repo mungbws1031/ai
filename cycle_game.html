@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CYCLE · 28일의 연애</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#16161f; --card:#1E2030; --card2:#262a3d;
+    --ink:#F5F5F5; --ink-dim:#A6A5A5; --line:#34384e;
+    --su-red:#E60044; --rose:#FF6FA5; --amber:#E8A05C; --teal:#4FB0C6;
+    --accent:#FF99B2;            /* phase accent, JS가 바꿈 */
+    --accent-soft:#3a2a36;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Nunito',system-ui,sans-serif;
+    line-height:1.55; -webkit-font-smoothing:antialiased;
+    display:flex; justify-content:center; padding:18px;
+  }
+  .app{width:100%; max-width:480px}
+  .mono{font-family:'Space Mono',monospace}
+  .display{font-family:'Fraunces',Georgia,serif}
+
+  /* ---------- 공통 카드 ---------- */
+  .card{background:var(--card); border:1px solid var(--line);
+    border-radius:18px; padding:18px; margin-bottom:14px;}
+
+  /* ---------- 인트로 ---------- */
+  #intro{text-align:center; padding-top:24px}
+  #intro .kicker{font-family:'Space Mono',monospace; letter-spacing:.22em;
+    font-size:11px; color:var(--accent); text-transform:uppercase}
+  #intro h1{font-family:'Fraunces',serif; font-weight:600;
+    font-size:46px; line-height:1.0; margin:10px 0 4px;
+    background:linear-gradient(120deg,#fff 30%,var(--su-red));
+    -webkit-background-clip:text; background-clip:text; color:transparent;}
+  #intro h1 .heart{ -webkit-text-fill-color:var(--su-red); font-size:34px; vertical-align:8px}
+  #intro .sub{color:var(--ink-dim); font-size:15px; max-width:330px; margin:6px auto 22px}
+  .premise{background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:18px; text-align:left; font-size:14px; margin-bottom:18px}
+  .premise b{color:var(--accent)}
+  .cast{display:flex; gap:16px; justify-content:center; margin:2px 0 20px}
+  .cast .ci{text-align:center}
+  .cast .pf{width:76px;height:76px;border-radius:50%;overflow:hidden;margin:0 auto 7px;
+    box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .cast .pf svg{display:block}
+  .cast .cn{font-size:12.5px;font-weight:800}
+  .cast .ct{font-size:9.5px;color:var(--ink-dim);font-family:'Space Mono';letter-spacing:.08em}
+  .name-row{display:flex; gap:8px; margin:14px 0 4px}
+  .name-row input{flex:1; background:var(--card2); border:1px solid var(--line);
+    color:var(--ink); border-radius:12px; padding:12px 14px; font-family:'Nunito';
+    font-size:15px; outline:none}
+  .name-row input:focus{border-color:var(--accent)}
+  .btn{background:var(--su-red); color:#fff; border:none; border-radius:13px;
+    padding:14px 20px; font-family:'Nunito'; font-weight:800; font-size:15px;
+    cursor:pointer; width:100%; transition:transform .08s, filter .15s}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:scale(.985)}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--ink-dim)}
+  .btn.resume{background:transparent; border:1px solid var(--accent); color:var(--accent); margin-bottom:10px}
+  .legend-mini{display:flex; gap:14px; justify-content:center; flex-wrap:wrap;
+    margin-top:18px; font-size:11px; color:var(--ink-dim)}
+  .legend-mini span{display:inline-flex; align-items:center; gap:5px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+  /* ---------- 헤더 (게임중) ---------- */
+  .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .day-badge{font-family:'Space Mono',monospace; font-size:13px; color:var(--ink-dim)}
+  .day-badge b{color:var(--ink); font-size:15px}
+  .phase-pill{font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.06em;
+    padding:5px 11px; border-radius:20px; background:var(--accent-soft);
+    color:var(--accent); border:1px solid var(--accent)}
+
+  /* ---------- 호르몬 차트 (시그니처) ---------- */
+  .chart-wrap{position:relative}
+  .chart-title{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px}
+  .chart-title .t{font-size:12px; color:var(--ink-dim); font-family:'Space Mono'}
+  svg.chart{width:100%; height:120px; display:block}
+  .hvals{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:8px}
+  .hval{background:var(--card2); border-radius:10px; padding:7px 4px; text-align:center}
+  .hval .k{font-size:10px; font-family:'Space Mono'; letter-spacing:.04em}
+  .hval .v{font-size:15px; font-weight:800; font-family:'Space Mono'}
+
+  /* ---------- 에너지(컨디션) ---------- */
+  .energy{display:flex; align-items:center; gap:10px; margin-top:12px}
+  .energy .lbl{font-size:11px; font-family:'Space Mono'; color:var(--ink-dim); letter-spacing:.06em; white-space:nowrap}
+  .energy .track{flex:1; height:9px; background:var(--card2); border-radius:6px; overflow:hidden}
+  .energy .fill{height:100%; border-radius:6px; transition:width .5s ease, background .4s}
+  .energy .num{font-family:'Space Mono'; font-size:12px; color:var(--ink-dim); width:30px; text-align:right}
+
+  /* ---------- 오늘의 나 ---------- */
+  .mood{display:flex; gap:12px; align-items:flex-start; background:var(--accent-soft);
+    border:1px solid var(--accent); border-radius:14px; padding:12px 14px}
+  .mood .emoji{font-size:26px; line-height:1}
+  .mood .mtext{font-size:13.5px}
+  .mood .mtext b{color:var(--accent)}
+  .mood .signal{margin-top:7px; font-size:12px; color:var(--ink-dim); font-family:'Space Mono'}
+  .mood .signal b{color:var(--ink); font-weight:700}
+
+  /* ---------- 씬 ---------- */
+  .scene .who{display:flex; align-items:center; gap:12px; margin-bottom:12px}
+  .portrait{width:64px;height:64px;flex:none;border-radius:50%;overflow:hidden;
+    box-shadow:0 4px 14px rgba(0,0,0,.45)}
+  .portrait svg{display:block}
+  .who .meta{flex:1}
+  .who .meta .nm{font-weight:800; font-size:15px}
+  .who .meta .tg{font-size:11px; color:var(--ink-dim); font-family:'Space Mono'}
+  .who .stagechip{font-family:'Space Mono'; font-size:10px; letter-spacing:.06em;
+    border:1px solid var(--line); border-radius:20px; padding:3px 9px; color:var(--ink-dim); white-space:nowrap}
+  .event-tag{display:inline-block; font-family:'Space Mono'; font-size:10px; letter-spacing:.1em;
+    color:var(--accent); border:1px solid var(--accent); border-radius:20px; padding:3px 10px; margin-bottom:10px}
+  .bubble{position:relative; background:var(--card2); border:1px solid var(--line);
+    border-radius:5px 16px 16px 16px; padding:13px 15px; font-size:14.5px; line-height:1.62;
+    margin:0 0 14px 6px; min-height:40px}
+  .bubble::after{content:''; position:absolute; left:-10px; top:13px; width:0;height:0;
+    border:6px solid transparent; border-right-color:var(--line); border-left:0}
+  .bubble::before{content:''; position:absolute; left:-8px; top:14px; width:0;height:0;
+    border:5px solid transparent; border-right-color:var(--card2); border-left:0; z-index:1}
+  .bubble .narr{color:var(--ink-dim); font-style:italic; font-size:13px}
+  .bubble.reply{background:var(--accent-soft); border-color:var(--accent)}
+  .bubble.reply::after{border-right-color:var(--accent)}
+  .bubble.reply::before{border-right-color:var(--accent-soft)}
+  .choices{display:flex; flex-direction:column; gap:9px}
+  .choice{background:var(--card2); border:1px solid var(--line); color:var(--ink);
+    text-align:left; border-radius:12px; padding:12px 44px 12px 14px; font-family:'Nunito';
+    font-size:14px; cursor:pointer; transition:border-color .15s, background .15s; position:relative}
+  .choice:hover{border-color:var(--accent); background:#2c3146}
+  .choice .tone{position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    font-size:9px; font-family:'Space Mono'; color:var(--ink-dim); letter-spacing:.05em;
+    border:1px solid var(--line); border-radius:8px; padding:2px 6px; white-space:nowrap}
+  .choice .cost{position:absolute; right:10px; bottom:-9px; font-size:8.5px; font-family:'Space Mono'; color:var(--teal)}
+  .result{font-size:14px; padding:4px 2px}
+  .result .gain{color:var(--accent); font-weight:800; font-family:'Space Mono'}
+  .result .gain.neg{color:var(--su-red)}
+  .result .edu{margin-top:8px; font-size:12.5px; color:var(--ink-dim);
+    border-left:2px solid var(--accent); padding-left:10px}
+
+  /* ---------- 호감도 ---------- */
+  .aff-title{font-size:11px; font-family:'Space Mono'; color:var(--ink-dim);
+    letter-spacing:.1em; margin-bottom:10px; text-transform:uppercase}
+  .aff{display:flex; align-items:center; gap:10px; margin-bottom:10px}
+  .aff .nm{width:54px; font-size:12.5px; font-weight:700}
+  .aff .track{flex:1; height:8px; background:var(--card2); border-radius:6px; overflow:hidden; position:relative}
+  .aff .fill{height:100%; border-radius:6px; transition:width .5s ease}
+  .aff .st{width:34px; font-size:9.5px; font-family:'Space Mono'; color:var(--ink-dim); text-align:center}
+  .aff .pct{width:26px; text-align:right; font-family:'Space Mono'; font-size:12px; color:var(--ink-dim)}
+
+  /* ---------- 퀴즈 ---------- */
+  .modal-bg{position:fixed; inset:0; background:rgba(8,8,14,.72);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:20}
+  .modal{background:var(--card); border:1px solid var(--accent); border-radius:18px;
+    padding:20px; max-width:400px; width:100%}
+  .modal .qk{font-family:'Space Mono'; font-size:11px; color:var(--su-red); letter-spacing:.12em}
+  .modal h3{font-family:'Fraunces',serif; font-weight:600; font-size:19px; margin:6px 0 14px}
+  .qopt{background:var(--card2); border:1px solid var(--line); color:var(--ink);
+    border-radius:11px; padding:11px 14px; width:100%; text-align:left; margin-bottom:8px;
+    cursor:pointer; font-family:'Nunito'; font-size:14px}
+  .qopt:hover{border-color:var(--accent)}
+  .qopt.right{border-color:#4CAF50; background:#1f3326}
+  .qopt.wrong{border-color:var(--su-red); background:#33181f}
+  .qexp{font-size:13px; color:var(--ink-dim); margin:10px 0 14px;
+    border-left:2px solid var(--accent); padding-left:10px}
+
+  /* ---------- 업적 토스트 ---------- */
+  #toastWrap{position:fixed; left:0; right:0; top:14px; display:flex; flex-direction:column;
+    align-items:center; gap:8px; z-index:40; pointer-events:none}
+  .toast{background:var(--card2); border:1px solid var(--accent); border-radius:14px;
+    padding:10px 16px; display:flex; align-items:center; gap:10px; max-width:340px;
+    box-shadow:0 8px 26px rgba(0,0,0,.5); animation:toastIn .35s ease both}
+  .toast .ti{font-size:22px}
+  .toast .tk{font-family:'Space Mono'; font-size:9.5px; letter-spacing:.12em; color:var(--accent)}
+  .toast .tn{font-weight:800; font-size:14px}
+  .toast .td{font-size:11px; color:var(--ink-dim)}
+  @keyframes toastIn{0%{opacity:0; transform:translateY(-12px) scale(.96)}100%{opacity:1; transform:none}}
+
+  /* ---------- 엔딩 ---------- */
+  #ending{text-align:center}
+  .end-card{border-radius:20px; padding:26px 20px; margin-bottom:14px;
+    background:linear-gradient(160deg,var(--card2),var(--card))}
+  .end-card .av{width:84px;height:84px;border-radius:50%; margin:0 auto 12px; overflow:hidden;
+    display:flex;align-items:center;justify-content:center; font-family:'Fraunces';
+    font-weight:600; font-size:34px; color:#fff}
+  .end-card .av svg{display:block}
+  .end-card .et{font-family:'Space Mono'; font-size:11px; color:var(--ink-dim); letter-spacing:.12em}
+  .end-card h2{font-family:'Fraunces',serif; font-weight:600; font-size:26px; margin:6px 0}
+  .end-card .efl{font-size:14px; color:var(--ink-dim); max-width:300px; margin:8px auto 0}
+  .persona{background:var(--accent-soft); border:1px solid var(--accent); border-radius:14px;
+    padding:14px; font-size:14px; margin-bottom:14px}
+  .persona b{color:var(--accent)}
+  .recap{text-align:left; font-size:13px}
+  .recap .r{display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); align-items:center}
+  .recap .r:last-child{border:none}
+  .recap .rk{font-family:'Space Mono'; font-weight:700; min-width:42px}
+  .ach-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; text-align:left}
+  .ach{display:flex; gap:9px; align-items:center; background:var(--card2); border:1px solid var(--line);
+    border-radius:12px; padding:9px 10px}
+  .ach.locked{opacity:.4}
+  .ach .ai{font-size:20px}
+  .ach .an{font-size:12px; font-weight:800}
+  .ach .ad{font-size:10px; color:var(--ink-dim)}
+  .bodylog{text-align:left; font-size:12.5px; color:var(--ink-dim); line-height:1.9}
+  .bodylog .d{font-family:'Space Mono'; color:var(--ink)}
+  .cta{background:linear-gradient(120deg,var(--su-red),#ff3d6e); border-radius:16px;
+    padding:18px; margin:14px 0; text-align:left}
+  .cta .ck{font-family:'Space Mono'; font-size:10px; letter-spacing:.14em; opacity:.85}
+  .cta h3{font-family:'Fraunces',serif; font-weight:600; font-size:18px; margin:6px 0 4px}
+  .cta p{font-size:13px; margin:0 0 12px; opacity:.95}
+  .cta button{background:#fff; color:var(--su-red); border:none; border-radius:11px;
+    padding:11px 16px; font-weight:800; font-family:'Nunito'; cursor:pointer; font-size:14px}
+
+  .disc{font-size:10.5px; color:#6b6b78; text-align:center; margin-top:14px;
+    font-family:'Space Mono'; line-height:1.7}
+  .hide{display:none}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ 인트로 ============ -->
+  <section id="intro">
+    <div class="kicker">SUREARLY × FEMTECH ROMANCE</div>
+    <h1 class="display">CYCLE <span class="heart">♥</span></h1>
+    <div class="sub">내 호르몬이 그날의 마음을 정한다 — 28일의 연애 시뮬레이션</div>
+
+    <div class="premise">
+      28일 동안 네 가지 호르몬 <b>FSH · E3G · LH · P3G</b>가 오르내려요.
+      그날의 호르몬이 곧 <b>"오늘의 나"</b> — 대담해지는 날도, 차분해지는 날도 있죠.
+      세 사람과의 연애에서 <b>같은 선택도 호르몬 상태에 따라 결과가 달라집니다.</b><br><br>
+      <b>컨디션(에너지)</b>을 관리하고, <b>호감도가 깊어지면</b> 고백·설렘 이벤트가 열려요.
+      내 주기를 읽으면, 연애도 보여요.
+    </div>
+
+    <div class="cast" id="cast"></div>
+
+    <div class="name-row">
+      <input id="playerName" maxlength="6" placeholder="내 이름 (선택)">
+    </div>
+    <button class="btn resume hide" id="resumeBtn" onclick="resumeGame()">이어하기 (DAY <span id="resumeDay">1</span>)</button>
+    <button class="btn" onclick="startGame()">28일 시작하기</button>
+
+    <div class="legend-mini">
+      <span><i class="dot" style="background:var(--teal)"></i>FSH</span>
+      <span><i class="dot" style="background:var(--rose)"></i>E3G</span>
+      <span><i class="dot" style="background:var(--su-red)"></i>LH</span>
+      <span><i class="dot" style="background:var(--amber)"></i>P3G</span>
+    </div>
+    <div id="achTeaser" class="legend-mini" style="margin-top:8px"></div>
+    <div class="disc">게임용으로 단순화한 모델입니다 · 의학적 조언이 아니에요</div>
+  </section>
+
+  <!-- ============ 게임 ============ -->
+  <section id="game" class="hide">
+    <div class="top">
+      <div class="day-badge">DAY <b id="dayNum">1</b> <span style="opacity:.5">/ 28</span>
+        <span id="cycleBadge" class="hide" style="color:var(--accent)"></span></div>
+      <div class="phase-pill" id="phasePill">월경기</div>
+    </div>
+
+    <!-- 차트 -->
+    <div class="card chart-wrap">
+      <div class="chart-title">
+        <span class="t">오늘의 호르몬 곡선</span>
+        <span class="t" id="todayMarkerLabel">today ▾</span>
+      </div>
+      <svg class="chart" id="chart" viewBox="0 0 280 110" preserveAspectRatio="none"></svg>
+      <div class="hvals" id="hvals"></div>
+      <div class="energy">
+        <span class="lbl">컨디션</span>
+        <div class="track"><div class="fill" id="energyFill"></div></div>
+        <span class="num" id="energyNum">60</span>
+      </div>
+    </div>
+
+    <!-- 오늘의 나 -->
+    <div class="card" style="padding:0; border:none; background:transparent; margin-bottom:14px">
+      <div class="mood">
+        <div class="emoji" id="moodEmoji">🌙</div>
+        <div class="mtext">
+          <div id="moodText"></div>
+          <div class="signal" id="bodySignal"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 씬 -->
+    <div class="card scene" id="sceneCard">
+      <div id="eventTag" class="event-tag hide"></div>
+      <div class="who">
+        <div class="portrait" id="avatar"></div>
+        <div class="meta">
+          <div class="nm" id="suitorName">—</div>
+          <div class="tg" id="suitorTag">—</div>
+        </div>
+        <div class="stagechip" id="suitorStage">지인</div>
+      </div>
+      <div class="bubble" id="sceneLine"></div>
+      <div class="choices" id="choices"></div>
+      <div id="afterChoice" class="hide"></div>
+    </div>
+
+    <!-- 호감도 -->
+    <div class="card">
+      <div class="aff-title">호감도 · 관계 단계</div>
+      <div id="affBars"></div>
+    </div>
+  </section>
+
+  <!-- ============ 엔딩 ============ -->
+  <section id="ending" class="hide"></section>
+
+  <!-- 퀴즈 모달 마운트 -->
+  <div id="quizMount"></div>
+</div>
+<div id="toastWrap"></div>
+
+<script>
+/* ===================== 데이터 ===================== */
+const SUITORS = {
+  dohyun:{ key:'dohyun', name:'차도현', age:29, tag:'차분한 연상 · 신뢰', color:'#E8A05C', synergy:'p3g',
+           init:'차', blurb:'말수는 적지만 늘 곁을 지키는 사람' },
+  yunjae:{ key:'yunjae', name:'윤재', age:25, tag:'햇살 사교형 · 밝음', color:'#FF6FA5', synergy:'e3g',
+           init:'윤', blurb:'어디서든 분위기를 띄우는 사람' },
+  gunwoo:{ key:'gunwoo', name:'건우', age:27, tag:'열정 · 직진', color:'#E60044', synergy:'lh',
+           init:'건', blurb:'한번 꽂히면 거침없이 다가오는 사람' },
+};
+const HKEYS=['fsh','e3g','lh','p3g'];
+const HCOLOR={fsh:'#4FB0C6', e3g:'#FF6FA5', lh:'#E60044', p3g:'#E8A05C'};
+const HNAME={fsh:'FSH', e3g:'E3G', lh:'LH', p3g:'P3G'};
+const SAVE_KEY='cycle_save_v2';
+const ACH_KEY='cycle_ach_v2';
+
+/* ===== 캐릭터 얼굴 (웹툰풍 SVG) ===== */
+const _FACE='M42,50 C40,32 49,22 60,22 C71,22 80,32 78,50 C81,62 77,76 70,85 C66,91 62,94 60,94 C58,94 54,91 50,85 C43,76 39,62 42,50 Z';
+const _CROWN='M34,64 C31,28 46,13 60,13 C74,13 89,28 86,64 C86,56 84,49 80,45 L40,45 C36,49 34,56 34,64 Z';
+const SOFT_EYES=`
+ <path d="M45,59 Q51,54 57,59 Q51,63 45,59 Z" fill="#fff"/>
+ <path d="M63,59 Q69,54 75,59 Q69,63 63,59 Z" fill="#fff"/>
+ <circle cx="51.5" cy="58.6" r="3" fill="#3a261a"/><circle cx="68.5" cy="58.6" r="3" fill="#3a261a"/>
+ <circle cx="52.6" cy="57.4" r="1" fill="#fff"/><circle cx="69.6" cy="57.4" r="1" fill="#fff"/>
+ <path d="M45,58 Q51,53 57,58" stroke="#231711" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+ <path d="M63,58 Q69,53 75,58" stroke="#231711" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+const SHARP_EYES=`
+ <path d="M45,59 Q51,56 57,58 Q51,62 45,59 Z" fill="#fff"/>
+ <path d="M63,58 Q69,56 75,59 Q69,62 63,59 Z" fill="#fff"/>
+ <circle cx="51.5" cy="58.8" r="2.8" fill="#2a1a12"/><circle cx="68.5" cy="58.8" r="2.8" fill="#2a1a12"/>
+ <circle cx="52.5" cy="57.8" r="0.9" fill="#fff"/><circle cx="69.5" cy="57.8" r="0.9" fill="#fff"/>
+ <path d="M44,57 L57,56" stroke="#1a0f0a" stroke-width="1.9" fill="none" stroke-linecap="round"/>
+ <path d="M63,56 L76,57" stroke="#1a0f0a" stroke-width="1.9" fill="none" stroke-linecap="round"/>`;
+const FACECFG={
+  dohyun:{ skin:'#E6C09A', shade:'#cda47c', hair:'#2A2018', hair2:'#473527', accent:'#E8A05C',
+    bgA:'#3b3550', bgB:'#191525', cloth:'#2b2f44', eyeType:'soft',
+    brows:'<path d="M45,52.5 L56,51.5" stroke="#241a12" stroke-width="2" stroke-linecap="round"/><path d="M64,51.5 L75,52.5" stroke="#241a12" stroke-width="2" stroke-linecap="round"/>',
+    mouth:'<path d="M55,77 Q60,79 65,77" stroke="#9c5340" stroke-width="1.6" fill="none" stroke-linecap="round"/>',
+    bangs:'<path d="M39,45 C38,55 43,60 51,55 C46,53 45,48 48,44 Z" fill="HAIR"/><path d="M51,43 C50,53 56,58 64,53 C58,51 56,47 59,43 Z" fill="HAIR"/><path d="M64,43 C64,51 70,55 77,49 C71,49 68,46 70,43 Z" fill="HAIR"/><path d="M37,47 C39,40 46,38 53,41 C46,42 42,45 40,50 Z" fill="HAIR"/>',
+    extra:'' },
+  yunjae:{ skin:'#F1CFB2', shade:'#dbab8a', hair:'#5A3D28', hair2:'#7a563a', accent:'#FF6FA5',
+    bgA:'#3a2e44', bgB:'#1d1622', cloth:'#3a2b3a', eyeType:'soft',
+    brows:'<path d="M45,53 Q50.5,50 56,52" stroke="#43301e" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M64,52 Q69.5,50 75,53" stroke="#43301e" stroke-width="2" fill="none" stroke-linecap="round"/>',
+    mouth:'<path d="M54,76 Q60,82 66,76 Q60,79 54,76 Z" fill="#c2604a"/>',
+    bangs:'<path d="M41,44 C40,52 45,57 51,53 C47,51 46,47 49,43 Z" fill="HAIR"/><path d="M50,43 C49,51 54,56 60,52 C56,50 55,46 57,42 Z" fill="HAIR"/><path d="M60,42 C59,50 65,55 71,51 C66,49 64,46 66,42 Z" fill="HAIR"/><path d="M70,43 C70,50 75,54 79,49 C74,48 72,46 73,43 Z" fill="HAIR"/>',
+    extra:'<ellipse cx="48" cy="69" rx="4.5" ry="2.6" fill="#FF6FA5" opacity="0.32"/><ellipse cx="72" cy="69" rx="4.5" ry="2.6" fill="#FF6FA5" opacity="0.32"/>' },
+  gunwoo:{ skin:'#DAB387', shade:'#bb8f63', hair:'#171210', hair2:'#332620', accent:'#E60044',
+    bgA:'#3a2630', bgB:'#1a1018', cloth:'#33232a', eyeType:'sharp',
+    brows:'<path d="M44,53.5 L56,50.5" stroke="#120c08" stroke-width="2.6" stroke-linecap="round"/><path d="M64,50.5 L76,53.5" stroke="#120c08" stroke-width="2.6" stroke-linecap="round"/>',
+    mouth:'<path d="M55,78 Q61,79.5 66,76" stroke="#9c4338" stroke-width="1.7" fill="none" stroke-linecap="round"/>',
+    bangs:'<path d="M42,44 C42,51 46,53 50,49 C47,48 46,45 47,42 Z" fill="HAIR"/><path d="M52,43 L56,50 L60,43 Z" fill="HAIR"/><path d="M61,43 L65,50 L69,43 Z" fill="HAIR"/><path d="M71,43 C71,50 75,52 78,48 C74,47 73,45 73,43 Z" fill="HAIR"/>',
+    extra:'<circle cx="79" cy="67" r="1.8" fill="#E60044"/>' },
+};
+function faceSVG(key,size){
+  size=size||64; const c=FACECFG[key]; const hair=c.bangs.replace(/HAIR/g,c.hair);
+  const eyes=c.eyeType==='sharp'?SHARP_EYES:SOFT_EYES;
+  return `<svg viewBox="0 0 120 120" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+  <defs><radialGradient id="bg_${key}" cx="50%" cy="30%" r="80%"><stop offset="0" stop-color="${c.bgA}"/><stop offset="1" stop-color="${c.bgB}"/></radialGradient></defs>
+  <circle cx="60" cy="60" r="59" fill="url(#bg_${key})"/>
+  <clipPath id="cl_${key}"><circle cx="60" cy="60" r="59"/></clipPath>
+  <g clip-path="url(#cl_${key})">
+    <path d="M20,124 Q60,88 100,124 Z" fill="${c.cloth}"/>
+    <path d="M53,82 L53,98 L67,98 L67,82 Z" fill="${c.shade}"/>
+    <path d="${_FACE}" fill="${c.skin}"/>
+    <ellipse cx="42" cy="62" rx="4.6" ry="7" fill="${c.skin}"/><ellipse cx="78" cy="62" rx="4.6" ry="7" fill="${c.skin}"/>
+    <path d="${_CROWN}" fill="${c.hair}"/>
+    <path d="M45,26 Q57,19 71,24" stroke="${c.hair2}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity="0.75"/>
+    ${hair}${eyes}${c.brows}
+    <path d="M60,61 L57.5,68 Q60,69.5 62.5,68" stroke="${c.shade}" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    ${c.mouth}${c.extra}
+  </g>
+  <circle cx="60" cy="60" r="57.5" fill="none" stroke="${c.accent}" stroke-width="2.5" stroke-opacity="0.9"/>
+  </svg>`;
+}
+
+/* 단계 색 (UI 액센트가 단계 따라 바뀜 = 시그니처) */
+const PHASES=[
+  {key:'menstrual', label:'월경기', accent:'#7C8AA5', soft:'#23293a', emoji:'🌙',
+   mood:'호르몬이 전반적으로 낮은 <b>리셋 구간</b>. 컨디션이 들쭉날쭉하니 무리한 선택은 손해예요.',
+   favor:['차분'], penal:['대담']},
+  {key:'follicular', label:'난포기', accent:'#FF99B2', soft:'#3a2a36', emoji:'🌸',
+   mood:'<b>E3G(에스트로겐)</b>가 오르며 생기·사교성·자신감이 올라오는 시기. 활동적인 데이트가 잘 통해요.',
+   favor:['사교','대담'], penal:[]},
+  {key:'ovulatory', label:'배란기', accent:'#E60044', soft:'#33181f', emoji:'🔥',
+   mood:'<b>LH가 surge</b>! 매력과 대담함이 피크. 직진하기 좋은, 결정적인 날이에요.',
+   favor:['대담','솔직'], penal:[]},
+  {key:'luteal', label:'황체기', accent:'#E8A05C', soft:'#32281c', emoji:'🍯',
+   mood:'<b>P3G(프로게스테론)</b>가 지배하는 안정·돌봄 모드. 깊고 솔직한 대화가 마음을 움직여요.',
+   favor:['차분','솔직'], penal:['대담']},
+];
+function phaseOf(day){
+  if(day<=5) return PHASES[0];
+  if(day<=12) return PHASES[1];
+  if(day<=15) return PHASES[2];
+  return PHASES[3];
+}
+/* 단계별 컨디션 변화 & 몸 신호(교육) */
+const PHASE_ENERGY={menstrual:-7, follicular:9, ovulatory:13, luteal:2};
+const BODY_SIGNAL={
+  menstrual:['아랫배가 묵직하고 쉽게 지쳐요','따뜻한 게 당기는 날','평소보다 잠이 필요해요'],
+  follicular:['피부 컨디션이 맑아요','기운이 차오르는 느낌','집중이 잘 되는 날'],
+  ovulatory:['기초체온이 살짝 높아요','말수가 늘고 에너지가 넘쳐요','컨디션 피크의 하루'],
+  luteal:['단 게 자꾸 당겨요','감정 기복이 생기기 쉬워요','몸이 붓고 나른해요'],
+};
+
+/* ----- 호르몬 모델 (정규화 0~100, 실제 곡선 근사) ----- */
+function gauss(x,mu,sig,amp){ return amp*Math.exp(-((x-mu)**2)/(2*sig*sig)); }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function hormonesAt(d){
+  return {
+    fsh: Math.round(clamp(22 + gauss(d,2,2.6,18) + gauss(d,13.5,1.6,28),5,100)),
+    e3g: Math.round(clamp(15 + gauss(d,12.5,3.2,82) + gauss(d,21,4.2,38),5,100)),
+    lh:  Math.round(clamp(12 + gauss(d,13.6,0.95,92),5,100)),
+    p3g: Math.round(clamp(8  + gauss(d,21,4.6,84),3,100)),
+  };
+}
+const CURVE=[]; for(let d=1;d<=28;d++) CURVE.push(Object.assign({day:d},hormonesAt(d)));
+
+/* ----- 관계 단계 ----- */
+const STAGES=[{min:0,label:'지인',icon:'·'},{min:30,label:'호감',icon:'♡'},
+              {min:60,label:'설렘',icon:'♥'},{min:85,label:'연인',icon:'❤'}];
+function stageIdx(v){ let idx=0; for(let i=0;i<STAGES.length;i++) if(v>=STAGES[i].min) idx=i; return idx; }
+function stageOf(v){ return STAGES[stageIdx(v)]; }
+
+/* ----- 일상 씬 풀 (남주별, 확장) ----- */
+const SCENES=[
+  // ===== 도현 (차분/연상) =====
+  {s:'dohyun', text:'<span class="narr">퇴근길, 도현이 우산을 반쯤 기울여 네 쪽으로 씌운다.</span> "비 와. ...같이 갈래?"',
+   c:[{t:'차분', label:'"좋아요. 천천히 가요." 보폭을 맞춘다', r:'도현이 살짝 입꼬리를 올린다. "...어, 천천히 가자."'},
+      {t:'대담', label:'"우산 하나면 너무 가깝잖아요?" 장난친다', r:'"그게 싫진 않은데." 도현이 드물게 농담을 받아친다.'},
+      {t:'솔직', label:'"오늘 좀 지쳤어요" 솔직히 말한다', r:'도현이 말없이 걸음을 늦춘다. "...그럼 더 천천히."'}]},
+  {s:'dohyun', text:'<span class="narr">늦은 카페. 도현이 네 노트북 화면을 슬쩍 본다.</span> "이거, 내가 도와줄까."',
+   c:[{t:'솔직', label:'"사실 막막했어요. 부탁해요"', r:'"그래. 같이 보자." 든든한 목소리.'},
+      {t:'차분', label:'"옆에만 있어줘요"', r:'도현이 조용히 자리를 지킨다. 그것만으로 마음이 놓인다.'},
+      {t:'대담', label:'"도와주면 뭐 해줄 건데요?"', r:'도현이 헛기침한다. "...커피는 내가 살게."'}]},
+  {s:'dohyun', text:'"오늘 컨디션 어때." <span class="narr">도현은 늘 그걸 먼저 묻는 사람이다.</span>',
+   c:[{t:'차분', label:'"덕분에 괜찮아요"', r:'"다행이네." 짧지만 진심인 한마디.'},
+      {t:'솔직', label:'"별로... 좀 예민해요"', r:'"그럴 수 있어. 무리하지 마." 도현이 조용히 따뜻하다.'}]},
+  {s:'dohyun', text:'<span class="narr">도현이 보온병을 내민다.</span> "추운 날엔 이게 최고야. 생강차, 직접 끓였어."',
+   c:[{t:'솔직', label:'"이런 것까지 챙겨줘서 고마워요"', r:'"별거 아냐." 귀끝이 살짝 붉다.'},
+      {t:'차분', label:'한 모금 마시고 "딱 좋아요"', r:'"입에 맞으면 됐어." 도현이 옅게 웃는다.'},
+      {t:'대담', label:'"다음엔 내가 끓여줄게요"', r:'"...그날 기다릴게." 의외의 직답.'}]},
+  {s:'dohyun', text:'<span class="narr">서점에서 마주친 도현이 책 한 권을 건넨다.</span> "너 생각나서. 천천히 읽어."',
+   c:[{t:'차분', label:'"잘 읽을게요"', r:'"감상 들려줘. 천천히." 다음을 약속하는 말.'},
+      {t:'솔직', label:'"나 요즘 책이 잘 안 읽혀요"', r:'"그럼 같이 읽자. 한 챕터씩." 부담 없는 제안.'}]},
+  {s:'dohyun', text:'"무리하는 거 다 보여." <span class="narr">도현이 네 가방을 대신 든다.</span>',
+   c:[{t:'차분', label:'"...들켰네요"', r:'"응. 오늘은 좀 기대도 돼." 단단한 어깨.'},
+      {t:'대담', label:'"이 정도는 끄떡없는데요?"', r:'"알아. 그래도 들어줄게." 고집이 다정하다.'},
+      {t:'솔직', label:'"사실 좀 힘들었어요"', r:'도현이 고개를 끄덕인다. "말해줘서 고마워."'}]},
+
+  // ===== 윤재 (햇살/사교) =====
+  {s:'yunjae', text:'<span class="narr">윤재가 갑자기 손을 잡아끈다.</span> "지금 안 가면 노을 놓쳐! 빨리빨리!"',
+   c:[{t:'대담', label:'"좋아, 뛰자!" 같이 달린다', r:'바람을 가르며 윤재가 웃는다. "역시 너랑 오니까 좋다."'},
+      {t:'사교', label:'"사진은 내가 찍어줄게"', r:'"오 센스! 평생 간직할게 이거." 윤재가 포즈를 잡는다.'},
+      {t:'차분', label:'"천천히 가도 노을은 있어"', r:'윤재가 멈칫하더니 옆에 선다. "...하긴. 같이 보면 되지."'}]},
+  {s:'yunjae', text:'"오늘 너 텐션 좋다?" <span class="narr">윤재가 신나서 다가온다.</span> "노래방 콜?"',
+   c:[{t:'사교', label:'"콜! 듀엣 예약"', r:'"우리 케미 미쳤어 진짜." 윤재가 마이크를 건넨다.'},
+      {t:'대담', label:'"대신 내가 고른 노래만"', r:'"오 마음에 들어 그 주도권." 윤재가 씩 웃는다.'},
+      {t:'차분', label:'"오늘은 조용히 산책이 좋아"', r:'"그래? 그럼 야경 보러 가자." 윤재가 금방 맞춰준다.'}]},
+  {s:'yunjae', text:'<span class="narr">윤재가 떡볶이를 사 왔다.</span> "기분 처질 때 이게 직빵이야. 자, 아—"',
+   c:[{t:'사교', label:'받아먹고 "최고다 진짜"', r:'"그치! 또 사줄게." 윤재가 뿌듯해한다.'},
+      {t:'솔직', label:'"사실 오늘 기분 별로였어"', r:'"알아. 그래서 사 온 거야." 윤재가 씩 웃는다.'}]},
+  {s:'yunjae', text:'<span class="narr">플리마켓에서 윤재가 커플 키링을 집어든다.</span> "이거 봐, 우리 같지 않아?"',
+   c:[{t:'사교', label:'"그럼 하나씩 나눠 갖자"', r:'"콜! 이제 미아 방지." 윤재가 깔깔 웃는다.'},
+      {t:'대담', label:'"커플인 거 인정하는 거야?"', r:'윤재가 잠깐 멈칫. "...어, 인정." 평소답지 않게 진지하다.'},
+      {t:'차분', label:'"예쁘다. 구경만 하자"', r:'"그래도 눈엔 담아둘게." 윤재가 키링을 슬쩍 챙긴다.'}]},
+  {s:'yunjae', text:'"나 사실 사람 많은 데서 더 외로울 때 있어." <span class="narr">윤재가 드물게 진지하다.</span>',
+   c:[{t:'솔직', label:'"그 마음 알 것 같아"', r:'"너한테 말하니까 좀 낫다." 윤재의 미소가 옅어진다.'},
+      {t:'차분', label:'"내 옆은 안 시끄럽잖아"', r:'"...그래서 좋아, 네 옆." 솔직한 한마디.'}]},
+  {s:'yunjae', text:'<span class="narr">윤재가 즉흥으로 버스킹 무대에 너를 끌어올린다.</span> "한 곡만! 내가 옆에 있을게!"',
+   c:[{t:'대담', label:'마이크를 잡는다 "가자!"', r:'관객의 환호. "너 무대 체질이야!" 윤재가 신났다.'},
+      {t:'사교', label:'"코러스만 넣을게"', r:'"그것도 좋아, 우리 합 좋잖아." 둘의 목소리가 겹친다.'},
+      {t:'차분', label:'"난 관객석에서 응원할게"', r:'"오케이, 널 위해 부른다." 윤재가 윙크한다.'}]},
+
+  // ===== 건우 (열정/직진) =====
+  {s:'gunwoo', text:'<span class="narr">건우가 정면으로 마주 선다.</span> "나, 너한테 솔직하게 말해도 돼?"',
+   c:[{t:'대담', label:'"말해. 나도 솔직할게"', r:'건우의 눈빛이 흔들린다. "...너, 진짜 위험하다."'},
+      {t:'솔직', label:'"어떤 얘긴데?"', r:'"천천히 알려줄게. 도망가지 마." 건우가 한 발 다가온다.'},
+      {t:'차분', label:'"갑자기 왜 이렇게 진지해"', r:'건우가 웃는다. "원래 직진밖에 못 해서."'}]},
+  {s:'gunwoo', text:'"오늘 너 분위기 다른데." <span class="narr">건우가 거리를 좁힌다.</span> "이대로 가도 돼?"',
+   c:[{t:'대담', label:'"네가 따라올 수 있으면"', r:'"...그 말, 후회 안 하지?" 건우가 직진한다.'},
+      {t:'솔직', label:'"두근거리긴 해"', r:'"나도. 똑같아서 다행이다." 건우의 목소리가 낮아진다.'},
+      {t:'차분', label:'"속도 조금만 늦춰줘"', r:'"알았어. 너 페이스에 맞출게." 의외로 다정하다.'}]},
+  {s:'gunwoo', text:'<span class="narr">건우가 불쑥 손을 내민다.</span> "지금 아니면 못 물어볼 것 같아서. 나랑 갈래?"',
+   c:[{t:'대담', label:'손을 잡는다 "가자"', r:'건우가 환하게 웃는다. "이래서 너야."'},
+      {t:'솔직', label:'"어디로 가는지도 모르잖아"', r:'"중요한 건 누구랑 가냐지." 건우가 손을 거두지 않는다.'}]},
+  {s:'gunwoo', text:'<span class="narr">밤 러닝 코스. 건우가 갑자기 멈춰 돌아본다.</span> "너 따라오느라 숨찼지? 나도 사실 너 보느라 숨찼어."',
+   c:[{t:'대담', label:'"그럼 비긴 걸로"', r:'"비기긴, 내가 더 빠졌는데." 건우가 직구를 날린다.'},
+      {t:'솔직', label:'"심장 뛰는 거 운동 때문 맞지?"', r:'"...아닌 거 알면서." 건우가 시선을 피하지 않는다.'},
+      {t:'차분', label:'"숨 좀 고르고 얘기하자"', r:'"그래. 옆에서 같이 고를게." 거친 숨이 잦아든다.'}]},
+  {s:'gunwoo', text:'"나 원래 계산 같은 거 못 해." <span class="narr">건우가 네 눈을 똑바로 본다.</span> "근데 너 앞에서만 자꾸 머뭇거려."',
+   c:[{t:'솔직', label:'"그 머뭇거림, 싫지 않아"', r:'"그 말 책임져." 건우가 한 발 더 다가온다.'},
+      {t:'대담', label:'"머뭇거리지 말고 직진해"', r:'"...진짜 후회 안 하기다." 건우의 결심이 굳는다.'}]},
+  {s:'gunwoo', text:'<span class="narr">소나기. 건우가 제 겉옷을 벗어 네 머리에 씌운다.</span> "넌 젖으면 안 되지."',
+   c:[{t:'차분', label:'"너도 같이 쓰자"', r:'"...이러면 더 가까워지는데." 건우가 헛기침한다.'},
+      {t:'대담', label:'"너 멋있는 거 알고 그러지"', r:'"알면 넘어와." 건우가 씩 웃으며 직진한다.'},
+      {t:'솔직', label:'"이런 거에 약하단 말이야"', r:'"그럼 자주 해줄게." 비를 맞으면서도 웃는다.'}]},
+];
+
+/* ----- 특별 이벤트 (단계 진입 시) ----- */
+const SPECIALS={
+  settle:{ // 설렘(60) 진입
+    dohyun:{tag:'설렘 모먼트', text:'<span class="narr">도현이 평소보다 오래 너를 바라본다.</span> "요즘... 네 컨디션을 챙기는 게 습관이 됐어. 부담스러워?"',
+      c:[{t:'솔직', label:'"전혀. 오히려 좋아요"', r:'"다행이다. 계속 챙겨도 되겠네." 도현이 처음으로 활짝 웃는다.'},
+         {t:'차분', label:'"그 습관, 나도 들고 싶어요"', r:'"...그럼 서로 챙기자." 손끝이 스친다.'}]},
+    yunjae:{tag:'설렘 모먼트', text:'<span class="narr">놀이공원 관람차. 윤재가 갑자기 조용해진다.</span> "나 너랑 있을 때만 진짜 같아. 이상하지?"',
+      c:[{t:'솔직', label:'"안 이상해. 나도 그래"', r:'"오늘 이 말 하려고 여기 온 거야." 윤재의 눈이 반짝인다.'},
+         {t:'사교', label:'"그 진짜 윤재, 내가 제일 좋아해"', r:'"...큰일났다, 진짜 설렌다." 윤재가 귀를 붉힌다.'}]},
+    gunwoo:{tag:'설렘 모먼트', text:'<span class="narr">건우가 네 손목을 잡고 멈춘다.</span> "나 더는 친구인 척 못 하겠어. 너는?"',
+      c:[{t:'대담', label:'"나도 친구인 척 안 할래"', r:'"...드디어 말 통했다." 건우가 안도의 숨을 쉰다.'},
+         {t:'솔직', label:'"사실 진작 넘어왔어"', r:'"왜 이제 말해, 사람 애태우게." 낮은 웃음.'}]},
+  },
+  confess:{ // 연인(85) 진입
+    dohyun:{tag:'💍 고백', text:'<span class="narr">조용한 골목, 도현이 걸음을 멈춘다.</span> "화려한 말은 못 해. 그냥 — 네 28일을, 앞으로의 주기를 전부 곁에서 보고 싶어. 내 사람이 되어줄래?"',
+      c:[{t:'솔직', label:'"응. 당신 곁이 제일 편해요"', r:'도현이 처음으로 너를 꼭 안는다. "...고마워. 천천히, 오래 가자."'},
+         {t:'차분', label:'손을 마주 잡는다 "좋아요, 우리"', r:'"이 손 놓지 않을게." 단단한 약속.'}]},
+    yunjae:{tag:'💍 고백', text:'<span class="narr">윤재가 직접 만든 폭죽 카드를 펼친다.</span> "세상에서 제일 밝은 날도 너랑 있을 때야. 나랑 연애하자, 우리. 진심이야."',
+      c:[{t:'사교', label:'"그 햇살, 내가 독차지할게"', r:'"콜! 이제 공식이야!" 윤재가 너를 번쩍 안아 든다.'},
+         {t:'솔직', label:'"네 진심, 나도 똑같아"', r:'"…울 것 같아 진짜." 윤재의 눈가가 촉촉하다.'}]},
+    gunwoo:{tag:'💍 고백', text:'<span class="narr">건우가 한 치의 망설임 없이 마주 선다.</span> "돌려 말 안 할게. 좋아해. 사랑해. 나랑 연애하자. 대답은 하나만 받을게."',
+      c:[{t:'대담', label:'"그 하나, 예스야"', r:'건우가 환하게 웃으며 너를 끌어안는다. "이래서 너야, 진짜."'},
+         {t:'솔직', label:'"직진 멋지다. 나도 사랑해"', r:'"…방금 그 말, 평생 우려먹을 거야." 행복한 협박.'}]},
+  },
+};
+
+/* ----- 삼각관계 이벤트 (중반, 두 명 이상 호감 이상) ----- */
+const TRIANGLE={tag:'⚡ 삼각관계', text:'<span class="narr">우연히 두 사람이 한자리에. 공기가 묘하게 팽팽하다.</span> "오늘은 누구랑 시간 보낼래?" — 분위기가 너의 한마디를 기다린다.'};
+
+/* ----- 퀴즈 (확장) ----- */
+const QUIZ=[
+  {q:'배란을 직접 유발(trigger)하는 호르몬은?', o:['에스트로겐','LH','프로게스테론'], a:1,
+   e:'LH가 급격히 솟는 surge가 배란을 터뜨려요. Surearly가 보는 4종 중 하나죠.'},
+  {q:'배란 후 올라가며 기초체온을 살짝 높이는 호르몬은?', o:['프로게스테론(P3G)','FSH','LH'], a:0,
+   e:'황체기에 P3G가 상승해 체온이 약간 올라가요.'},
+  {q:'난포기에 난포 성장을 자극하는 호르몬은?', o:['P3G','FSH','LH'], a:1,
+   e:'FSH(난포자극호르몬)가 난포를 키워요.'},
+  {q:'생기·자신감 경향과 연관되며 난포기에 오르는 건?', o:['에스트로겐(E3G)','프로게스테론','FSH'], a:0,
+   e:'E3G(에스트로겐 대사체)가 상승하는 시기예요.'},
+  {q:'Surearly Objet가 측정하는 4종이 아닌 것은?', o:['LH','E3G','테스토스테론','P3G'], a:2,
+   e:'Surearly는 LH·FSH·E3G·P3G 4종을 측정해요.'},
+  {q:'일반적으로 월경 주기의 시작(1일)으로 보는 시점은?', o:['배란일','월경 시작일','황체기 끝'], a:1,
+   e:'관례적으로 월경이 시작되는 날을 주기 1일로 세요.'},
+  {q:'E3G·P3G의 "3G"는 무엇을 측정한다는 뜻에 가까울까요?', o:['소변 내 대사체','혈중 단백질','체온'], a:0,
+   e:'E3G·P3G는 소변으로 측정하는 호르몬 대사체예요. 집에서 비침습적으로 볼 수 있죠.'},
+  {q:'배란은 보통 LH surge 이후 언제쯤 일어날까요?', o:['약 24~36시간 뒤','즉시','7일 뒤'], a:0,
+   e:'LH가 치솟고 대략 하루~하루 반 뒤 배란이 일어나는 경우가 많아요.'},
+  {q:'황체기에 임신이 성립하지 않으면 떨어지며 월경을 부르는 호르몬은?', o:['FSH','프로게스테론','LH'], a:1,
+   e:'P3G(프로게스테론)가 떨어지면서 자궁내막이 떨어져 나가 월경이 시작돼요.'},
+  {q:'"가임기 추정"에 특히 도움이 되는 신호 조합은?', o:['E3G 상승 + LH surge','P3G 단독','FSH 단독'], a:0,
+   e:'E3G가 오르고 LH가 치솟는 구간이 배란 전후 가임기 추정에 핵심이에요.'},
+];
+
+/* ----- 업적 정의 ----- */
+const ACHIEVEMENTS=[
+  {id:'first_like', icon:'💗', name:'첫 호감', desc:'누군가의 호감도 30 달성'},
+  {id:'flutter',    icon:'💞', name:'설레는 사이', desc:'관계 단계 설렘 도달'},
+  {id:'lover',      icon:'❤️', name:'연인', desc:'관계 단계 연인 도달'},
+  {id:'balanced',   icon:'⚖️', name:'균형의 달인', desc:'세 사람 모두 호감도 40+'},
+  {id:'quiz_master',icon:'🧠', name:'호르몬 박사', desc:'한 회차 퀴즈 전부 정답'},
+  {id:'ovul_peak',  icon:'🔥', name:'배란기 직진', desc:'배란기에 대담한 선택 성공'},
+  {id:'solo_win',   icon:'🌿', name:'나를 챙긴 28일', desc:'솔로 엔딩 달성'},
+  {id:'cycle2',     icon:'🔁', name:'두 번째 주기', desc:'2회차 플레이 시작'},
+  {id:'dohyun_end', icon:'🍯', name:'차도현 루트', desc:'차도현과 연인 엔딩'},
+  {id:'yunjae_end', icon:'🌸', name:'윤재 루트', desc:'윤재와 연인 엔딩'},
+  {id:'gunwoo_end', icon:'⚡', name:'건우 루트', desc:'건우와 연인 엔딩'},
+  {id:'two_hearts', icon:'🎭', name:'두 마음', desc:'두 사람 동시에 호감도 70+'},
+];
+function loadAch(){ try{ return JSON.parse(localStorage.getItem(ACH_KEY))||[]; }catch(e){ return []; } }
+function saveAch(list){ try{ localStorage.setItem(ACH_KEY, JSON.stringify(list)); }catch(e){} }
+function unlock(id){
+  const have=loadAch();
+  if(have.includes(id)) return;
+  have.push(id); saveAch(have);
+  const a=ACHIEVEMENTS.find(x=>x.id===id); if(a) toast(a);
+}
+function toast(a){
+  const w=document.getElementById('toastWrap');
+  const el=document.createElement('div'); el.className='toast';
+  el.innerHTML=`<div class="ti">${a.icon}</div><div><div class="tk">ACHIEVEMENT</div><div class="tn">${a.name}</div><div class="td">${a.desc}</div></div>`;
+  w.appendChild(el);
+  setTimeout(()=>{ el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3200);
+}
+
+/* ===================== 상태 ===================== */
+let state;
+
+function newState(name, cycle){
+  return { day:1, name:name||'나', cycle:cycle||1, energy:60,
+    aff:{dohyun:0,yunjae:0,gunwoo:0},
+    maxStage:{dohyun:0,yunjae:0,gunwoo:0},
+    phaseScore:{menstrual:0,follicular:0,ovulatory:0,luteal:0},
+    toneScore:{차분:0,대담:0,사교:0,솔직:0},
+    usedScenes:[], quizPool:shuffle([...Array(QUIZ.length).keys()]),
+    quizAsked:0, quizCorrect:0,
+    pendingEvents:[], triangleDone:false,
+    bodyLog:[], answered:false, currentSuitor:null, _sc:null };
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+/* ----- 저장 / 복원 ----- */
+function persist(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+}
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+function hasSave(){
+  try{ const s=JSON.parse(localStorage.getItem(SAVE_KEY)); return s && s.day && s.day<=28 ? s : null; }
+  catch(e){ return null; }
+}
+
+function startGame(){
+  const nm=(document.getElementById('playerName').value||'').trim();
+  state=newState(nm, 1);
+  enterGame();
+}
+function resumeGame(){
+  const s=hasSave(); if(!s){ startGame(); return; }
+  state=s;
+  // 하위호환 필드 보정
+  state.toneScore=state.toneScore||{차분:0,대담:0,사교:0,솔직:0};
+  state.bodyLog=state.bodyLog||[];
+  state.maxStage=state.maxStage||{dohyun:0,yunjae:0,gunwoo:0};
+  state.pendingEvents=state.pendingEvents||[];
+  enterGame();
+}
+function enterGame(){
+  document.getElementById('intro').classList.add('hide');
+  document.getElementById('game').classList.remove('hide');
+  document.getElementById('ending').classList.add('hide');
+  if(state.cycle>1){ const b=document.getElementById('cycleBadge'); b.classList.remove('hide'); b.textContent=' · '+state.cycle+'회차'; }
+  try{ initAudio(); }catch(e){}
+  renderDay();
+  persist();
+}
+
+/* ===================== 렌더 ===================== */
+function setAccent(ph){
+  document.documentElement.style.setProperty('--accent', ph.accent);
+  document.documentElement.style.setProperty('--accent-soft', ph.soft);
+}
+function energyColor(e){ return e>=66?'#4FB0C6':e>=33?'#E8A05C':'#E60044'; }
+function renderEnergy(){
+  const e=clamp(Math.round(state.energy),0,100);
+  document.getElementById('energyFill').style.width=e+'%';
+  document.getElementById('energyFill').style.background=energyColor(e);
+  document.getElementById('energyNum').textContent=e;
+}
+function renderDay(){
+  const d=state.day, ph=phaseOf(d), h=CURVE[d-1];
+  setAccent(ph);
+  document.getElementById('dayNum').textContent=d;
+  document.getElementById('phasePill').textContent=ph.label;
+  document.getElementById('moodEmoji').textContent=ph.emoji;
+  document.getElementById('moodText').innerHTML='<b>오늘의 나</b> · '+ph.mood;
+  // 오늘의 몸 신호 (교육 + 기록)
+  const sigArr=BODY_SIGNAL[ph.key];
+  const sig=sigArr[(d+state.cycle)%sigArr.length];
+  document.getElementById('bodySignal').innerHTML='🩺 오늘의 몸 신호 · <b>'+sig+'</b>';
+  if(!state.bodyLog.some(x=>x.day===d)) state.bodyLog.push({day:d,phase:ph.label,sig:sig});
+
+  drawChart(d);
+  renderEnergy();
+  document.getElementById('hvals').innerHTML=HKEYS.map(k=>
+    `<div class="hval"><div class="k" style="color:${HCOLOR[k]}">${HNAME[k]}</div>
+     <div class="v">${h[k]}</div></div>`).join('');
+
+  renderAff();
+  renderScene(d,ph,h);
+}
+
+function drawChart(today){
+  const svg=document.getElementById('chart');
+  const W=280,H=110, pad=4;
+  const x=d=>pad+(d-1)/27*(W-pad*2);
+  const y=v=>H-pad-(v/100)*(H-pad*2);
+  let bands='';
+  const segs=[[1,5,PHASES[0].accent],[6,12,PHASES[1].accent],[13,15,PHASES[2].accent],[16,28,PHASES[3].accent]];
+  segs.forEach(([a,b,c])=>{ const x1=x(a)-(a===1?pad:0), x2=x(b)+(b===28?pad:0);
+    bands+=`<rect x="${x1}" y="0" width="${x2-x1}" height="${H}" fill="${c}" opacity="0.07"/>`; });
+  let paths='';
+  HKEYS.forEach(k=>{
+    let dstr='';
+    for(let d=1;d<=28;d++){ dstr+=(d===1?'M':'L')+x(d).toFixed(1)+' '+y(CURVE[d-1][k]).toFixed(1)+' '; }
+    paths+=`<path d="${dstr}" fill="none" stroke="${HCOLOR[k]}" stroke-width="2" opacity="0.9" stroke-linecap="round" stroke-linejoin="round"/>`;
+  });
+  const tx=x(today);
+  let dots='';
+  HKEYS.forEach(k=>{ dots+=`<circle cx="${tx.toFixed(1)}" cy="${y(CURVE[today-1][k]).toFixed(1)}" r="3" fill="${HCOLOR[k]}" stroke="#16161f" stroke-width="1.2"/>`; });
+  const marker=`<line x1="${tx}" y1="0" x2="${tx}" y2="${H}" stroke="#ffffff" stroke-width="1" stroke-dasharray="2 3" opacity="0.4"/>`;
+  svg.innerHTML=bands+paths+marker+dots;
+  document.getElementById('todayMarkerLabel').textContent='DAY '+today;
+}
+
+function renderAff(){
+  const el=document.getElementById('affBars');
+  el.innerHTML=Object.keys(SUITORS).map(k=>{
+    const s=SUITORS[k], v=Math.min(100,state.aff[k]); const st=stageOf(v);
+    return `<div class="aff"><div class="nm" style="color:${s.color}">${s.name}</div>
+      <div class="track"><div class="fill" style="width:${v}%;background:${s.color}"></div></div>
+      <div class="st">${st.icon} ${st.label}</div>
+      <div class="pct">${v}</div></div>`;
+  }).join('');
+}
+
+/* 오늘 등장할 남주: 호르몬 시너지 가중 + 랜덤 */
+function pickSuitor(h){
+  const w={ dohyun: h.p3g+12, yunjae: h.e3g+12, gunwoo: h.lh+12 };
+  let total=w.dohyun+w.yunjae+w.gunwoo, r=Math.random()*total;
+  for(const k of ['dohyun','yunjae','gunwoo']){ if(r<w[k]) return k; r-=w[k]; }
+  return 'gunwoo';
+}
+function pickScene(suitorKey){
+  let pool=SCENES.filter(s=>s.s===suitorKey && !state.usedScenes.includes(SCENES.indexOf(s)));
+  if(pool.length===0){
+    state.usedScenes=state.usedScenes.filter(i=>SCENES[i].s!==suitorKey);
+    pool=SCENES.filter(s=>s.s===suitorKey);
+  }
+  const sc=pool[Math.floor(Math.random()*pool.length)];
+  state.usedScenes.push(SCENES.indexOf(sc));
+  return sc;
+}
+
+/* 이벤트 체크: 삼각관계 트리거 */
+function maybeQueueTriangle(){
+  if(state.triangleDone) return;
+  if(state.day<14 || state.day>22) return;
+  const liked=Object.keys(state.aff).filter(k=>state.aff[k]>=45);
+  if(liked.length>=2){
+    state.triangleDone=true;
+    state.pendingEvents.push({type:'triangle', suitors:liked.slice(0,2)});
+  }
+}
+
+function renderScene(d,ph,h){
+  state.answered=false;
+  const tagEl=document.getElementById('eventTag');
+  const ch=document.getElementById('choices');
+  ch.classList.remove('hide');
+  document.getElementById('afterChoice').classList.add('hide');
+  document.getElementById('afterChoice').innerHTML='';
+
+  // 대기 중인 특별 이벤트 우선
+  if(state.pendingEvents.length){
+    const ev=state.pendingEvents.shift();
+    if(ev.type==='triangle'){ return renderTriangle(ev); }
+    const sk=ev.suitor, sp=SPECIALS[ev.type][sk];
+    state.currentSuitor=sk; state._sc={s:sk, c:sp.c, special:ev.type};
+    state._ph=ph; state._h=h;
+    paintSceneHead(sk, sp.tag);
+    document.getElementById('sceneLine').innerHTML=sp.text;
+    ch.innerHTML=sp.c.map((c,i)=>choiceBtn(c,i,ph,h,sk)).join('');
+    return;
+  }
+
+  maybeQueueTriangle();
+  if(state.pendingEvents.length){ return renderScene(d,ph,h); }
+
+  const sk=pickSuitor(h), sc=pickScene(sk);
+  state.currentSuitor=sk; state._sc=sc; state._ph=ph; state._h=h;
+  tagEl.classList.add('hide');
+  paintSceneHead(sk, null);
+  document.getElementById('sceneLine').innerHTML=sc.text;
+  ch.innerHTML=sc.c.map((c,i)=>choiceBtn(c,i,ph,h,sk)).join('');
+}
+
+function paintSceneHead(sk, eventTag){
+  const s=SUITORS[sk];
+  document.getElementById('avatar').innerHTML=faceSVG(sk,64);
+  document.getElementById('suitorName').textContent=`${s.name} (${s.age})`;
+  document.getElementById('suitorTag').textContent=s.tag;
+  const st=stageOf(state.aff[sk]);
+  document.getElementById('suitorStage').innerHTML=`${st.icon} ${st.label}`;
+  const tagEl=document.getElementById('eventTag');
+  if(eventTag){ tagEl.classList.remove('hide'); tagEl.textContent=eventTag; }
+  else tagEl.classList.add('hide');
+}
+
+const TONE_COST={차분:3, 솔직:6, 사교:10, 대담:12};
+function choiceBtn(c,i,ph,h,sk){
+  const cost=TONE_COST[c.t]||6;
+  const tip=(ph.favor.includes(c.t)?'▲':ph.penal.includes(c.t)?'▽':'');
+  return `<button class="choice" onclick="choose(${i})"><span>${c.label}</span>
+    <span class="tone">${tip} ${c.t}</span><span class="cost">-${cost}⚡</span></button>`;
+}
+
+function choose(i){
+  if(state.answered) return; state.answered=true;
+  const sc=state._sc, ph=state._ph, h=state._h, c=sc.c[i], sk=state.currentSuitor, s=SUITORS[sk];
+  const cost=TONE_COST[c.t]||6;
+  let gain=5, notes=[], lowE=false;
+
+  // 단계 선호/페널티
+  if(ph.favor.includes(c.t)){ gain+=4; notes.push(`지금은 <b>${ph.label}</b> — '${c.t}' 선택이 잘 통했어요`); }
+  if(ph.penal.includes(c.t)){ gain-=2; notes.push(`<b>${ph.label}</b>엔 '${c.t}' 선택이 살짝 무리였어요`); }
+  // 호르몬 시너지
+  if(h[s.synergy]>=60){ gain+=3; notes.push(`${HNAME[s.synergy]}가 높은 날 — ${s.name}와 특히 잘 맞아요`); }
+  // 특별 이벤트 보너스
+  if(sc.special){ gain+=6; }
+  // 에너지 체크
+  if(state.energy < cost){ lowE=true; gain=Math.round(gain*0.55); notes.push(`컨디션이 부족해 마음을 다 쏟지 못했어요 — 차분한 선택으로 회복해요`); }
+  gain=Math.max(1,gain);
+
+  // 에너지 변동: 소비 + 차분은 회복
+  state.energy=clamp(state.energy - cost + (c.t==='차분'?9:0), 0, 100);
+
+  state.aff[sk]=Math.min(100,state.aff[sk]+gain);
+  state.phaseScore[ph.key]+=gain;
+  state.toneScore[c.t]=(state.toneScore[c.t]||0)+gain;
+
+  // 업적: 배란기 대담 성공
+  if(ph.key==='ovulatory' && c.t==='대담' && !lowE) unlock('ovul_peak');
+
+  checkRelationshipEvents(sk);
+  checkMilestoneAchievements();
+
+  document.getElementById('choices').classList.add('hide');
+  const after=document.getElementById('afterChoice');
+  after.classList.remove('hide');
+  const gainCls=gain<=2?'gain neg':'gain';
+  after.innerHTML=`
+    <div class="bubble reply">${c.r}</div>
+    <div class="result">
+      <div>${s.name} 호감도 <span class="${gainCls}">+${gain}</span></div>
+      ${notes.length?`<div class="edu">${notes.join('<br>')}</div>`:''}
+    </div>
+    <div style="margin-top:14px"><button class="btn" onclick="nextDay()">${state.day>=28?'28일의 끝 보기 →':'다음 날 →'}</button></div>`;
+  renderEnergy();
+  renderAff();
+  renderScene_stageRefresh(sk);
+  persist();
+  if(ph.key==='ovulatory'){ try{ beep(); }catch(e){} }
+}
+
+function renderScene_stageRefresh(sk){
+  const st=stageOf(state.aff[sk]);
+  document.getElementById('suitorStage').innerHTML=`${st.icon} ${st.label}`;
+}
+
+/* 관계 단계 상승 시 특별 이벤트 큐잉 */
+function checkRelationshipEvents(sk){
+  const idx=stageIdx(state.aff[sk]);
+  const prev=state.maxStage[sk]||0;
+  if(idx>prev){
+    state.maxStage[sk]=idx;
+    if(idx===2 && SPECIALS.settle[sk]) state.pendingEvents.push({type:'settle', suitor:sk});
+    if(idx===3 && SPECIALS.confess[sk]) state.pendingEvents.push({type:'confess', suitor:sk});
+  }
+}
+function checkMilestoneAchievements(){
+  const a=state.aff;
+  if(Math.max(a.dohyun,a.yunjae,a.gunwoo)>=30) unlock('first_like');
+  if(Math.max(...Object.keys(a).map(k=>stageIdx(a[k])))>=2) unlock('flutter');
+  if(Math.max(...Object.keys(a).map(k=>stageIdx(a[k])))>=3) unlock('lover');
+  if(a.dohyun>=40 && a.yunjae>=40 && a.gunwoo>=40) unlock('balanced');
+  if(Object.keys(a).filter(k=>a[k]>=70).length>=2) unlock('two_hearts');
+}
+
+/* 삼각관계 씬 */
+function renderTriangle(ev){
+  const [k1,k2]=ev.suitors;
+  document.getElementById('eventTag').classList.remove('hide');
+  document.getElementById('eventTag').textContent=TRIANGLE.tag;
+  document.getElementById('avatar').innerHTML=faceSVG(k1,64);
+  document.getElementById('suitorName').textContent=`${SUITORS[k1].name} & ${SUITORS[k2].name}`;
+  document.getElementById('suitorTag').textContent='두 사람이 너를 본다';
+  document.getElementById('suitorStage').innerHTML='⚡ 선택';
+  document.getElementById('sceneLine').innerHTML=TRIANGLE.text;
+  state._sc={triangle:true, suitors:ev.suitors};
+  const ch=document.getElementById('choices');
+  ch.classList.remove('hide');
+  ch.innerHTML=`
+    <button class="choice" onclick="chooseTriangle('${k1}','${k2}')"><span>${SUITORS[k1].name}와 시간을 보낸다</span><span class="tone">집중</span></button>
+    <button class="choice" onclick="chooseTriangle('${k2}','${k1}')"><span>${SUITORS[k2].name}와 시간을 보낸다</span><span class="tone">집중</span></button>
+    <button class="choice" onclick="chooseTriangle(null,null)"><span>"둘 다 소중해. 오늘은 나를 먼저 챙길래"</span><span class="tone">솔직</span></button>`;
+}
+function chooseTriangle(pick, other){
+  if(state.answered) return; state.answered=true;
+  let html, note;
+  if(pick){
+    state.aff[pick]=Math.min(100,state.aff[pick]+10);
+    state.aff[other]=Math.max(0,state.aff[other]-4);
+    state.toneScore['대담']=(state.toneScore['대담']||0)+6;
+    html=`<div class="bubble reply">${SUITORS[pick].name}의 표정이 환해진다. ${SUITORS[other].name}는 쿨하게 웃지만, 눈빛엔 아쉬움이 스친다.</div>`;
+    note=`<div class="result"><div>${SUITORS[pick].name} <span class="gain">+10</span> · ${SUITORS[other].name} <span class="gain neg">-4</span></div>
+      <div class="edu">마음이 확실할 땐, 선택이 관계를 더 깊게 만들어요.</div></div>`;
+    checkRelationshipEvents(pick);
+  }else{
+    state.toneScore['솔직']=(state.toneScore['솔직']||0)+6;
+    state.energy=clamp(state.energy+12,0,100);
+    html=`<div class="bubble reply">두 사람 다 잠시 멈칫하더니, 이내 고개를 끄덕인다. "그것도 너답다." 컨디션이 한결 가벼워진다.</div>`;
+    note=`<div class="result"><div>컨디션 <span class="gain">+12</span></div>
+      <div class="edu">관계의 속도를 내 컨디션에 맞추는 것도 건강한 선택이에요.</div></div>`;
+  }
+  checkMilestoneAchievements();
+  document.getElementById('choices').classList.add('hide');
+  const after=document.getElementById('afterChoice');
+  after.classList.remove('hide');
+  after.innerHTML=html+note+`<div style="margin-top:14px"><button class="btn" onclick="nextDay()">${state.day>=28?'28일의 끝 보기 →':'다음 날 →'}</button></div>`;
+  renderEnergy(); renderAff(); persist();
+}
+
+function nextDay(){
+  // 퀴즈: 6,13,20,27일쯤 등장
+  if([6,13,20,27].includes(state.day) && state.quizPool.length){ showQuiz(); return; }
+  advance();
+}
+function advance(){
+  if(state.day>=28){ showEnding(); return; }
+  state.day++;
+  // 다음 날 컨디션: 단계 기반 회복/소모
+  const ph=phaseOf(state.day);
+  state.energy=clamp(state.energy + (PHASE_ENERGY[ph.key]||0) + 4, 0, 100);
+  window.scrollTo({top:0,behavior:'smooth'});
+  renderDay();
+  persist();
+}
+
+/* ----- 퀴즈 ----- */
+function showQuiz(){
+  const qi=state.quizPool.shift();
+  const q=QUIZ[qi];
+  state.quizAsked++;
+  const m=document.getElementById('quizMount');
+  m.innerHTML=`<div class="modal-bg"><div class="modal">
+    <div class="qk">HORMONE QUIZ · 친밀도 보너스</div>
+    <h3>${q.q}</h3>
+    <div id="qopts">${q.o.map((o,i)=>`<button class="qopt" onclick="answerQuiz(${i},${q.a})">${o}</button>`).join('')}</div>
+    <div id="qexp" class="qexp hide">${q.e}</div>
+    <div id="qnext" class="hide"><button class="btn" onclick="closeQuiz()">계속 →</button></div>
+  </div></div>`;
+}
+function answerQuiz(i,correct){
+  const opts=document.querySelectorAll('#qopts .qopt');
+  opts.forEach(b=>b.disabled=true);
+  opts[correct].classList.add('right');
+  if(i!==correct) opts[i].classList.add('wrong');
+  document.getElementById('qexp').classList.remove('hide');
+  document.getElementById('qnext').classList.remove('hide');
+  if(i===correct){
+    state.quizCorrect++;
+    const sk=state.currentSuitor||'dohyun';
+    state.aff[sk]=Math.min(100,state.aff[sk]+4);
+    checkRelationshipEvents(sk); checkMilestoneAchievements();
+    renderAff();
+    document.getElementById('qexp').innerHTML='정답! <b style="color:var(--accent)">'+SUITORS[sk].name+' 호감도 +4</b><br>'+document.getElementById('qexp').innerHTML;
+  }
+  persist();
+}
+function closeQuiz(){ document.getElementById('quizMount').innerHTML=''; advance(); }
+
+/* ----- 엔딩 ----- */
+function showEnding(){
+  clearSave(); // 회차 완료, 진행 저장 삭제
+  document.getElementById('game').classList.add('hide');
+  const end=document.getElementById('ending'); end.classList.remove('hide');
+
+  const sorted=Object.keys(state.aff).sort((a,b)=>state.aff[b]-state.aff[a]);
+  const topKey=sorted[0], top=SUITORS[topKey], topV=state.aff[topKey];
+  const secondV=state.aff[sorted[1]];
+
+  // 엔딩 분기
+  let endType, headline, flavor, avHTML;
+  if(topV<35){
+    endType='solo'; unlock('solo_win');
+    headline='나를 먼저 챙긴 28일'; flavor='이번엔 누구보다 나 자신과 가까워진 한 달. 다음 주기엔 또 다른 인연이 기다려요.';
+    avHTML='<span style="font-size:40px">🌿</span>';
+  } else if(topV>=70 && secondV>=70){
+    endType='two'; unlock('two_hearts');
+    headline='두 마음 사이에서'; flavor='두 사람 모두 너를 향했던 28일. 결정은 다음 주기의 너에게 — 솔직한 마음만이 답이에요.';
+    avHTML=faceSVG(topKey,84);
+  } else if(stageIdx(topV)>=3){
+    endType='true'; unlock(topKey+'_end');
+    headline=top.name+' 트루 엔딩'; flavor=top.blurb+'. 28일의 곡선 끝에서 두 사람은 서로의 주기를 함께 읽기로 했어요.';
+    avHTML=faceSVG(topKey,84);
+  } else {
+    endType='good';
+    headline=top.name+' 엔딩'; flavor=top.blurb+'. 28일의 곡선이 두 사람을 여기로 데려왔어요. 다음 주기엔 더 가까워질 수 있을 거예요.';
+    avHTML=faceSVG(topKey,84);
+  }
+
+  // 퀴즈 마스터 업적
+  if(state.quizAsked>0 && state.quizAsked===state.quizCorrect && state.quizAsked>=3) unlock('quiz_master');
+
+  // 톤 페르소나
+  const tk=Object.keys(state.toneScore).sort((a,b)=>state.toneScore[b]-state.toneScore[a])[0];
+  const toneMap={
+    '차분':['차분형','속도보다 호흡을 읽는 당신. 관계를 오래, 단단하게 지키는 타입이에요.'],
+    '대담':['직진형','결정적 순간에 망설이지 않는 당신. LH surge의 대담함이 잘 어울려요.'],
+    '사교':['생기형','분위기를 살리는 당신. 난포기의 밝은 에너지를 잘 타는 사람이에요.'],
+    '솔직':['진심형','마음을 있는 그대로 건네는 당신. 깊은 신뢰를 쌓는 데 강해요.'],
+  };
+  const persona=toneMap[tk]||toneMap['솔직'];
+  // 가장 점수 많은 단계로 액센트
+  const pk=Object.keys(state.phaseScore).sort((a,b)=>state.phaseScore[b]-state.phaseScore[a])[0];
+  setAccent(phaseOf({menstrual:3,follicular:9,ovulatory:14,luteal:22}[pk]));
+
+  const have=loadAch();
+  const achHTML=ACHIEVEMENTS.map(a=>`<div class="ach ${have.includes(a.id)?'':'locked'}">
+    <div class="ai">${a.icon}</div><div><div class="an">${a.name}</div><div class="ad">${a.desc}</div></div></div>`).join('');
+
+  const bodyHTML=state.bodyLog.map(l=>`<span class="d">D${l.day}</span> ${l.phase} · ${l.sig}`).join('<br>');
+
+  end.innerHTML=`
+    <div class="end-card">
+      <div class="av" style="background:${endType==='solo'?'#2c3b32':top.color+'22'}">${avHTML}</div>
+      <div class="et">DAY 28 · ${state.cycle}회차 · YOUR ROUTE</div>
+      <h2 class="display">${headline}</h2>
+      <div class="efl">${flavor}</div>
+    </div>
+    <div class="persona">🧬 당신의 연애 페르소나 · <b>${persona[0]}</b><br><span style="color:var(--ink-dim)">${persona[1]}</span></div>
+
+    <div class="card recap">
+      <div class="aff-title">호감도 결과</div>
+      ${Object.keys(SUITORS).map(k=>{ const st=stageOf(state.aff[k]); return `<div class="r"><div class="rk" style="color:${SUITORS[k].color}">${SUITORS[k].name}</div><div style="flex:1">${'❤'.repeat(Math.round(state.aff[k]/12))||'·'} <span class="mono" style="color:var(--ink-dim);font-size:11px">${st.icon} ${st.label}</span></div><div class="mono" style="color:var(--ink-dim)">${state.aff[k]}</div></div>`; }).join('')}
+    </div>
+
+    <div class="card">
+      <div class="aff-title">🏆 업적 (${have.length}/${ACHIEVEMENTS.length})</div>
+      <div class="ach-grid">${achHTML}</div>
+    </div>
+
+    <div class="card">
+      <div class="aff-title">🩺 나의 28일 몸 기록</div>
+      <div class="bodylog">${bodyHTML}</div>
+    </div>
+
+    <div class="card" style="text-align:left">
+      <div class="aff-title">28일이 알려준 것</div>
+      <div style="font-size:13px;line-height:1.9">
+        <span style="color:${HCOLOR.fsh}">●</span> <b>FSH</b> 난포를 키워 주기를 연다<br>
+        <span style="color:${HCOLOR.e3g}">●</span> <b>E3G</b> 난포기에 올라 생기·자신감 ↑<br>
+        <span style="color:${HCOLOR.lh}">●</span> <b>LH</b> surge로 배란을 터뜨리는 결정적 신호<br>
+        <span style="color:${HCOLOR.p3g}">●</span> <b>P3G</b> 배란 후 상승, 안정·체온 ↑
+      </div>
+    </div>
+
+    <div class="cta">
+      <div class="ck">SUREARLY OBJET</div>
+      <h3>게임 속 곡선, 진짜 내 호르몬은요?</h3>
+      <p>집에서 LH·FSH·E3G·P3G 4종을 측정해 내 진짜 주기 곡선을 확인해보세요.</p>
+      <button onclick="alert('데모 CTA — 실제 제품 페이지로 연결될 자리입니다.')">내 주기 알아보기</button>
+    </div>
+
+    <button class="btn" onclick="nextCycle()">🔁 ${state.cycle+1}회차 시작하기 (이어서)</button>
+    <button class="btn ghost" style="margin-top:8px" onclick="location.reload()">처음으로</button>
+    <div class="disc">게임용으로 단순화한 모델입니다 · 의학적 조언이 아니에요</div>
+  `;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function nextCycle(){
+  const nextC=(state.cycle||1)+1;
+  const nm=state.name;
+  state=newState(nm, nextC);
+  if(nextC>=2) unlock('cycle2');
+  enterGame();
+}
+
+/* ----- 사운드 (LH surge 날 살짝) ----- */
+let actx;
+function initAudio(){ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); }
+function beep(){
+  if(!actx) return;
+  const o=actx.createOscillator(), g=actx.createGain();
+  o.type='sine'; o.frequency.value=180;
+  g.gain.value=0.0001; o.connect(g); g.connect(actx.destination);
+  const t=actx.currentTime;
+  g.gain.exponentialRampToValueAtTime(0.12,t+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
+  o.frequency.exponentialRampToValueAtTime(90,t+0.45);
+  o.start(t); o.stop(t+0.55);
+}
+
+/* ===== 인트로 초기화 ===== */
+document.getElementById('cast').innerHTML=Object.keys(SUITORS).map(k=>{
+  const s=SUITORS[k];
+  return `<div class="ci"><div class="pf">${faceSVG(k,76)}</div><div class="cn" style="color:${s.color}">${s.name}</div><div class="ct">${HNAME[s.synergy]} 친화</div></div>`;
+}).join('');
+
+// 이어하기 버튼
+(function(){
+  const s=hasSave();
+  if(s){ document.getElementById('resumeBtn').classList.remove('hide'); document.getElementById('resumeDay').textContent=s.day; }
+  // 업적 티저
+  const have=loadAch();
+  if(have.length){
+    document.getElementById('achTeaser').innerHTML='🏆 수집한 업적 '+have.length+'/'+ACHIEVEMENTS.length;
+  }
+})();
+</script>
+</body>
+</html>
