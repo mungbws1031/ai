@@ -758,9 +758,9 @@ function renderScene(d,ph,h){
   document.getElementById('afterChoice').classList.add('hide');
   document.getElementById('afterChoice').innerHTML='';
 
-  // 대기 중인 특별 이벤트 우선
+  // 대기 중인 특별 이벤트 우선 (선택을 확정할 때 소비 — 새로고침 시 유실 방지)
   if(state.pendingEvents.length){
-    const ev=state.pendingEvents.shift();
+    const ev=state.pendingEvents[0];
     if(ev.type==='triangle'){ return renderTriangle(ev); }
     const sk=ev.suitor, sp=SPECIALS[ev.type][sk];
     state.currentSuitor=sk; state._sc={s:sk, c:sp.c, special:ev.type};
@@ -805,6 +805,7 @@ function choiceBtn(c,i,ph,h,sk){
 function choose(i){
   if(state.answered) return; state.answered=true;
   const sc=state._sc, ph=state._ph, h=state._h, c=sc.c[i], sk=state.currentSuitor, s=SUITORS[sk];
+  if(sc.special) state.pendingEvents.shift(); // 선택 확정 시점에 이벤트 소비
   const cost=TONE_COST[c.t]||6;
   let gain=5, notes=[], lowE=false;
 
@@ -884,6 +885,7 @@ function renderTriangle(ev){
   document.getElementById('suitorTag').textContent='두 사람이 너를 본다';
   document.getElementById('suitorStage').innerHTML='⚡ 선택';
   document.getElementById('sceneLine').innerHTML=TRIANGLE.text;
+  state.currentSuitor=k1; // 기본값(솔로 선택 대비) — 퀴즈 보너스 대상 보정
   state._sc={triangle:true, suitors:ev.suitors};
   const ch=document.getElementById('choices');
   ch.classList.remove('hide');
@@ -894,8 +896,10 @@ function renderTriangle(ev){
 }
 function chooseTriangle(pick, other){
   if(state.answered) return; state.answered=true;
+  state.pendingEvents.shift(); // 선택 확정 시점에 삼각관계 이벤트 소비
   let html, note;
   if(pick){
+    state.currentSuitor=pick; // 퀴즈 보너스가 고른 상대에게 가도록
     state.aff[pick]=Math.min(100,state.aff[pick]+10);
     state.aff[other]=Math.max(0,state.aff[other]-4);
     state.toneScore['대담']=(state.toneScore['대담']||0)+6;
