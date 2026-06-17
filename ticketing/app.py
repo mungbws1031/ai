@@ -23,6 +23,7 @@ import argparse
 import json
 import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from store import Store, StoreError
@@ -84,7 +85,18 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/", "/index.html"):
             self._send_html(INDEX_HTML)
             return
+        if path in ("/practice", "/practice/"):
+            self._serve_practice()
+            return
         self._dispatch("GET", path)
+
+    def _serve_practice(self) -> None:
+        # The practice simulator is a standalone file (also openable via file://).
+        practice_file = Path(__file__).parent / "practice" / "index.html"
+        try:
+            self._send_html(practice_file.read_text(encoding="utf-8"))
+        except OSError:
+            self._send_html("<h1>practice/index.html 파일을 찾을 수 없습니다.</h1>", status=404)
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path

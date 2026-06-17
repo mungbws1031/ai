@@ -58,7 +58,8 @@ INDEX_HTML = """<!DOCTYPE html>
 <body>
 <header>
   <h1>🎫 티켓팅 · 예약/발권 관리</h1>
-  <p>행사를 등록하고 좌석을 예약·발권·취소합니다. 초과예약은 서버에서 자동으로 막습니다.</p>
+  <p>행사를 등록하고 좌석을 예약·발권·취소합니다. 초과예약은 서버에서 자동으로 막습니다.
+     · <a href="/practice" style="color:#5b8cff">🎮 티켓팅 가상 연습</a></p>
 </header>
 
 <div class="wrap">
