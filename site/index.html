@@ -53,6 +53,8 @@
   .seat:hover{ transform:scale(1.12); }
   .seat.taken{ background:#2a2f45; cursor:not-allowed; opacity:.5; }
   .seat.sel{ background:var(--good); border-color:#fff; }
+  .seat.snatch{ animation:snatch .35s ease; }
+  @keyframes snatch{ 0%{ background:var(--bad); transform:scale(1.3); } 100%{ background:#2a2f45; transform:scale(1); } }
   .legend{ display:flex; gap:16px; justify-content:center; font-size:12px; color:var(--muted); margin-bottom:8px; }
   .legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; }
 
@@ -171,7 +173,7 @@
 //// 상태 ////
 const T = { openAt:0, t_open:0, t_capStart:0, t_capDone:0, t_seatDone:0, t_payDone:0,
             captcha:"", capTries:0, need:2, picked:new Set(), rivals:0, total:0, taken:new Set(),
-            seatTimer:null, earlyClick:false };
+            seatTimer:null, earlyClick:false, preempted:0 };
 const EVENTS = ["별빛 팬미팅","2026 단독 팬콘","스페셜 팬미팅 in Seoul","앵콜 팬미팅 데이"];
 
 const $ = id => document.getElementById(id);
@@ -275,7 +277,7 @@ $("capInput")&&$("capInput").addEventListener("keydown",e=>{ if(e.key==="Enter")
 
 //// 3. 좌석 ////
 function buildSeats(){
-  const rows=8, cols=14; T.total=rows*cols; T.taken=new Set(); T.picked=new Set();
+  const rows=8, cols=14; T.total=rows*cols; T.taken=new Set(); T.picked=new Set(); T.preempted=0;
   // 시작 시점에 일부는 이미 매진
   const preTaken=Math.floor(T.total*0.15);
   while(T.taken.size<preTaken) T.taken.add(Math.floor(Math.random()*T.total));
@@ -311,6 +313,15 @@ function pickSeat(i,d){
   if(T.picked.has(i)){ T.picked.delete(i); d.classList.remove("sel"); }
   else{
     if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
+    // 실전 재현: 누르는 순간 다른 사람이 먼저 채갈 수 있음. 경쟁이 셀수록 확률↑.
+    const preemptChance = Math.min(0.45, T.rivals * 0.02);
+    if(Math.random() < preemptChance){
+      T.taken.add(i); T.preempted++;
+      d.classList.add("taken"); d.classList.remove("sel");
+      d.classList.add("snatch"); setTimeout(()=>d.classList.remove("snatch"), 350);
+      toast("이미 선점된 좌석입니다. 다른 좌석을 선택하세요!", true);
+      return;
+    }
     T.picked.add(i); d.classList.add("sel");
   }
   updateSeatBtn();
@@ -352,6 +363,7 @@ function finish(){
     <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
     <div class="stat"><span>보안문자 (${T.capTries}회 시도)</span><b>${fmt(capTime)}</b></div>
     <div class="stat"><span>좌석 선택</span><b>${fmt(seatTime)}</b></div>
+    <div class="stat"><span>선점당한 좌석</span><b>${T.preempted}회</b></div>
     <div class="stat"><span>결제 화면</span><b>${fmt(payTime)}</b></div>
     <div class="stat" style="border-bottom:none;font-size:16px"><span><b>전체 소요</b></span><b style="color:${color}">${fmt(totalFlow)}</b></div>`;
   show("s_done");
