@@ -104,12 +104,12 @@
         <select id="cfg_seats"><option>1</option><option selected>2</option><option>3</option><option>4</option></select>
       </div>
       <div>
-        <label>경쟁 강도(동시 접속자)</label>
-        <select id="cfg_rivals">
-          <option value="0">없음 (편하게)</option>
-          <option value="6" selected>보통</option>
-          <option value="14">치열</option>
-          <option value="30">광클 지옥</option>
+        <label>난이도 (매진 속도)</label>
+        <select id="cfg_diff">
+          <option value="easy">쉬움 · 천천히 매진</option>
+          <option value="normal" selected>보통 · 빠르게 매진</option>
+          <option value="hard">어려움 · 순삭</option>
+          <option value="hell">피켓팅(헬) · 광클 지옥</option>
         </select>
       </div>
     </div>
@@ -188,6 +188,16 @@ const GRADES = {
   D:{ name:"D석", price:44000,  color:"#6b7280" },
 };
 function gradeKey(row){ return row < 2 ? "S" : row < 4 ? "A" : row < 6 ? "C" : "D"; }
+const GRADE_RANK = { S:0, A:1, C:2, D:3 };
+
+// 난이도 = 매진 속도. interval(ms) 짧을수록·batch 클수록 빨리 매진,
+// preempt 는 좌석 클릭 순간 선점당할 확률.
+const DIFFICULTY = {
+  easy:   { name:"쉬움",        interval:650, batch:1, preempt:0.06 },
+  normal: { name:"보통",        interval:340, batch:2, preempt:0.14 },
+  hard:   { name:"어려움",      interval:190, batch:3, preempt:0.26 },
+  hell:   { name:"피켓팅(헬)",  interval:90,  batch:6, preempt:0.45 },
+};
 
 const $ = id => document.getElementById(id);
 function show(id){ ["s_setup","s_count","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
@@ -220,7 +230,7 @@ let rafId=null;
 function startCountdown(){
   const secs = Math.min(60, Math.max(3, parseInt($("cfg_count").value||"10",10)));
   T.need = parseInt($("cfg_seats").value,10);
-  T.rivals = parseInt($("cfg_rivals").value,10);
+  T.diff = DIFFICULTY[$("cfg_diff").value] || DIFFICULTY.normal;
   $("evtTitle").textContent = EVENTS[Math.floor(Math.random()*EVENTS.length)] + " — 예매 오픈 대기";
   T.openAt = performance.now() + secs*1000;
   $("openBtn").disabled = true;
@@ -308,36 +318,50 @@ function buildSeats(){
   $("seatNeed").textContent=`${T.need}석 선택`;
   $("seatBtn").disabled=true;
   updateSeatBtn();
-  // 경쟁자들이 실시간으로 좌석을 채움
+  updateRemain();
+  // 경쟁자들이 실시간으로 좌석을 채움 (난이도 = 매진 속도)
   if(T.seatTimer) clearInterval(T.seatTimer);
-  if(T.rivals>0){
-    const interval=Math.max(120, 900 - T.rivals*25);
-    T.seatTimer=setInterval(()=>rivalGrab(), interval);
-  }
+  T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval);
+}
+function updateRemain(){
+  const left=T.total - T.taken.size;
+  const hint=$("seatHint");
+  if(left<=0){ hint.innerHTML='<b style="color:var(--bad)">전석 매진!</b> 남은 좌석이 없어요 😭'; return; }
+  const warn = left <= T.total*0.15;
+  hint.innerHTML = `남은 좌석 <b style="color:${warn?'var(--bad)':'var(--warn)'}">${left}</b>석` +
+    (warn ? ' · 매진 임박! 서두르세요!' : ' · 실시간으로 빠르게 줄어듭니다');
 }
 function rivalGrab(){
-  // 남은 좌석 중 무작위 하나를 경쟁자가 가져감 (내가 고른 건 제외)
-  const free=[]; document.querySelectorAll(".seat").forEach(el=>{
-    const i=+el.dataset.i; if(!T.taken.has(i) && !T.picked.has(i)) free.push(el); });
-  if(!free.length){ clearInterval(T.seatTimer); return; }
-  const grab=Math.min(free.length, 1+Math.floor(Math.random()*Math.max(1,T.rivals/6)));
-  for(let k=0;k<grab;k++){
-    const el=free.splice(Math.floor(Math.random()*free.length),1)[0]; if(!el) break;
-    T.taken.add(+el.dataset.i); el.classList.add("taken"); el.classList.remove("sel");
+  // 남은 좌석 중 상위 등급(S→A→C→D)부터 우선적으로 빠르게 빠짐 (내가 고른 건 제외)
+  const free=[...document.querySelectorAll(".seat")].filter(el=>{
+    const i=+el.dataset.i; return !T.taken.has(i) && !T.picked.has(i); });
+  if(!free.length){ clearInterval(T.seatTimer); updateRemain(); return; }
+  free.sort((a,b)=> GRADE_RANK[gradeKey(Math.floor(+a.dataset.i/14))]
+                  - GRADE_RANK[gradeKey(Math.floor(+b.dataset.i/14))]);
+  const batch=Math.min(free.length, T.diff.batch);
+  for(let k=0;k<batch;k++){
+    // pow로 앞쪽(상위 등급)에 강하게 치우치게 선택 → S석이 가장 먼저 매진
+    const idx=Math.floor(Math.pow(Math.random(),3)*free.length);
+    const el=free.splice(idx,1)[0]; if(!el) break;
+    T.taken.add(+el.dataset.i); el.classList.add("taken","snatch"); el.classList.remove("sel");
+    setTimeout(e=>e.classList.remove("snatch"), 350, el);
   }
+  updateRemain();
 }
 function pickSeat(i,d){
   if(T.taken.has(i)){ toast("이미 매진된 좌석입니다", true); return; }
   if(T.picked.has(i)){ T.picked.delete(i); d.classList.remove("sel"); }
   else{
     if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
-    // 실전 재현: 누르는 순간 다른 사람이 먼저 채갈 수 있음. 경쟁이 셀수록 확률↑.
-    const preemptChance = Math.min(0.45, T.rivals * 0.02);
+    // 실전 재현: 누르는 순간 다른 사람이 먼저 채갈 수 있음. 상위 등급일수록 확률↑.
+    const gradeBoost = { S:1.6, A:1.2, C:1.0, D:0.8 }[gradeKey(Math.floor(i/14))];
+    const preemptChance = Math.min(0.7, T.diff.preempt * gradeBoost);
     if(Math.random() < preemptChance){
       T.taken.add(i); T.preempted++;
       d.classList.add("taken"); d.classList.remove("sel");
       d.classList.add("snatch"); setTimeout(()=>d.classList.remove("snatch"), 350);
       toast("이미 선점된 좌석입니다. 다른 좌석을 선택하세요!", true);
+      updateRemain();
       return;
     }
     T.picked.add(i); d.classList.add("sel");
@@ -377,8 +401,9 @@ function finish(){
   else if(totalFlow<20000){ grade="👍 통과"; color="var(--warn)"; }
   else { grade="🐢 연습 필요"; color="var(--bad)"; }
   $("grade").textContent=grade; $("grade").style.color=color;
-  LAST_RESULT=`[티켓팅 가상 연습] ${grade}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 보안문자 ${fmt(capTime)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
+  LAST_RESULT=`[티켓팅 가상 연습] ${grade} (난이도: ${T.diff.name})\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 보안문자 ${fmt(capTime)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
   $("result").innerHTML=`
+    <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
     <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
     <div class="stat"><span>보안문자 (${T.capTries}회 시도)</span><b>${fmt(capTime)}</b></div>
     <div class="stat"><span>좌석 선택</span><b>${fmt(seatTime)}</b></div>
