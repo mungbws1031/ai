@@ -91,12 +91,13 @@ class Handler(BaseHTTPRequestHandler):
         self._dispatch("GET", path)
 
     def _serve_practice(self) -> None:
-        # The practice simulator is a standalone file (also openable via file://).
-        practice_file = Path(__file__).parent / "practice" / "index.html"
+        # The practice simulator is a standalone file (also openable via file://
+        # and published to GitHub Pages from the same source).
+        practice_file = Path(__file__).parent.parent / "site" / "index.html"
         try:
             self._send_html(practice_file.read_text(encoding="utf-8"))
         except OSError:
-            self._send_html("<h1>practice/index.html 파일을 찾을 수 없습니다.</h1>", status=404)
+            self._send_html("<h1>site/index.html 파일을 찾을 수 없습니다.</h1>", status=404)
 
     def do_POST(self) -> None:
         path = urlparse(self.path).path

@@ -69,7 +69,10 @@
 <div class="banner">⚠️ 이 프로그램은 <b>연습용 가상 시뮬레이터</b>입니다. 실제 티켓링크 등 어떤 예매 사이트에도 접속하지 않으며, 표시되는 모든 정보는 가짜입니다.</div>
 <header>
   <h1>🎫 티켓팅 가상 연습</h1>
-  <div class="clock" id="wallclock">--:--:--</div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <button class="ghost" onclick="shareLink()" style="padding:7px 12px;font-size:13px">🔗 공유</button>
+    <div class="clock" id="wallclock">--:--:--</div>
+  </div>
 </header>
 
 <div class="wrap">
@@ -159,7 +162,7 @@
     <div id="result"></div>
     <div style="margin-top:18px" class="row">
       <button class="ghost" onclick="location.reload()">다시 연습</button>
-      <button onclick="location.reload()">설정 바꾸기</button>
+      <button onclick="shareResult()">🔗 결과 공유</button>
     </div>
   </section>
 </div>
@@ -175,6 +178,24 @@ const $ = id => document.getElementById(id);
 function show(id){ ["s_setup","s_count","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
 function toast(msg, err){ const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":""); setTimeout(()=>t.className="toast",1600); }
 function fmt(ms){ const s=Math.max(0,ms)/1000; return s.toFixed(3)+"s"; }
+
+//// 공유 ////
+async function copyOrShare(text, shareTitle){
+  // 1) Web Share API (모바일 카톡/메시지 등), 2) 클립보드 복사 폴백
+  if(navigator.share){
+    try{ await navigator.share({ title: shareTitle||document.title, text, url: location.href }); return; }
+    catch(e){ /* 사용자가 취소하면 복사로 폴백 */ }
+  }
+  try{ await navigator.clipboard.writeText(text); toast("클립보드에 복사했어요! 붙여넣어 공유하세요"); }
+  catch(e){ window.prompt("아래 내용을 복사해 공유하세요", text); }
+}
+function shareLink(){
+  copyOrShare("티켓팅 가상 연습 — 실전처럼 손에 익혀봐요! " + location.href, "티켓팅 가상 연습");
+}
+let LAST_RESULT="";
+function shareResult(){
+  copyOrShare(LAST_RESULT || ("티켓팅 가상 연습 도전! " + location.href), "내 티켓팅 연습 결과");
+}
 
 //// 벽시계 ////
 setInterval(()=>{ const d=new Date(); $("wallclock").textContent=d.toLocaleTimeString("ko-KR")+"."+String(d.getMilliseconds()).padStart(3,"0"); },53);
@@ -326,6 +347,7 @@ function finish(){
   else if(totalFlow<20000){ grade="👍 통과"; color="var(--warn)"; }
   else { grade="🐢 연습 필요"; color="var(--bad)"; }
   $("grade").textContent=grade; $("grade").style.color=color;
+  LAST_RESULT=`[티켓팅 가상 연습] ${grade}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 보안문자 ${fmt(capTime)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
   $("result").innerHTML=`
     <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
     <div class="stat"><span>보안문자 (${T.capTries}회 시도)</span><b>${fmt(capTime)}</b></div>

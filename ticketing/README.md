@@ -37,11 +37,18 @@ python app.py --db /tmp/t.db  # DB 파일 위치 지정 (기본: data/ticketing.
 - 경쟁자(동시 접속자) 시뮬레이션으로 좌석이 실시간으로 줄어듭니다.
 - 보안문자 길이·좌석 수·경쟁 강도·카운트다운 시간 조절 가능.
 
-여는 방법:
-```bash
-# 1) 서버로 접속:  python app.py  ->  http://127.0.0.1:8000/practice
-# 2) 또는 파일을 브라우저로 직접 열기:  ticketing/practice/index.html
-```
+### 공유하기 (여러 방법)
+시뮬레이터는 **외부 의존성이 전혀 없는 단일 HTML 파일**(`site/index.html`)이라
+어디서나 쉽게 공유됩니다.
+
+1. **파일 그대로 전송**: `site/index.html` 을 카톡·메일·USB로 보내면, 받는 사람이
+   더블클릭만 하면 열립니다. (인터넷 없이도 동작)
+2. **링크로 공유 (GitHub Pages)**: `main` 브랜치에 올라가면 워크플로가 자동
+   배포해 `https://mungbws1031.github.io/ai/` 주소로 누구나 접속할 수 있습니다.
+   - 최초 1회만: GitHub 저장소 **Settings → Pages → Source: "GitHub Actions"** 선택
+3. **서버로 접속**: `python app.py` → `http://127.0.0.1:8000/practice`
+4. 화면 우측 상단 **🔗 공유** 버튼 / 결과 화면 **🔗 결과 공유** 버튼으로 링크·기록을
+   복사하거나 모바일 공유 시트를 띄울 수 있습니다.
 
 ## 테스트
 ```bash
