@@ -148,9 +148,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           // 부드러운 재알림 (10분 뒤, 1회)
           if (m.remind) {
             const [hh, mm] = t.split(':').map((x) => parseInt(x, 10));
-            const remindHM = `${String(hh).padStart(2, '0')}:${String((mm + 10) % 60).padStart(2, '0')}`;
-            // 분 오버플로 단순화: 같은 시각대 내에서만 비교
-            if (nowHM === remindHM && (mm + 10) < 60) {
+            // Date로 계산해 시(時) 넘어가는 경우(xx:50~xx:59)도 올바르게 처리
+            const remindDate = new Date(now);
+            remindDate.setHours(hh, mm + 10, 0, 0);
+            const remindHM = `${String(remindDate.getHours()).padStart(2, '0')}:${String(remindDate.getMinutes()).padStart(2, '0')}`;
+            if (nowHM === remindHM) {
               notif.fire({
                 title: `${m.name} — 아직 안 먹었어`,
                 body: '괜찮아, 지금 먹자. 🤗',
