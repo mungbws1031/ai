@@ -13,7 +13,17 @@
 - **향 계열 프로필**: 시트러스·플로럴·우디 등 계열 비중 막대
 - **레시피 저장**: 브라우저 localStorage에 저장/불러오기/삭제
 - **랜덤 조합**: 균형 잡힌 시작점 자동 생성
-- **유명 향수 프리셋**: AnOther 13(Le Labo), No.5(Chanel), Opium(YSL)을 라이브러리 향료로 근사 재현 — 버튼으로 불러와 구조 학습
+- **유명 향수 프리셋**: 대표 향수 22종(샤넬·디올·톰포드·크리드·르라보 등)을 라이브러리 향료로 근사 재현 — 버튼으로 불러와 구조 학습
+
+## 향료 라이브러리 (48종)
+시트러스·플로럴·우디·오리엔탈·프레시·그린·스파이시·구르망·프루티·아쿠아틱·레더 11개 계열.
+
+## 프리셋 목록 (22종)
+Chanel No.5 / Coco Mademoiselle / Bleu de Chanel · Dior Sauvage / J'adore / Dior Homme ·
+YSL Opium / Black Opium · Creed Aventus · Armani Acqua di Giò · D&G Light Blue ·
+Versace Eros · Mugler Angel · Lancôme La Vie Est Belle · Viktor & Rolf Flowerbomb ·
+Tom Ford Black Orchid / Tobacco Vanille · Guerlain Shalimar · Le Labo Santal 33 / AnOther 13 ·
+Jo Malone Wood Sage & Sea Salt · Maison Margiela Replica Jazz Club
 
 ## 프리셋에 대하여
 프리셋은 실제 향수의 비공개 포뮬러가 아니라, 공개된 노트 피라미드를 라이브러리 향료로 단순 근사한 학습용 예시입니다.

@@ -12,6 +12,7 @@
     --top:#ffd166; --heart:#ff8fab; --base:#a78b6f;
     --citrus:#ffd166; --floral:#ff8fab; --woody:#a78b6f; --oriental:#c08bff;
     --fresh:#5ad1c8; --green:#7bd16b; --spicy:#ff8f5a; --gourmand:#d9a86c;
+    --fruity:#ff5d8f; --aquatic:#46c2e0; --leather:#8a5a3c;
   }
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:system-ui,"Segoe UI","Apple SD Gothic Neo",sans-serif;
@@ -134,8 +135,8 @@
       </div>
 
       <div class="card">
-        <h2>유명 향수 프리셋 <span class="tag">라이브러리 향료로 근사 재현</span></h2>
-        <div id="presets"></div>
+        <h2>유명 향수 프리셋 <span class="tag" id="presetCount"></span></h2>
+        <div id="presets" style="max-height:360px;overflow:auto;padding-right:4px;"></div>
         <div class="note">실제 포뮬러가 아니라 노트 피라미드를 단순 근사한 학습용 예시입니다.</div>
       </div>
     </div>
@@ -180,7 +181,8 @@
 // fam: 향 계열   strength: 1~5 (조합 시 영향력 가중치)
 const FAMILIES = {
   citrus:"시트러스", floral:"플로럴", woody:"우디", oriental:"오리엔탈",
-  fresh:"프레시", green:"그린", spicy:"스파이시", gourmand:"구르망"
+  fresh:"프레시", green:"그린", spicy:"스파이시", gourmand:"구르망",
+  fruity:"프루티", aquatic:"아쿠아틱", leather:"레더"
 };
 const MATERIALS = [
   {n:"베르가못",      fam:"citrus",   vol:"top",   str:2, d:"상큼하고 가벼운 시트러스"},
@@ -211,6 +213,26 @@ const MATERIALS = [
   {n:"머스크",        fam:"oriental", vol:"base",  str:3, d:"포근하고 살냄새 같은 잔향"},
   {n:"오크모스",      fam:"green",    vol:"base",  str:4, d:"이끼·숲의 클래식 베이스"},
   {n:"인센스",        fam:"oriental", vol:"base",  str:4, d:"스모키한 유향"},
+  {n:"라임",          fam:"citrus",   vol:"top",   str:2, d:"청량하고 톡 쏘는 라임"},
+  {n:"알데히드",      fam:"floral",   vol:"top",   str:3, d:"비누·금속광택의 추상 노트"},
+  {n:"진저",          fam:"spicy",    vol:"top",   str:3, d:"알싸하고 따뜻한 생강"},
+  {n:"파인애플",      fam:"fruity",   vol:"top",   str:2, d:"달콤·상큼한 열대 과일"},
+  {n:"블랙커런트",    fam:"fruity",   vol:"top",   str:2, d:"새콤한 카시스 베리"},
+  {n:"사과",          fam:"fruity",   vol:"top",   str:2, d:"풋풋한 그린 애플"},
+  {n:"마린노트",      fam:"aquatic",  vol:"top",   str:2, d:"바다·물방울의 청량감"},
+  {n:"씨솔트",        fam:"aquatic",  vol:"heart", str:2, d:"짭조름한 바다 소금"},
+  {n:"무화과",        fam:"green",    vol:"heart", str:2, d:"우유빛 그린 무화과"},
+  {n:"바이올렛",      fam:"floral",   vol:"heart", str:3, d:"파우더리한 제비꽃"},
+  {n:"아이리스",      fam:"floral",   vol:"heart", str:4, d:"우아하고 파우더리한 붓꽃"},
+  {n:"튜베로즈",      fam:"floral",   vol:"heart", str:5, d:"진하고 관능적인 백색꽃"},
+  {n:"커피",          fam:"gourmand", vol:"heart", str:4, d:"진한 로스팅 커피"},
+  {n:"럼",            fam:"gourmand", vol:"heart", str:3, d:"달큰한 럼·리큐어"},
+  {n:"카카오",        fam:"gourmand", vol:"base",  str:3, d:"쌉쌀한 다크 초콜릿"},
+  {n:"카라멜",        fam:"gourmand", vol:"base",  str:3, d:"끈적달콤한 캐러멜"},
+  {n:"담배",          fam:"oriental", vol:"base",  str:4, d:"말린 담뱃잎의 따뜻함"},
+  {n:"자작나무",      fam:"woody",    vol:"base",  str:4, d:"스모키·타르 같은 가죽우디"},
+  {n:"우드",          fam:"woody",    vol:"base",  str:5, d:"깊고 진한 아가우드(오드)"},
+  {n:"가죽",          fam:"leather",  vol:"base",  str:4, d:"스모키하고 동물적인 가죽"},
 ];
 const VOL_LABEL = {top:"탑", heart:"미들", base:"베이스"};
 const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
@@ -218,14 +240,51 @@ const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
 // ---- 유명 향수 근사 재현 프리셋 ----
 // 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
 const PRESETS = [
-  { name:"AnOther 13", brand:"Le Labo", desc:"머스크·앰브록산 중심의 클린 스킨센트",
-    blend:{ "핑크페퍼":1, "자스민":1, "앰버":2, "머스크":4, "오크모스":1, "베티버":1 } },
   { name:"No.5", brand:"Chanel", desc:"알데히드 플로럴의 고전",
-    blend:{ "베르가못":2, "일랑일랑":2, "네롤리":1, "자스민":3, "로즈":3, "제라늄":1,
-            "샌달우드":2, "베티버":1, "바닐라":1, "머스크":2 } },
-  { name:"Opium", brand:"Yves Saint Laurent", desc:"스파이시 오리엔탈 (YSL 시그니처)",
-    blend:{ "만다린":1, "베르가못":1, "클로브":1, "시나몬":2, "자스민":2,
-            "앰버":2, "파출리":2, "바닐라":2, "인센스":1 } },
+    blend:{ "알데히드":2,"베르가못":2,"일랑일랑":2,"네롤리":1, "자스민":3,"로즈":3,"제라늄":1,
+            "샌달우드":2,"베티버":1,"바닐라":1,"머스크":2 } },
+  { name:"Coco Mademoiselle", brand:"Chanel", desc:"산뜻한 로즈·파출리 시프레",
+    blend:{ "베르가못":2,"만다린":1, "로즈":3,"자스민":2, "파출리":3,"베티버":1,"바닐라":1,"머스크":1 } },
+  { name:"Bleu de Chanel", brand:"Chanel", desc:"시트러스·우디 아로마틱",
+    blend:{ "레몬":1,"베르가못":1,"자몽":1,"핑크페퍼":1,"진저":1, "인센스":1, "시더우드":2,"샌달우드":2,"베티버":1 } },
+  { name:"Sauvage", brand:"Dior", desc:"베르가못·앰브록산 프레시 스파이시",
+    blend:{ "베르가못":3,"라임":1,"핑크페퍼":2, "라벤더":1,"진저":1, "앰버":3,"머스크":2,"시더우드":1 } },
+  { name:"J'adore", brand:"Dior", desc:"화사한 화이트 플로럴 부케",
+    blend:{ "베르가못":1,"만다린":1, "일랑일랑":2,"로즈":2,"자스민":2,"튜베로즈":1, "머스크":1,"샌달우드":1 } },
+  { name:"Dior Homme", brand:"Dior", desc:"파우더리 아이리스·카카오",
+    blend:{ "라벤더":1, "아이리스":3,"바이올렛":1, "카카오":1,"가죽":1, "베티버":1,"시더우드":1 } },
+  { name:"Opium", brand:"Yves Saint Laurent", desc:"스파이시 오리엔탈",
+    blend:{ "만다린":1,"베르가못":1,"클로브":1, "시나몬":2,"자스민":2, "앰버":2,"파출리":2,"바닐라":2,"인센스":1 } },
+  { name:"Black Opium", brand:"Yves Saint Laurent", desc:"커피·바닐라 구르망",
+    blend:{ "핑크페퍼":1,"만다린":1, "커피":3,"자스민":2, "바닐라":3,"파출리":2,"통카빈":1 } },
+  { name:"Aventus", brand:"Creed", desc:"파인애플·자작나무 프루티 스모키",
+    blend:{ "베르가못":2,"파인애플":2,"블랙커런트":1, "자스민":1,"핑크페퍼":1, "자작나무":2,"오크모스":2,"머스크":2,"파출리":1 } },
+  { name:"Acqua di Giò", brand:"Giorgio Armani", desc:"상쾌한 마린 아쿠아틱",
+    blend:{ "베르가못":2,"라임":1,"마린노트":3, "자스민":1,"로즈마리":1, "시더우드":2,"파출리":1,"머스크":1 } },
+  { name:"Light Blue", brand:"Dolce & Gabbana", desc:"사과·시더 프레시 프루티",
+    blend:{ "레몬":1,"사과":2,"베르가못":1, "자스민":1, "시더우드":2,"머스크":2 } },
+  { name:"Eros", brand:"Versace", desc:"민트·통카 프레시 구르망",
+    blend:{ "페퍼민트":2,"사과":1,"레몬":1, "통카빈":2,"바닐라":1, "시더우드":2,"베티버":1,"파출리":1 } },
+  { name:"Angel", brand:"Thierry Mugler", desc:"파출리·카라멜 구르망 오리엔탈",
+    blend:{ "베르가못":1,"블랙커런트":1, "파출리":4,"카라멜":2,"바닐라":2,"카카오":1 } },
+  { name:"La Vie Est Belle", brand:"Lancôme", desc:"아이리스·프랄린 스위트",
+    blend:{ "베르가못":1,"블랙커런트":1, "아이리스":2,"자스민":1, "파출리":2,"바닐라":2,"통카빈":2,"카라멜":1 } },
+  { name:"Flowerbomb", brand:"Viktor & Rolf", desc:"폭발적인 플로럴 부케",
+    blend:{ "베르가못":1, "자스민":2,"로즈":2,"튜베로즈":1, "파출리":2,"바닐라":2,"머스크":1 } },
+  { name:"Black Orchid", brand:"Tom Ford", desc:"다크 플로럴·카카오 오리엔탈",
+    blend:{ "베르가못":1,"블랙커런트":1, "일랑일랑":1,"자스민":1, "파출리":3,"바닐라":2,"인센스":1,"카카오":1,"가죽":1 } },
+  { name:"Tobacco Vanille", brand:"Tom Ford", desc:"담배·바닐라 스파이시 구르망",
+    blend:{ "담배":4,"카다멈":1,"진저":1, "바닐라":3,"통카빈":2,"카카오":1 } },
+  { name:"Shalimar", brand:"Guerlain", desc:"베르가못·바닐라 앰버 동양향",
+    blend:{ "베르가못":2, "로즈":1,"자스민":1,"아이리스":1, "바닐라":3,"인센스":1,"가죽":1,"통카빈":1 } },
+  { name:"Santal 33", brand:"Le Labo", desc:"샌달우드·가죽 우디",
+    blend:{ "카다멈":1,"바이올렛":1, "샌달우드":4,"시더우드":2,"가죽":2,"파출리":1 } },
+  { name:"AnOther 13", brand:"Le Labo", desc:"머스크·앰브록산 클린 스킨센트",
+    blend:{ "핑크페퍼":1,"자스민":1, "앰버":2,"머스크":4,"오크모스":1,"베티버":1 } },
+  { name:"Wood Sage & Sea Salt", brand:"Jo Malone", desc:"씨솔트·세이지 미니멀",
+    blend:{ "자몽":1,"씨솔트":3,"마린노트":1, "로즈마리":1, "시더우드":2,"머스크":1 } },
+  { name:"Replica Jazz Club", brand:"Maison Margiela", desc:"럼·담배 우디 스피릿",
+    blend:{ "핑크페퍼":1,"라임":1, "럼":2,"자스민":1, "담배":2,"바닐라":2,"베티버":1 } },
 ];
 
 // ---- state ----
@@ -391,6 +450,7 @@ function render(){
 // ---- 프리셋 ----
 function renderPresets(){
   const wrap=$("#presets"); wrap.innerHTML="";
+  $("#presetCount").textContent=PRESETS.length+"종";
   PRESETS.forEach(p=>{
     const el=document.createElement("div"); el.className="saved-item";
     el.innerHTML=`<span class="nm"><b>${p.name}</b> <span class="muted">· ${p.brand}</span>
