@@ -1,13 +1,15 @@
 name: Deploy practice simulator to GitHub Pages
 
-# Publishes the standalone ticketing practice simulator (site/) so it can be
-# shared as a link: https://<user>.github.io/<repo>/
+# Publishes the standalone ticketing practice simulator (site/) at the Pages root
+# and the "에디의 하루" app (eddie/) under /eddie/, so both share one link:
+#   https://<user>.github.io/<repo>/        -> ticketing simulator
+#   https://<user>.github.io/<repo>/eddie/  -> Eddie's Day app
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/deploy-pages.yml"]
+    paths: ["site/**", "eddie/**", ".github/workflows/deploy-pages.yml"]
   workflow_dispatch: {}
 
 permissions:
@@ -28,9 +30,32 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: eddie/package-lock.json
+
+      - name: Build Eddie's Day (static export)
+        working-directory: eddie
+        env:
+          GITHUB_PAGES: "true"
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble Pages site
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp -r site/. _site/
+          mkdir -p _site/eddie
+          cp -r eddie/out/. _site/eddie/
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
