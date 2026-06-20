@@ -2,8 +2,17 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Scent Mixer · 향 조합 시뮬레이터</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0f1220" />
+<meta name="description" content="향료를 조합하고 노트 피라미드·밸런스를 분석하는 향 조합 학습 앱" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Scent Mixer" />
 <style>
   :root{
     --bg:#0f1220; --card:#1a1f35; --card2:#141831; --line:#2b3252; --fg:#e8ebf5;
@@ -17,7 +26,8 @@
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:system-ui,"Segoe UI","Apple SD Gothic Neo",sans-serif;
         background:radial-gradient(1200px 600px at 80% -10%, #21183a 0%, var(--bg) 55%);
-        color:var(--fg); min-height:100vh; }
+        color:var(--fg); min-height:100vh;
+        padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
   header{ padding:18px 22px; border-bottom:1px solid var(--line); display:flex;
           align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   header h1{ margin:0; font-size:19px; letter-spacing:.3px; }
@@ -102,7 +112,10 @@
 <body>
 <header>
   <h1>🧪 Scent Mixer <span class="sub">향 조합 시뮬레이터</span></h1>
-  <div class="muted" style="font-size:12px;">교육·연습용 · 실제 조향 가이드 아님</div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button id="installBtn" class="sm" style="display:none;">📲 앱 설치</button>
+    <span class="muted" style="font-size:12px;">교육·연습용</span>
+  </div>
 </header>
 
 <div class="wrap">
@@ -491,6 +504,23 @@ $("#clearBtn").onclick=clearBlend;
 $("#randomBtn").onclick=randomBlend;
 
 initFilters(); renderLib(); render(); renderPresets(); renderSaved();
+
+// ---- PWA: service worker + install prompt ----
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=> navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+let deferredPrompt=null;
+const installBtn=$("#installBtn");
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault(); deferredPrompt=e; installBtn.style.display="inline-block";
+});
+installBtn.onclick=async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null; installBtn.style.display="none";
+};
+window.addEventListener("appinstalled", ()=>{ installBtn.style.display="none"; });
 </script>
 </body>
 </html>
