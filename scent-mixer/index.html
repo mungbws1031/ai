@@ -132,6 +132,12 @@
           <button class="ghost sm" id="randomBtn">랜덤 조합</button>
         </div>
       </div>
+
+      <div class="card">
+        <h2>유명 향수 프리셋 <span class="tag">라이브러리 향료로 근사 재현</span></h2>
+        <div id="presets"></div>
+        <div class="note">실제 포뮬러가 아니라 노트 피라미드를 단순 근사한 학습용 예시입니다.</div>
+      </div>
     </div>
 
     <!-- RIGHT: analysis -->
@@ -208,6 +214,19 @@ const MATERIALS = [
 ];
 const VOL_LABEL = {top:"탑", heart:"미들", base:"베이스"};
 const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
+
+// ---- 유명 향수 근사 재현 프리셋 ----
+// 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
+const PRESETS = [
+  { name:"AnOther 13", brand:"Le Labo", desc:"머스크·앰브록산 중심의 클린 스킨센트",
+    blend:{ "핑크페퍼":1, "자스민":1, "앰버":2, "머스크":4, "오크모스":1, "베티버":1 } },
+  { name:"No.5", brand:"Chanel", desc:"알데히드 플로럴의 고전",
+    blend:{ "베르가못":2, "일랑일랑":2, "네롤리":1, "자스민":3, "로즈":3, "제라늄":1,
+            "샌달우드":2, "베티버":1, "바닐라":1, "머스크":2 } },
+  { name:"Opium", brand:"Yves Saint Laurent", desc:"스파이시 오리엔탈 (YSL 시그니처)",
+    blend:{ "만다린":1, "베르가못":1, "클로브":1, "시나몬":2, "자스민":2,
+            "앰버":2, "파출리":2, "바닐라":2, "인센스":1 } },
+];
 
 // ---- state ----
 let blend = {}; // name -> drops
@@ -369,6 +388,19 @@ function render(){
   }
 }
 
+// ---- 프리셋 ----
+function renderPresets(){
+  const wrap=$("#presets"); wrap.innerHTML="";
+  PRESETS.forEach(p=>{
+    const el=document.createElement("div"); el.className="saved-item";
+    el.innerHTML=`<span class="nm"><b>${p.name}</b> <span class="muted">· ${p.brand}</span>
+        <div class="muted" style="font-size:11.5px;">${p.desc}</div></span>
+      <button class="ghost sm" data-load>불러오기</button>`;
+    el.querySelector("[data-load]").onclick=()=>{ blend={...p.blend}; render(); };
+    wrap.appendChild(el);
+  });
+}
+
 // ---- saved recipes (localStorage) ----
 const KEY="scentmixer.recipes.v1";
 function loadSaved(){ try{ return JSON.parse(localStorage.getItem(KEY))||[]; }catch{ return []; } }
@@ -398,7 +430,7 @@ $("#saveBtn").onclick=()=>{
 $("#clearBtn").onclick=clearBlend;
 $("#randomBtn").onclick=randomBlend;
 
-initFilters(); renderLib(); render(); renderSaved();
+initFilters(); renderLib(); render(); renderPresets(); renderSaved();
 </script>
 </body>
 </html>
