@@ -1,7 +1,8 @@
 name: Deploy apps to GitHub Pages
 
-# Publishes standalone apps so they can be shared as links:
-#   site/          -> https://<user>.github.io/<repo>/            (ticketing practice simulator)
+# Publishes standalone apps so they can be shared from one Pages site:
+#   site/          -> https://<user>.github.io/<repo>/             (ticketing practice simulator)
+#   eddie/         -> https://<user>.github.io/<repo>/eddie/       ("에디의 하루" app)
 #   scent-mixer/   -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
@@ -10,6 +11,7 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      - "eddie/**"
       - "scent-mixer/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
@@ -32,13 +34,32 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Assemble publish directory
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: eddie/package-lock.json
+
+      - name: Build Eddie's Day (static export)
+        working-directory: eddie
+        env:
+          GITHUB_PAGES: "true"
         run: |
+          npm ci
+          npm run build
+
+      - name: Assemble Pages site
+        run: |
+          rm -rf _site
           mkdir -p _site
           cp -r site/. _site/
+          mkdir -p _site/eddie
+          cp -r eddie/out/. _site/eddie/
           mkdir -p _site/scent-mixer
           cp -r scent-mixer/. _site/scent-mixer/
           rm -f _site/scent-mixer/gen_icons.py
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
