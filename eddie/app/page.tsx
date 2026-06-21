@@ -11,8 +11,11 @@ import EddieBubble from '@/components/EddieBubble';
 
 // 오늘 화면 (IA §7.2): 에디 시계, 출발 카운트다운, 약, 다음 할 일
 export default function TodayPage() {
-  const { state } = useStore();
+  const { state, today, toggleEvent } = useStore();
   const morning = state.routines.find((r) => r.kind === 'morning') ?? state.routines[0];
+  const todayEvents = state.schedule
+    .filter((e) => e.date === today)
+    .sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
 
   const greetingHour = new Date().getHours();
   const greeting = greetingHour < 11 ? '좋은 아침이야' : greetingHour < 18 ? '오늘도 같이 가자' : '오늘 하루도 수고했어';
@@ -26,6 +29,37 @@ export default function TodayPage() {
       <EddieClock />
       <DepartureCard />
       <MedicationToday />
+
+      {todayEvents.length > 0 && (
+        <section className="card">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="font-semibold">오늘 일정</p>
+            <Link href="/calendar" className="text-sm text-eddie-primary">
+              달력 열기
+            </Link>
+          </div>
+          <ul className="flex flex-col gap-2">
+            {todayEvents.map((e) => (
+              <li key={e.id} className="flex items-center gap-3">
+                <button
+                  onClick={() => toggleEvent(e.id)}
+                  aria-pressed={e.done}
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
+                    e.done ? 'border-eddie-primary bg-eddie-primary text-white' : 'border-eddie-line'
+                  }`}
+                  aria-label={`${e.title} 완료 토글`}
+                >
+                  {e.done ? '✓' : ''}
+                </button>
+                <span className={`flex-1 ${e.done ? 'text-eddie-muted line-through' : ''}`}>
+                  {e.time && <span className="mr-1 font-mono text-xs text-eddie-primary">{e.time}</span>}
+                  {e.title}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {morning ? (
         <section className="card">
