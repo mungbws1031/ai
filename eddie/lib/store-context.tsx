@@ -15,9 +15,12 @@ import {
   DeparturePlan,
   DifficultyKey,
   Medication,
+  PlaceItem,
   Routine,
   RoutineItem,
+  ScheduleEvent,
   Settings,
+  SleepSettings,
   Streak,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
@@ -64,6 +67,21 @@ interface StoreValue {
 
   // 출발 (FR-102)
   setDeparture: (patch: Partial<DeparturePlan>) => void;
+
+  // 제자리 (FR-301)
+  addPlaceItem: (name: string, location: string) => void;
+  updatePlaceItem: (id: string, patch: Partial<Omit<PlaceItem, 'id'>>) => void;
+  removePlaceItem: (id: string) => void;
+
+  // 취침 (FR-401/403)
+  setSleep: (patch: Partial<SleepSettings>) => void;
+  recordBedtime: () => void;
+
+  // 스케줄 달력
+  addEvent: (date: string, title: string, time?: string) => void;
+  updateEvent: (id: string, patch: Partial<Omit<ScheduleEvent, 'id'>>) => void;
+  removeEvent: (id: string) => void;
+  toggleEvent: (id: string) => void;
 
   // 설정 (FR-205 화면 외 / NFR-A-003 / 톤)
   updateSettings: (patch: Partial<Settings>) => void;
@@ -194,6 +212,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
+
+      // 와인드다운 알림 (FR-401) + 화면 줄이기 넛지 (FR-402)
+      if (s.sleep.enabled) {
+        const [bh, bm] = s.sleep.targetBedtime.split(':').map((x) => parseInt(x, 10));
+        const windDown = new Date(now);
+        windDown.setHours(bh, bm - s.sleep.windDownLeadMin, 0, 0);
+        const fmt = (x: Date) => `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`;
+        if (nowHM === fmt(windDown)) {
+          notif.fire({
+            title: '슬슬 잘 준비할까',
+            body: notif.tonePhrase(tone, '화면을 조금 줄이고 천천히 내려놓자. 🌙', '이제 화면 그만! 잘 준비 시작하자. 🌙'),
+            tone,
+            key: `sleep:winddown`,
+            date: d,
+            cap,
+            fallback: pushToast,
+          });
+        }
+        if (nowHM === s.sleep.targetBedtime) {
+          notif.fire({
+            title: '목표 취침시각이야',
+            body: '오늘 수고했어. 누우면 취침 체크인 한 번만! 😴',
+            tone,
+            key: `sleep:bedtime`,
+            date: d,
+            cap,
+            fallback: pushToast,
+          });
+        }
+      }
+
+      // 스케줄 일정 알림 (시각 지정된 오늘 일정)
+      s.schedule.forEach((ev) => {
+        if (ev.date === d && ev.time && !ev.done && nowHM === ev.time) {
+          notif.fire({
+            title: '일정 알림',
+            body: ev.title,
+            tone,
+            key: `event:${ev.id}`,
+            date: d,
+            cap,
+            fallback: pushToast,
+          });
+        }
+      });
     }
 
     tick();
@@ -310,6 +373,48 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, departure: { ...s.departure, ...patch } }));
   }, []);
 
+  // ── 제자리 (FR-301) ──
+  const addPlaceItem = useCallback<StoreValue['addPlaceItem']>((name, location) => {
+    setState((s) => ({ ...s, placeItems: [...s.placeItems, { id: uid('pl'), name, location }] }));
+  }, []);
+  const updatePlaceItem = useCallback<StoreValue['updatePlaceItem']>((id, patch) => {
+    setState((s) => ({ ...s, placeItems: s.placeItems.map((p) => (p.id === id ? { ...p, ...patch } : p)) }));
+  }, []);
+  const removePlaceItem = useCallback<StoreValue['removePlaceItem']>((id) => {
+    setState((s) => ({ ...s, placeItems: s.placeItems.filter((p) => p.id !== id) }));
+  }, []);
+
+  // ── 취침 (FR-401/403) ──
+  const setSleep = useCallback<StoreValue['setSleep']>((patch) => {
+    setState((s) => ({ ...s, sleep: { ...s.sleep, ...patch } }));
+  }, []);
+  const recordBedtime = useCallback<StoreValue['recordBedtime']>(() => {
+    const now = new Date();
+    // 자정~새벽(05시 이전)이면 '전날 밤'으로 귀속해 하루 기록이 자연스럽게 이어지게 한다.
+    const night = new Date(now);
+    if (now.getHours() < 5) night.setDate(night.getDate() - 1);
+    const d = dateKey(night);
+    const bedtime = formatRealClock(now);
+    setState((s) => {
+      const others = s.sleepLogs.filter((l) => l.date !== d);
+      return { ...s, sleepLogs: [...others, { date: d, bedtime, recordedAt: now.toISOString() }] };
+    });
+  }, []);
+
+  // ── 스케줄 달력 ──
+  const addEvent = useCallback<StoreValue['addEvent']>((date, title, time) => {
+    setState((s) => ({ ...s, schedule: [...s.schedule, { id: uid('ev'), date, title, time, done: false }] }));
+  }, []);
+  const updateEvent = useCallback<StoreValue['updateEvent']>((id, patch) => {
+    setState((s) => ({ ...s, schedule: s.schedule.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));
+  }, []);
+  const removeEvent = useCallback<StoreValue['removeEvent']>((id) => {
+    setState((s) => ({ ...s, schedule: s.schedule.filter((e) => e.id !== id) }));
+  }, []);
+  const toggleEvent = useCallback<StoreValue['toggleEvent']>((id) => {
+    setState((s) => ({ ...s, schedule: s.schedule.map((e) => (e.id === id ? { ...e, done: !e.done } : e)) }));
+  }, []);
+
   const updateSettings = useCallback<StoreValue['updateSettings']>((patch) => {
     setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   }, []);
@@ -342,6 +447,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     removeMedication,
     recordMed,
     setDeparture,
+    addPlaceItem,
+    updatePlaceItem,
+    removePlaceItem,
+    setSleep,
+    recordBedtime,
+    addEvent,
+    updateEvent,
+    removeEvent,
+    toggleEvent,
     updateSettings,
     resetAll,
   };

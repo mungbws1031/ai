@@ -19,6 +19,10 @@ export function defaultState(): AppState {
       prepMin: 20,
       leadMin: 5,
     },
+    placeItems: [],
+    sleep: { enabled: false, targetBedtime: '23:30', windDownLeadMin: 30 },
+    sleepLogs: [],
+    schedule: [],
     streak: { total: 0, momentum: 0 },
     settings: {
       tone: 'soft',

@@ -6,6 +6,9 @@ import PageHeader from '@/components/PageHeader';
 const links = [
   { href: '/more/medications', label: '복약 관리', desc: '약·시간·요일 설정', icon: '💊' },
   { href: '/more/departure', label: '출발 알림', desc: '도착시각으로 출발 역산', icon: '🚪' },
+  { href: '/more/place', label: '제자리', desc: '물건 자리 등록 · 외출 체크', icon: '🔑' },
+  { href: '/more/sleep', label: '취침', desc: '와인드다운 · 취침 기록', icon: '🌙' },
+  { href: '/more/tidy', label: '5분 정리', desc: '마이크로 정리 타이머', icon: '🧹' },
   { href: '/more/notifications', label: '알림 설정', desc: '권한·톤·하루 총량', icon: '🔔' },
   { href: '/more/about', label: '면책 · 개인정보', desc: '의료기기 아님 · 데이터 관리', icon: '🛡️' },
 ];
