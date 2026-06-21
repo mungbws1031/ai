@@ -51,6 +51,17 @@
   @keyframes wispRise{ 0%{ transform:translateY(8px); opacity:0 } 35%{ opacity:.85 } 100%{ transform:translateY(-26px); opacity:0 } }
   @keyframes partFloat{ 0%{ transform:translateY(0); opacity:0 } 12%{ opacity:.9 } 100%{ transform:translateY(-64px); opacity:0 } }
   @media(prefers-reduced-motion:reduce){ .band,.fillband,.wisp,.part{ animation:none } .part{ opacity:.6 } }
+  /* scent simulator */
+  .sim-ctrl{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .sim-ctrl input[type=range]{ flex:1; accent-color:var(--accent); }
+  #simClock{ font-size:12px; min-width:78px; text-align:right; font-variant-numeric:tabular-nums; }
+  .sim-phase{ font-size:13px; font-weight:600; margin-bottom:4px; }
+  .sim-desc{ font-size:12.5px; color:var(--muted); line-height:1.6; margin-bottom:10px; }
+  .sim-note{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .sim-note .nm{ width:90px; font-size:12.5px; display:flex; align-items:center; gap:6px; }
+  .sim-note .track{ flex:1; height:8px; background:var(--card2); border-radius:5px; overflow:hidden; }
+  .sim-note .fill{ height:100%; border-radius:5px; transition:width .25s; }
+  .sim-note .pc{ width:38px; text-align:right; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
   .grid{ display:grid; grid-template-columns:1.15fr .85fr; gap:16px; align-items:start; }
   @media(max-width:880px){ .grid{ grid-template-columns:1fr; } }
   .card{ background:var(--card); border:1px solid var(--line); border-radius:16px;
@@ -319,6 +330,16 @@
       <div class="card">
         <h2>지속 시간 & 발향 <span class="tag">조합에 따라 달라져요</span></h2>
         <div id="longevity"><div class="empty">조합을 추가하면 표시됩니다.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>🌬️ 시향 시뮬레이터 <span class="tag">뿌린 뒤 시간 흐름 체험</span></h2>
+        <div class="sim-ctrl">
+          <button id="simPlay" class="sm">▶ 뿌려보기</button>
+          <input type="range" id="simTime" min="0" max="100" value="0" />
+          <span id="simClock" class="muted">지금</span>
+        </div>
+        <div id="simNow"><div class="empty">조합을 추가하면 체험할 수 있어요.</div></div>
       </div>
 
       <div class="card">
@@ -760,9 +781,10 @@ function render(){
     }).join("");
   }
 
-  // recommendations + longevity + goal + quantities
+  // recommendations + longevity + simulator + goal + quantities
   renderRecs(a);
   renderLongevity(a);
+  renderSim(a);
   renderGoal(a);
   renderRecipeQty(a);
 }
@@ -790,6 +812,62 @@ function renderLongevity(a){
     ${phaseRows}
     <div class="note">탑은 먼저 날아가고 베이스가 끝까지 남아요. 오래 가게 하려면 베이스노트(머스크·앰버·우디·바닐라) 비중을 높이세요.</div>`;
 }
+
+// ---- 시향 시뮬레이터 ----
+const PHASE_DESC = {
+  top:   "확 퍼지는 첫인상 — 탑노트 단계",
+  heart: "향의 중심이 피어나는 미들노트 단계",
+  base:  "은은하게 남는 잔향 — 베이스노트 단계"
+};
+// 시간 t(시간)에서 각 향료의 현재 세기와 지배 단계/계열
+function simAt(a,t){
+  const cur=a.weighted.map(i=>({...i, c:i.w*Math.pow(0.5,t/lastHours(i))}));
+  const tot=cur.reduce((s,i)=>s+i.c,0)||1;
+  cur.forEach(i=>i.pct=i.c/tot*100);
+  cur.sort((x,y)=>y.c-x.c);
+  const lw={top:0,heart:0,base:0}; cur.forEach(i=>lw[i.vol]+=i.c);
+  const phase=Object.entries(lw).sort((x,y)=>y[1]-x[1])[0][0];
+  const fw={}; cur.forEach(i=>fw[i.fam]=(fw[i.fam]||0)+i.c);
+  const fams=Object.entries(fw).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([f])=>FAMILIES[f]);
+  return {cur,phase,fams};
+}
+let simMax=0;
+function renderSim(a){
+  const wrap=$("#simNow"), slider=$("#simTime");
+  if(!a.items.length){
+    wrap.innerHTML='<div class="empty">조합을 추가하면 체험할 수 있어요.</div>';
+    $("#simClock").textContent="지금"; slider.disabled=true; stopSim(); return;
+  }
+  slider.disabled=false;
+  simMax=Math.max(longevity(a).hours,0.5);
+  const t=(+slider.value)/100*simMax;
+  const S=simAt(a,t);
+  $("#simClock").textContent = t<0.05? "분사 직후" : fmtH(t)+" 후";
+  const notes=S.cur.filter(i=>i.pct>=5).slice(0,6);
+  const rows=notes.map(i=>`<div class="sim-note">
+      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="track"><span class="fill" style="width:${Math.min(100,i.pct)}%;background:${famColor(i.fam)}"></span></span>
+      <span class="pc">${i.pct.toFixed(0)}%</span></div>`).join("");
+  wrap.innerHTML=`
+    <div class="sim-phase" style="color:var(--${S.phase})">${PHASE_DESC[S.phase]}</div>
+    <div class="sim-desc">지금 <b style="color:var(--fg)">${S.fams.join(" · ")}</b> 계열이 도드라지고, <b style="color:var(--fg)">${notes[0]?notes[0].n:"-"}</b>이(가) 가장 강하게 느껴져요.</div>
+    ${rows||'<div class="empty">향이 거의 날아갔어요.</div>'}`;
+}
+let simTimer=null;
+function stopSim(){ if(simTimer){ clearInterval(simTimer); simTimer=null; } const b=$("#simPlay"); if(b) b.textContent="▶ 뿌려보기"; }
+function toggleSim(){
+  if(simTimer){ stopSim(); return; }
+  const slider=$("#simTime"), btn=$("#simPlay");
+  if(slider.disabled) return;
+  if(+slider.value>=100) slider.value=0;
+  btn.textContent="⏸ 멈춤";
+  simTimer=setInterval(()=>{
+    let v=+slider.value+1.5;             // 0→100을 약 7초에 걸쳐
+    if(v>=100){ v=100; slider.value=v; updateSim(); stopSim(); return; }
+    slider.value=v; updateSim();
+  },100);
+}
+function updateSim(){ renderSim(analyze()); }
 
 // ---- 목표로 만들기 ----
 function renderMoodTags(){
@@ -919,6 +997,8 @@ $("#randomBtn").onclick=randomBlend;
 $("#starterBtn").onclick=starter;
 $("#guideRandomBtn").onclick=randomBlend;
 $("#genGoalBtn").onclick=buildFromGoal;
+$("#simPlay").onclick=toggleSim;
+$("#simTime").addEventListener("input",updateSim);
 $("#goalHours").addEventListener("change",()=>render());
 ["batchMl","conc"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
 
