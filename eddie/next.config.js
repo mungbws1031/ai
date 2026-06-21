@@ -7,6 +7,8 @@ const basePath = '/ai/eddie';
 
 const nextConfig = {
   reactStrictMode: true,
+  // 클라이언트에서 SW 등록·manifest 경로에 사용할 베이스 경로 노출.
+  env: { NEXT_PUBLIC_BASE_PATH: isPages ? basePath : '' },
   ...(isPages
     ? {
         output: 'export',
