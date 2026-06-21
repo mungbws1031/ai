@@ -1,15 +1,19 @@
-name: Deploy practice simulator to GitHub Pages
+name: Deploy apps to GitHub Pages
 
-# Publishes the standalone ticketing practice simulator (site/) at the Pages root
-# and the "에디의 하루" app (eddie/) under /eddie/, so both share one link:
-#   https://<user>.github.io/<repo>/        -> ticketing simulator
-#   https://<user>.github.io/<repo>/eddie/  -> Eddie's Day app
+# Publishes standalone apps so they can be shared from one Pages site:
+#   site/          -> https://<user>.github.io/<repo>/             (ticketing practice simulator)
+#   eddie/         -> https://<user>.github.io/<repo>/eddie/       ("에디의 하루" app)
+#   scent-mixer/   -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", "eddie/**", ".github/workflows/deploy-pages.yml"]
+    paths:
+      - "site/**"
+      - "eddie/**"
+      - "scent-mixer/**"
+      - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
 permissions:
@@ -52,6 +56,9 @@ jobs:
           cp -r site/. _site/
           mkdir -p _site/eddie
           cp -r eddie/out/. _site/eddie/
+          mkdir -p _site/scent-mixer
+          cp -r scent-mixer/. _site/scent-mixer/
+          rm -f _site/scent-mixer/gen_icons.py
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

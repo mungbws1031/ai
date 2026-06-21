@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-// 하단 탭 4개 (IA §7.2): 오늘 · 루틴 · 에디 · 더보기
+// 하단 탭: 오늘 · 루틴 · 달력 · 정리 · 에디 · 더보기
 const tabs = [
   { href: '/', label: '오늘', icon: '🌤️' },
   { href: '/routines', label: '루틴', icon: '✅' },

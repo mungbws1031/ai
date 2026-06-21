@@ -118,6 +118,27 @@ export interface ScheduleEvent {
   done: boolean;
 }
 
+/** 제자리 물건 (FR-301) */
+export interface PlaceItem {
+  id: string;
+  name: string;
+  location: string; // 지정 위치(텍스트)
+}
+
+/** 취침 설정 (FR-401) */
+export interface SleepSettings {
+  enabled: boolean;
+  targetBedtime: string; // 'HH:mm' 목표 취침시각
+  windDownLeadMin: number; // 와인드다운 시작 N분 전
+}
+
+/** 취침 기록 (FR-403). 목표 대비 실제 비교용. */
+export interface SleepLog {
+  date: string; // YYYY-MM-DD (취침 체크인을 누른 '밤'의 날짜)
+  bedtime: string; // 'HH:mm' 실제 체크인 시각
+  recordedAt: string; // ISO
+}
+
 export interface AppState {
   // 온보딩 완료 여부 + 선택한 어려움
   onboarded: boolean;
