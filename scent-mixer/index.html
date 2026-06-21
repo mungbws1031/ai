@@ -126,6 +126,25 @@
   .phase .ptrack{ flex:1; height:7px; background:var(--card2); border-radius:5px; position:relative; overflow:hidden; }
   .phase .pbar{ position:absolute; height:100%; border-radius:5px; }
   .phase .pt{ width:120px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
+  /* goal builder */
+  .lbl{ display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .row{ display:flex; gap:10px; } .row>*{ flex:1; }
+  .moods{ display:flex; flex-wrap:wrap; gap:6px; }
+  .mtag{ font-size:12px; padding:5px 10px; border-radius:20px; cursor:pointer; user-select:none;
+         border:1px solid var(--line); background:var(--card2); color:var(--fg); }
+  .mtag.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); font-weight:600; }
+  .goal-res{ font-size:12.5px; line-height:1.7; margin-top:10px; }
+  .ok{ color:var(--good); } .no{ color:var(--bad); }
+  /* recipe quantities */
+  .qty-row{ display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center;
+            padding:7px 0; border-bottom:1px solid var(--line); }
+  .qty-row:last-of-type{ border-bottom:none; }
+  .qty-row .nm{ font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .qty-row .v{ text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--muted); min-width:64px; }
+  .qty-sum{ margin-top:12px; font-size:12.5px; display:grid; gap:3px;
+            border-top:1px solid var(--line); padding-top:10px; }
+  .qty-sum .qrow{ display:flex; justify-content:space-between; }
+  .qty-sum b{ color:var(--fg); }
 </style>
 </head>
 <body>
@@ -141,6 +160,27 @@
   <div class="grid">
     <!-- LEFT: library + blend -->
     <div>
+      <div class="card">
+        <h2>🎯 목표로 만들기 <span class="tag">조건 정하면 자동 조합</span></h2>
+        <div class="row">
+          <div>
+            <label class="lbl">지속 시간 목표</label>
+            <select id="goalHours">
+              <option value="5">가볍게 ~5시간</option>
+              <option value="7" selected>보통 ~7시간</option>
+              <option value="9">오래 ~9시간</option>
+              <option value="12">아주 오래 ~12시간+</option>
+            </select>
+          </div>
+        </div>
+        <label class="lbl">원하는 무드 (여러 개 선택 가능)</label>
+        <div class="moods" id="moodTags"></div>
+        <div class="actions">
+          <button id="genGoalBtn">✨ 이 조건으로 조합 생성</button>
+        </div>
+        <div class="goal-res" id="goalRes"></div>
+      </div>
+
       <div class="card">
         <h2>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></h2>
         <div class="guide-steps">
@@ -217,6 +257,30 @@
       <div class="card">
         <h2>향 계열 프로필</h2>
         <div id="families"><div class="empty">아직 향료가 없습니다.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>🧴 재료 분량 <span class="tag">실제로 만들 때</span></h2>
+        <div class="row">
+          <div>
+            <label class="lbl">만들 용량</label>
+            <select id="batchMl">
+              <option value="10">10 ml (롤온)</option>
+              <option value="30" selected>30 ml</option>
+              <option value="50">50 ml</option>
+              <option value="100">100 ml</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">농도 타입</label>
+            <select id="conc">
+              <option value="0.10">오 드 뚜왈렛 (10%)</option>
+              <option value="0.20" selected>오 드 퍼퓸 (20%)</option>
+              <option value="0.30">퍼퓸 (30%)</option>
+            </select>
+          </div>
+        </div>
+        <div id="recipeQty" style="margin-top:12px;"><div class="empty">조합을 추가하면 분량이 계산됩니다.</div></div>
       </div>
 
       <div class="card">
@@ -309,6 +373,23 @@ const LAYER_PICK = { top:"베르가못", heart:"로즈", base:"샌달우드" };
 const FAM_PICK = { citrus:"베르가못", floral:"로즈", woody:"샌달우드", oriental:"앰버",
   fresh:"페퍼민트", green:"로즈마리", spicy:"핑크페퍼", gourmand:"바닐라",
   fruity:"사과", aquatic:"마린노트", leather:"가죽" };
+
+// 무드/스타일 → 대표 향료 (계열을 넘어 캐릭터 기준; 파우더리·달콤 등 포함)
+const MOODS = {
+  "꽃향기":   ["로즈","자스민","일랑일랑","네롤리","튜베로즈","제라늄"],
+  "우드":     ["샌달우드","시더우드","베티버","파출리","우드"],
+  "파우더리": ["아이리스","바이올렛","머스크","통카빈"],
+  "시트러스": ["베르가못","레몬","자몽","만다린","라임"],
+  "프레시":   ["페퍼민트","유칼립투스","마린노트","라벤더"],
+  "스파이시": ["핑크페퍼","시나몬","카다멈","클로브","진저"],
+  "달콤":     ["바닐라","통카빈","카라멜","카카오","커피"],
+  "앰버":     ["앰버","인센스","머스크","담배"],
+  "그린":     ["바질","로즈마리","무화과","오크모스"],
+  "프루티":   ["사과","파인애플","블랙커런트"],
+  "아쿠아틱": ["마린노트","씨솔트","자몽"],
+  "가죽":     ["가죽","자작나무","파출리"],
+};
+const selectedMoods = new Set();
 
 // ---- 유명 향수 근사 재현 프리셋 ----
 // 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
@@ -605,9 +686,11 @@ function render(){
     }).join("");
   }
 
-  // recommendations + longevity
+  // recommendations + longevity + goal + quantities
   renderRecs(a);
   renderLongevity(a);
+  renderGoal(a);
+  renderRecipeQty(a);
 }
 
 function renderLongevity(a){
@@ -632,6 +715,86 @@ function renderLongevity(a){
     <div class="curve-x"><span>지금</span><span>${fmtH(L.span/2)}</span><span>${fmtH(L.span)}</span></div>
     ${phaseRows}
     <div class="note">탑은 먼저 날아가고 베이스가 끝까지 남아요. 오래 가게 하려면 베이스노트(머스크·앰버·우디·바닐라) 비중을 높이세요.</div>`;
+}
+
+// ---- 목표로 만들기 ----
+function renderMoodTags(){
+  const wrap=$("#moodTags"); wrap.innerHTML="";
+  Object.keys(MOODS).forEach(m=>{
+    const el=document.createElement("span");
+    el.className="mtag"+(selectedMoods.has(m)?" on":"");
+    el.textContent=m;
+    el.onclick=()=>{ selectedMoods.has(m)?selectedMoods.delete(m):selectedMoods.add(m); renderMoodTags(); render(); };
+    wrap.appendChild(el);
+  });
+}
+function buildFromGoal(){
+  const target=+$("#goalHours").value;
+  const chosen = selectedMoods.size? [...selectedMoods] : ["꽃향기","우드"];
+  const dropFor=v=> v==="heart"?3:2;
+  const b={};
+  // 선택한 모든 무드가 최소 1개씩 반드시 포함되도록
+  chosen.forEach(m=>{
+    const n=MOODS[m].find(x=>mat(x));
+    if(n){ const v=mat(n).vol; b[n]=Math.max(b[n]||0, dropFor(v)); }
+  });
+  // 빠진 층 채우기 (가벼운 목표는 베이스를 강제하지 않아 더 짧게)
+  const haveVol=v=>Object.keys(b).some(n=>mat(n).vol===v);
+  if(!haveVol("top"))   b["베르가못"]=2;
+  if(!haveVol("heart")) b["로즈"]=3;
+  if(target>=6 && !haveVol("base")) b["샌달우드"]=2;
+  blend=b;
+  // 목표 지속에 가깝도록 방울 조정
+  const notesOf=v=>Object.keys(blend).filter(n=>mat(n).vol===v);
+  for(let i=0;i<40;i++){
+    const h=longevity(analyze()).hours;
+    if(h < target-0.6){
+      const base=notesOf("base");
+      if(base.length) base.forEach(n=>{ if(blend[n]<6) blend[n]++; });
+      else break; // 베이스 없으면 더 늘릴 수 없음
+    } else if(h > target+1.2){
+      let n=notesOf("base").find(x=>blend[x]>1) || notesOf("heart").find(x=>blend[x]>1);
+      if(n) blend[n]--; else break;
+    } else break;
+  }
+  render();
+}
+function renderGoal(a){
+  const wrap=$("#goalRes"); const target=+$("#goalHours").value;
+  if(!a.items.length && !selectedMoods.size){ wrap.innerHTML=""; return; }
+  const L=a.items.length? longevity(a):null;
+  const h=L?L.hours:0;
+  const hOk=L && Math.abs(h-target)<=Math.max(1.5,target*0.25);
+  let html=`<div>지속: 목표 ~${target}시간 / 현재 <b>${L?fmtH(h):"–"}</b> <span class="${hOk?'ok':'no'}">${L?(hOk?'✓':'✗'):''}</span></div>`;
+  if(selectedMoods.size){
+    const parts=[...selectedMoods].map(m=>{
+      const present=MOODS[m].some(n=>blend[n]);
+      return `<span class="${present?'ok':'no'}">${present?'✓':'✗'} ${m}</span>`;
+    });
+    html+=`<div>무드: ${parts.join(" · ")}</div>`;
+  }
+  wrap.innerHTML=html;
+}
+
+// ---- 재료 분량(실제 제작) ----
+function renderRecipeQty(a){
+  const wrap=$("#recipeQty");
+  if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 분량이 계산됩니다.</div>'; return; }
+  const batch=+$("#batchMl").value, conc=+$("#conc").value, DPM=20; // 1ml≈20방울
+  const oilMl=batch*conc, alcMl=batch-oilMl;
+  const totalDrops=a.items.reduce((s,i)=>s+i.drops,0)||1;
+  const rows=a.items.map(i=>{
+    const ml=oilMl*(i.drops/totalDrops);
+    return `<div class="qty-row"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="v">${ml.toFixed(2)} ml</span><span class="v">${Math.max(1,Math.round(ml*DPM))}방울</span></div>`;
+  }).join("");
+  wrap.innerHTML=rows+`
+    <div class="qty-sum">
+      <div class="qrow"><span>향료 원액 합계</span><b>${oilMl.toFixed(1)} ml (${Math.round(conc*100)}%)</b></div>
+      <div class="qrow"><span>퍼퓸용 알코올</span><b>${alcMl.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div>
+    </div>
+    <div class="note">① 향료 원액을 위 비율대로 섞고 → ② 퍼퓸용 알코올로 ${batch}ml까지 채운 뒤 → ③ 어두운 곳에서 4~6주 숙성(마세레이션)하면 향이 안정돼요. 방울은 1ml≈20방울 환산.</div>`;
 }
 
 // 초보용 스타터: 탑·미들·베이스 기본 3종
@@ -681,8 +844,11 @@ $("#clearBtn").onclick=clearBlend;
 $("#randomBtn").onclick=randomBlend;
 $("#starterBtn").onclick=starter;
 $("#guideRandomBtn").onclick=randomBlend;
+$("#genGoalBtn").onclick=buildFromGoal;
+$("#goalHours").addEventListener("change",()=>render());
+["batchMl","conc"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
 
-initFilters(); renderLib(); render(); renderPresets(); renderSaved();
+initFilters(); renderMoodTags(); renderLib(); render(); renderPresets(); renderSaved();
 
 // ---- PWA: service worker + install prompt ----
 if("serviceWorker" in navigator){
