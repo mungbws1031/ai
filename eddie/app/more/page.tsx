@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import PageHeader from '@/components/PageHeader';
+import InstallCard from '@/components/InstallCard';
 
 const links = [
   { href: '/more/medications', label: '복약 관리', desc: '약·시간·요일 설정', icon: '💊' },
@@ -17,6 +18,7 @@ export default function MorePage() {
   return (
     <div className="px-4">
       <PageHeader title="더보기" />
+      <InstallCard />
       <ul className="flex flex-col gap-3">
         {links.map((l) => (
           <li key={l.href}>

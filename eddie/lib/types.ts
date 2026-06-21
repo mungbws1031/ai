@@ -139,6 +139,17 @@ export interface SleepLog {
   recordedAt: string; // ISO
 }
 
+/** 빠른 할 일 캡처(브레인 덤프). 날짜·시간에 매이지 않는 한 번성 할 일 인박스. */
+export interface Todo {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: string; // ISO
+  doneAt?: string; // ISO
+  remindAt?: string; // 'HH:mm' — 선택. 이 시각에 알림
+  remindDate?: string; // 'YYYY-MM-DD' — 알림 대상 날짜(보통 담은 날)
+}
+
 export interface AppState {
   // 온보딩 완료 여부 + 선택한 어려움
   onboarded: boolean;
@@ -146,6 +157,9 @@ export interface AppState {
 
   routines: Routine[];
   checkIns: CheckInLog[];
+
+  // 빠른 할 일 캡처
+  todos: Todo[];
 
   medications: Medication[];
   medLogs: MedicationLog[];
