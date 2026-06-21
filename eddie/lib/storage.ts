@@ -10,6 +10,7 @@ export function defaultState(): AppState {
     difficulties: [],
     routines: [],
     checkIns: [],
+    todos: [],
     medications: [],
     medLogs: [],
     departure: {

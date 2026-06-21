@@ -22,6 +22,7 @@ import {
   Settings,
   SleepSettings,
   Streak,
+  Todo,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
 import { dateKey, formatRealClock } from './clock';
@@ -76,6 +77,12 @@ interface StoreValue {
   // 취침 (FR-401/403)
   setSleep: (patch: Partial<SleepSettings>) => void;
   recordBedtime: () => void;
+
+  // 빠른 할 일 캡처(브레인 덤프)
+  addTodo: (text: string) => void;
+  toggleTodo: (id: string) => void;
+  removeTodo: (id: string) => void;
+  clearDoneTodos: () => void;
 
   // 스케줄 달력
   addEvent: (date: string, title: string, time?: string) => void;
@@ -401,6 +408,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  // ── 빠른 할 일 캡처 ──
+  const addTodo = useCallback<StoreValue['addTodo']>((text) => {
+    const t = text.trim();
+    if (!t) return;
+    setState((s) => ({
+      ...s,
+      todos: [{ id: uid('todo'), text: t, done: false, createdAt: new Date().toISOString() }, ...s.todos],
+    }));
+  }, []);
+  const toggleTodo = useCallback<StoreValue['toggleTodo']>((id) => {
+    setState((s) => ({
+      ...s,
+      todos: s.todos.map((t) =>
+        t.id === id ? { ...t, done: !t.done, doneAt: !t.done ? new Date().toISOString() : undefined } : t,
+      ),
+    }));
+  }, []);
+  const removeTodo = useCallback<StoreValue['removeTodo']>((id) => {
+    setState((s) => ({ ...s, todos: s.todos.filter((t) => t.id !== id) }));
+  }, []);
+  const clearDoneTodos = useCallback<StoreValue['clearDoneTodos']>(() => {
+    setState((s) => ({ ...s, todos: s.todos.filter((t) => !t.done) }));
+  }, []);
+
   // ── 스케줄 달력 ──
   const addEvent = useCallback<StoreValue['addEvent']>((date, title, time) => {
     setState((s) => ({ ...s, schedule: [...s.schedule, { id: uid('ev'), date, title, time, done: false }] }));
@@ -452,6 +483,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     removePlaceItem,
     setSleep,
     recordBedtime,
+    addTodo,
+    toggleTodo,
+    removeTodo,
+    clearDoneTodos,
     addEvent,
     updateEvent,
     removeEvent,
