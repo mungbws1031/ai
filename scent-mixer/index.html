@@ -107,6 +107,25 @@
   .saved-item .nm{ flex:1; }
   footer{ text-align:center; color:var(--muted); font-size:12px; padding:16px; }
   .note{ font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.5; }
+  .guide-steps{ display:grid; gap:8px; margin-bottom:12px; }
+  .gstep{ background:var(--card2); border:1px solid var(--line); border-radius:10px;
+          padding:9px 11px; font-size:12.5px; line-height:1.55; color:var(--fg); }
+  .gstep b{ color:var(--accent); }
+  .rec{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .rec:last-child{ border-bottom:none; }
+  .rec .info{ flex:1; }
+  .rec .info .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .rec .info .why{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  /* longevity */
+  .curve{ display:flex; align-items:flex-end; gap:2px; height:60px; margin:6px 0 4px; }
+  .curve .cb{ flex:1; background:linear-gradient(to top,var(--accent),var(--accent2));
+              border-radius:2px 2px 0 0; min-height:2px; opacity:.85; }
+  .curve-x{ display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:10px; }
+  .phase{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:5px 0; }
+  .phase .pl{ width:46px; font-weight:600; }
+  .phase .ptrack{ flex:1; height:7px; background:var(--card2); border-radius:5px; position:relative; overflow:hidden; }
+  .phase .pbar{ position:absolute; height:100%; border-radius:5px; }
+  .phase .pt{ width:120px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
@@ -122,6 +141,26 @@
   <div class="grid">
     <!-- LEFT: library + blend -->
     <div>
+      <div class="card">
+        <h2>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></h2>
+        <div class="guide-steps">
+          <div class="gstep"><b>1. 세 층을 쌓기</b><br>탑(첫인상)·미들(중심)·베이스(잔향)에서 각각 1~2개씩 골라요.</div>
+          <div class="gstep"><b>2. 비율은 3 : 4 : 3</b><br>탑 30% · 미들 40% · 베이스 30%가 안정적인 기본값. 위 <b>밸런스 점수</b>로 확인.</div>
+          <div class="gstep"><b>3. 계열은 2~3개만</b><br>너무 많이 섞으면 탁해져요. 어울리는 계열끼리(예: 시트러스+우디).</div>
+          <div class="gstep"><b>4. 막히면 추천 사용</b><br>아래 <b>추천 향료</b> 버튼이 지금 조합에 맞춰 다음 한 가지를 골라줘요.</div>
+        </div>
+        <div class="actions">
+          <button class="sm" id="starterBtn">🍃 기본 3종으로 시작</button>
+          <button class="ghost sm" id="guideRandomBtn">🎲 균형 잡힌 랜덤</button>
+        </div>
+        <div class="note">초보 추천 시작: <b>베르가못</b>(탑) → <b>로즈</b>(미들) → <b>샌달우드</b>(베이스).</div>
+      </div>
+
+      <div class="card">
+        <h2>💡 추천 향료 <span class="tag">지금 조합에 더하면 좋아요</span></h2>
+        <div id="recs"></div>
+      </div>
+
       <div class="card">
         <h2>향료 라이브러리 <span class="tag" id="libCount"></span></h2>
         <div class="toolbar">
@@ -161,6 +200,11 @@
         <div class="score"><span class="big" id="scoreVal">–</span><span class="muted" id="scoreLbl"></span></div>
         <div id="scorePills"></div>
         <div class="balance-note" id="balanceNote">조합을 추가하면 분석이 표시됩니다.</div>
+      </div>
+
+      <div class="card">
+        <h2>지속 시간 & 발향 <span class="tag">조합에 따라 달라져요</span></h2>
+        <div id="longevity"><div class="empty">조합을 추가하면 표시됩니다.</div></div>
       </div>
 
       <div class="card">
@@ -250,6 +294,22 @@ const MATERIALS = [
 const VOL_LABEL = {top:"탑", heart:"미들", base:"베이스"};
 const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
 
+// ---- 초보자 추천용 데이터 ----
+// 계열별 잘 어울리는 짝 (클래식 어코드 단순화)
+const FAM_FRIEND = {
+  citrus:["woody","floral","fresh"], floral:["woody","citrus","fruity"],
+  woody:["citrus","oriental","floral"], oriental:["spicy","gourmand","woody"],
+  fresh:["citrus","woody","aquatic"], green:["citrus","woody","floral"],
+  spicy:["oriental","woody","citrus"], gourmand:["oriental","woody","spicy"],
+  fruity:["floral","citrus","woody"], aquatic:["citrus","fresh","woody"],
+  leather:["woody","oriental","spicy"]
+};
+// 층별 / 계열별 초보 친화 대표 향료
+const LAYER_PICK = { top:"베르가못", heart:"로즈", base:"샌달우드" };
+const FAM_PICK = { citrus:"베르가못", floral:"로즈", woody:"샌달우드", oriental:"앰버",
+  fresh:"페퍼민트", green:"로즈마리", spicy:"핑크페퍼", gourmand:"바닐라",
+  fruity:"사과", aquatic:"마린노트", leather:"가죽" };
+
 // ---- 유명 향수 근사 재현 프리셋 ----
 // 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
 const PRESETS = [
@@ -331,7 +391,7 @@ function renderLib(){
     const el=document.createElement("div"); el.className="mat";
     el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}
         <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
-      <div class="meta">${FAMILIES[m.fam]} · ${m.d}</div>`;
+      <div class="meta">${FAMILIES[m.fam]} · 지속 ~${fmtHc(lastHours(m))} · ${m.d}</div>`;
     el.onclick=()=>addDrop(m.n);
     lib.appendChild(el);
   });
@@ -377,6 +437,92 @@ function balanceScore(volPct,items){
   // tiny complexity bonus
   if(items.length>=4 && items.length<=8) s=Math.min(100,s+5);
   return {score:Math.round(s)};
+}
+
+// ---- 지속 시간(발향) 모델 ----
+// 휘발도별 기준 지속시간(시간), 강도(str)로 가감. 단순화 모델.
+const LAST_BASE = { top:0.9, heart:2.2, base:4.5 };
+function lastHours(m){ return LAST_BASE[m.vol]*(0.6+0.1*m.str); } // 반감기로 사용
+function fmtH(h){
+  if(h<1) return Math.round(h*60)+"분";
+  let hh=Math.floor(h), mm=Math.round((h-hh)*60);
+  if(mm===60){ hh++; mm=0; }
+  return mm? `${hh}시간 ${mm}분` : `${hh}시간`;
+}
+function fmtHc(h){ return h<1? Math.round(h*60)+"분" : (Math.round(h*10)/10)+"h"; }
+// 시간 t에서의 향 세기 (각 향료 반감기 기준 지수 감쇠의 합)
+function intensityAt(weighted,t){
+  return weighted.reduce((s,i)=>s + i.w*Math.pow(0.5, t/lastHours(i)), 0);
+}
+function longevity(a){
+  if(!a.items.length) return null;
+  const W=a.weighted, I0=a.totalW;
+  // 총 지속: 세기가 처음의 10%로 떨어지는 시각
+  let hours=0;
+  for(let t=0;t<=24;t+=0.1){ if(intensityAt(W,t) <= 0.12*I0){ hours=t; break; } hours=t; }
+  // 층별 대표 지속(그 층에서 가장 오래가는 향료)
+  const layerMax=v=>{ const ms=W.filter(i=>i.vol===v); return ms.length? Math.max(...ms.map(lastHours)) : 0; };
+  const topE=layerMax("top"), heartE=Math.max(topE,layerMax("heart")), baseE=Math.max(heartE,hours);
+  const phases=[];
+  if(a.volPct.top>2)   phases.push({name:"탑",   vol:"top",   from:0,    to:topE});
+  if(a.volPct.heart>2) phases.push({name:"미들", vol:"heart", from:topE, to:heartE});
+  if(a.volPct.base>2)  phases.push({name:"베이스",vol:"base", from:heartE,to:baseE});
+  // 발향력(실라지): 평균 강도 밀도로 추정
+  const avgStr=I0/a.totalDrops;
+  const sill = avgStr>=3.6? "강함(멀리 퍼짐)" : avgStr>=2.8? "보통" : "은은함(가까이서)";
+  // 지속 등급
+  const grade = hours>=9? ["good","매우 오래감"] : hours>=6? ["good","오래감"]
+              : hours>=3? ["warn","보통"] : ["bad","짧음"];
+  // 곡선 샘플(0~baseE, 24포인트, 피크 대비 %)
+  const span=Math.max(baseE,1), curve=[];
+  for(let k=0;k<24;k++){ const t=span*k/23; curve.push(Math.round(intensityAt(W,t)/I0*100)); }
+  return {hours,phases,sill,grade,curve,span};
+}
+
+// 지금 조합에 맞춰 다음에 더할 향료 추천 (최대 3개)
+function recommend(a){
+  if(!a.items.length){
+    return [
+      {name:"베르가못", why:"산뜻한 탑노트 — 향의 첫인상"},
+      {name:"로즈",     why:"향의 중심을 잡는 미들노트"},
+      {name:"샌달우드", why:"오래 남는 베이스노트"},
+    ];
+  }
+  const recs=[]; const have=new Set(Object.keys(blend));
+  const used=n=>have.has(n)||recs.find(r=>r.name===n);
+  // 1) 약한 층 채우기 (베이스→미들→탑 순으로 초보가 자주 빠뜨림)
+  for(const k of ["base","heart","top"]){
+    if(a.volPct[k] < 13){
+      const pick=LAYER_PICK[k];
+      if(!used(pick)) recs.push({name:pick, why:`${VOL_LABEL[k]}노트가 약해요 — 더하면 균형이 좋아져요`});
+    }
+  }
+  // 2) 주요 계열과 어울리는 계열 제안
+  const domFam=Object.entries(a.fam).sort((x,y)=>y[1]-x[1])[0]?.[0];
+  if(domFam){
+    for(const fr of (FAM_FRIEND[domFam]||[])){
+      const pick=FAM_PICK[fr];
+      if(pick && !used(pick)){
+        recs.push({name:pick, why:`${FAMILIES[domFam]}와 잘 어울려요 (${FAMILIES[fr]} 계열)`});
+        break;
+      }
+    }
+  }
+  return recs.slice(0,3);
+}
+function renderRecs(a){
+  const wrap=$("#recs"); const list=recommend(a); wrap.innerHTML="";
+  list.forEach(r=>{
+    const m=mat(r.name); if(!m) return;
+    const el=document.createElement("div"); el.className="rec";
+    el.innerHTML=`<div class="info"><div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${r.name}
+        <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
+        <div class="why">${r.why}</div></div>
+      <button class="sm" data-add>+ 추가</button>`;
+    el.querySelector("[data-add]").onclick=()=>addDrop(r.name);
+    wrap.appendChild(el);
+  });
+  if(!list.length) wrap.innerHTML='<div class="muted" style="font-size:12.5px;">균형이 좋아요! 한 계열을 강조해 개성을 더해보세요.</div>';
 }
 
 function render(){
@@ -458,7 +604,38 @@ function render(){
         <div class="track"><div class="fill" style="width:${v/max*100}%;background:${famColor(f)}"></div></div></div>`;
     }).join("");
   }
+
+  // recommendations + longevity
+  renderRecs(a);
+  renderLongevity(a);
 }
+
+function renderLongevity(a){
+  const wrap=$("#longevity");
+  if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 표시됩니다.</div>'; return; }
+  const L=longevity(a);
+  const bars=L.curve.map(v=>`<div class="cb" style="height:${Math.max(2,v)}%"></div>`).join("");
+  const phaseRows=L.phases.map(p=>{
+    const left=p.from/L.span*100, w=Math.max(2,(p.to-p.from)/L.span*100);
+    return `<div class="phase"><span class="pl" style="color:var(--${p.vol})">${p.name}</span>
+      <span class="ptrack"><span class="pbar" style="left:${left}%;width:${w}%;background:var(--${p.vol})"></span></span>
+      <span class="pt">${fmtH(p.from)} ~ ${fmtH(p.to)}</span></div>`;
+  }).join("");
+  wrap.innerHTML=`
+    <div class="score" style="margin-bottom:6px;">
+      <span class="big">${fmtH(L.hours)}</span>
+      <span class="muted">예상 지속</span>
+      <span class="pill ${L.grade[0]}" style="margin-left:auto;">${L.grade[1]}</span>
+    </div>
+    <div class="muted" style="font-size:12px;">발향력(실라지): <b style="color:var(--fg)">${L.sill}</b></div>
+    <div class="curve">${bars}</div>
+    <div class="curve-x"><span>지금</span><span>${fmtH(L.span/2)}</span><span>${fmtH(L.span)}</span></div>
+    ${phaseRows}
+    <div class="note">탑은 먼저 날아가고 베이스가 끝까지 남아요. 오래 가게 하려면 베이스노트(머스크·앰버·우디·바닐라) 비중을 높이세요.</div>`;
+}
+
+// 초보용 스타터: 탑·미들·베이스 기본 3종
+function starter(){ blend={ "베르가못":3, "로즈":4, "샌달우드":3 }; render(); }
 
 // ---- 프리셋 ----
 function renderPresets(){
@@ -502,6 +679,8 @@ $("#saveBtn").onclick=()=>{
 ["search","famFilter","volFilter"].forEach(id=>$("#"+id).addEventListener("input",renderLib));
 $("#clearBtn").onclick=clearBlend;
 $("#randomBtn").onclick=randomBlend;
+$("#starterBtn").onclick=starter;
+$("#guideRandomBtn").onclick=randomBlend;
 
 initFilters(); renderLib(); render(); renderPresets(); renderSaved();
 
