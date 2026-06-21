@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Scent Mixer · 향 조합 시뮬레이터</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0f1220" />
+<meta name="description" content="향료를 조합하고 노트 피라미드·밸런스를 분석하는 향 조합 학습 앱" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Scent Mixer" />
+<style>
+  :root{
+    --bg:#0f1220; --card:#1a1f35; --card2:#141831; --line:#2b3252; --fg:#e8ebf5;
+    --muted:#9aa3c4; --accent:#c08bff; --accent2:#5b8cff; --good:#3ecf8e;
+    --bad:#ff6b6b; --warn:#ffd166;
+    --top:#ffd166; --heart:#ff8fab; --base:#a78b6f;
+    --citrus:#ffd166; --floral:#ff8fab; --woody:#a78b6f; --oriental:#c08bff;
+    --fresh:#5ad1c8; --green:#7bd16b; --spicy:#ff8f5a; --gourmand:#d9a86c;
+    --fruity:#ff5d8f; --aquatic:#46c2e0; --leather:#8a5a3c;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:system-ui,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+        background:radial-gradient(1200px 600px at 80% -10%, #21183a 0%, var(--bg) 55%);
+        color:var(--fg); min-height:100vh;
+        padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  header{ padding:18px 22px; border-bottom:1px solid var(--line); display:flex;
+          align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header h1{ margin:0; font-size:19px; letter-spacing:.3px; }
+  header h1 .sub{ color:var(--muted); font-weight:400; font-size:13px; margin-left:8px; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:20px; }
+  .grid{ display:grid; grid-template-columns:1.15fr .85fr; gap:16px; align-items:start; }
+  @media(max-width:880px){ .grid{ grid-template-columns:1fr; } }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px;
+         padding:18px; margin-bottom:16px; }
+  h2{ margin:0 0 14px; font-size:15px; display:flex; align-items:center; gap:8px; }
+  h2 .tag{ font-size:11px; color:var(--muted); font-weight:400; }
+  .muted{ color:var(--muted); }
+  input,select{ width:100%; padding:9px 10px; border-radius:9px; border:1px solid var(--line);
+        background:#0c0f1c; color:var(--fg); font-size:14px; }
+  button{ cursor:pointer; border:none; border-radius:10px; padding:9px 14px; font-size:13px;
+          font-weight:600; background:var(--accent); color:#1a1024; }
+  button.ghost{ background:transparent; border:1px solid var(--line); color:var(--fg); font-weight:500; }
+  button.sm{ padding:5px 9px; font-size:12px; border-radius:8px; }
+  button:disabled{ opacity:.4; cursor:not-allowed; }
+
+  /* material library */
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .toolbar input{ flex:1; min-width:140px; }
+  .toolbar select{ width:auto; min-width:120px; }
+  .lib{ display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:360px; overflow:auto; padding-right:4px; }
+  @media(max-width:520px){ .lib{ grid-template-columns:1fr; } }
+  .mat{ border:1px solid var(--line); background:var(--card2); border-radius:11px; padding:10px 11px;
+        cursor:pointer; transition:.12s; }
+  .mat:hover{ border-color:var(--accent); transform:translateY(-1px); }
+  .mat .nm{ font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:6px; }
+  .mat .meta{ font-size:11px; color:var(--muted); margin-top:3px; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+  .vol{ font-size:10px; padding:1px 6px; border-radius:6px; border:1px solid var(--line); margin-left:auto; }
+  .vol.top{ color:var(--top); } .vol.heart{ color:var(--heart); } .vol.base{ color:var(--base); }
+
+  /* blend table */
+  .blend-row{ display:grid; grid-template-columns:1fr auto auto auto; gap:8px; align-items:center;
+              padding:9px 0; border-bottom:1px solid var(--line); }
+  .blend-row:last-child{ border-bottom:none; }
+  .blend-row .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .blend-row .nm small{ font-weight:400; color:var(--muted); }
+  .drops{ display:flex; align-items:center; gap:6px; }
+  .drops button{ width:26px; height:26px; padding:0; border-radius:8px; background:var(--card2);
+                 border:1px solid var(--line); color:var(--fg); font-size:15px; line-height:1; }
+  .drops .n{ min-width:34px; text-align:center; font-variant-numeric:tabular-nums; font-size:13px; }
+  .pct{ min-width:48px; text-align:right; font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted); }
+  .rm{ background:transparent; color:var(--bad); border:none; font-size:16px; padding:0 4px; }
+  .empty{ color:var(--muted); font-size:13px; text-align:center; padding:24px 0; }
+
+  /* pyramid */
+  .pyr{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+  .pyr-layer{ border-radius:10px; padding:10px 12px; }
+  .pyr-layer .lh{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+  .pyr-layer .chips{ display:flex; flex-wrap:wrap; gap:5px; }
+  .chip{ font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(255,255,255,.07);
+         border:1px solid rgba(255,255,255,.12); }
+  .lt{ background:linear-gradient(90deg, rgba(255,209,102,.16), transparent); border:1px solid rgba(255,209,102,.3); }
+  .lh-row{ background:linear-gradient(90deg, rgba(255,143,171,.16), transparent); border:1px solid rgba(255,143,171,.3); }
+  .lb{ background:linear-gradient(90deg, rgba(167,139,111,.18), transparent); border:1px solid rgba(167,139,111,.34); }
+
+  /* family bars */
+  .bar{ margin-bottom:9px; }
+  .bar .bl{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+  .track{ height:8px; background:var(--card2); border-radius:6px; overflow:hidden; }
+  .fill{ height:100%; border-radius:6px; transition:width .3s; }
+
+  .score{ display:flex; align-items:baseline; gap:8px; }
+  .score .big{ font-size:34px; font-weight:700; }
+  .balance-note{ font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.55; }
+  .pill{ display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; margin:2px 4px 0 0; }
+  .pill.good{ background:rgba(62,207,142,.15); color:var(--good); }
+  .pill.warn{ background:rgba(255,209,102,.15); color:var(--warn); }
+  .pill.bad{ background:rgba(255,107,107,.15); color:var(--bad); }
+
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .saved-item{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .saved-item .nm{ flex:1; }
+  footer{ text-align:center; color:var(--muted); font-size:12px; padding:16px; }
+  .note{ font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧪 Scent Mixer <span class="sub">향 조합 시뮬레이터</span></h1>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button id="installBtn" class="sm" style="display:none;">📲 앱 설치</button>
+    <span class="muted" style="font-size:12px;">교육·연습용</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="grid">
+    <!-- LEFT: library + blend -->
+    <div>
+      <div class="card">
+        <h2>향료 라이브러리 <span class="tag" id="libCount"></span></h2>
+        <div class="toolbar">
+          <input id="search" placeholder="이름·계열 검색 (예: 베르가못, woody)" />
+          <select id="famFilter"><option value="">전체 계열</option></select>
+          <select id="volFilter">
+            <option value="">전체 휘발도</option>
+            <option value="top">탑노트</option>
+            <option value="heart">미들노트</option>
+            <option value="base">베이스노트</option>
+          </select>
+        </div>
+        <div class="lib" id="lib"></div>
+        <div class="note">카드를 클릭하면 조합에 1방울 추가됩니다.</div>
+      </div>
+
+      <div class="card">
+        <h2>내 조합 <span class="tag" id="blendCount"></span></h2>
+        <div id="blend"></div>
+        <div class="actions">
+          <button class="ghost sm" id="clearBtn">전체 비우기</button>
+          <button class="ghost sm" id="randomBtn">랜덤 조합</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>유명 향수 프리셋 <span class="tag" id="presetCount"></span></h2>
+        <div id="presets" style="max-height:360px;overflow:auto;padding-right:4px;"></div>
+        <div class="note">실제 포뮬러가 아니라 노트 피라미드를 단순 근사한 학습용 예시입니다.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: analysis -->
+    <div>
+      <div class="card">
+        <h2>밸런스 점수 <span class="tag">탑·미들·베이스 균형</span></h2>
+        <div class="score"><span class="big" id="scoreVal">–</span><span class="muted" id="scoreLbl"></span></div>
+        <div id="scorePills"></div>
+        <div class="balance-note" id="balanceNote">조합을 추가하면 분석이 표시됩니다.</div>
+      </div>
+
+      <div class="card">
+        <h2>노트 피라미드</h2>
+        <div class="pyr" id="pyramid">
+          <div class="empty">아직 향료가 없습니다.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>향 계열 프로필</h2>
+        <div id="families"><div class="empty">아직 향료가 없습니다.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>저장된 레시피</h2>
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input id="recipeName" placeholder="레시피 이름" />
+          <button id="saveBtn" style="white-space:nowrap;">저장</button>
+        </div>
+        <div id="saved"></div>
+      </div>
+    </div>
+  </div>
+  <footer>로컬에서만 동작 · 데이터는 브라우저(localStorage)에 저장됩니다.</footer>
+</div>
+
+<script>
+// ---- Fragrance material database ----------------------------------------
+// vol: top | heart | base   (volatility / note position)
+// fam: 향 계열   strength: 1~5 (조합 시 영향력 가중치)
+const FAMILIES = {
+  citrus:"시트러스", floral:"플로럴", woody:"우디", oriental:"오리엔탈",
+  fresh:"프레시", green:"그린", spicy:"스파이시", gourmand:"구르망",
+  fruity:"프루티", aquatic:"아쿠아틱", leather:"레더"
+};
+const MATERIALS = [
+  {n:"베르가못",      fam:"citrus",   vol:"top",   str:2, d:"상큼하고 가벼운 시트러스"},
+  {n:"레몬",          fam:"citrus",   vol:"top",   str:2, d:"날카롭고 밝은 시트러스"},
+  {n:"자몽",          fam:"citrus",   vol:"top",   str:2, d:"쌉쌀달콤한 시트러스"},
+  {n:"만다린",        fam:"citrus",   vol:"top",   str:2, d:"부드럽고 달콤한 귤향"},
+  {n:"페퍼민트",      fam:"fresh",    vol:"top",   str:3, d:"시원한 멘솔감"},
+  {n:"유칼립투스",    fam:"fresh",    vol:"top",   str:3, d:"청량한 허브"},
+  {n:"라벤더",        fam:"floral",   vol:"top",   str:3, d:"허벌·플로럴, 진정감"},
+  {n:"바질",          fam:"green",    vol:"top",   str:3, d:"풀잎의 알싸한 그린"},
+  {n:"핑크페퍼",      fam:"spicy",    vol:"top",   str:3, d:"톡 쏘는 가벼운 후추"},
+  {n:"로즈",          fam:"floral",   vol:"heart", str:4, d:"클래식한 장미 플로럴"},
+  {n:"자스민",        fam:"floral",   vol:"heart", str:5, d:"진하고 화려한 백색꽃"},
+  {n:"일랑일랑",      fam:"floral",   vol:"heart", str:4, d:"이국적이고 크리미한 꽃"},
+  {n:"제라늄",        fam:"floral",   vol:"heart", str:3, d:"로지·그린한 플로럴"},
+  {n:"네롤리",        fam:"floral",   vol:"heart", str:3, d:"오렌지 꽃의 우아함"},
+  {n:"시나몬",        fam:"spicy",    vol:"heart", str:4, d:"따뜻하고 달큰한 향신료"},
+  {n:"카다멈",        fam:"spicy",    vol:"heart", str:3, d:"스파이시·아로마틱"},
+  {n:"클로브",        fam:"spicy",    vol:"heart", str:4, d:"강렬한 정향"},
+  {n:"로즈마리",      fam:"green",    vol:"heart", str:3, d:"허브향 그린"},
+  {n:"샌달우드",      fam:"woody",    vol:"base",  str:4, d:"부드럽고 크리미한 나무"},
+  {n:"시더우드",      fam:"woody",    vol:"base",  str:3, d:"건조하고 연필심 같은 나무"},
+  {n:"베티버",        fam:"woody",    vol:"base",  str:4, d:"흙내음·스모키 그린우디"},
+  {n:"파출리",        fam:"woody",    vol:"base",  str:5, d:"진한 흙·다크 우디"},
+  {n:"앰버",          fam:"oriental", vol:"base",  str:4, d:"따뜻하고 포근한 앰버"},
+  {n:"바닐라",        fam:"gourmand", vol:"base",  str:4, d:"달콤하고 부드러운 바닐라"},
+  {n:"통카빈",        fam:"gourmand", vol:"base",  str:4, d:"아몬드·쿠키 같은 달콤함"},
+  {n:"머스크",        fam:"oriental", vol:"base",  str:3, d:"포근하고 살냄새 같은 잔향"},
+  {n:"오크모스",      fam:"green",    vol:"base",  str:4, d:"이끼·숲의 클래식 베이스"},
+  {n:"인센스",        fam:"oriental", vol:"base",  str:4, d:"스모키한 유향"},
+  {n:"라임",          fam:"citrus",   vol:"top",   str:2, d:"청량하고 톡 쏘는 라임"},
+  {n:"알데히드",      fam:"floral",   vol:"top",   str:3, d:"비누·금속광택의 추상 노트"},
+  {n:"진저",          fam:"spicy",    vol:"top",   str:3, d:"알싸하고 따뜻한 생강"},
+  {n:"파인애플",      fam:"fruity",   vol:"top",   str:2, d:"달콤·상큼한 열대 과일"},
+  {n:"블랙커런트",    fam:"fruity",   vol:"top",   str:2, d:"새콤한 카시스 베리"},
+  {n:"사과",          fam:"fruity",   vol:"top",   str:2, d:"풋풋한 그린 애플"},
+  {n:"마린노트",      fam:"aquatic",  vol:"top",   str:2, d:"바다·물방울의 청량감"},
+  {n:"씨솔트",        fam:"aquatic",  vol:"heart", str:2, d:"짭조름한 바다 소금"},
+  {n:"무화과",        fam:"green",    vol:"heart", str:2, d:"우유빛 그린 무화과"},
+  {n:"바이올렛",      fam:"floral",   vol:"heart", str:3, d:"파우더리한 제비꽃"},
+  {n:"아이리스",      fam:"floral",   vol:"heart", str:4, d:"우아하고 파우더리한 붓꽃"},
+  {n:"튜베로즈",      fam:"floral",   vol:"heart", str:5, d:"진하고 관능적인 백색꽃"},
+  {n:"커피",          fam:"gourmand", vol:"heart", str:4, d:"진한 로스팅 커피"},
+  {n:"럼",            fam:"gourmand", vol:"heart", str:3, d:"달큰한 럼·리큐어"},
+  {n:"카카오",        fam:"gourmand", vol:"base",  str:3, d:"쌉쌀한 다크 초콜릿"},
+  {n:"카라멜",        fam:"gourmand", vol:"base",  str:3, d:"끈적달콤한 캐러멜"},
+  {n:"담배",          fam:"oriental", vol:"base",  str:4, d:"말린 담뱃잎의 따뜻함"},
+  {n:"자작나무",      fam:"woody",    vol:"base",  str:4, d:"스모키·타르 같은 가죽우디"},
+  {n:"우드",          fam:"woody",    vol:"base",  str:5, d:"깊고 진한 아가우드(오드)"},
+  {n:"가죽",          fam:"leather",  vol:"base",  str:4, d:"스모키하고 동물적인 가죽"},
+];
+const VOL_LABEL = {top:"탑", heart:"미들", base:"베이스"};
+const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
+
+// ---- 유명 향수 근사 재현 프리셋 ----
+// 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
+const PRESETS = [
+  { name:"No.5", brand:"Chanel", desc:"알데히드 플로럴의 고전",
+    blend:{ "알데히드":2,"베르가못":2,"일랑일랑":2,"네롤리":1, "자스민":3,"로즈":3,"제라늄":1,
+            "샌달우드":2,"베티버":1,"바닐라":1,"머스크":2 } },
+  { name:"Coco Mademoiselle", brand:"Chanel", desc:"산뜻한 로즈·파출리 시프레",
+    blend:{ "베르가못":2,"만다린":1, "로즈":3,"자스민":2, "파출리":3,"베티버":1,"바닐라":1,"머스크":1 } },
+  { name:"Bleu de Chanel", brand:"Chanel", desc:"시트러스·우디 아로마틱",
+    blend:{ "레몬":1,"베르가못":1,"자몽":1,"핑크페퍼":1,"진저":1, "인센스":1, "시더우드":2,"샌달우드":2,"베티버":1 } },
+  { name:"Sauvage", brand:"Dior", desc:"베르가못·앰브록산 프레시 스파이시",
+    blend:{ "베르가못":3,"라임":1,"핑크페퍼":2, "라벤더":1,"진저":1, "앰버":3,"머스크":2,"시더우드":1 } },
+  { name:"J'adore", brand:"Dior", desc:"화사한 화이트 플로럴 부케",
+    blend:{ "베르가못":1,"만다린":1, "일랑일랑":2,"로즈":2,"자스민":2,"튜베로즈":1, "머스크":1,"샌달우드":1 } },
+  { name:"Dior Homme", brand:"Dior", desc:"파우더리 아이리스·카카오",
+    blend:{ "라벤더":1, "아이리스":3,"바이올렛":1, "카카오":1,"가죽":1, "베티버":1,"시더우드":1 } },
+  { name:"Opium", brand:"Yves Saint Laurent", desc:"스파이시 오리엔탈",
+    blend:{ "만다린":1,"베르가못":1,"클로브":1, "시나몬":2,"자스민":2, "앰버":2,"파출리":2,"바닐라":2,"인센스":1 } },
+  { name:"Black Opium", brand:"Yves Saint Laurent", desc:"커피·바닐라 구르망",
+    blend:{ "핑크페퍼":1,"만다린":1, "커피":3,"자스민":2, "바닐라":3,"파출리":2,"통카빈":1 } },
+  { name:"Aventus", brand:"Creed", desc:"파인애플·자작나무 프루티 스모키",
+    blend:{ "베르가못":2,"파인애플":2,"블랙커런트":1, "자스민":1,"핑크페퍼":1, "자작나무":2,"오크모스":2,"머스크":2,"파출리":1 } },
+  { name:"Acqua di Giò", brand:"Giorgio Armani", desc:"상쾌한 마린 아쿠아틱",
+    blend:{ "베르가못":2,"라임":1,"마린노트":3, "자스민":1,"로즈마리":1, "시더우드":2,"파출리":1,"머스크":1 } },
+  { name:"Light Blue", brand:"Dolce & Gabbana", desc:"사과·시더 프레시 프루티",
+    blend:{ "레몬":1,"사과":2,"베르가못":1, "자스민":1, "시더우드":2,"머스크":2 } },
+  { name:"Eros", brand:"Versace", desc:"민트·통카 프레시 구르망",
+    blend:{ "페퍼민트":2,"사과":1,"레몬":1, "통카빈":2,"바닐라":1, "시더우드":2,"베티버":1,"파출리":1 } },
+  { name:"Angel", brand:"Thierry Mugler", desc:"파출리·카라멜 구르망 오리엔탈",
+    blend:{ "베르가못":1,"블랙커런트":1, "파출리":4,"카라멜":2,"바닐라":2,"카카오":1 } },
+  { name:"La Vie Est Belle", brand:"Lancôme", desc:"아이리스·프랄린 스위트",
+    blend:{ "베르가못":1,"블랙커런트":1, "아이리스":2,"자스민":1, "파출리":2,"바닐라":2,"통카빈":2,"카라멜":1 } },
+  { name:"Flowerbomb", brand:"Viktor & Rolf", desc:"폭발적인 플로럴 부케",
+    blend:{ "베르가못":1, "자스민":2,"로즈":2,"튜베로즈":1, "파출리":2,"바닐라":2,"머스크":1 } },
+  { name:"Black Orchid", brand:"Tom Ford", desc:"다크 플로럴·카카오 오리엔탈",
+    blend:{ "베르가못":1,"블랙커런트":1, "일랑일랑":1,"자스민":1, "파출리":3,"바닐라":2,"인센스":1,"카카오":1,"가죽":1 } },
+  { name:"Tobacco Vanille", brand:"Tom Ford", desc:"담배·바닐라 스파이시 구르망",
+    blend:{ "담배":4,"카다멈":1,"진저":1, "바닐라":3,"통카빈":2,"카카오":1 } },
+  { name:"Shalimar", brand:"Guerlain", desc:"베르가못·바닐라 앰버 동양향",
+    blend:{ "베르가못":2, "로즈":1,"자스민":1,"아이리스":1, "바닐라":3,"인센스":1,"가죽":1,"통카빈":1 } },
+  { name:"Santal 33", brand:"Le Labo", desc:"샌달우드·가죽 우디",
+    blend:{ "카다멈":1,"바이올렛":1, "샌달우드":4,"시더우드":2,"가죽":2,"파출리":1 } },
+  { name:"AnOther 13", brand:"Le Labo", desc:"머스크·앰브록산 클린 스킨센트",
+    blend:{ "핑크페퍼":1,"자스민":1, "앰버":2,"머스크":4,"오크모스":1,"베티버":1 } },
+  { name:"Wood Sage & Sea Salt", brand:"Jo Malone", desc:"씨솔트·세이지 미니멀",
+    blend:{ "자몽":1,"씨솔트":3,"마린노트":1, "로즈마리":1, "시더우드":2,"머스크":1 } },
+  { name:"Replica Jazz Club", brand:"Maison Margiela", desc:"럼·담배 우디 스피릿",
+    blend:{ "핑크페퍼":1,"라임":1, "럼":2,"자스민":1, "담배":2,"바닐라":2,"베티버":1 } },
+];
+
+// ---- state ----
+let blend = {}; // name -> drops
+const $ = s => document.querySelector(s);
+
+function famColor(f){ return getComputedStyle(document.documentElement).getPropertyValue('--'+f).trim() || '#888'; }
+
+// ---- library render ----
+function initFilters(){
+  const sel = $("#famFilter");
+  Object.entries(FAMILIES).forEach(([k,v])=>{
+    const o=document.createElement("option"); o.value=k; o.textContent=v; sel.appendChild(o);
+  });
+}
+function renderLib(){
+  const q = $("#search").value.trim().toLowerCase();
+  const ff = $("#famFilter").value, vf = $("#volFilter").value;
+  const lib = $("#lib"); lib.innerHTML="";
+  const list = MATERIALS.filter(m=>{
+    if(ff && m.fam!==ff) return false;
+    if(vf && m.vol!==vf) return false;
+    if(q){
+      const hay = (m.n+" "+m.fam+" "+FAMILIES[m.fam]+" "+m.d).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  $("#libCount").textContent = list.length+" / "+MATERIALS.length+"종";
+  list.forEach(m=>{
+    const el=document.createElement("div"); el.className="mat";
+    el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}
+        <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
+      <div class="meta">${FAMILIES[m.fam]} · ${m.d}</div>`;
+    el.onclick=()=>addDrop(m.n);
+    lib.appendChild(el);
+  });
+  if(!list.length) lib.innerHTML='<div class="empty">검색 결과가 없습니다.</div>';
+}
+
+// ---- blend ops ----
+function mat(n){ return MATERIALS.find(m=>m.n===n); }
+function addDrop(n,k=1){ blend[n]=(blend[n]||0)+k; if(blend[n]<=0) delete blend[n]; render(); }
+function clearBlend(){ blend={}; render(); }
+function randomBlend(){
+  blend={};
+  const pick=(arr,k)=>arr.sort(()=>Math.random()-.5).slice(0,k);
+  const byVol=v=>MATERIALS.filter(m=>m.vol===v);
+  pick(byVol("top"),2).forEach(m=>blend[m.n]=2+(Math.random()*2|0));
+  pick(byVol("heart"),2).forEach(m=>blend[m.n]=2+(Math.random()*3|0));
+  pick(byVol("base"),2).forEach(m=>blend[m.n]=1+(Math.random()*2|0));
+  render();
+}
+
+// ---- analysis ----
+function analyze(){
+  const items=Object.entries(blend).map(([n,d])=>({...mat(n),drops:d}));
+  const totalDrops=items.reduce((s,i)=>s+i.drops,0);
+  // weighted impact = drops * strength
+  const weighted=items.map(i=>({...i, w:i.drops*i.str}));
+  const totalW=weighted.reduce((s,i)=>s+i.w,0)||1;
+  const vol={top:0,heart:0,base:0};
+  weighted.forEach(i=>vol[i.vol]+=i.w);
+  const volPct={top:vol.top/totalW*100, heart:vol.heart/totalW*100, base:vol.base/totalW*100};
+  const fam={};
+  weighted.forEach(i=>fam[i.fam]=(fam[i.fam]||0)+i.w);
+  return {items,totalDrops,weighted,totalW,volPct,fam};
+}
+function balanceScore(volPct,items){
+  if(!items.length) return {score:0};
+  // closeness to ideal pyramid
+  let dev=0; for(const k of ["top","heart","base"]) dev+=Math.abs(volPct[k]-IDEAL[k]);
+  let s=Math.max(0,100-dev*1.1);
+  // penalize missing layers
+  const layers=["top","heart","base"].filter(k=>volPct[k]>2).length;
+  if(layers<3) s*=(layers/3);
+  // tiny complexity bonus
+  if(items.length>=4 && items.length<=8) s=Math.min(100,s+5);
+  return {score:Math.round(s)};
+}
+
+function render(){
+  // blend table
+  const b=$("#blend");
+  const items=Object.entries(blend);
+  $("#blendCount").textContent = items.length? items.length+"종": "";
+  const totalDrops=items.reduce((s,[,d])=>s+d,0);
+  if(!items.length){ b.innerHTML='<div class="empty">왼쪽에서 향료를 클릭해 추가하세요.</div>'; }
+  else{
+    b.innerHTML="";
+    items.forEach(([n,d])=>{
+      const m=mat(n); const pct=(d/totalDrops*100);
+      const row=document.createElement("div"); row.className="blend-row";
+      row.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${n}
+          <small>${VOL_LABEL[m.vol]}·${FAMILIES[m.fam]}</small></div>
+        <div class="drops"><button data-m="-">−</button><span class="n">${d}방울</span><button data-p="+">+</button></div>
+        <div class="pct">${pct.toFixed(0)}%</div>
+        <button class="rm" title="제거">×</button>`;
+      row.querySelector("[data-m]").onclick=()=>addDrop(n,-1);
+      row.querySelector("[data-p]").onclick=()=>addDrop(n,1);
+      row.querySelector(".rm").onclick=()=>{delete blend[n];render();};
+      b.appendChild(row);
+    });
+  }
+
+  const a=analyze();
+  const {score}=balanceScore(a.volPct,a.items);
+
+  // score
+  if(!a.items.length){
+    $("#scoreVal").textContent="–"; $("#scoreLbl").textContent="";
+    $("#scorePills").innerHTML=""; $("#balanceNote").textContent="조합을 추가하면 분석이 표시됩니다.";
+  }else{
+    $("#scoreVal").textContent=score; $("#scoreLbl").textContent="/ 100";
+    const lbl = score>=80?["good","훌륭한 균형"]: score>=55?["warn","쓸만한 균형"]:["bad","불균형"];
+    $("#scorePills").innerHTML=`<span class="pill ${lbl[0]}">${lbl[1]}</span>`+
+      ["top","heart","base"].map(k=>{
+        const p=a.volPct[k], ideal=IDEAL[k]; const diff=p-ideal;
+        const cls=Math.abs(diff)<=10?"good":Math.abs(diff)<=20?"warn":"bad";
+        return `<span class="pill ${cls}">${VOL_LABEL[k]} ${p.toFixed(0)}%</span>`;
+      }).join("");
+    // tips
+    const tips=[];
+    for(const k of ["top","heart","base"]){
+      const diff=a.volPct[k]-IDEAL[k];
+      if(a.volPct[k]<2) tips.push(`${VOL_LABEL[k]}노트가 없어요 — 추가하면 지속감/입체감이 살아납니다.`);
+      else if(diff>20) tips.push(`${VOL_LABEL[k]}노트 비중이 높아요(${a.volPct[k].toFixed(0)}%). 다른 노트로 균형을 맞춰보세요.`);
+      else if(diff<-18) tips.push(`${VOL_LABEL[k]}노트가 부족해요(${a.volPct[k].toFixed(0)}%).`);
+    }
+    if(!tips.length) tips.push("탑·미들·베이스가 잘 짜여 있습니다. 한 가지 계열을 강조해 개성을 더해보세요.");
+    $("#balanceNote").innerHTML=tips.map(t=>"· "+t).join("<br>");
+  }
+
+  // pyramid
+  const pyr=$("#pyramid");
+  if(!a.items.length){ pyr.innerHTML='<div class="empty">아직 향료가 없습니다.</div>'; }
+  else{
+    const layerInfo=[["top","탑노트","lt"],["heart","미들노트","lh-row"],["base","베이스노트","lb"]];
+    pyr.innerHTML=layerInfo.map(([k,lbl,cls])=>{
+      const mem=a.weighted.filter(i=>i.vol===k).sort((x,y)=>y.w-x.w);
+      const chips=mem.length? mem.map(i=>`<span class="chip">${i.n}</span>`).join("")
+                            : `<span class="chip muted">없음</span>`;
+      return `<div class="pyr-layer ${cls}">
+        <div class="lh"><b>${lbl}</b><span class="muted">${a.volPct[k].toFixed(0)}%</span></div>
+        <div class="chips">${chips}</div></div>`;
+    }).join("");
+  }
+
+  // families
+  const fams=$("#families");
+  const fe=Object.entries(a.fam).sort((x,y)=>y[1]-x[1]);
+  if(!fe.length){ fams.innerHTML='<div class="empty">아직 향료가 없습니다.</div>'; }
+  else{
+    const max=Math.max(...fe.map(([,v])=>v));
+    fams.innerHTML=fe.map(([f,v])=>{
+      const pct=v/a.totalW*100;
+      return `<div class="bar"><div class="bl"><span>${FAMILIES[f]}</span><span class="muted">${pct.toFixed(0)}%</span></div>
+        <div class="track"><div class="fill" style="width:${v/max*100}%;background:${famColor(f)}"></div></div></div>`;
+    }).join("");
+  }
+}
+
+// ---- 프리셋 ----
+function renderPresets(){
+  const wrap=$("#presets"); wrap.innerHTML="";
+  $("#presetCount").textContent=PRESETS.length+"종";
+  PRESETS.forEach(p=>{
+    const el=document.createElement("div"); el.className="saved-item";
+    el.innerHTML=`<span class="nm"><b>${p.name}</b> <span class="muted">· ${p.brand}</span>
+        <div class="muted" style="font-size:11.5px;">${p.desc}</div></span>
+      <button class="ghost sm" data-load>불러오기</button>`;
+    el.querySelector("[data-load]").onclick=()=>{ blend={...p.blend}; render(); };
+    wrap.appendChild(el);
+  });
+}
+
+// ---- saved recipes (localStorage) ----
+const KEY="scentmixer.recipes.v1";
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(KEY))||[]; }catch{ return []; } }
+function renderSaved(){
+  const wrap=$("#saved"); const list=loadSaved();
+  if(!list.length){ wrap.innerHTML='<div class="muted" style="font-size:12.5px;">저장된 레시피가 없습니다.</div>'; return; }
+  wrap.innerHTML="";
+  list.forEach((r,idx)=>{
+    const el=document.createElement("div"); el.className="saved-item";
+    const cnt=Object.keys(r.blend).length;
+    el.innerHTML=`<span class="nm">${r.name} <span class="muted">· ${cnt}종</span></span>
+      <button class="ghost sm" data-load>불러오기</button><button class="ghost sm" data-del>삭제</button>`;
+    el.querySelector("[data-load]").onclick=()=>{ blend={...r.blend}; render(); };
+    el.querySelector("[data-del]").onclick=()=>{ const l=loadSaved(); l.splice(idx,1); localStorage.setItem(KEY,JSON.stringify(l)); renderSaved(); };
+    wrap.appendChild(el);
+  });
+}
+$("#saveBtn").onclick=()=>{
+  if(!Object.keys(blend).length){ alert("먼저 향료를 조합하세요."); return; }
+  const name=($("#recipeName").value.trim())||("레시피 "+(loadSaved().length+1));
+  const l=loadSaved(); l.unshift({name,blend:{...blend},ts:Date.now()});
+  localStorage.setItem(KEY,JSON.stringify(l)); $("#recipeName").value=""; renderSaved();
+};
+
+// ---- wire up ----
+["search","famFilter","volFilter"].forEach(id=>$("#"+id).addEventListener("input",renderLib));
+$("#clearBtn").onclick=clearBlend;
+$("#randomBtn").onclick=randomBlend;
+
+initFilters(); renderLib(); render(); renderPresets(); renderSaved();
+
+// ---- PWA: service worker + install prompt ----
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=> navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+let deferredPrompt=null;
+const installBtn=$("#installBtn");
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault(); deferredPrompt=e; installBtn.style.display="inline-block";
+});
+installBtn.onclick=async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null; installBtn.style.display="none";
+};
+window.addEventListener("appinstalled", ()=>{ installBtn.style.display="none"; });
+</script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+# Scent Mixer · 향 조합 시뮬레이터
+
+향료를 골라 조합하고, 탑·미들·베이스 균형과 향 계열 프로필을 실시간으로 확인하는 교육·연습용 앱입니다. 설치형 **PWA**라 휴대폰/데스크톱에 앱처럼 깔리고 오프라인에서도 동작합니다.
+
+## 실행 / 설치 (앱으로 쓰기)
+PWA(서비스 워커)는 `http(s)`로 서빙해야 동작합니다. 폴더에서:
+
+```bash
+cd scent-mixer
+python3 -m http.server 8000
+# 브라우저에서 http://localhost:8000 접속
+```
+
+- **데스크톱(Chrome/Edge)**: 주소창 오른쪽 설치 아이콘 또는 우측 상단 **📲 앱 설치** 버튼
+- **안드로이드(Chrome)**: 메뉴 → "앱 설치" / "홈 화면에 추가"
+- **iOS(Safari)**: 공유 → "홈 화면에 추가"
+
+설치하면 전체화면(standalone)으로 뜨고, 한 번 연 뒤에는 오프라인에서도 실행됩니다.
+
+> 빠르게 미리보기만 하려면 `index.html`을 그냥 더블클릭해도 됩니다(이 경우 오프라인 캐싱/설치는 비활성).
+
+## 구성
+- `index.html` — 앱 본체(UI·로직, 단일 파일)
+- `manifest.webmanifest` — PWA 메타데이터
+- `sw.js` — 오프라인 캐시 서비스 워커
+- `icon-192.png`, `icon-512.png` — 앱 아이콘 (`gen_icons.py`로 생성)
+
+## 기능
+- **향료 라이브러리**: 28종 향료를 계열/휘발도/검색으로 필터링, 클릭해서 조합에 추가
+- **방울 단위 조합**: +/− 로 비율 조절, 실시간 % 표시
+- **밸런스 점수**: 권장 피라미드(탑 30 / 미들 40 / 베이스 30) 대비 균형도 0~100 점수 + 개선 팁
+- **노트 피라미드**: 탑·미들·베이스 레이어별 구성 시각화
+- **향 계열 프로필**: 시트러스·플로럴·우디 등 계열 비중 막대
+- **레시피 저장**: 브라우저 localStorage에 저장/불러오기/삭제
+- **랜덤 조합**: 균형 잡힌 시작점 자동 생성
+- **유명 향수 프리셋**: 대표 향수 22종(샤넬·디올·톰포드·크리드·르라보 등)을 라이브러리 향료로 근사 재현 — 버튼으로 불러와 구조 학습
+
+## 향료 라이브러리 (48종)
+시트러스·플로럴·우디·오리엔탈·프레시·그린·스파이시·구르망·프루티·아쿠아틱·레더 11개 계열.
+
+## 프리셋 목록 (22종)
+Chanel No.5 / Coco Mademoiselle / Bleu de Chanel · Dior Sauvage / J'adore / Dior Homme ·
+YSL Opium / Black Opium · Creed Aventus · Armani Acqua di Giò · D&G Light Blue ·
+Versace Eros · Mugler Angel · Lancôme La Vie Est Belle · Viktor & Rolf Flowerbomb ·
+Tom Ford Black Orchid / Tobacco Vanille · Guerlain Shalimar · Le Labo Santal 33 / AnOther 13 ·
+Jo Malone Wood Sage & Sea Salt · Maison Margiela Replica Jazz Club
+
+## 프리셋에 대하여
+프리셋은 실제 향수의 비공개 포뮬러가 아니라, 공개된 노트 피라미드를 라이브러리 향료로 단순 근사한 학습용 예시입니다.
+
+## 메모
+실제 조향 가이드가 아니라 향 구조를 이해하기 위한 학습용 도구입니다. 영향력 가중치(strength)와 휘발도(top/heart/base)는 단순화된 모델입니다.
