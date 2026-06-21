@@ -174,6 +174,56 @@
             border-top:1px solid var(--line); padding-top:10px; }
   .qty-sum .qrow{ display:flex; justify-content:space-between; }
   .qty-sum b{ color:var(--fg); }
+
+  /* ===== UX polish ===== */
+  /* sticky summary bar */
+  .statbar{ position:sticky; top:0; z-index:20; display:flex; gap:8px; margin-bottom:16px;
+            background:rgba(15,18,32,.82); backdrop-filter:blur(10px);
+            border:1px solid var(--line); border-radius:14px; padding:10px 12px; }
+  .statbar .stat{ flex:1; text-align:center; }
+  .statbar .sv{ display:block; font-size:20px; font-weight:700; line-height:1.15; }
+  .statbar .sl{ font-size:11px; color:var(--muted); }
+  .statbar .stat+.stat{ border-left:1px solid var(--line); }
+
+  /* collapsible cards */
+  details.card > summary{ list-style:none; cursor:pointer; font-size:15px; font-weight:600;
+            display:flex; align-items:center; gap:8px; }
+  details.card > summary::-webkit-details-marker{ display:none; }
+  details.card > summary::after{ content:"▸"; margin-left:auto; color:var(--muted);
+            transition:transform .2s; font-size:12px; }
+  details.card[open] > summary{ margin-bottom:14px; }
+  details.card[open] > summary::after{ transform:rotate(90deg); }
+  details.card > summary .tag{ font-size:11px; color:var(--muted); font-weight:400; margin-left:0; }
+  details.card > summary:hover{ color:var(--accent); }
+
+  /* library "in blend" state + count badge */
+  .mat{ position:relative; }
+  .mat.in{ border-color:var(--accent); background:#1d1733; }
+  .vol{ margin-left:6px; }
+  .mat .badge{ position:absolute; top:8px; right:8px; background:var(--accent); color:#1a1024;
+            font-size:10px; font-weight:700; border-radius:10px; padding:1px 7px; }
+
+  /* toast */
+  .toast{ position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom));
+          transform:translate(-50%,16px); background:var(--accent); color:#1a1024;
+          font-size:13px; font-weight:600; padding:9px 16px; border-radius:24px;
+          opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:60;
+          box-shadow:0 8px 24px rgba(0,0,0,.45); }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  /* general polish */
+  *::-webkit-scrollbar{ width:9px; height:9px; }
+  *::-webkit-scrollbar-thumb{ background:#2b3252; border-radius:6px; }
+  *::-webkit-scrollbar-thumb:hover{ background:#3a4470; }
+  *::-webkit-scrollbar-track{ background:transparent; }
+  .card{ transition:border-color .15s; }
+  button{ transition:filter .12s, transform .05s; }
+  button:hover:not(:disabled){ filter:brightness(1.08); }
+  button:active:not(:disabled){ transform:translateY(1px); }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+  summary:focus-visible, .mat:focus-visible, .mtag:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px; }
+  @media(prefers-reduced-motion:reduce){ .toast{ transition:none } }
 </style>
 </head>
 <body>
@@ -242,6 +292,13 @@
     </svg>
     <div class="hero-cap">탑 · 미들 · 베이스가 층층이 쌓여 하나의 향이 됩니다</div>
   </div>
+
+  <div class="statbar" id="statbar">
+    <div class="stat"><span class="sv" id="stIng">0</span><span class="sl">향료</span></div>
+    <div class="stat"><span class="sv" id="stScore">–</span><span class="sl">밸런스 점수</span></div>
+    <div class="stat"><span class="sv" id="stLast">–</span><span class="sl">예상 지속</span></div>
+  </div>
+
   <div class="grid">
     <!-- LEFT: library + blend -->
     <div>
@@ -266,8 +323,8 @@
         <div class="goal-res" id="goalRes"></div>
       </div>
 
-      <div class="card">
-        <h2>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></h2>
+      <details class="card">
+        <summary>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></summary>
         <div class="guide-steps">
           <div class="gstep"><b>1. 세 층을 쌓기</b><br>탑(첫인상)·미들(중심)·베이스(잔향)에서 각각 1~2개씩 골라요.</div>
           <div class="gstep"><b>2. 비율은 3 : 4 : 3</b><br>탑 30% · 미들 40% · 베이스 30%가 안정적인 기본값. 위 <b>밸런스 점수</b>로 확인.</div>
@@ -279,7 +336,7 @@
           <button class="ghost sm" id="guideRandomBtn">🎲 균형 잡힌 랜덤</button>
         </div>
         <div class="note">초보 추천 시작: <b>베르가못</b>(탑) → <b>로즈</b>(미들) → <b>샌달우드</b>(베이스).</div>
-      </div>
+      </details>
 
       <div class="card">
         <h2>💡 추천 향료 <span class="tag">지금 조합에 더하면 좋아요</span></h2>
@@ -311,11 +368,11 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>유명 향수 프리셋 <span class="tag" id="presetCount"></span></h2>
+      <details class="card">
+        <summary>🧪 유명 향수 프리셋 <span class="tag" id="presetCount"></span></summary>
         <div id="presets" style="max-height:360px;overflow:auto;padding-right:4px;"></div>
         <div class="note">실제 포뮬러가 아니라 노트 피라미드를 단순 근사한 학습용 예시입니다.</div>
-      </div>
+      </details>
     </div>
 
     <!-- RIGHT: analysis -->
@@ -349,13 +406,13 @@
         </div>
       </div>
 
-      <div class="card">
-        <h2>향 계열 프로필</h2>
+      <details class="card">
+        <summary>🎨 향 계열 프로필 <span class="tag">계열 비중</span></summary>
         <div id="families"><div class="empty">아직 향료가 없습니다.</div></div>
-      </div>
+      </details>
 
-      <div class="card">
-        <h2>🧴 재료 분량 <span class="tag">실제로 만들 때</span></h2>
+      <details class="card">
+        <summary>🧴 재료 분량 <span class="tag">실제로 만들 때</span></summary>
         <div class="row">
           <div>
             <label class="lbl">만들 용량</label>
@@ -376,20 +433,21 @@
           </div>
         </div>
         <div id="recipeQty" style="margin-top:12px;"><div class="empty">조합을 추가하면 분량이 계산됩니다.</div></div>
-      </div>
+      </details>
 
-      <div class="card">
-        <h2>저장된 레시피</h2>
-        <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <details class="card">
+        <summary>💾 저장된 레시피 <span class="tag">내 레시피</span></summary>
+        <div style="display:flex; gap:8px; margin:4px 0 10px;">
           <input id="recipeName" placeholder="레시피 이름" />
           <button id="saveBtn" style="white-space:nowrap;">저장</button>
         </div>
         <div id="saved"></div>
-      </div>
+      </details>
     </div>
   </div>
   <footer>로컬에서만 동작 · 데이터는 브라우저(localStorage)에 저장됩니다.</footer>
 </div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 // ---- Fragrance material database ----------------------------------------
@@ -564,10 +622,12 @@ function renderLib(){
   });
   $("#libCount").textContent = list.length+" / "+MATERIALS.length+"종";
   list.forEach(m=>{
-    const el=document.createElement("div"); el.className="mat";
+    const cnt=blend[m.n]||0;
+    const el=document.createElement("div"); el.className="mat"+(cnt?" in":"");
     el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}
         <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
-      <div class="meta">${FAMILIES[m.fam]} · 지속 ~${fmtHc(lastHours(m))} · ${m.d}</div>`;
+      <div class="meta">${FAMILIES[m.fam]} · 지속 ~${fmtHc(lastHours(m))} · ${m.d}</div>
+      ${cnt?`<span class="badge">${cnt}방울</span>`:""}`;
     el.onclick=()=>addDrop(m.n);
     lib.appendChild(el);
   });
@@ -576,7 +636,13 @@ function renderLib(){
 
 // ---- blend ops ----
 function mat(n){ return MATERIALS.find(m=>m.n===n); }
-function addDrop(n,k=1){ blend[n]=(blend[n]||0)+k; if(blend[n]<=0) delete blend[n]; render(); }
+function addDrop(n,k=1){ blend[n]=(blend[n]||0)+k; if(blend[n]<=0) delete blend[n]; render(); if(k>0) toast(`${n} +${k}방울 · ${Object.keys(blend).length}종`); }
+let toastT=null;
+function toast(msg){
+  let el=$("#toast"); if(!el) return;
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("show"),1400);
+}
 function clearBlend(){ blend={}; render(); }
 function randomBlend(){
   blend={};
@@ -727,6 +793,12 @@ function render(){
 
   const a=analyze();
   const {score}=balanceScore(a.volPct,a.items);
+
+  // sticky stat bar
+  const ing=a.items.length;
+  $("#stIng").textContent=ing;
+  $("#stScore").textContent=ing? score : "–";
+  $("#stLast").textContent=ing? fmtH(longevity(a).hours) : "–";
 
   // score
   if(!a.items.length){
