@@ -107,6 +107,15 @@
   .saved-item .nm{ flex:1; }
   footer{ text-align:center; color:var(--muted); font-size:12px; padding:16px; }
   .note{ font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.5; }
+  .guide-steps{ display:grid; gap:8px; margin-bottom:12px; }
+  .gstep{ background:var(--card2); border:1px solid var(--line); border-radius:10px;
+          padding:9px 11px; font-size:12.5px; line-height:1.55; color:var(--fg); }
+  .gstep b{ color:var(--accent); }
+  .rec{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .rec:last-child{ border-bottom:none; }
+  .rec .info{ flex:1; }
+  .rec .info .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .rec .info .why{ font-size:11.5px; color:var(--muted); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -122,6 +131,26 @@
   <div class="grid">
     <!-- LEFT: library + blend -->
     <div>
+      <div class="card">
+        <h2>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></h2>
+        <div class="guide-steps">
+          <div class="gstep"><b>1. 세 층을 쌓기</b><br>탑(첫인상)·미들(중심)·베이스(잔향)에서 각각 1~2개씩 골라요.</div>
+          <div class="gstep"><b>2. 비율은 3 : 4 : 3</b><br>탑 30% · 미들 40% · 베이스 30%가 안정적인 기본값. 위 <b>밸런스 점수</b>로 확인.</div>
+          <div class="gstep"><b>3. 계열은 2~3개만</b><br>너무 많이 섞으면 탁해져요. 어울리는 계열끼리(예: 시트러스+우디).</div>
+          <div class="gstep"><b>4. 막히면 추천 사용</b><br>아래 <b>추천 향료</b> 버튼이 지금 조합에 맞춰 다음 한 가지를 골라줘요.</div>
+        </div>
+        <div class="actions">
+          <button class="sm" id="starterBtn">🍃 기본 3종으로 시작</button>
+          <button class="ghost sm" id="guideRandomBtn">🎲 균형 잡힌 랜덤</button>
+        </div>
+        <div class="note">초보 추천 시작: <b>베르가못</b>(탑) → <b>로즈</b>(미들) → <b>샌달우드</b>(베이스).</div>
+      </div>
+
+      <div class="card">
+        <h2>💡 추천 향료 <span class="tag">지금 조합에 더하면 좋아요</span></h2>
+        <div id="recs"></div>
+      </div>
+
       <div class="card">
         <h2>향료 라이브러리 <span class="tag" id="libCount"></span></h2>
         <div class="toolbar">
@@ -249,6 +278,22 @@ const MATERIALS = [
 ];
 const VOL_LABEL = {top:"탑", heart:"미들", base:"베이스"};
 const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
+
+// ---- 초보자 추천용 데이터 ----
+// 계열별 잘 어울리는 짝 (클래식 어코드 단순화)
+const FAM_FRIEND = {
+  citrus:["woody","floral","fresh"], floral:["woody","citrus","fruity"],
+  woody:["citrus","oriental","floral"], oriental:["spicy","gourmand","woody"],
+  fresh:["citrus","woody","aquatic"], green:["citrus","woody","floral"],
+  spicy:["oriental","woody","citrus"], gourmand:["oriental","woody","spicy"],
+  fruity:["floral","citrus","woody"], aquatic:["citrus","fresh","woody"],
+  leather:["woody","oriental","spicy"]
+};
+// 층별 / 계열별 초보 친화 대표 향료
+const LAYER_PICK = { top:"베르가못", heart:"로즈", base:"샌달우드" };
+const FAM_PICK = { citrus:"베르가못", floral:"로즈", woody:"샌달우드", oriental:"앰버",
+  fresh:"페퍼민트", green:"로즈마리", spicy:"핑크페퍼", gourmand:"바닐라",
+  fruity:"사과", aquatic:"마린노트", leather:"가죽" };
 
 // ---- 유명 향수 근사 재현 프리셋 ----
 // 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
@@ -379,6 +424,52 @@ function balanceScore(volPct,items){
   return {score:Math.round(s)};
 }
 
+// 지금 조합에 맞춰 다음에 더할 향료 추천 (최대 3개)
+function recommend(a){
+  if(!a.items.length){
+    return [
+      {name:"베르가못", why:"산뜻한 탑노트 — 향의 첫인상"},
+      {name:"로즈",     why:"향의 중심을 잡는 미들노트"},
+      {name:"샌달우드", why:"오래 남는 베이스노트"},
+    ];
+  }
+  const recs=[]; const have=new Set(Object.keys(blend));
+  const used=n=>have.has(n)||recs.find(r=>r.name===n);
+  // 1) 약한 층 채우기 (베이스→미들→탑 순으로 초보가 자주 빠뜨림)
+  for(const k of ["base","heart","top"]){
+    if(a.volPct[k] < 13){
+      const pick=LAYER_PICK[k];
+      if(!used(pick)) recs.push({name:pick, why:`${VOL_LABEL[k]}노트가 약해요 — 더하면 균형이 좋아져요`});
+    }
+  }
+  // 2) 주요 계열과 어울리는 계열 제안
+  const domFam=Object.entries(a.fam).sort((x,y)=>y[1]-x[1])[0]?.[0];
+  if(domFam){
+    for(const fr of (FAM_FRIEND[domFam]||[])){
+      const pick=FAM_PICK[fr];
+      if(pick && !used(pick)){
+        recs.push({name:pick, why:`${FAMILIES[domFam]}와 잘 어울려요 (${FAMILIES[fr]} 계열)`});
+        break;
+      }
+    }
+  }
+  return recs.slice(0,3);
+}
+function renderRecs(a){
+  const wrap=$("#recs"); const list=recommend(a); wrap.innerHTML="";
+  list.forEach(r=>{
+    const m=mat(r.name); if(!m) return;
+    const el=document.createElement("div"); el.className="rec";
+    el.innerHTML=`<div class="info"><div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${r.name}
+        <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
+        <div class="why">${r.why}</div></div>
+      <button class="sm" data-add>+ 추가</button>`;
+    el.querySelector("[data-add]").onclick=()=>addDrop(r.name);
+    wrap.appendChild(el);
+  });
+  if(!list.length) wrap.innerHTML='<div class="muted" style="font-size:12.5px;">균형이 좋아요! 한 계열을 강조해 개성을 더해보세요.</div>';
+}
+
 function render(){
   // blend table
   const b=$("#blend");
@@ -458,7 +549,13 @@ function render(){
         <div class="track"><div class="fill" style="width:${v/max*100}%;background:${famColor(f)}"></div></div></div>`;
     }).join("");
   }
+
+  // recommendations
+  renderRecs(a);
 }
+
+// 초보용 스타터: 탑·미들·베이스 기본 3종
+function starter(){ blend={ "베르가못":3, "로즈":4, "샌달우드":3 }; render(); }
 
 // ---- 프리셋 ----
 function renderPresets(){
@@ -502,6 +599,8 @@ $("#saveBtn").onclick=()=>{
 ["search","famFilter","volFilter"].forEach(id=>$("#"+id).addEventListener("input",renderLib));
 $("#clearBtn").onclick=clearBlend;
 $("#randomBtn").onclick=randomBlend;
+$("#starterBtn").onclick=starter;
+$("#guideRandomBtn").onclick=randomBlend;
 
 initFilters(); renderLib(); render(); renderPresets(); renderSaved();
 
