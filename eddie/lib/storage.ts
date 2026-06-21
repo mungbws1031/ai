@@ -29,6 +29,8 @@ export function defaultState(): AppState {
       maxNotificationsPerDay: 6,
       darkMode: false,
       notificationsAsked: false,
+      apiKey: '',
+      aiConsent: false,
     },
     schemaVersion: SCHEMA_VERSION,
   };
@@ -61,7 +63,9 @@ export function clearState(): void {
   window.localStorage.removeItem(KEY);
 }
 
-/** 데이터 내보내기 (NFR-PR-002) */
+/** 데이터 내보내기 (NFR-PR-002). API 키 등 비밀값은 제외한다. */
 export function exportState(state: AppState): string {
-  return JSON.stringify(state, null, 2);
+  const { settings, ...rest } = state;
+  const { apiKey: _omit, ...safeSettings } = settings;
+  return JSON.stringify({ ...rest, settings: safeSettings }, null, 2);
 }
