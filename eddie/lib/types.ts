@@ -146,6 +146,8 @@ export interface Todo {
   done: boolean;
   createdAt: string; // ISO
   doneAt?: string; // ISO
+  remindAt?: string; // 'HH:mm' — 선택. 이 시각에 알림
+  remindDate?: string; // 'YYYY-MM-DD' — 알림 대상 날짜(보통 담은 날)
 }
 
 export interface AppState {

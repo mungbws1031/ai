@@ -79,10 +79,11 @@ interface StoreValue {
   recordBedtime: () => void;
 
   // 빠른 할 일 캡처(브레인 덤프)
-  addTodo: (text: string) => void;
+  addTodo: (text: string, remindAt?: string) => void;
   toggleTodo: (id: string) => void;
   removeTodo: (id: string) => void;
   clearDoneTodos: () => void;
+  setTodoReminder: (id: string, remindAt?: string) => void;
 
   // 스케줄 달력
   addEvent: (date: string, title: string, time?: string) => void;
@@ -250,6 +251,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
+      // 할 일 알림 (시각 지정된 할 일)
+      s.todos.forEach((t) => {
+        if (!t.done && t.remindAt && t.remindDate === d && nowHM === t.remindAt) {
+          notif.fire({
+            title: '할 일 알림',
+            body: t.text,
+            tone,
+            key: `todo:${t.id}`,
+            date: d,
+            cap,
+            fallback: pushToast,
+          });
+        }
+      });
+
       // 스케줄 일정 알림 (시각 지정된 오늘 일정)
       s.schedule.forEach((ev) => {
         if (ev.date === d && ev.time && !ev.done && nowHM === ev.time) {
@@ -409,12 +425,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── 빠른 할 일 캡처 ──
-  const addTodo = useCallback<StoreValue['addTodo']>((text) => {
+  const addTodo = useCallback<StoreValue['addTodo']>((text, remindAt) => {
     const t = text.trim();
     if (!t) return;
+    const day = dateKey(new Date());
     setState((s) => ({
       ...s,
-      todos: [{ id: uid('todo'), text: t, done: false, createdAt: new Date().toISOString() }, ...s.todos],
+      todos: [
+        {
+          id: uid('todo'),
+          text: t,
+          done: false,
+          createdAt: new Date().toISOString(),
+          ...(remindAt ? { remindAt, remindDate: day } : {}),
+        },
+        ...s.todos,
+      ],
+    }));
+  }, []);
+  const setTodoReminder = useCallback<StoreValue['setTodoReminder']>((id, remindAt) => {
+    const day = dateKey(new Date());
+    setState((s) => ({
+      ...s,
+      todos: s.todos.map((t) =>
+        t.id === id
+          ? { ...t, remindAt: remindAt || undefined, remindDate: remindAt ? day : undefined }
+          : t,
+      ),
     }));
   }, []);
   const toggleTodo = useCallback<StoreValue['toggleTodo']>((id) => {
@@ -487,6 +524,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleTodo,
     removeTodo,
     clearDoneTodos,
+    setTodoReminder,
     addEvent,
     updateEvent,
     removeEvent,
