@@ -1,9 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/lib/store-context';
 import { dateKey } from '@/lib/clock';
 import { isGoodDay } from '@/lib/streak';
+import {
+  canNativeShare,
+  copyText,
+  formatDay,
+  formatEvent,
+  nativeShare,
+  smsHref,
+} from '@/lib/share';
 import PageHeader from '@/components/PageHeader';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -135,10 +143,19 @@ function DayDetail({
   sleep?: string;
   events: { id: string; title: string; time?: string; done: boolean }[];
 }) {
-  const { addEvent, toggleEvent, removeEvent } = useStore();
+  const { addEvent, toggleEvent, removeEvent, pushToast } = useStore();
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [m, dd] = date.split('-').slice(1);
+
+  // 빠른 공유: 공유 시트(카톡·문자 등) → 미지원이면 복사로 대체.
+  async function quickShare(text: string) {
+    const r = await nativeShare(text);
+    if (r === 'unsupported') {
+      const ok = await copyText(text);
+      pushToast(ok ? '복사했어 — 붙여넣어 보내줘.' : '복사하지 못했어.');
+    }
+  }
 
   return (
     <section className="card mt-4">
@@ -168,6 +185,13 @@ function DayDetail({
               {e.time && <span className="mr-1 font-mono text-xs text-eddie-primary">{e.time}</span>}
               {e.title}
             </span>
+            <button
+              onClick={() => quickShare(formatEvent(date, e))}
+              className="btn-ghost px-2"
+              aria-label="이 일정 친구에게 보내기"
+            >
+              📤
+            </button>
             <button onClick={() => removeEvent(e.id)} className="btn-ghost px-2 text-red-500" aria-label="일정 삭제">
               ✕
             </button>
@@ -175,6 +199,8 @@ function DayDetail({
         ))}
         {events.length === 0 && <li className="text-sm text-eddie-muted">이 날 일정이 없어.</li>}
       </ul>
+
+      {events.length > 0 && <ShareMenu text={formatDay(date, events)} />}
 
       <form
         className="mt-3 flex flex-col gap-2"
@@ -197,5 +223,58 @@ function DayDetail({
         <p className="text-xs text-eddie-muted">시각을 정하면 그 시간에 알림을 보내줄게(앱이 열려 있을 때).</p>
       </form>
     </section>
+  );
+}
+
+/** 하루 일정을 친구에게 보내기 — 카톡 등 공유 시트 · 문자 · 복사. */
+function ShareMenu({ text }: { text: string }) {
+  const { pushToast } = useStore();
+  const [open, setOpen] = useState(false);
+  const [canShare, setCanShare] = useState(false);
+
+  useEffect(() => {
+    setCanShare(canNativeShare());
+  }, []);
+
+  async function share() {
+    const r = await nativeShare(text);
+    if (r === 'unsupported') {
+      const ok = await copyText(text);
+      pushToast(ok ? '복사했어 — 붙여넣어 보내줘.' : '복사하지 못했어.');
+    }
+    setOpen(false);
+  }
+
+  async function copy() {
+    const ok = await copyText(text);
+    pushToast(ok ? '복사했어 — 붙여넣어 보내줘.' : '복사하지 못했어.');
+    setOpen(false);
+  }
+
+  return (
+    <div className="mt-3 border-t border-eddie-line pt-3 dark:border-neutral-700">
+      <button onClick={() => setOpen((o) => !o)} className="btn-soft w-full text-sm">
+        📤 이 날 일정 친구에게 보내기
+      </button>
+      {open && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {canShare && (
+            <button onClick={share} className="btn-soft flex-1 text-sm">
+              💬 카톡 등으로 공유
+            </button>
+          )}
+          <a
+            href={smsHref(text)}
+            onClick={() => setOpen(false)}
+            className="btn-soft flex-1 text-center text-sm"
+          >
+            ✉️ 문자로 보내기
+          </a>
+          <button onClick={copy} className="btn-soft flex-1 text-sm">
+            📋 복사
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
