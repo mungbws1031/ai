@@ -27,6 +27,7 @@ export default function CleanPage() {
   const [plan, setPlan] = useState<CleanPlan | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -59,7 +60,10 @@ export default function CleanPage() {
       });
       setPlan(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : '분석에 실패했어.');
+      const msg = err instanceof Error ? err.message : '분석에 실패했어.';
+      setError(msg);
+      // API 키 문제면 키 수정 폼을 바로 열어준다.
+      if (msg.includes('API 키')) setShowSettings(true);
     } finally {
       setLoading(false);
     }
@@ -69,8 +73,10 @@ export default function CleanPage() {
     <div className="px-4">
       <PageHeader title="정리 도우미" subtitle="방 사진을 올리면, 주어진 시간에 어디부터 치울지 알려줄게." />
 
-      {/* BYOK 설정 (키가 없거나 동의 전이면 안내) */}
-      {(!hasKey || !consented) && <Setup hasKey={hasKey} consented={consented} />}
+      {/* BYOK 설정 (키 없음·미동의·또는 사용자가 키 변경을 열었을 때) */}
+      {(!hasKey || !consented || showSettings) && (
+        <Setup hasKey={hasKey} consented={consented} onSaved={() => setShowSettings(false)} />
+      )}
 
       {hasKey && consented && (
         <>
@@ -139,6 +145,16 @@ export default function CleanPage() {
           )}
 
           {plan && <PlanView plan={plan} />}
+
+          {/* 키 변경 진입점: 잘못된 키를 언제든 수정할 수 있게 항상 노출 */}
+          {!showSettings && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="mt-2 mb-4 w-full text-center text-sm text-eddie-muted underline"
+            >
+              ⚙️ API 키 변경
+            </button>
+          )}
         </>
       )}
     </div>
@@ -196,28 +212,59 @@ function PlanView({ plan }: { plan: CleanPlan }) {
   );
 }
 
-function Setup({ hasKey, consented }: { hasKey: boolean; consented: boolean }) {
+function Setup({
+  hasKey,
+  consented,
+  onSaved,
+}: {
+  hasKey: boolean;
+  consented: boolean;
+  onSaved: () => void;
+}) {
   const { updateSettings, state } = useStore();
   const [key, setKey] = useState(state.settings.apiKey ?? '');
+  const [reveal, setReveal] = useState(false);
+
+  function save() {
+    const trimmed = key.trim();
+    if (!trimmed) return;
+    updateSettings({ apiKey: trimmed });
+    onSaved();
+  }
 
   return (
     <section className="card mb-4 flex flex-col gap-3">
-      <p className="font-semibold">정리 도우미 켜기</p>
+      <p className="font-semibold">{hasKey ? 'API 키 변경' : '정리 도우미 켜기'}</p>
       <p className="text-sm text-eddie-muted">
         사진 분석은 <strong>네 Anthropic API 키</strong>로 동작해. 키는 이 기기에만 저장되고, 사진은 분석을 위해
         Anthropic으로만 전송돼(앱에 저장 안 함).
       </p>
 
       <div>
-        <p className="mb-1 text-xs text-eddie-muted">Anthropic API 키</p>
+        <div className="mb-1 flex items-center justify-between">
+          <p className="text-xs text-eddie-muted">Anthropic API 키</p>
+          <button
+            type="button"
+            onClick={() => setReveal((v) => !v)}
+            className="text-xs text-eddie-primary"
+          >
+            {reveal ? '숨기기' : '보기'}
+          </button>
+        </div>
         <input
           className="field"
-          type="password"
+          type={reveal ? 'text' : 'password'}
           placeholder="sk-ant-..."
           value={key}
           onChange={(e) => setKey(e.target.value)}
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
         />
+        <p className="mt-1 text-xs text-eddie-muted">
+          키는 <code>sk-ant-</code>로 시작해. 앞뒤 공백이나 따옴표가 들어가지 않게 붙여넣어줘.
+        </p>
         <a
           href="https://console.anthropic.com/settings/keys"
           target="_blank"
@@ -238,13 +285,16 @@ function Setup({ hasKey, consented }: { hasKey: boolean; consented: boolean }) {
         <span>사진을 분석을 위해 Anthropic으로 전송하는 데 동의해.</span>
       </label>
 
-      <button
-        onClick={() => updateSettings({ apiKey: key.trim() })}
-        disabled={!key.trim()}
-        className="btn-primary disabled:opacity-40"
-      >
-        {hasKey ? '키 업데이트' : '키 저장'}
-      </button>
+      <div className="flex gap-2">
+        {hasKey && (
+          <button onClick={onSaved} className="btn-soft flex-1">
+            취소
+          </button>
+        )}
+        <button onClick={save} disabled={!key.trim()} className="btn-primary flex-1 disabled:opacity-40">
+          {hasKey ? '키 업데이트' : '키 저장'}
+        </button>
+      </div>
     </section>
   );
 }
