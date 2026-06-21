@@ -116,6 +116,16 @@
   .rec .info{ flex:1; }
   .rec .info .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
   .rec .info .why{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  /* longevity */
+  .curve{ display:flex; align-items:flex-end; gap:2px; height:60px; margin:6px 0 4px; }
+  .curve .cb{ flex:1; background:linear-gradient(to top,var(--accent),var(--accent2));
+              border-radius:2px 2px 0 0; min-height:2px; opacity:.85; }
+  .curve-x{ display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:10px; }
+  .phase{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:5px 0; }
+  .phase .pl{ width:46px; font-weight:600; }
+  .phase .ptrack{ flex:1; height:7px; background:var(--card2); border-radius:5px; position:relative; overflow:hidden; }
+  .phase .pbar{ position:absolute; height:100%; border-radius:5px; }
+  .phase .pt{ width:120px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
 </style>
 </head>
 <body>
@@ -190,6 +200,11 @@
         <div class="score"><span class="big" id="scoreVal">–</span><span class="muted" id="scoreLbl"></span></div>
         <div id="scorePills"></div>
         <div class="balance-note" id="balanceNote">조합을 추가하면 분석이 표시됩니다.</div>
+      </div>
+
+      <div class="card">
+        <h2>지속 시간 & 발향 <span class="tag">조합에 따라 달라져요</span></h2>
+        <div id="longevity"><div class="empty">조합을 추가하면 표시됩니다.</div></div>
       </div>
 
       <div class="card">
@@ -376,7 +391,7 @@ function renderLib(){
     const el=document.createElement("div"); el.className="mat";
     el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}
         <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
-      <div class="meta">${FAMILIES[m.fam]} · ${m.d}</div>`;
+      <div class="meta">${FAMILIES[m.fam]} · 지속 ~${fmtHc(lastHours(m))} · ${m.d}</div>`;
     el.onclick=()=>addDrop(m.n);
     lib.appendChild(el);
   });
@@ -422,6 +437,46 @@ function balanceScore(volPct,items){
   // tiny complexity bonus
   if(items.length>=4 && items.length<=8) s=Math.min(100,s+5);
   return {score:Math.round(s)};
+}
+
+// ---- 지속 시간(발향) 모델 ----
+// 휘발도별 기준 지속시간(시간), 강도(str)로 가감. 단순화 모델.
+const LAST_BASE = { top:0.9, heart:2.2, base:4.5 };
+function lastHours(m){ return LAST_BASE[m.vol]*(0.6+0.1*m.str); } // 반감기로 사용
+function fmtH(h){
+  if(h<1) return Math.round(h*60)+"분";
+  let hh=Math.floor(h), mm=Math.round((h-hh)*60);
+  if(mm===60){ hh++; mm=0; }
+  return mm? `${hh}시간 ${mm}분` : `${hh}시간`;
+}
+function fmtHc(h){ return h<1? Math.round(h*60)+"분" : (Math.round(h*10)/10)+"h"; }
+// 시간 t에서의 향 세기 (각 향료 반감기 기준 지수 감쇠의 합)
+function intensityAt(weighted,t){
+  return weighted.reduce((s,i)=>s + i.w*Math.pow(0.5, t/lastHours(i)), 0);
+}
+function longevity(a){
+  if(!a.items.length) return null;
+  const W=a.weighted, I0=a.totalW;
+  // 총 지속: 세기가 처음의 10%로 떨어지는 시각
+  let hours=0;
+  for(let t=0;t<=24;t+=0.1){ if(intensityAt(W,t) <= 0.12*I0){ hours=t; break; } hours=t; }
+  // 층별 대표 지속(그 층에서 가장 오래가는 향료)
+  const layerMax=v=>{ const ms=W.filter(i=>i.vol===v); return ms.length? Math.max(...ms.map(lastHours)) : 0; };
+  const topE=layerMax("top"), heartE=Math.max(topE,layerMax("heart")), baseE=Math.max(heartE,hours);
+  const phases=[];
+  if(a.volPct.top>2)   phases.push({name:"탑",   vol:"top",   from:0,    to:topE});
+  if(a.volPct.heart>2) phases.push({name:"미들", vol:"heart", from:topE, to:heartE});
+  if(a.volPct.base>2)  phases.push({name:"베이스",vol:"base", from:heartE,to:baseE});
+  // 발향력(실라지): 평균 강도 밀도로 추정
+  const avgStr=I0/a.totalDrops;
+  const sill = avgStr>=3.6? "강함(멀리 퍼짐)" : avgStr>=2.8? "보통" : "은은함(가까이서)";
+  // 지속 등급
+  const grade = hours>=9? ["good","매우 오래감"] : hours>=6? ["good","오래감"]
+              : hours>=3? ["warn","보통"] : ["bad","짧음"];
+  // 곡선 샘플(0~baseE, 24포인트, 피크 대비 %)
+  const span=Math.max(baseE,1), curve=[];
+  for(let k=0;k<24;k++){ const t=span*k/23; curve.push(Math.round(intensityAt(W,t)/I0*100)); }
+  return {hours,phases,sill,grade,curve,span};
 }
 
 // 지금 조합에 맞춰 다음에 더할 향료 추천 (최대 3개)
@@ -550,8 +605,33 @@ function render(){
     }).join("");
   }
 
-  // recommendations
+  // recommendations + longevity
   renderRecs(a);
+  renderLongevity(a);
+}
+
+function renderLongevity(a){
+  const wrap=$("#longevity");
+  if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 표시됩니다.</div>'; return; }
+  const L=longevity(a);
+  const bars=L.curve.map(v=>`<div class="cb" style="height:${Math.max(2,v)}%"></div>`).join("");
+  const phaseRows=L.phases.map(p=>{
+    const left=p.from/L.span*100, w=Math.max(2,(p.to-p.from)/L.span*100);
+    return `<div class="phase"><span class="pl" style="color:var(--${p.vol})">${p.name}</span>
+      <span class="ptrack"><span class="pbar" style="left:${left}%;width:${w}%;background:var(--${p.vol})"></span></span>
+      <span class="pt">${fmtH(p.from)} ~ ${fmtH(p.to)}</span></div>`;
+  }).join("");
+  wrap.innerHTML=`
+    <div class="score" style="margin-bottom:6px;">
+      <span class="big">${fmtH(L.hours)}</span>
+      <span class="muted">예상 지속</span>
+      <span class="pill ${L.grade[0]}" style="margin-left:auto;">${L.grade[1]}</span>
+    </div>
+    <div class="muted" style="font-size:12px;">발향력(실라지): <b style="color:var(--fg)">${L.sill}</b></div>
+    <div class="curve">${bars}</div>
+    <div class="curve-x"><span>지금</span><span>${fmtH(L.span/2)}</span><span>${fmtH(L.span)}</span></div>
+    ${phaseRows}
+    <div class="note">탑은 먼저 날아가고 베이스가 끝까지 남아요. 오래 가게 하려면 베이스노트(머스크·앰버·우디·바닐라) 비중을 높이세요.</div>`;
 }
 
 // 초보용 스타터: 탑·미들·베이스 기본 3종
