@@ -8,8 +8,9 @@ import { useStore } from '@/lib/store-context';
  * ADHD에서 떠오른 일은 즉시 적지 않으면 사라진다 — 날짜·시간 고를 필요 없이 한 줄로 담는 인박스.
  */
 export default function QuickTodos() {
-  const { state, addTodo, toggleTodo, removeTodo, clearDoneTodos } = useStore();
+  const { state, today, addTodo, toggleTodo, removeTodo, clearDoneTodos, setTodoReminder } = useStore();
   const [text, setText] = useState('');
+  const [remindAt, setRemindAt] = useState('');
 
   const todos = state.todos;
   const openCount = todos.filter((t) => !t.done).length;
@@ -23,24 +24,37 @@ export default function QuickTodos() {
       </div>
 
       <form
-        className="flex gap-2"
+        className="flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          addTodo(text);
+          addTodo(text, remindAt || undefined);
           setText('');
+          setRemindAt('');
         }}
       >
-        <input
-          className="field flex-1"
-          placeholder="떠오른 일 적어두기 (예: 택배 부치기)"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          aria-label="할 일 입력"
-          enterKeyHint="done"
-        />
-        <button type="submit" className="btn-primary shrink-0 text-sm" disabled={!text.trim()}>
-          담기
-        </button>
+        <div className="flex gap-2">
+          <input
+            className="field flex-1"
+            placeholder="떠오른 일 적어두기 (예: 택배 부치기)"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            aria-label="할 일 입력"
+            enterKeyHint="done"
+          />
+          <button type="submit" className="btn-primary shrink-0 text-sm" disabled={!text.trim()}>
+            담기
+          </button>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-eddie-muted">
+          🔔 알림 시각(선택)
+          <input
+            className="field !w-auto py-1 text-sm"
+            type="time"
+            value={remindAt}
+            onChange={(e) => setRemindAt(e.target.value)}
+            aria-label="알림 시각(선택)"
+          />
+        </label>
       </form>
 
       {todos.length > 0 ? (
@@ -58,6 +72,20 @@ export default function QuickTodos() {
                 {t.done ? '✓' : ''}
               </button>
               <span className={`flex-1 break-words ${t.done ? 'text-eddie-muted line-through' : ''}`}>{t.text}</span>
+              {t.remindAt && (
+                <button
+                  onClick={() => setTodoReminder(t.id, undefined)}
+                  className={`chip shrink-0 border-0 text-xs ${
+                    t.remindDate === today && !t.done
+                      ? 'bg-eddie-primary-soft text-eddie-primary'
+                      : 'bg-eddie-line text-eddie-muted'
+                  }`}
+                  aria-label={`알림 ${t.remindAt} 끄기`}
+                  title="알림 끄기"
+                >
+                  🔔 {t.remindAt}
+                </button>
+              )}
               <button
                 onClick={() => removeTodo(t.id)}
                 className="btn-ghost px-2 text-red-500"
