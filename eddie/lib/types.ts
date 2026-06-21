@@ -82,6 +82,10 @@ export interface Settings {
   darkMode: boolean;
   // 알림 권한 상태 스냅샷
   notificationsAsked: boolean;
+  // 정리 AI — 사용자 본인 Anthropic API 키(BYOK). 기기 로컬에만 저장.
+  apiKey: string;
+  // 사진을 외부(Anthropic)로 전송하는 것에 대한 명시 동의 (NFR-PR-001)
+  aiConsent: boolean;
 }
 
 /** 제자리 물건 (FR-301) */

@@ -8,6 +8,7 @@ const tabs = [
   { href: '/', label: '오늘', icon: '🌤️' },
   { href: '/routines', label: '루틴', icon: '✅' },
   { href: '/calendar', label: '달력', icon: '🗓️' },
+  { href: '/clean', label: '정리', icon: '🧹' },
   { href: '/eddie', label: '에디', icon: '🐣' },
   { href: '/more', label: '더보기', icon: '⋯' },
 ];
