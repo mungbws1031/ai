@@ -9,6 +9,14 @@ import { NotificationTone } from './types';
 
 const FIRED_KEY = 'eddie.firedNotifications.v1';
 
+// 서비스 워커 등록 핸들(있으면 트레이에 남는 알림 + 클릭 시 앱 포커스).
+let swReg: ServiceWorkerRegistration | null = null;
+export function setSwRegistration(reg: ServiceWorkerRegistration | null) {
+  swReg = reg;
+}
+
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
 export function supported(): boolean {
   return typeof window !== 'undefined' && 'Notification' in window;
 }
@@ -90,8 +98,14 @@ export function fire(opts: NotifyOptions): boolean {
 
   let shown = false;
   if (permission() === 'granted') {
+    const icon = `${BASE}/icon-192.png`;
     try {
-      new Notification(title, { body, tag: key });
+      // 서비스 워커가 있으면 트레이에 남고 클릭 시 앱으로 돌아오는 알림을 띄운다.
+      if (swReg && typeof swReg.showNotification === 'function') {
+        swReg.showNotification(title, { body, tag: key, icon, badge: icon });
+      } else {
+        new Notification(title, { body, tag: key, icon });
+      }
       shown = true;
     } catch {
       shown = false;

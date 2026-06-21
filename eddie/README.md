@@ -26,6 +26,20 @@ npm test         # 핵심 로직 유닛 테스트 (vitest)
 - **더보기** (`/more`) — 복약·출발·제자리·취침·5분 정리·알림 설정·면책/개인정보
 - **온보딩** (`/onboarding`) — 어려움 선택 기반 첫 설정
 
+## 설치형 PWA (오프라인 + 홈 화면)
+
+ADHD 사용자가 앱을 자주 열고 할 일을 잊지 않게 하려면 "손에 닿는 곳"에 있어야 한다.
+그래서 **홈 화면에 추가 가능한 PWA**로 만들었다.
+
+- `public/manifest.webmanifest` + `public/icon-*.png`(에디 아이콘, `gen_icons.py`로 생성) + `public/sw.js`
+- 서비스 워커 전략: 내비게이션(HTML)은 **network-first**(최신 화면 우선, 스테일 HTML 방지), 정적 해시 자산은 **cache-first**. → 오프라인에서도 앱이 열린다.
+- 알림은 서비스 워커가 있으면 `registration.showNotification`으로 띄워 **트레이에 남고, 클릭하면 앱으로 돌아온다**(없으면 `new Notification` 폴백).
+- 더보기 화면의 **"홈 화면에 추가"** 카드로 설치 유도(`beforeinstallprompt`; iOS는 공유→홈 화면에 추가 안내).
+- 베이스 경로는 `NEXT_PUBLIC_BASE_PATH`로 주입해 로컬(`/`)·Pages(`/ai/eddie`) 양쪽에서 동작.
+
+> 웹 한계: 앱이 완전히 닫힌 상태의 예약 백그라운드 알림은 푸시 서버가 필요해 아직 불가하다.
+> 설치형 PWA + 트레이 알림으로 신뢰성을 최대한 끌어올린 단계다.
+
 ## 정리 도우미 — 방 사진 AI 분석 (BYOK)
 
 `/clean` 탭은 방 사진을 올리면 **10/30/60분** 시간 예산에 맞춰 "어디부터 치우면 가장 깨끗해 보일지"
