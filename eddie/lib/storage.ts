@@ -42,8 +42,17 @@ export function loadState(): AppState {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw) as Partial<AppState>;
-    // 얕은 병합 + 누락 필드 보강
-    return { ...defaultState(), ...parsed, schemaVersion: SCHEMA_VERSION };
+    const base = defaultState();
+    // 얕은 병합 + 중첩 객체는 기본값으로 누락 필드 보강(스키마 추가 필드 마이그레이션).
+    return {
+      ...base,
+      ...parsed,
+      settings: { ...base.settings, ...(parsed.settings ?? {}) },
+      departure: { ...base.departure, ...(parsed.departure ?? {}) },
+      sleep: { ...base.sleep, ...(parsed.sleep ?? {}) },
+      streak: { ...base.streak, ...(parsed.streak ?? {}) },
+      schemaVersion: SCHEMA_VERSION,
+    };
   } catch {
     return defaultState();
   }

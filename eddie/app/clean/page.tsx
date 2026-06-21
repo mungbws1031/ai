@@ -198,7 +198,7 @@ function PlanView({ plan }: { plan: CleanPlan }) {
 
 function Setup({ hasKey, consented }: { hasKey: boolean; consented: boolean }) {
   const { updateSettings, state } = useStore();
-  const [key, setKey] = useState(state.settings.apiKey);
+  const [key, setKey] = useState(state.settings.apiKey ?? '');
 
   return (
     <section className="card mb-4 flex flex-col gap-3">
