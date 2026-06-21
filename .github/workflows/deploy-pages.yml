@@ -1,13 +1,17 @@
-name: Deploy practice simulator to GitHub Pages
+name: Deploy apps to GitHub Pages
 
-# Publishes the standalone ticketing practice simulator (site/) so it can be
-# shared as a link: https://<user>.github.io/<repo>/
+# Publishes standalone apps so they can be shared as links:
+#   site/          -> https://<user>.github.io/<repo>/            (ticketing practice simulator)
+#   scent-mixer/   -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
   push:
     branches: [main]
-    paths: ["site/**", ".github/workflows/deploy-pages.yml"]
+    paths:
+      - "site/**"
+      - "scent-mixer/**"
+      - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
 permissions:
@@ -28,9 +32,16 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - name: Assemble publish directory
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          mkdir -p _site/scent-mixer
+          cp -r scent-mixer/. _site/scent-mixer/
+          rm -f _site/scent-mixer/gen_icons.py
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: _site
       - id: deployment
         uses: actions/deploy-pages@v4
