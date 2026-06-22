@@ -280,11 +280,12 @@ const VENUES = {
 function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*s.cols)); return n; }
 
 //// 난이도 = 매진 속도 ////
+// tauMul: 오픈 직후 매진 진행 속도(작을수록 빨리 매진). preStart: 오픈 순간 기본 매진율 가중.
 const DIFFICULTY = {
-  easy:   { name:"쉬움",        interval:600, batch:2,  preempt:0.06 },
-  normal: { name:"보통",        interval:320, batch:5,  preempt:0.14 },
-  hard:   { name:"어려움",      interval:170, batch:10, preempt:0.26 },
-  hell:   { name:"피켓팅(헬)",  interval:80,  batch:22, preempt:0.45 },
+  easy:   { name:"쉬움",        interval:520, batch:4,  preempt:0.10, tauMul:2.0,  preStart:0.6 },
+  normal: { name:"보통",        interval:280, batch:8,  preempt:0.20, tauMul:1.0,  preStart:1.0 },
+  hard:   { name:"어려움",      interval:140, batch:16, preempt:0.34, tauMul:0.55, preStart:1.5 },
+  hell:   { name:"피켓팅(헬)",  interval:65,  batch:30, preempt:0.55, tauMul:0.28, preStart:2.2 },
 };
 
 const $ = id => document.getElementById(id);
@@ -392,11 +393,18 @@ function buildVenue(){
     T.allSecs.push(s); T.secById[s.id]=s;
     T.secMap[s.id]={ total:s.rows*s.cols, taken:new Set() };
   }));
-  // 시작 시점 일부 매진: 상위 등급일수록 더 많이 빠져 있음
-  const baseByRank=[0.18,0.13,0.09,0.06,0.03];
+  // 실전 재현: 오픈~보안문자 통과까지 걸린 시간만큼 이미 매진돼 있음.
+  // 늦게 들어올수록(=경과 시간↑), 상위 등급일수록(=tau↓) 더 많이 빠져 있다.
+  const elapsed = Math.max(0.3, (performance.now() - (T.openEnabledAt||performance.now()))/1000) * (T.diff.preStart||1);
+  const tauBase=[2.2, 5, 9, 15, 24];      // VIP,R,S,A,B 등급별 매진 시간상수(초)
+  const mul=T.diff.tauMul||1;
   T.allSecs.forEach(s=>{
     const rt=T.secMap[s.id];
-    const pre=Math.floor(rt.total*(0.04 + baseByRank[GRADE_RANK[s.grade]]));
+    const tau=tauBase[GRADE_RANK[s.grade]]*mul;
+    let frac=1-Math.exp(-elapsed/tau);     // 지수 감쇠: 시간이 갈수록 매진율↑
+    frac *= 0.82 + Math.random()*0.36;     // 구역별 편차
+    frac=Math.min(1, Math.max(0, frac));
+    const pre=Math.min(rt.total, Math.round(rt.total*frac));
     while(rt.taken.size<pre) rt.taken.add(Math.floor(Math.random()*rt.total));
   });
   $("venueName").textContent = `📍 ${T.venue.name} · ${T.venue.note} · 총 ${venueTotal(T.venue).toLocaleString()}석`;
