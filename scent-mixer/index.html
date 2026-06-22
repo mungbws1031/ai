@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Scent Mixer · 향 조합 시뮬레이터</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0f1220" />
+<meta name="description" content="향료를 조합하고 노트 피라미드·밸런스를 분석하는 향 조합 학습 앱" />
+<link rel="icon" href="icon-192.png" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Scent Mixer" />
+<style>
+  :root{
+    --bg:#0f1220; --card:#1a1f35; --card2:#141831; --line:#2b3252; --fg:#e8ebf5;
+    --muted:#9aa3c4; --accent:#c08bff; --accent2:#5b8cff; --good:#3ecf8e;
+    --bad:#ff6b6b; --warn:#ffd166;
+    --top:#ffd166; --heart:#ff8fab; --base:#a78b6f;
+    --citrus:#ffd166; --floral:#ff8fab; --woody:#a78b6f; --oriental:#c08bff;
+    --fresh:#5ad1c8; --green:#7bd16b; --spicy:#ff8f5a; --gourmand:#d9a86c;
+    --fruity:#ff5d8f; --aquatic:#46c2e0; --leather:#8a5a3c;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:system-ui,"Segoe UI","Apple SD Gothic Neo",sans-serif;
+        background:radial-gradient(1200px 600px at 80% -10%, #21183a 0%, var(--bg) 55%);
+        color:var(--fg); min-height:100vh;
+        padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+  header{ padding:18px 22px; border-bottom:1px solid var(--line); display:flex;
+          align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  header h1{ margin:0; font-size:19px; letter-spacing:.3px; }
+  header h1 .sub{ color:var(--muted); font-weight:400; font-size:13px; margin-left:8px; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:20px; }
+  /* hero illustration */
+  .hero{ position:relative; border:1px solid var(--line); border-radius:16px; overflow:hidden; margin-bottom:16px; }
+  .hero-svg{ width:100%; height:160px; display:block; }
+  @media(max-width:600px){ .hero-svg{ height:128px; } }
+  .hero-cap{ position:absolute; left:0; right:0; bottom:10px; text-align:center;
+             font-size:12px; color:#e8ebf5; opacity:.92; text-shadow:0 1px 6px rgba(0,0,0,.6); padding:0 12px; }
+  .band{ transform-origin:center; animation:bandPulse 6s ease-in-out infinite; }
+  .band.b2{ animation-delay:.5s } .band.b3{ animation-delay:1s }
+  .fillband{ transform-origin:50% 100%; animation:fillRise 6s ease-in-out infinite; }
+  .fillband.f2{ animation-delay:.6s } .fillband.f3{ animation-delay:1.2s }
+  .wisp{ animation:wispRise 4.5s ease-in-out infinite; }
+  .wisp.w2{ animation-delay:.9s } .wisp.w3{ animation-delay:1.8s }
+  .part{ transform-box:fill-box; transform-origin:center; animation:partFloat 5s linear infinite; opacity:0; }
+  @keyframes bandPulse{ 0%,100%{ opacity:.35 } 50%{ opacity:.7 } }
+  @keyframes fillRise{ 0%{ transform:scaleY(.85) } 50%{ transform:scaleY(1.05) } 100%{ transform:scaleY(.85) } }
+  @keyframes wispRise{ 0%{ transform:translateY(8px); opacity:0 } 35%{ opacity:.85 } 100%{ transform:translateY(-26px); opacity:0 } }
+  @keyframes partFloat{ 0%{ transform:translateY(0); opacity:0 } 12%{ opacity:.9 } 100%{ transform:translateY(-64px); opacity:0 } }
+  @media(prefers-reduced-motion:reduce){ .band,.fillband,.wisp,.part{ animation:none } .part{ opacity:.6 } }
+  /* scent simulator */
+  .sim-ctrl{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .sim-ctrl input[type=range]{ flex:1; accent-color:var(--accent); }
+  #simClock{ font-size:12px; min-width:78px; text-align:right; font-variant-numeric:tabular-nums; }
+  .sim-phase{ font-size:13px; font-weight:600; margin-bottom:4px; }
+  .sim-desc{ font-size:12.5px; color:var(--muted); line-height:1.6; margin-bottom:10px; }
+  .sim-note{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .sim-note .nm{ width:90px; font-size:12.5px; display:flex; align-items:center; gap:6px; }
+  .sim-note .track{ flex:1; height:8px; background:var(--card2); border-radius:5px; overflow:hidden; }
+  .sim-note .fill{ height:100%; border-radius:5px; transition:width .25s; }
+  .sim-note .pc{ width:38px; text-align:right; font-size:11px; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .grid{ display:grid; grid-template-columns:1.15fr .85fr; gap:16px; align-items:start; }
+  @media(max-width:880px){ .grid{ grid-template-columns:1fr; } }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px;
+         padding:18px; margin-bottom:16px; }
+  h2{ margin:0 0 14px; font-size:15px; display:flex; align-items:center; gap:8px; }
+  h2 .tag{ font-size:11px; color:var(--muted); font-weight:400; }
+  .muted{ color:var(--muted); }
+  input,select{ width:100%; padding:9px 10px; border-radius:9px; border:1px solid var(--line);
+        background:#0c0f1c; color:var(--fg); font-size:14px; }
+  button{ cursor:pointer; border:none; border-radius:10px; padding:9px 14px; font-size:13px;
+          font-weight:600; background:var(--accent); color:#1a1024; }
+  button.ghost{ background:transparent; border:1px solid var(--line); color:var(--fg); font-weight:500; }
+  button.sm{ padding:5px 9px; font-size:12px; border-radius:8px; }
+  button:disabled{ opacity:.4; cursor:not-allowed; }
+
+  /* material library */
+  .toolbar{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .toolbar input{ flex:1; min-width:140px; }
+  .toolbar select{ width:auto; min-width:120px; }
+  .lib{ display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:360px; overflow:auto; padding-right:4px; }
+  @media(max-width:520px){ .lib{ grid-template-columns:1fr; } }
+  .mat{ border:1px solid var(--line); background:var(--card2); border-radius:11px; padding:10px 11px;
+        cursor:pointer; transition:.12s; }
+  .mat:hover{ border-color:var(--accent); transform:translateY(-1px); }
+  .mat .nm{ font-weight:600; font-size:13.5px; display:flex; align-items:center; gap:6px; }
+  .mat .meta{ font-size:11px; color:var(--muted); margin-top:3px; }
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; flex:0 0 auto; }
+  .vol{ font-size:10px; padding:1px 6px; border-radius:6px; border:1px solid var(--line); margin-left:auto; }
+  .vol.top{ color:var(--top); } .vol.heart{ color:var(--heart); } .vol.base{ color:var(--base); }
+
+  /* blend table */
+  .blend-row{ display:grid; grid-template-columns:1fr auto auto auto; gap:8px; align-items:center;
+              padding:9px 0; border-bottom:1px solid var(--line); }
+  .blend-row:last-child{ border-bottom:none; }
+  .blend-row .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .blend-row .nm small{ font-weight:400; color:var(--muted); }
+  .drops{ display:flex; align-items:center; gap:6px; }
+  .drops button{ width:26px; height:26px; padding:0; border-radius:8px; background:var(--card2);
+                 border:1px solid var(--line); color:var(--fg); font-size:15px; line-height:1; }
+  .drops .n{ min-width:34px; text-align:center; font-variant-numeric:tabular-nums; font-size:13px; }
+  .pct{ min-width:48px; text-align:right; font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted); }
+  .rm{ background:transparent; color:var(--bad); border:none; font-size:16px; padding:0 4px; }
+  .empty{ color:var(--muted); font-size:13px; text-align:center; padding:24px 0; }
+
+  /* pyramid */
+  .pyr{ display:flex; flex-direction:column; gap:6px; margin-top:4px; }
+  .pyr-layer{ border-radius:10px; padding:10px 12px; }
+  .pyr-layer .lh{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; }
+  .pyr-layer .chips{ display:flex; flex-wrap:wrap; gap:5px; }
+  .chip{ font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(255,255,255,.07);
+         border:1px solid rgba(255,255,255,.12); }
+  .lt{ background:linear-gradient(90deg, rgba(255,209,102,.16), transparent); border:1px solid rgba(255,209,102,.3); }
+  .lh-row{ background:linear-gradient(90deg, rgba(255,143,171,.16), transparent); border:1px solid rgba(255,143,171,.3); }
+  .lb{ background:linear-gradient(90deg, rgba(167,139,111,.18), transparent); border:1px solid rgba(167,139,111,.34); }
+
+  /* family bars */
+  .bar{ margin-bottom:9px; }
+  .bar .bl{ display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; }
+  .track{ height:8px; background:var(--card2); border-radius:6px; overflow:hidden; }
+  .fill{ height:100%; border-radius:6px; transition:width .3s; }
+
+  .score{ display:flex; align-items:baseline; gap:8px; }
+  .score .big{ font-size:34px; font-weight:700; }
+  .balance-note{ font-size:12.5px; color:var(--muted); margin-top:8px; line-height:1.55; }
+  .pill{ display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px; margin:2px 4px 0 0; }
+  .pill.good{ background:rgba(62,207,142,.15); color:var(--good); }
+  .pill.warn{ background:rgba(255,209,102,.15); color:var(--warn); }
+  .pill.bad{ background:rgba(255,107,107,.15); color:var(--bad); }
+
+  .actions{ display:flex; gap:8px; flex-wrap:wrap; margin-top:6px; }
+  .saved-item{ display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .saved-item .nm{ flex:1; }
+  footer{ text-align:center; color:var(--muted); font-size:12px; padding:16px; }
+  .note{ font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.5; }
+  .guide-steps{ display:grid; gap:8px; margin-bottom:12px; }
+  .gstep{ background:var(--card2); border:1px solid var(--line); border-radius:10px;
+          padding:9px 11px; font-size:12.5px; line-height:1.55; color:var(--fg); }
+  .gstep b{ color:var(--accent); }
+  .rec{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .rec:last-child{ border-bottom:none; }
+  .rec .info{ flex:1; }
+  .rec .info .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .rec .info .why{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  /* longevity */
+  .curve{ display:flex; align-items:flex-end; gap:2px; height:60px; margin:6px 0 4px; }
+  .curve .cb{ flex:1; background:linear-gradient(to top,var(--accent),var(--accent2));
+              border-radius:2px 2px 0 0; min-height:2px; opacity:.85; }
+  .curve-x{ display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-bottom:10px; }
+  .phase{ display:flex; align-items:center; gap:8px; font-size:12.5px; padding:5px 0; }
+  .phase .pl{ width:46px; font-weight:600; }
+  .phase .ptrack{ flex:1; height:7px; background:var(--card2); border-radius:5px; position:relative; overflow:hidden; }
+  .phase .pbar{ position:absolute; height:100%; border-radius:5px; }
+  .phase .pt{ width:120px; text-align:right; color:var(--muted); font-variant-numeric:tabular-nums; }
+  /* goal builder */
+  .lbl{ display:block; font-size:12px; color:var(--muted); margin:10px 0 4px; }
+  .row{ display:flex; gap:10px; } .row>*{ flex:1; }
+  .moods{ display:flex; flex-wrap:wrap; gap:6px; }
+  .mtag{ font-size:12px; padding:5px 10px; border-radius:20px; cursor:pointer; user-select:none;
+         border:1px solid var(--line); background:var(--card2); color:var(--fg); }
+  .mtag.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); font-weight:600; }
+  .goal-res{ font-size:12.5px; line-height:1.7; margin-top:10px; }
+  .ok{ color:var(--good); } .no{ color:var(--bad); }
+  /* recipe quantities */
+  .qty-row{ display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:center;
+            padding:7px 0; border-bottom:1px solid var(--line); }
+  .qty-row:last-of-type{ border-bottom:none; }
+  .qty-row .nm{ font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .qty-row .v{ text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--muted); min-width:64px; }
+  .qty-sum{ margin-top:12px; font-size:12.5px; display:grid; gap:3px;
+            border-top:1px solid var(--line); padding-top:10px; }
+  .qty-sum .qrow{ display:flex; justify-content:space-between; }
+  .qty-sum b{ color:var(--fg); }
+  /* supplies checklist */
+  .supply{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; cursor:pointer; }
+  .supply:last-of-type{ border-bottom:none; }
+  .supply input{ width:16px; height:16px; accent-color:var(--accent); flex:0 0 auto; }
+  .supply .sn{ flex:1; }
+  .supply .sq{ color:var(--muted); font-size:12px; text-align:right; max-width:46%; }
+  .supply input:checked ~ .sn{ text-decoration:line-through; color:var(--muted); }
+
+  /* ===== UX polish ===== */
+  /* sticky summary bar */
+  .statbar{ position:sticky; top:0; z-index:20; display:flex; gap:8px; margin-bottom:16px;
+            background:rgba(15,18,32,.82); backdrop-filter:blur(10px);
+            border:1px solid var(--line); border-radius:14px; padding:10px 12px; }
+  .statbar .stat{ flex:1; text-align:center; }
+  .statbar .sv{ display:block; font-size:20px; font-weight:700; line-height:1.15; }
+  .statbar .sl{ font-size:11px; color:var(--muted); }
+  .statbar .stat+.stat{ border-left:1px solid var(--line); }
+
+  /* collapsible cards */
+  details.card > summary{ list-style:none; cursor:pointer; font-size:15px; font-weight:600;
+            display:flex; align-items:center; gap:8px; }
+  details.card > summary::-webkit-details-marker{ display:none; }
+  details.card > summary::after{ content:"▸"; margin-left:auto; color:var(--muted);
+            transition:transform .2s; font-size:12px; }
+  details.card[open] > summary{ margin-bottom:14px; }
+  details.card[open] > summary::after{ transform:rotate(90deg); }
+  details.card > summary .tag{ font-size:11px; color:var(--muted); font-weight:400; margin-left:0; }
+  details.card > summary:hover{ color:var(--accent); }
+
+  /* library "in blend" state + count badge */
+  .mat{ position:relative; }
+  .mat.in{ border-color:var(--accent); background:#1d1733; }
+  .vol{ margin-left:6px; }
+  .mat .badge{ position:absolute; top:8px; right:8px; background:var(--accent); color:#1a1024;
+            font-size:10px; font-weight:700; border-radius:10px; padding:1px 7px; }
+
+  /* toast */
+  .toast{ position:fixed; left:50%; bottom:calc(22px + env(safe-area-inset-bottom));
+          transform:translate(-50%,16px); background:var(--accent); color:#1a1024;
+          font-size:13px; font-weight:600; padding:9px 16px; border-radius:24px;
+          opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; z-index:60;
+          box-shadow:0 8px 24px rgba(0,0,0,.45); }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  /* general polish */
+  *::-webkit-scrollbar{ width:9px; height:9px; }
+  *::-webkit-scrollbar-thumb{ background:#2b3252; border-radius:6px; }
+  *::-webkit-scrollbar-thumb:hover{ background:#3a4470; }
+  *::-webkit-scrollbar-track{ background:transparent; }
+  .card{ transition:border-color .15s; }
+  button{ transition:filter .12s, transform .05s; }
+  button:hover:not(:disabled){ filter:brightness(1.08); }
+  button:active:not(:disabled){ transform:translateY(1px); }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+  summary:focus-visible, .mat:focus-visible, .mtag:focus-visible{
+    outline:2px solid var(--accent); outline-offset:2px; }
+  @media(prefers-reduced-motion:reduce){ .toast{ transition:none } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🧪 Scent Mixer <span class="sub">향 조합 시뮬레이터</span></h1>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button id="installBtn" class="sm" style="display:none;">📲 앱 설치</button>
+    <span class="muted" style="font-size:12px;">교육·연습용</span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero" aria-hidden="true">
+    <svg class="hero-svg" viewBox="0 0 400 160" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="hgBg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#2a1f4a"/><stop offset="0.55" stop-color="#1a1f35"/><stop offset="1" stop-color="#141831"/>
+        </linearGradient>
+        <linearGradient id="gTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe39a"/><stop offset="1" stop-color="#ffd166"/></linearGradient>
+        <linearGradient id="gHeart" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb0c6"/><stop offset="1" stop-color="#ff8fab"/></linearGradient>
+        <linearGradient id="gBase" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c4a886"/><stop offset="1" stop-color="#a78b6f"/></linearGradient>
+        <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#c08bff" stop-opacity="0.5"/><stop offset="1" stop-color="#c08bff" stop-opacity="0"/></radialGradient>
+        <clipPath id="bottleClip"><path d="M168 78 q0 -16 14 -16 l0 -10 q0 -6 6 -6 l24 0 q6 0 6 6 l0 10 q14 0 14 16 l0 52 q0 14 -14 14 l-36 0 q-14 0 -14 -14 z"/></clipPath>
+      </defs>
+
+      <rect width="400" height="160" fill="url(#hgBg)"/>
+      <ellipse cx="200" cy="120" rx="150" ry="60" fill="url(#glow)"/>
+
+      <!-- 뒤에서 층층이 쌓이는 향 띠 -->
+      <g class="bands">
+        <rect class="band b1" x="40"  y="118" width="320" height="14" rx="7" fill="url(#gBase)"/>
+        <rect class="band b2" x="70"  y="100" width="260" height="14" rx="7" fill="url(#gHeart)"/>
+        <rect class="band b3" x="100" y="82"  width="200" height="14" rx="7" fill="url(#gTop)"/>
+      </g>
+
+      <!-- 피어오르는 향 줄기 -->
+      <g fill="none" stroke-width="3" stroke-linecap="round" opacity="0.85">
+        <path class="wisp w1" d="M192 60 q-8 -14 0 -26 q8 -12 0 -24" stroke="url(#gTop)"/>
+        <path class="wisp w2" d="M200 58 q8 -16 0 -30 q-8 -12 0 -26" stroke="url(#gHeart)"/>
+        <path class="wisp w3" d="M208 60 q8 -12 0 -24 q-8 -12 0 -22" stroke="url(#gTop)"/>
+      </g>
+
+      <!-- 향수병 -->
+      <g>
+        <path d="M168 78 q0 -16 14 -16 l0 -10 q0 -6 6 -6 l24 0 q6 0 6 6 l0 10 q14 0 14 16 l0 52 q0 14 -14 14 l-36 0 q-14 0 -14 -14 z"
+              fill="#0c0f1c" stroke="#3a3f63" stroke-width="2"/>
+        <rect x="189" y="40" width="22" height="10" rx="3" fill="#3a3f63"/>
+        <!-- 병 안 액체: 베이스→미들→탑 순으로 차오름 -->
+        <g clip-path="url(#bottleClip)">
+          <rect class="fillband f1" x="160" y="112" width="80" height="32" fill="url(#gBase)"  opacity="0.9"/>
+          <rect class="fillband f2" x="160" y="98"  width="80" height="16" fill="url(#gHeart)" opacity="0.9"/>
+          <rect class="fillband f3" x="160" y="84"  width="80" height="16" fill="url(#gTop)"   opacity="0.9"/>
+        </g>
+        <rect x="174" y="70" width="6" height="56" rx="3" fill="#fff" opacity="0.18"/>
+      </g>
+
+      <!-- 떠오르는 입자 -->
+      <g class="parts" fill="#fff">
+        <circle class="part" cx="150" cy="120" r="2.4" style="animation-delay:0s"/>
+        <circle class="part" cx="250" cy="120" r="2"   style="animation-delay:1.1s"/>
+        <circle class="part" cx="120" cy="120" r="1.8" style="animation-delay:2.2s"/>
+        <circle class="part" cx="285" cy="120" r="2.6" style="animation-delay:1.6s"/>
+        <circle class="part" cx="320" cy="120" r="1.6" style="animation-delay:3s"/>
+        <circle class="part" cx="85"  cy="120" r="2.2" style="animation-delay:2.6s"/>
+      </g>
+    </svg>
+    <div class="hero-cap">탑 · 미들 · 베이스가 층층이 쌓여 하나의 향이 됩니다</div>
+  </div>
+
+  <div class="statbar" id="statbar">
+    <div class="stat"><span class="sv" id="stIng">0</span><span class="sl">향료</span></div>
+    <div class="stat"><span class="sv" id="stScore">–</span><span class="sl">밸런스 점수</span></div>
+    <div class="stat"><span class="sv" id="stLast">–</span><span class="sl">예상 지속</span></div>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: library + blend -->
+    <div>
+      <div class="card">
+        <h2>🎯 목표로 만들기 <span class="tag">조건 정하면 자동 조합</span></h2>
+        <div class="row">
+          <div>
+            <label class="lbl">지속 시간 목표</label>
+            <select id="goalHours">
+              <option value="5">가볍게 ~5시간</option>
+              <option value="7" selected>보통 ~7시간</option>
+              <option value="9">오래 ~9시간</option>
+              <option value="12">아주 오래 ~12시간+</option>
+            </select>
+          </div>
+        </div>
+        <label class="lbl">원하는 무드 (여러 개 선택 가능)</label>
+        <div class="moods" id="moodTags"></div>
+        <div class="actions">
+          <button id="genGoalBtn">✨ 이 조건으로 조합 생성</button>
+        </div>
+        <div class="goal-res" id="goalRes"></div>
+      </div>
+
+      <div class="card">
+        <h2>❤️ 내 취향으로 추천 <span class="tag">좋아하는 향수 기반</span></h2>
+        <label class="lbl">좋아하는 향수를 골라보세요</label>
+        <select id="tasteSel"><option value="">향수 선택…</option></select>
+        <div class="actions">
+          <button id="tasteLoad" disabled>이 배합 불러오기</button>
+          <button class="ghost sm" id="tasteVary" disabled>✨ 비슷한 변형 추천</button>
+        </div>
+        <div class="goal-res" id="tasteRes"><span class="muted" style="font-size:12.5px;">좋아하는 향수를 고르면 그 취향에 맞는 배합과 비슷한 향수를 추천해드려요.</span></div>
+      </div>
+
+      <details class="card">
+        <summary>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></summary>
+        <div class="guide-steps">
+          <div class="gstep"><b>1. 세 층을 쌓기</b><br>탑(첫인상)·미들(중심)·베이스(잔향)에서 각각 1~2개씩 골라요.</div>
+          <div class="gstep"><b>2. 비율은 3 : 4 : 3</b><br>탑 30% · 미들 40% · 베이스 30%가 안정적인 기본값. 위 <b>밸런스 점수</b>로 확인.</div>
+          <div class="gstep"><b>3. 계열은 2~3개만</b><br>너무 많이 섞으면 탁해져요. 어울리는 계열끼리(예: 시트러스+우디).</div>
+          <div class="gstep"><b>4. 막히면 추천 사용</b><br>아래 <b>추천 향료</b> 버튼이 지금 조합에 맞춰 다음 한 가지를 골라줘요.</div>
+        </div>
+        <div class="actions">
+          <button class="sm" id="starterBtn">🍃 기본 3종으로 시작</button>
+          <button class="ghost sm" id="guideRandomBtn">🎲 균형 잡힌 랜덤</button>
+        </div>
+        <div class="note">초보 추천 시작: <b>베르가못</b>(탑) → <b>로즈</b>(미들) → <b>샌달우드</b>(베이스).</div>
+      </details>
+
+      <div class="card">
+        <h2>💡 추천 향료 <span class="tag">지금 조합에 더하면 좋아요</span></h2>
+        <div id="recs"></div>
+      </div>
+
+      <div class="card">
+        <h2>향료 라이브러리 <span class="tag" id="libCount"></span></h2>
+        <div class="toolbar">
+          <input id="search" placeholder="이름·계열 검색 (예: 베르가못, woody)" />
+          <select id="famFilter"><option value="">전체 계열</option></select>
+          <select id="volFilter">
+            <option value="">전체 휘발도</option>
+            <option value="top">탑노트</option>
+            <option value="heart">미들노트</option>
+            <option value="base">베이스노트</option>
+          </select>
+        </div>
+        <div class="lib" id="lib"></div>
+        <div class="note">카드를 클릭하면 조합에 1방울 추가됩니다.</div>
+      </div>
+
+      <div class="card">
+        <h2>내 조합 <span class="tag" id="blendCount"></span></h2>
+        <div id="blend"></div>
+        <div class="actions">
+          <button class="ghost sm" id="clearBtn">전체 비우기</button>
+          <button class="ghost sm" id="randomBtn">랜덤 조합</button>
+        </div>
+      </div>
+
+      <details class="card">
+        <summary>🧪 유명 향수 프리셋 <span class="tag" id="presetCount"></span></summary>
+        <div id="presets" style="max-height:360px;overflow:auto;padding-right:4px;"></div>
+        <div class="note">실제 포뮬러가 아니라 노트 피라미드를 단순 근사한 학습용 예시입니다.</div>
+      </details>
+    </div>
+
+    <!-- RIGHT: analysis -->
+    <div>
+      <div class="card">
+        <h2>밸런스 점수 <span class="tag">탑·미들·베이스 균형</span></h2>
+        <div class="score"><span class="big" id="scoreVal">–</span><span class="muted" id="scoreLbl"></span></div>
+        <div id="scorePills"></div>
+        <div class="balance-note" id="balanceNote">조합을 추가하면 분석이 표시됩니다.</div>
+      </div>
+
+      <div class="card">
+        <h2>지속 시간 & 발향 <span class="tag">조합에 따라 달라져요</span></h2>
+        <div id="longevity"><div class="empty">조합을 추가하면 표시됩니다.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>🌬️ 시향 시뮬레이터 <span class="tag">뿌린 뒤 시간 흐름 체험</span></h2>
+        <div class="sim-ctrl">
+          <button id="simPlay" class="sm">▶ 뿌려보기</button>
+          <input type="range" id="simTime" min="0" max="100" value="0" />
+          <span id="simClock" class="muted">지금</span>
+        </div>
+        <div id="simNow"><div class="empty">조합을 추가하면 체험할 수 있어요.</div></div>
+      </div>
+
+      <div class="card">
+        <h2>노트 피라미드</h2>
+        <div class="pyr" id="pyramid">
+          <div class="empty">아직 향료가 없습니다.</div>
+        </div>
+      </div>
+
+      <details class="card">
+        <summary>🎨 향 계열 프로필 <span class="tag">계열 비중</span></summary>
+        <div id="families"><div class="empty">아직 향료가 없습니다.</div></div>
+      </details>
+
+      <details class="card">
+        <summary>🧴 재료 분량 <span class="tag">실제로 만들 때</span></summary>
+        <div class="row">
+          <div>
+            <label class="lbl">만들 용량</label>
+            <select id="batchMl">
+              <option value="10">10 ml (롤온)</option>
+              <option value="30" selected>30 ml</option>
+              <option value="50">50 ml</option>
+              <option value="100">100 ml</option>
+            </select>
+          </div>
+          <div>
+            <label class="lbl">농도 타입</label>
+            <select id="conc">
+              <option value="0.10">오 드 뚜왈렛 (10%)</option>
+              <option value="0.20" selected>오 드 퍼퓸 (20%)</option>
+              <option value="0.30">퍼퓸 (30%)</option>
+            </select>
+          </div>
+        </div>
+        <div id="recipeQty" style="margin-top:12px;"><div class="empty">조합을 추가하면 분량이 계산됩니다.</div></div>
+      </details>
+
+      <details class="card">
+        <summary>🧰 준비물 (도구·부자재) <span class="tag">제작에 필요한 것</span></summary>
+        <div id="supplies"></div>
+      </details>
+
+      <details class="card">
+        <summary>💾 저장된 레시피 <span class="tag">내 레시피</span></summary>
+        <div style="display:flex; gap:8px; margin:4px 0 10px;">
+          <input id="recipeName" placeholder="레시피 이름" />
+          <button id="saveBtn" style="white-space:nowrap;">저장</button>
+        </div>
+        <div id="saved"></div>
+      </details>
+    </div>
+  </div>
+  <footer>로컬에서만 동작 · 데이터는 브라우저(localStorage)에 저장됩니다.</footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ---- Fragrance material database ----------------------------------------
+// vol: top | heart | base   (volatility / note position)
+// fam: 향 계열   strength: 1~5 (조합 시 영향력 가중치)
+const FAMILIES = {
+  citrus:"시트러스", floral:"플로럴", woody:"우디", oriental:"오리엔탈",
+  fresh:"프레시", green:"그린", spicy:"스파이시", gourmand:"구르망",
+  fruity:"프루티", aquatic:"아쿠아틱", leather:"레더"
+};
+const MATERIALS = [
+  {n:"베르가못",      fam:"citrus",   vol:"top",   str:2, d:"상큼하고 가벼운 시트러스"},
+  {n:"레몬",          fam:"citrus",   vol:"top",   str:2, d:"날카롭고 밝은 시트러스"},
+  {n:"자몽",          fam:"citrus",   vol:"top",   str:2, d:"쌉쌀달콤한 시트러스"},
+  {n:"만다린",        fam:"citrus",   vol:"top",   str:2, d:"부드럽고 달콤한 귤향"},
+  {n:"페퍼민트",      fam:"fresh",    vol:"top",   str:3, d:"시원한 멘솔감"},
+  {n:"유칼립투스",    fam:"fresh",    vol:"top",   str:3, d:"청량한 허브"},
+  {n:"라벤더",        fam:"floral",   vol:"top",   str:3, d:"허벌·플로럴, 진정감"},
+  {n:"바질",          fam:"green",    vol:"top",   str:3, d:"풀잎의 알싸한 그린"},
+  {n:"핑크페퍼",      fam:"spicy",    vol:"top",   str:3, d:"톡 쏘는 가벼운 후추"},
+  {n:"로즈",          fam:"floral",   vol:"heart", str:4, d:"클래식한 장미 플로럴"},
+  {n:"자스민",        fam:"floral",   vol:"heart", str:5, d:"진하고 화려한 백색꽃"},
+  {n:"일랑일랑",      fam:"floral",   vol:"heart", str:4, d:"이국적이고 크리미한 꽃"},
+  {n:"제라늄",        fam:"floral",   vol:"heart", str:3, d:"로지·그린한 플로럴"},
+  {n:"네롤리",        fam:"floral",   vol:"heart", str:3, d:"오렌지 꽃의 우아함"},
+  {n:"시나몬",        fam:"spicy",    vol:"heart", str:4, d:"따뜻하고 달큰한 향신료"},
+  {n:"카다멈",        fam:"spicy",    vol:"heart", str:3, d:"스파이시·아로마틱"},
+  {n:"클로브",        fam:"spicy",    vol:"heart", str:4, d:"강렬한 정향"},
+  {n:"로즈마리",      fam:"green",    vol:"heart", str:3, d:"허브향 그린"},
+  {n:"샌달우드",      fam:"woody",    vol:"base",  str:4, d:"부드럽고 크리미한 나무"},
+  {n:"시더우드",      fam:"woody",    vol:"base",  str:3, d:"건조하고 연필심 같은 나무"},
+  {n:"베티버",        fam:"woody",    vol:"base",  str:4, d:"흙내음·스모키 그린우디"},
+  {n:"파출리",        fam:"woody",    vol:"base",  str:5, d:"진한 흙·다크 우디"},
+  {n:"앰버",          fam:"oriental", vol:"base",  str:4, d:"따뜻하고 포근한 앰버"},
+  {n:"바닐라",        fam:"gourmand", vol:"base",  str:4, d:"달콤하고 부드러운 바닐라"},
+  {n:"통카빈",        fam:"gourmand", vol:"base",  str:4, d:"아몬드·쿠키 같은 달콤함"},
+  {n:"머스크",        fam:"oriental", vol:"base",  str:3, d:"포근하고 살냄새 같은 잔향"},
+  {n:"오크모스",      fam:"green",    vol:"base",  str:4, d:"이끼·숲의 클래식 베이스"},
+  {n:"인센스",        fam:"oriental", vol:"base",  str:4, d:"스모키한 유향"},
+  {n:"라임",          fam:"citrus",   vol:"top",   str:2, d:"청량하고 톡 쏘는 라임"},
+  {n:"알데히드",      fam:"floral",   vol:"top",   str:3, d:"비누·금속광택의 추상 노트"},
+  {n:"진저",          fam:"spicy",    vol:"top",   str:3, d:"알싸하고 따뜻한 생강"},
+  {n:"파인애플",      fam:"fruity",   vol:"top",   str:2, d:"달콤·상큼한 열대 과일"},
+  {n:"블랙커런트",    fam:"fruity",   vol:"top",   str:2, d:"새콤한 카시스 베리"},
+  {n:"사과",          fam:"fruity",   vol:"top",   str:2, d:"풋풋한 그린 애플"},
+  {n:"마린노트",      fam:"aquatic",  vol:"top",   str:2, d:"바다·물방울의 청량감"},
+  {n:"씨솔트",        fam:"aquatic",  vol:"heart", str:2, d:"짭조름한 바다 소금"},
+  {n:"무화과",        fam:"green",    vol:"heart", str:2, d:"우유빛 그린 무화과"},
+  {n:"바이올렛",      fam:"floral",   vol:"heart", str:3, d:"파우더리한 제비꽃"},
+  {n:"아이리스",      fam:"floral",   vol:"heart", str:4, d:"우아하고 파우더리한 붓꽃"},
+  {n:"튜베로즈",      fam:"floral",   vol:"heart", str:5, d:"진하고 관능적인 백색꽃"},
+  {n:"커피",          fam:"gourmand", vol:"heart", str:4, d:"진한 로스팅 커피"},
+  {n:"럼",            fam:"gourmand", vol:"heart", str:3, d:"달큰한 럼·리큐어"},
+  {n:"카카오",        fam:"gourmand", vol:"base",  str:3, d:"쌉쌀한 다크 초콜릿"},
+  {n:"카라멜",        fam:"gourmand", vol:"base",  str:3, d:"끈적달콤한 캐러멜"},
+  {n:"담배",          fam:"oriental", vol:"base",  str:4, d:"말린 담뱃잎의 따뜻함"},
+  {n:"자작나무",      fam:"woody",    vol:"base",  str:4, d:"스모키·타르 같은 가죽우디"},
+  {n:"우드",          fam:"woody",    vol:"base",  str:5, d:"깊고 진한 아가우드(오드)"},
+  {n:"가죽",          fam:"leather",  vol:"base",  str:4, d:"스모키하고 동물적인 가죽"},
+];
+const VOL_LABEL = {top:"탑", heart:"미들", base:"베이스"};
+const IDEAL = {top:30, heart:40, base:30}; // 권장 비율 (%)
+
+// ---- 초보자 추천용 데이터 ----
+// 계열별 잘 어울리는 짝 (클래식 어코드 단순화)
+const FAM_FRIEND = {
+  citrus:["woody","floral","fresh"], floral:["woody","citrus","fruity"],
+  woody:["citrus","oriental","floral"], oriental:["spicy","gourmand","woody"],
+  fresh:["citrus","woody","aquatic"], green:["citrus","woody","floral"],
+  spicy:["oriental","woody","citrus"], gourmand:["oriental","woody","spicy"],
+  fruity:["floral","citrus","woody"], aquatic:["citrus","fresh","woody"],
+  leather:["woody","oriental","spicy"]
+};
+// 층별 / 계열별 초보 친화 대표 향료
+const LAYER_PICK = { top:"베르가못", heart:"로즈", base:"샌달우드" };
+const FAM_PICK = { citrus:"베르가못", floral:"로즈", woody:"샌달우드", oriental:"앰버",
+  fresh:"페퍼민트", green:"로즈마리", spicy:"핑크페퍼", gourmand:"바닐라",
+  fruity:"사과", aquatic:"마린노트", leather:"가죽" };
+
+// 무드/스타일 → 대표 향료 (계열을 넘어 캐릭터 기준; 파우더리·달콤 등 포함)
+const MOODS = {
+  "꽃향기":   ["로즈","자스민","일랑일랑","네롤리","튜베로즈","제라늄"],
+  "우드":     ["샌달우드","시더우드","베티버","파출리","우드"],
+  "파우더리": ["아이리스","바이올렛","머스크","통카빈"],
+  "시트러스": ["베르가못","레몬","자몽","만다린","라임"],
+  "프레시":   ["페퍼민트","유칼립투스","마린노트","라벤더"],
+  "스파이시": ["핑크페퍼","시나몬","카다멈","클로브","진저"],
+  "달콤":     ["바닐라","통카빈","카라멜","카카오","커피"],
+  "앰버":     ["앰버","인센스","머스크","담배"],
+  "그린":     ["바질","로즈마리","무화과","오크모스"],
+  "프루티":   ["사과","파인애플","블랙커런트"],
+  "아쿠아틱": ["마린노트","씨솔트","자몽"],
+  "가죽":     ["가죽","자작나무","파출리"],
+};
+const selectedMoods = new Set();
+
+// ---- 유명 향수 근사 재현 프리셋 ----
+// 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
+const PRESETS = [
+  { name:"No.5", brand:"Chanel", desc:"알데히드 플로럴의 고전",
+    blend:{ "알데히드":2,"베르가못":2,"일랑일랑":2,"네롤리":1, "자스민":3,"로즈":3,"제라늄":1,
+            "샌달우드":2,"베티버":1,"바닐라":1,"머스크":2 } },
+  { name:"Coco Mademoiselle", brand:"Chanel", desc:"산뜻한 로즈·파출리 시프레",
+    blend:{ "베르가못":2,"만다린":1, "로즈":3,"자스민":2, "파출리":3,"베티버":1,"바닐라":1,"머스크":1 } },
+  { name:"Bleu de Chanel", brand:"Chanel", desc:"시트러스·우디 아로마틱",
+    blend:{ "레몬":1,"베르가못":1,"자몽":1,"핑크페퍼":1,"진저":1, "인센스":1, "시더우드":2,"샌달우드":2,"베티버":1 } },
+  { name:"Sauvage", brand:"Dior", desc:"베르가못·앰브록산 프레시 스파이시",
+    blend:{ "베르가못":3,"라임":1,"핑크페퍼":2, "라벤더":1,"진저":1, "앰버":3,"머스크":2,"시더우드":1 } },
+  { name:"J'adore", brand:"Dior", desc:"화사한 화이트 플로럴 부케",
+    blend:{ "베르가못":1,"만다린":1, "일랑일랑":2,"로즈":2,"자스민":2,"튜베로즈":1, "머스크":1,"샌달우드":1 } },
+  { name:"Dior Homme", brand:"Dior", desc:"파우더리 아이리스·카카오",
+    blend:{ "라벤더":1, "아이리스":3,"바이올렛":1, "카카오":1,"가죽":1, "베티버":1,"시더우드":1 } },
+  { name:"Opium", brand:"Yves Saint Laurent", desc:"스파이시 오리엔탈",
+    blend:{ "만다린":1,"베르가못":1,"클로브":1, "시나몬":2,"자스민":2, "앰버":2,"파출리":2,"바닐라":2,"인센스":1 } },
+  { name:"Black Opium", brand:"Yves Saint Laurent", desc:"커피·바닐라 구르망",
+    blend:{ "핑크페퍼":1,"만다린":1, "커피":3,"자스민":2, "바닐라":3,"파출리":2,"통카빈":1 } },
+  { name:"Aventus", brand:"Creed", desc:"파인애플·자작나무 프루티 스모키",
+    blend:{ "베르가못":2,"파인애플":2,"블랙커런트":1, "자스민":1,"핑크페퍼":1, "자작나무":2,"오크모스":2,"머스크":2,"파출리":1 } },
+  { name:"Acqua di Giò", brand:"Giorgio Armani", desc:"상쾌한 마린 아쿠아틱",
+    blend:{ "베르가못":2,"라임":1,"마린노트":3, "자스민":1,"로즈마리":1, "시더우드":2,"파출리":1,"머스크":1 } },
+  { name:"Light Blue", brand:"Dolce & Gabbana", desc:"사과·시더 프레시 프루티",
+    blend:{ "레몬":1,"사과":2,"베르가못":1, "자스민":1, "시더우드":2,"머스크":2 } },
+  { name:"Eros", brand:"Versace", desc:"민트·통카 프레시 구르망",
+    blend:{ "페퍼민트":2,"사과":1,"레몬":1, "통카빈":2,"바닐라":1, "시더우드":2,"베티버":1,"파출리":1 } },
+  { name:"Angel", brand:"Thierry Mugler", desc:"파출리·카라멜 구르망 오리엔탈",
+    blend:{ "베르가못":1,"블랙커런트":1, "파출리":4,"카라멜":2,"바닐라":2,"카카오":1 } },
+  { name:"La Vie Est Belle", brand:"Lancôme", desc:"아이리스·프랄린 스위트",
+    blend:{ "베르가못":1,"블랙커런트":1, "아이리스":2,"자스민":1, "파출리":2,"바닐라":2,"통카빈":2,"카라멜":1 } },
+  { name:"Flowerbomb", brand:"Viktor & Rolf", desc:"폭발적인 플로럴 부케",
+    blend:{ "베르가못":1, "자스민":2,"로즈":2,"튜베로즈":1, "파출리":2,"바닐라":2,"머스크":1 } },
+  { name:"Black Orchid", brand:"Tom Ford", desc:"다크 플로럴·카카오 오리엔탈",
+    blend:{ "베르가못":1,"블랙커런트":1, "일랑일랑":1,"자스민":1, "파출리":3,"바닐라":2,"인센스":1,"카카오":1,"가죽":1 } },
+  { name:"Tobacco Vanille", brand:"Tom Ford", desc:"담배·바닐라 스파이시 구르망",
+    blend:{ "담배":4,"카다멈":1,"진저":1, "바닐라":3,"통카빈":2,"카카오":1 } },
+  { name:"Shalimar", brand:"Guerlain", desc:"베르가못·바닐라 앰버 동양향",
+    blend:{ "베르가못":2, "로즈":1,"자스민":1,"아이리스":1, "바닐라":3,"인센스":1,"가죽":1,"통카빈":1 } },
+  { name:"Santal 33", brand:"Le Labo", desc:"샌달우드·가죽 우디",
+    blend:{ "카다멈":1,"바이올렛":1, "샌달우드":4,"시더우드":2,"가죽":2,"파출리":1 } },
+  { name:"AnOther 13", brand:"Le Labo", desc:"머스크·앰브록산 클린 스킨센트",
+    blend:{ "핑크페퍼":1,"자스민":1, "앰버":2,"머스크":4,"오크모스":1,"베티버":1 } },
+  { name:"Wood Sage & Sea Salt", brand:"Jo Malone", desc:"씨솔트·세이지 미니멀",
+    blend:{ "자몽":1,"씨솔트":3,"마린노트":1, "로즈마리":1, "시더우드":2,"머스크":1 } },
+  { name:"Replica Jazz Club", brand:"Maison Margiela", desc:"럼·담배 우디 스피릿",
+    blend:{ "핑크페퍼":1,"라임":1, "럼":2,"자스민":1, "담배":2,"바닐라":2,"베티버":1 } },
+];
+
+// ---- state ----
+let blend = {}; // name -> drops
+const $ = s => document.querySelector(s);
+
+function famColor(f){ return getComputedStyle(document.documentElement).getPropertyValue('--'+f).trim() || '#888'; }
+
+// ---- library render ----
+function initFilters(){
+  const sel = $("#famFilter");
+  Object.entries(FAMILIES).forEach(([k,v])=>{
+    const o=document.createElement("option"); o.value=k; o.textContent=v; sel.appendChild(o);
+  });
+}
+function renderLib(){
+  const q = $("#search").value.trim().toLowerCase();
+  const ff = $("#famFilter").value, vf = $("#volFilter").value;
+  const lib = $("#lib"); lib.innerHTML="";
+  const list = MATERIALS.filter(m=>{
+    if(ff && m.fam!==ff) return false;
+    if(vf && m.vol!==vf) return false;
+    if(q){
+      const hay = (m.n+" "+m.fam+" "+FAMILIES[m.fam]+" "+m.d).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  $("#libCount").textContent = list.length+" / "+MATERIALS.length+"종";
+  list.forEach(m=>{
+    const cnt=blend[m.n]||0;
+    const el=document.createElement("div"); el.className="mat"+(cnt?" in":"");
+    el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}
+        <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
+      <div class="meta">${FAMILIES[m.fam]} · 지속 ~${fmtHc(lastHours(m))} · ${m.d}</div>
+      ${cnt?`<span class="badge">${cnt}방울</span>`:""}`;
+    el.onclick=()=>addDrop(m.n);
+    lib.appendChild(el);
+  });
+  if(!list.length) lib.innerHTML='<div class="empty">검색 결과가 없습니다.</div>';
+}
+
+// ---- blend ops ----
+function mat(n){ return MATERIALS.find(m=>m.n===n); }
+function addDrop(n,k=1){ blend[n]=(blend[n]||0)+k; if(blend[n]<=0) delete blend[n]; render(); if(k>0) toast(`${n} +${k}방울 · ${Object.keys(blend).length}종`); }
+let toastT=null;
+function toast(msg){
+  let el=$("#toast"); if(!el) return;
+  el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastT); toastT=setTimeout(()=>el.classList.remove("show"),1400);
+}
+function clearBlend(){ blend={}; render(); }
+function randomBlend(){
+  blend={};
+  const pick=(arr,k)=>arr.sort(()=>Math.random()-.5).slice(0,k);
+  const byVol=v=>MATERIALS.filter(m=>m.vol===v);
+  pick(byVol("top"),2).forEach(m=>blend[m.n]=2+(Math.random()*2|0));
+  pick(byVol("heart"),2).forEach(m=>blend[m.n]=2+(Math.random()*3|0));
+  pick(byVol("base"),2).forEach(m=>blend[m.n]=1+(Math.random()*2|0));
+  render();
+}
+
+// ---- analysis ----
+function analyze(){
+  const items=Object.entries(blend).map(([n,d])=>({...mat(n),drops:d}));
+  const totalDrops=items.reduce((s,i)=>s+i.drops,0);
+  // weighted impact = drops * strength
+  const weighted=items.map(i=>({...i, w:i.drops*i.str}));
+  const totalW=weighted.reduce((s,i)=>s+i.w,0)||1;
+  const vol={top:0,heart:0,base:0};
+  weighted.forEach(i=>vol[i.vol]+=i.w);
+  const volPct={top:vol.top/totalW*100, heart:vol.heart/totalW*100, base:vol.base/totalW*100};
+  const fam={};
+  weighted.forEach(i=>fam[i.fam]=(fam[i.fam]||0)+i.w);
+  return {items,totalDrops,weighted,totalW,volPct,fam};
+}
+function balanceScore(volPct,items){
+  if(!items.length) return {score:0};
+  // closeness to ideal pyramid
+  let dev=0; for(const k of ["top","heart","base"]) dev+=Math.abs(volPct[k]-IDEAL[k]);
+  let s=Math.max(0,100-dev*1.1);
+  // penalize missing layers
+  const layers=["top","heart","base"].filter(k=>volPct[k]>2).length;
+  if(layers<3) s*=(layers/3);
+  // tiny complexity bonus
+  if(items.length>=4 && items.length<=8) s=Math.min(100,s+5);
+  return {score:Math.round(s)};
+}
+
+// ---- 지속 시간(발향) 모델 ----
+// 휘발도별 기준 지속시간(시간), 강도(str)로 가감. 단순화 모델.
+const LAST_BASE = { top:0.9, heart:2.2, base:4.5 };
+function lastHours(m){ return LAST_BASE[m.vol]*(0.6+0.1*m.str); } // 반감기로 사용
+function fmtH(h){
+  if(h<1) return Math.round(h*60)+"분";
+  let hh=Math.floor(h), mm=Math.round((h-hh)*60);
+  if(mm===60){ hh++; mm=0; }
+  return mm? `${hh}시간 ${mm}분` : `${hh}시간`;
+}
+function fmtHc(h){ return h<1? Math.round(h*60)+"분" : (Math.round(h*10)/10)+"h"; }
+// 시간 t에서의 향 세기 (각 향료 반감기 기준 지수 감쇠의 합)
+function intensityAt(weighted,t){
+  return weighted.reduce((s,i)=>s + i.w*Math.pow(0.5, t/lastHours(i)), 0);
+}
+function longevity(a){
+  if(!a.items.length) return null;
+  const W=a.weighted, I0=a.totalW;
+  // 총 지속: 세기가 처음의 10%로 떨어지는 시각
+  let hours=0;
+  for(let t=0;t<=24;t+=0.1){ if(intensityAt(W,t) <= 0.12*I0){ hours=t; break; } hours=t; }
+  // 층별 대표 지속(그 층에서 가장 오래가는 향료)
+  const layerMax=v=>{ const ms=W.filter(i=>i.vol===v); return ms.length? Math.max(...ms.map(lastHours)) : 0; };
+  const topE=layerMax("top"), heartE=Math.max(topE,layerMax("heart")), baseE=Math.max(heartE,hours);
+  const phases=[];
+  if(a.volPct.top>2)   phases.push({name:"탑",   vol:"top",   from:0,    to:topE});
+  if(a.volPct.heart>2) phases.push({name:"미들", vol:"heart", from:topE, to:heartE});
+  if(a.volPct.base>2)  phases.push({name:"베이스",vol:"base", from:heartE,to:baseE});
+  // 발향력(실라지): 평균 강도 밀도로 추정
+  const avgStr=I0/a.totalDrops;
+  const sill = avgStr>=3.6? "강함(멀리 퍼짐)" : avgStr>=2.8? "보통" : "은은함(가까이서)";
+  // 지속 등급
+  const grade = hours>=9? ["good","매우 오래감"] : hours>=6? ["good","오래감"]
+              : hours>=3? ["warn","보통"] : ["bad","짧음"];
+  // 곡선 샘플(0~baseE, 24포인트, 피크 대비 %)
+  const span=Math.max(baseE,1), curve=[];
+  for(let k=0;k<24;k++){ const t=span*k/23; curve.push(Math.round(intensityAt(W,t)/I0*100)); }
+  return {hours,phases,sill,grade,curve,span};
+}
+
+// 지금 조합에 맞춰 다음에 더할 향료 추천 (최대 3개)
+function recommend(a){
+  if(!a.items.length){
+    return [
+      {name:"베르가못", why:"산뜻한 탑노트 — 향의 첫인상"},
+      {name:"로즈",     why:"향의 중심을 잡는 미들노트"},
+      {name:"샌달우드", why:"오래 남는 베이스노트"},
+    ];
+  }
+  const recs=[]; const have=new Set(Object.keys(blend));
+  const used=n=>have.has(n)||recs.find(r=>r.name===n);
+  // 1) 약한 층 채우기 (베이스→미들→탑 순으로 초보가 자주 빠뜨림)
+  for(const k of ["base","heart","top"]){
+    if(a.volPct[k] < 13){
+      const pick=LAYER_PICK[k];
+      if(!used(pick)) recs.push({name:pick, why:`${VOL_LABEL[k]}노트가 약해요 — 더하면 균형이 좋아져요`});
+    }
+  }
+  // 2) 주요 계열과 어울리는 계열 제안
+  const domFam=Object.entries(a.fam).sort((x,y)=>y[1]-x[1])[0]?.[0];
+  if(domFam){
+    for(const fr of (FAM_FRIEND[domFam]||[])){
+      const pick=FAM_PICK[fr];
+      if(pick && !used(pick)){
+        recs.push({name:pick, why:`${FAMILIES[domFam]}와 잘 어울려요 (${FAMILIES[fr]} 계열)`});
+        break;
+      }
+    }
+  }
+  return recs.slice(0,3);
+}
+function renderRecs(a){
+  const wrap=$("#recs"); const list=recommend(a); wrap.innerHTML="";
+  list.forEach(r=>{
+    const m=mat(r.name); if(!m) return;
+    const el=document.createElement("div"); el.className="rec";
+    el.innerHTML=`<div class="info"><div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${r.name}
+        <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
+        <div class="why">${r.why}</div></div>
+      <button class="sm" data-add>+ 추가</button>`;
+    el.querySelector("[data-add]").onclick=()=>addDrop(r.name);
+    wrap.appendChild(el);
+  });
+  if(!list.length) wrap.innerHTML='<div class="muted" style="font-size:12.5px;">균형이 좋아요! 한 계열을 강조해 개성을 더해보세요.</div>';
+}
+
+function render(){
+  // blend table
+  const b=$("#blend");
+  const items=Object.entries(blend);
+  $("#blendCount").textContent = items.length? items.length+"종": "";
+  const totalDrops=items.reduce((s,[,d])=>s+d,0);
+  if(!items.length){ b.innerHTML='<div class="empty">왼쪽에서 향료를 클릭해 추가하세요.</div>'; }
+  else{
+    b.innerHTML="";
+    items.forEach(([n,d])=>{
+      const m=mat(n); const pct=(d/totalDrops*100);
+      const row=document.createElement("div"); row.className="blend-row";
+      row.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${n}
+          <small>${VOL_LABEL[m.vol]}·${FAMILIES[m.fam]}</small></div>
+        <div class="drops"><button data-m="-">−</button><span class="n">${d}방울</span><button data-p="+">+</button></div>
+        <div class="pct">${pct.toFixed(0)}%</div>
+        <button class="rm" title="제거">×</button>`;
+      row.querySelector("[data-m]").onclick=()=>addDrop(n,-1);
+      row.querySelector("[data-p]").onclick=()=>addDrop(n,1);
+      row.querySelector(".rm").onclick=()=>{delete blend[n];render();};
+      b.appendChild(row);
+    });
+  }
+
+  const a=analyze();
+  const {score}=balanceScore(a.volPct,a.items);
+
+  // sticky stat bar
+  const ing=a.items.length;
+  $("#stIng").textContent=ing;
+  $("#stScore").textContent=ing? score : "–";
+  $("#stLast").textContent=ing? fmtH(longevity(a).hours) : "–";
+
+  // score
+  if(!a.items.length){
+    $("#scoreVal").textContent="–"; $("#scoreLbl").textContent="";
+    $("#scorePills").innerHTML=""; $("#balanceNote").textContent="조합을 추가하면 분석이 표시됩니다.";
+  }else{
+    $("#scoreVal").textContent=score; $("#scoreLbl").textContent="/ 100";
+    const lbl = score>=80?["good","훌륭한 균형"]: score>=55?["warn","쓸만한 균형"]:["bad","불균형"];
+    $("#scorePills").innerHTML=`<span class="pill ${lbl[0]}">${lbl[1]}</span>`+
+      ["top","heart","base"].map(k=>{
+        const p=a.volPct[k], ideal=IDEAL[k]; const diff=p-ideal;
+        const cls=Math.abs(diff)<=10?"good":Math.abs(diff)<=20?"warn":"bad";
+        return `<span class="pill ${cls}">${VOL_LABEL[k]} ${p.toFixed(0)}%</span>`;
+      }).join("");
+    // tips
+    const tips=[];
+    for(const k of ["top","heart","base"]){
+      const diff=a.volPct[k]-IDEAL[k];
+      if(a.volPct[k]<2) tips.push(`${VOL_LABEL[k]}노트가 없어요 — 추가하면 지속감/입체감이 살아납니다.`);
+      else if(diff>20) tips.push(`${VOL_LABEL[k]}노트 비중이 높아요(${a.volPct[k].toFixed(0)}%). 다른 노트로 균형을 맞춰보세요.`);
+      else if(diff<-18) tips.push(`${VOL_LABEL[k]}노트가 부족해요(${a.volPct[k].toFixed(0)}%).`);
+    }
+    if(!tips.length) tips.push("탑·미들·베이스가 잘 짜여 있습니다. 한 가지 계열을 강조해 개성을 더해보세요.");
+    $("#balanceNote").innerHTML=tips.map(t=>"· "+t).join("<br>");
+  }
+
+  // pyramid
+  const pyr=$("#pyramid");
+  if(!a.items.length){ pyr.innerHTML='<div class="empty">아직 향료가 없습니다.</div>'; }
+  else{
+    const layerInfo=[["top","탑노트","lt"],["heart","미들노트","lh-row"],["base","베이스노트","lb"]];
+    pyr.innerHTML=layerInfo.map(([k,lbl,cls])=>{
+      const mem=a.weighted.filter(i=>i.vol===k).sort((x,y)=>y.w-x.w);
+      const chips=mem.length? mem.map(i=>`<span class="chip">${i.n}</span>`).join("")
+                            : `<span class="chip muted">없음</span>`;
+      return `<div class="pyr-layer ${cls}">
+        <div class="lh"><b>${lbl}</b><span class="muted">${a.volPct[k].toFixed(0)}%</span></div>
+        <div class="chips">${chips}</div></div>`;
+    }).join("");
+  }
+
+  // families
+  const fams=$("#families");
+  const fe=Object.entries(a.fam).sort((x,y)=>y[1]-x[1]);
+  if(!fe.length){ fams.innerHTML='<div class="empty">아직 향료가 없습니다.</div>'; }
+  else{
+    const max=Math.max(...fe.map(([,v])=>v));
+    fams.innerHTML=fe.map(([f,v])=>{
+      const pct=v/a.totalW*100;
+      return `<div class="bar"><div class="bl"><span>${FAMILIES[f]}</span><span class="muted">${pct.toFixed(0)}%</span></div>
+        <div class="track"><div class="fill" style="width:${v/max*100}%;background:${famColor(f)}"></div></div></div>`;
+    }).join("");
+  }
+
+  // recommendations + longevity + simulator + goal + quantities
+  renderRecs(a);
+  renderLongevity(a);
+  renderSim(a);
+  renderGoal(a);
+  renderRecipeQty(a);
+  renderSupplies(a);
+}
+
+function renderLongevity(a){
+  const wrap=$("#longevity");
+  if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 표시됩니다.</div>'; return; }
+  const L=longevity(a);
+  const bars=L.curve.map(v=>`<div class="cb" style="height:${Math.max(2,v)}%"></div>`).join("");
+  const phaseRows=L.phases.map(p=>{
+    const left=p.from/L.span*100, w=Math.max(2,(p.to-p.from)/L.span*100);
+    return `<div class="phase"><span class="pl" style="color:var(--${p.vol})">${p.name}</span>
+      <span class="ptrack"><span class="pbar" style="left:${left}%;width:${w}%;background:var(--${p.vol})"></span></span>
+      <span class="pt">${fmtH(p.from)} ~ ${fmtH(p.to)}</span></div>`;
+  }).join("");
+  wrap.innerHTML=`
+    <div class="score" style="margin-bottom:6px;">
+      <span class="big">${fmtH(L.hours)}</span>
+      <span class="muted">예상 지속</span>
+      <span class="pill ${L.grade[0]}" style="margin-left:auto;">${L.grade[1]}</span>
+    </div>
+    <div class="muted" style="font-size:12px;">발향력(실라지): <b style="color:var(--fg)">${L.sill}</b></div>
+    <div class="curve">${bars}</div>
+    <div class="curve-x"><span>지금</span><span>${fmtH(L.span/2)}</span><span>${fmtH(L.span)}</span></div>
+    ${phaseRows}
+    <div class="note">탑은 먼저 날아가고 베이스가 끝까지 남아요. 오래 가게 하려면 베이스노트(머스크·앰버·우디·바닐라) 비중을 높이세요.</div>`;
+}
+
+// ---- 시향 시뮬레이터 ----
+const PHASE_DESC = {
+  top:   "확 퍼지는 첫인상 — 탑노트 단계",
+  heart: "향의 중심이 피어나는 미들노트 단계",
+  base:  "은은하게 남는 잔향 — 베이스노트 단계"
+};
+// 시간 t(시간)에서 각 향료의 현재 세기와 지배 단계/계열
+function simAt(a,t){
+  const cur=a.weighted.map(i=>({...i, c:i.w*Math.pow(0.5,t/lastHours(i))}));
+  const tot=cur.reduce((s,i)=>s+i.c,0)||1;
+  cur.forEach(i=>i.pct=i.c/tot*100);
+  cur.sort((x,y)=>y.c-x.c);
+  const lw={top:0,heart:0,base:0}; cur.forEach(i=>lw[i.vol]+=i.c);
+  const phase=Object.entries(lw).sort((x,y)=>y[1]-x[1])[0][0];
+  const fw={}; cur.forEach(i=>fw[i.fam]=(fw[i.fam]||0)+i.c);
+  const fams=Object.entries(fw).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([f])=>FAMILIES[f]);
+  return {cur,phase,fams};
+}
+let simMax=0;
+function renderSim(a){
+  const wrap=$("#simNow"), slider=$("#simTime");
+  if(!a.items.length){
+    wrap.innerHTML='<div class="empty">조합을 추가하면 체험할 수 있어요.</div>';
+    $("#simClock").textContent="지금"; slider.disabled=true; stopSim(); return;
+  }
+  slider.disabled=false;
+  simMax=Math.max(longevity(a).hours,0.5);
+  const t=(+slider.value)/100*simMax;
+  const S=simAt(a,t);
+  $("#simClock").textContent = t<0.05? "분사 직후" : fmtH(t)+" 후";
+  const notes=S.cur.filter(i=>i.pct>=5).slice(0,6);
+  const rows=notes.map(i=>`<div class="sim-note">
+      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="track"><span class="fill" style="width:${Math.min(100,i.pct)}%;background:${famColor(i.fam)}"></span></span>
+      <span class="pc">${i.pct.toFixed(0)}%</span></div>`).join("");
+  wrap.innerHTML=`
+    <div class="sim-phase" style="color:var(--${S.phase})">${PHASE_DESC[S.phase]}</div>
+    <div class="sim-desc">지금 <b style="color:var(--fg)">${S.fams.join(" · ")}</b> 계열이 도드라지고, <b style="color:var(--fg)">${notes[0]?notes[0].n:"-"}</b>이(가) 가장 강하게 느껴져요.</div>
+    ${rows||'<div class="empty">향이 거의 날아갔어요.</div>'}`;
+}
+let simTimer=null;
+function stopSim(){ if(simTimer){ clearInterval(simTimer); simTimer=null; } const b=$("#simPlay"); if(b) b.textContent="▶ 뿌려보기"; }
+function toggleSim(){
+  if(simTimer){ stopSim(); return; }
+  const slider=$("#simTime"), btn=$("#simPlay");
+  if(slider.disabled) return;
+  if(+slider.value>=100) slider.value=0;
+  btn.textContent="⏸ 멈춤";
+  simTimer=setInterval(()=>{
+    let v=+slider.value+1.5;             // 0→100을 약 7초에 걸쳐
+    if(v>=100){ v=100; slider.value=v; updateSim(); stopSim(); return; }
+    slider.value=v; updateSim();
+  },100);
+}
+function updateSim(){ renderSim(analyze()); }
+
+// ---- 목표로 만들기 ----
+function renderMoodTags(){
+  const wrap=$("#moodTags"); wrap.innerHTML="";
+  Object.keys(MOODS).forEach(m=>{
+    const el=document.createElement("span");
+    el.className="mtag"+(selectedMoods.has(m)?" on":"");
+    el.textContent=m;
+    el.onclick=()=>{ selectedMoods.has(m)?selectedMoods.delete(m):selectedMoods.add(m); renderMoodTags(); render(); };
+    wrap.appendChild(el);
+  });
+}
+function buildFromGoal(){
+  const target=+$("#goalHours").value;
+  const chosen = selectedMoods.size? [...selectedMoods] : ["꽃향기","우드"];
+  const dropFor=v=> v==="heart"?3:2;
+  const b={};
+  // 선택한 모든 무드가 최소 1개씩 반드시 포함되도록
+  chosen.forEach(m=>{
+    const n=MOODS[m].find(x=>mat(x));
+    if(n){ const v=mat(n).vol; b[n]=Math.max(b[n]||0, dropFor(v)); }
+  });
+  // 빠진 층 채우기 (가벼운 목표는 베이스를 강제하지 않아 더 짧게)
+  const haveVol=v=>Object.keys(b).some(n=>mat(n).vol===v);
+  if(!haveVol("top"))   b["베르가못"]=2;
+  if(!haveVol("heart")) b["로즈"]=3;
+  if(target>=6 && !haveVol("base")) b["샌달우드"]=2;
+  blend=b;
+  // 목표 지속에 가깝도록 방울 조정
+  const notesOf=v=>Object.keys(blend).filter(n=>mat(n).vol===v);
+  for(let i=0;i<40;i++){
+    const h=longevity(analyze()).hours;
+    if(h < target-0.6){
+      const base=notesOf("base");
+      if(base.length) base.forEach(n=>{ if(blend[n]<6) blend[n]++; });
+      else break; // 베이스 없으면 더 늘릴 수 없음
+    } else if(h > target+1.2){
+      let n=notesOf("base").find(x=>blend[x]>1) || notesOf("heart").find(x=>blend[x]>1);
+      if(n) blend[n]--; else break;
+    } else break;
+  }
+  render();
+}
+function renderGoal(a){
+  const wrap=$("#goalRes"); const target=+$("#goalHours").value;
+  if(!a.items.length && !selectedMoods.size){ wrap.innerHTML=""; return; }
+  const L=a.items.length? longevity(a):null;
+  const h=L?L.hours:0;
+  const hOk=L && Math.abs(h-target)<=Math.max(1.5,target*0.25);
+  let html=`<div>지속: 목표 ~${target}시간 / 현재 <b>${L?fmtH(h):"–"}</b> <span class="${hOk?'ok':'no'}">${L?(hOk?'✓':'✗'):''}</span></div>`;
+  if(selectedMoods.size){
+    const parts=[...selectedMoods].map(m=>{
+      const present=MOODS[m].some(n=>blend[n]);
+      return `<span class="${present?'ok':'no'}">${present?'✓':'✗'} ${m}</span>`;
+    });
+    html+=`<div>무드: ${parts.join(" · ")}</div>`;
+  }
+  wrap.innerHTML=html;
+}
+
+// ---- 내 취향 향수 기반 추천 ----
+function pFamVec(p){
+  const v={}; let tot=0;
+  for(const [n,d] of Object.entries(p.blend)){ const m=mat(n); if(!m) continue;
+    const w=d*m.str; v[m.fam]=(v[m.fam]||0)+w; tot+=w; }
+  for(const k in v) v[k]/=(tot||1);
+  return v;
+}
+function pSim(a,b){ // 코사인 유사도
+  const keys=new Set([...Object.keys(a),...Object.keys(b)]); let dot=0,na=0,nb=0;
+  keys.forEach(k=>{ const x=a[k]||0,y=b[k]||0; dot+=x*y; na+=x*x; nb+=y*y; });
+  return dot/(Math.sqrt(na*nb)||1);
+}
+function pLong(p){ // 프리셋 배합의 예상 지속(시간)
+  const W=Object.entries(p.blend).map(([n,d])=>{const m=mat(n);return{...m,w:d*m.str};});
+  const I0=W.reduce((s,i)=>s+i.w,0)||1; let h=0;
+  for(let t=0;t<=24;t+=0.1){ if(W.reduce((s,i)=>s+i.w*Math.pow(0.5,t/lastHours(i)),0)<=0.12*I0){h=t;break;} h=t; }
+  return h;
+}
+function initTaste(){
+  const sel=$("#tasteSel"); const byBrand={};
+  PRESETS.forEach((p,i)=>{ (byBrand[p.brand]=byBrand[p.brand]||[]).push(i); });
+  Object.entries(byBrand).forEach(([brand,idxs])=>{
+    const og=document.createElement("optgroup"); og.label=brand;
+    idxs.forEach(i=>{ const o=document.createElement("option"); o.value=i; o.textContent=PRESETS[i].name; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+}
+function showTaste(i){
+  const res=$("#tasteRes"); const p=PRESETS[i];
+  const v=pFamVec(p);
+  const fams=Object.entries(v).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([f])=>FAMILIES[f]);
+  const sims=PRESETS.map((q,j)=>({j,s:j===i?-1:pSim(v,pFamVec(q))}))
+    .sort((a,b)=>b.s-a.s).slice(0,3);
+  res.innerHTML=`
+    <div><b>${p.name}</b> <span class="muted">· ${p.brand}</span></div>
+    <div class="muted" style="font-size:12px;">스타일: ${fams.join(" · ")} · 예상 지속 ${fmtH(pLong(p))}</div>
+    <div style="margin-top:8px; font-size:12px;">비슷한 향수: ${sims.map(s=>`<span class="mtag simlink" data-j="${s.j}">${PRESETS[s.j].name}</span>`).join(" ")}</div>`;
+  res.querySelectorAll(".simlink").forEach(el=>el.onclick=()=>{
+    const j=+el.dataset.j; $("#tasteSel").value=j; showTaste(j);
+  });
+  $("#tasteLoad").disabled=false; $("#tasteVary").disabled=false;
+}
+function tasteLoad(){
+  const i=$("#tasteSel").value; if(i==="") return;
+  blend={...PRESETS[+i].blend}; render(); toast(`${PRESETS[+i].name} 배합을 불러왔어요`);
+}
+function generateSimilar(){
+  const iv=$("#tasteSel").value; if(iv==="") return;
+  const p=PRESETS[+iv]; const v=pFamVec(p);
+  const topF=Object.entries(v).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([f])=>f);
+  const target=Math.round(pLong(p));
+  const dropFor=vol=>vol==="heart"?3:2;
+  const b={};
+  topF.forEach((f,idx)=>{
+    const fromPreset=Object.keys(p.blend).filter(x=>mat(x)&&mat(x).fam===f);
+    const picks=(fromPreset.length?fromPreset:[FAM_PICK[f]]).slice(0, idx===0?2:1);
+    picks.forEach(n=>{ if(n&&mat(n)) b[n]=Math.max(b[n]||0,dropFor(mat(n).vol)); });
+  });
+  const haveVol=vol=>Object.keys(b).some(n=>mat(n).vol===vol);
+  if(!haveVol("top"))   b["베르가못"]=2;
+  if(!haveVol("heart")) b["로즈"]=3;
+  if(!haveVol("base"))  b["샌달우드"]=2;
+  blend=b;
+  const baseNotes=()=>Object.keys(blend).filter(n=>mat(n).vol==="base");
+  for(let k=0;k<40;k++){ const h=longevity(analyze()).hours;
+    if(h<target-0.6){ const bn=baseNotes(); if(bn.length) bn.forEach(n=>{if(blend[n]<6)blend[n]++;}); else break; }
+    else if(h>target+1.2){ let n=baseNotes().find(x=>blend[x]>1)||Object.keys(blend).filter(x=>mat(x).vol==="heart"&&blend[x]>1)[0]; if(n)blend[n]--; else break; }
+    else break; }
+  render(); toast(`${p.name} 스타일 변형을 추천했어요`);
+}
+
+// ---- 재료 분량(실제 제작) ----
+function renderRecipeQty(a){
+  const wrap=$("#recipeQty");
+  if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 분량이 계산됩니다.</div>'; return; }
+  const batch=+$("#batchMl").value, conc=+$("#conc").value, DPM=20; // 1ml≈20방울
+  const oilMl=batch*conc, alcMl=batch-oilMl;
+  const totalDrops=a.items.reduce((s,i)=>s+i.drops,0)||1;
+  const rows=a.items.map(i=>{
+    const ml=oilMl*(i.drops/totalDrops);
+    return `<div class="qty-row"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="v">${ml.toFixed(2)} ml</span><span class="v">${Math.max(1,Math.round(ml*DPM))}방울</span></div>`;
+  }).join("");
+  wrap.innerHTML=rows+`
+    <div class="qty-sum">
+      <div class="qrow"><span>향료 원액 합계</span><b>${oilMl.toFixed(1)} ml (${Math.round(conc*100)}%)</b></div>
+      <div class="qrow"><span>퍼퓸용 알코올</span><b>${alcMl.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div>
+    </div>
+    <div class="note">① 향료 원액을 위 비율대로 섞고 → ② 퍼퓸용 알코올로 ${batch}ml까지 채운 뒤 → ③ 어두운 곳에서 4~6주 숙성(마세레이션)하면 향이 안정돼요. 방울은 1ml≈20방울 환산.</div>`;
+}
+
+// 제작에 필요한 도구·부자재 (용량/향료 수에 맞춰 수량 계산)
+function renderSupplies(a){
+  const wrap=$("#supplies"); if(!wrap) return;
+  const batch=+$("#batchMl").value, conc=+$("#conc").value;
+  const alc=(batch*(1-conc)).toFixed(0), oil=(batch*conc).toFixed(1);
+  const n=a.items.length;
+  const items=[
+    ["향료 원액 (에센셜·프래그런스 오일)", n? `선택한 ${n}종 · 합계 약 ${oil} ml` : "향료를 먼저 선택"],
+    ["퍼퓸용 알코올 (에탄올·발효주정)", `약 ${alc} ml`],
+    ["유리 향수병 + 분무기/롤온", `${batch} ml 1개`],
+    ["유리 스포이트·피펫", n? `${n}개 (향료별 1개 = 교차오염 방지)` : "향료 수만큼"],
+    ["조향용 유리 비커", "1개 (혼합용)"],
+    ["디지털 저울 (0.01g)", "1개 (정밀 계량)"],
+    ["시향지 (블로터)", "5~10장"],
+    ["소형 깔때기", "1개 (병 옮길 때)"],
+    ["라벨 스티커·유성펜", "이름·날짜·비율 기록"],
+    ["차광 보관 장소(서랍 등)", "4~6주 숙성용"],
+    ["(선택) 니트릴 장갑·정제수", "피부 보호·미세 희석"],
+  ];
+  const prev=[...wrap.querySelectorAll('.supply input')].map(c=>c.checked); // 체크 상태 보존
+  wrap.innerHTML = items.map(it=>
+    `<label class="supply"><input type="checkbox"><span class="sn">${it[0]}</span><span class="sq">${it[1]}</span></label>`
+  ).join("")
+    + `<div class="note">향료·알코올·병을 빼면 대부분 한 번 사두면 계속 쓰는 도구예요. 알코올 양은 농도(${Math.round(conc*100)}%)·용량(${batch}ml)에 맞춰 자동 계산됩니다.</div>`;
+  wrap.querySelectorAll('.supply input').forEach((c,i)=>{ if(prev[i]) c.checked=true; });
+}
+
+// 초보용 스타터: 탑·미들·베이스 기본 3종
+function starter(){ blend={ "베르가못":3, "로즈":4, "샌달우드":3 }; render(); }
+
+// ---- 프리셋 ----
+function renderPresets(){
+  const wrap=$("#presets"); wrap.innerHTML="";
+  $("#presetCount").textContent=PRESETS.length+"종";
+  PRESETS.forEach(p=>{
+    const el=document.createElement("div"); el.className="saved-item";
+    el.innerHTML=`<span class="nm"><b>${p.name}</b> <span class="muted">· ${p.brand}</span>
+        <div class="muted" style="font-size:11.5px;">${p.desc}</div></span>
+      <button class="ghost sm" data-load>불러오기</button>`;
+    el.querySelector("[data-load]").onclick=()=>{ blend={...p.blend}; render(); };
+    wrap.appendChild(el);
+  });
+}
+
+// ---- saved recipes (localStorage) ----
+const KEY="scentmixer.recipes.v1";
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(KEY))||[]; }catch{ return []; } }
+function renderSaved(){
+  const wrap=$("#saved"); const list=loadSaved();
+  if(!list.length){ wrap.innerHTML='<div class="muted" style="font-size:12.5px;">저장된 레시피가 없습니다.</div>'; return; }
+  wrap.innerHTML="";
+  list.forEach((r,idx)=>{
+    const el=document.createElement("div"); el.className="saved-item";
+    const cnt=Object.keys(r.blend).length;
+    el.innerHTML=`<span class="nm">${r.name} <span class="muted">· ${cnt}종</span></span>
+      <button class="ghost sm" data-load>불러오기</button><button class="ghost sm" data-del>삭제</button>`;
+    el.querySelector("[data-load]").onclick=()=>{ blend={...r.blend}; render(); };
+    el.querySelector("[data-del]").onclick=()=>{ const l=loadSaved(); l.splice(idx,1); localStorage.setItem(KEY,JSON.stringify(l)); renderSaved(); };
+    wrap.appendChild(el);
+  });
+}
+$("#saveBtn").onclick=()=>{
+  if(!Object.keys(blend).length){ alert("먼저 향료를 조합하세요."); return; }
+  const name=($("#recipeName").value.trim())||("레시피 "+(loadSaved().length+1));
+  const l=loadSaved(); l.unshift({name,blend:{...blend},ts:Date.now()});
+  localStorage.setItem(KEY,JSON.stringify(l)); $("#recipeName").value=""; renderSaved();
+};
+
+// ---- wire up ----
+["search","famFilter","volFilter"].forEach(id=>$("#"+id).addEventListener("input",renderLib));
+$("#clearBtn").onclick=clearBlend;
+$("#randomBtn").onclick=randomBlend;
+$("#starterBtn").onclick=starter;
+$("#guideRandomBtn").onclick=randomBlend;
+$("#genGoalBtn").onclick=buildFromGoal;
+$("#simPlay").onclick=toggleSim;
+$("#simTime").addEventListener("input",updateSim);
+$("#goalHours").addEventListener("change",()=>render());
+["batchMl","conc"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
+$("#tasteSel").addEventListener("change",e=>{
+  const v=e.target.value;
+  if(v===""){ $("#tasteLoad").disabled=$("#tasteVary").disabled=true;
+    $("#tasteRes").innerHTML='<span class="muted" style="font-size:12.5px;">좋아하는 향수를 고르면 그 취향에 맞는 배합과 비슷한 향수를 추천해드려요.</span>'; }
+  else showTaste(+v);
+});
+$("#tasteLoad").onclick=tasteLoad;
+$("#tasteVary").onclick=generateSimilar;
+
+initFilters(); renderMoodTags(); initTaste(); renderLib(); render(); renderPresets(); renderSaved();
+
+// ---- PWA: service worker + install prompt ----
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=> navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+let deferredPrompt=null;
+const installBtn=$("#installBtn");
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault(); deferredPrompt=e; installBtn.style.display="inline-block";
+});
+installBtn.onclick=async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null; installBtn.style.display="none";
+};
+window.addEventListener("appinstalled", ()=>{ installBtn.style.display="none"; });
+</script>
+</body>
+</html>

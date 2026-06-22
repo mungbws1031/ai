@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background: theme('colors.eddie.bg');
+  color: theme('colors.eddie.ink');
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Apple SD Gothic Neo',
+    'Noto Sans KR', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.dark body {
+  background: #1a1c1b;
+  color: #ececec;
+}
+
+@layer components {
+  /* 큰 탭 타겟 (NFR-A-001/002) */
+  .tap-btn {
+    @apply min-h-tap inline-flex items-center justify-center gap-2 rounded-xl2 px-5 text-base font-semibold transition-colors;
+  }
+  .btn-primary {
+    @apply tap-btn bg-eddie-primary text-white active:opacity-90;
+  }
+  .btn-soft {
+    @apply tap-btn bg-eddie-primary-soft text-eddie-primary active:opacity-90;
+  }
+  .btn-ghost {
+    @apply tap-btn bg-transparent text-eddie-muted hover:text-eddie-ink;
+  }
+  .card {
+    @apply rounded-xl2 border border-eddie-line bg-eddie-surface p-5 shadow-sm;
+  }
+  .dark .card {
+    @apply border-neutral-700 bg-neutral-800;
+  }
+  .field {
+    @apply min-h-tap w-full rounded-xl border border-eddie-line bg-white px-4 text-base outline-none focus:border-eddie-primary;
+  }
+  .dark .field {
+    @apply border-neutral-600 bg-neutral-900 text-white;
+  }
+  .chip {
+    @apply min-h-tap inline-flex items-center justify-center rounded-full border px-4 text-sm font-medium;
+  }
+}
