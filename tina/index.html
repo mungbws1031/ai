@@ -178,6 +178,7 @@
     <h1>티나<span class="sub">티 나게 정리</span></h1>
   </div>
   <div class="hbtns">
+    <button class="iconbtn" id="btnInstall" title="앱으로 설치" style="display:none">📲</button>
     <button class="iconbtn" id="btnHistory" title="기록">📈</button>
     <button class="iconbtn" id="btnSettings" title="설정">⚙️</button>
   </div>
@@ -198,6 +199,12 @@
         <button class="big ghost" id="beforeGallery">🖼️ 기존 사진 선택</button>
       </div>
       <div class="note">📷는 카메라, 🖼️는 갤러리·앨범에서 골라요. 사진은 이 기기 안에서만 처리돼요 — 기본 분석은 <b>온디바이스(서버 전송 없음)</b>.</div>
+    </div>
+
+    <div class="card" id="installCard" style="display:none">
+      <h2>📲 앱으로 설치 <span class="tag">홈 화면에서 바로</span></h2>
+      <p class="muted" id="installText" style="font-size:13px; margin-top:-4px"></p>
+      <button class="big accent2" id="installBtn">홈 화면에 추가</button>
     </div>
 
     <div class="card" id="recentCard" style="display:none">
@@ -1089,6 +1096,58 @@ $("btnClearHist").onclick=()=>{
   if(confirm("모든 기록을 지울까요?")){ localStorage.removeItem(LS.hist); renderHistory(); renderRecent(); }
 };
 function resetFlow(){ state.before=null; state.after=null; state.missions=[]; }
+
+/* ===================================================================
+   앱 설치 (PWA — 홈 화면에 추가)
+   =================================================================== */
+let deferredPrompt = null;
+const isStandalone = () => window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const isiOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+function showInstallUI(kind){
+  if(isStandalone()) return;            // 이미 설치됨
+  $("btnInstall").style.display = "";
+  $("installCard").style.display = "";
+  if(kind === "ios"){
+    $("installText").innerHTML = "이 아이폰/아이패드는 Safari <b>공유 → 홈 화면에 추가</b>로 설치해요.";
+    $("installBtn").textContent = "설치 방법 보기";
+  } else {
+    $("installText").textContent = "앱처럼 깔리고, 오프라인에서도 열려요. 한 번 설치해두면 편해요.";
+    $("installBtn").textContent = "홈 화면에 추가";
+  }
+}
+function hideInstallUI(){ $("btnInstall").style.display="none"; $("installCard").style.display="none"; }
+
+async function doInstall(){
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    const r = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if(r.outcome === "accepted") hideInstallUI();
+  } else if(isiOS()){
+    openIOSInstall();
+  } else {
+    toast("브라우저 메뉴에서 '앱 설치'를 눌러주세요.");
+  }
+}
+function openIOSInstall(){
+  const o = document.createElement("div"); o.className="modal";
+  o.innerHTML = `<div class="box">
+    <h2 style="font-size:17px">📲 홈 화면에 추가 (iPhone·iPad)</h2>
+    <p class="muted" style="font-size:13.5px; line-height:1.7">Safari 하단(또는 상단)의 <b>공유 버튼</b> <span style="font-size:16px">⬆️</span> 을 누르고 →
+    <b>"홈 화면에 추가"</b> → <b>"추가"</b> 를 누르면 앱처럼 설치돼요.</p>
+    <button class="big" id="iosClose">알겠어요</button>
+  </div>`;
+  o.addEventListener("click", e=>{ if(e.target===o || e.target.id==="iosClose") o.remove(); });
+  document.body.appendChild(o);
+}
+
+window.addEventListener("beforeinstallprompt", (e)=>{ e.preventDefault(); deferredPrompt=e; showInstallUI("prompt"); });
+window.addEventListener("appinstalled", ()=>{ deferredPrompt=null; hideInstallUI(); toast("앱이 설치됐어요 🎉"); });
+$("btnInstall").onclick = doInstall;
+$("installBtn").onclick = doInstall;
+// iOS는 beforeinstallprompt가 없어 안내 배너를 직접 노출
+if(isiOS() && !isStandalone()) showInstallUI("ios");
 
 /* ===================================================================
    부트
