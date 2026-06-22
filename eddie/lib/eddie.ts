@@ -57,19 +57,3 @@ export function eddieForProgress(done: number, total: number): EddieLine {
   if (done >= total) return eddieLine('happy', done * 7 + total);
   return eddieLine('cheer', done * 3 + total);
 }
-
-/** 에디 표정 이모지 (간단한 시각 표현) */
-export function eddieFace(mood: EddieMood): string {
-  switch (mood) {
-    case 'happy':
-      return '😊';
-    case 'cheer':
-      return '💪';
-    case 'calm':
-      return '🙂';
-    case 'recover':
-      return '🤗';
-    case 'sleepy':
-      return '😴';
-  }
-}

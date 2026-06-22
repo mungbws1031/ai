@@ -5,6 +5,7 @@ import { isGoodDay } from '@/lib/streak';
 import { eddieLine } from '@/lib/eddie';
 import PageHeader from '@/components/PageHeader';
 import EddieBubble from '@/components/EddieBubble';
+import EddieFace from '@/components/EddieFace';
 
 // 에디 화면 (IA §7.2): 캐릭터, 보상(너그러운 스트릭), 하루 회고 진입
 export default function EddiePage() {
@@ -16,9 +17,7 @@ export default function EddiePage() {
       <PageHeader title="에디" subtitle="실패해도 리셋되지 않아. 같이 이어가자." />
 
       <section className="card mb-4 flex flex-col items-center gap-3 text-center">
-        <div className="text-7xl" aria-hidden>
-          {goodToday ? '😊' : '🤗'}
-        </div>
+        <EddieFace mood={goodToday ? 'happy' : 'recover'} size="lg" />
         <EddieBubble line={goodToday ? eddieLine('happy') : eddieLine('recover')} />
       </section>
 
