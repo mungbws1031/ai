@@ -330,6 +330,17 @@
         <div class="goal-res" id="goalRes"></div>
       </div>
 
+      <div class="card">
+        <h2>❤️ 내 취향으로 추천 <span class="tag">좋아하는 향수 기반</span></h2>
+        <label class="lbl">좋아하는 향수를 골라보세요</label>
+        <select id="tasteSel"><option value="">향수 선택…</option></select>
+        <div class="actions">
+          <button id="tasteLoad" disabled>이 배합 불러오기</button>
+          <button class="ghost sm" id="tasteVary" disabled>✨ 비슷한 변형 추천</button>
+        </div>
+        <div class="goal-res" id="tasteRes"><span class="muted" style="font-size:12.5px;">좋아하는 향수를 고르면 그 취향에 맞는 배합과 비슷한 향수를 추천해드려요.</span></div>
+      </div>
+
       <details class="card">
         <summary>🔰 초보자 가이드 <span class="tag">처음이라면 여기부터</span></summary>
         <div class="guide-steps">
@@ -1013,6 +1024,78 @@ function renderGoal(a){
   wrap.innerHTML=html;
 }
 
+// ---- 내 취향 향수 기반 추천 ----
+function pFamVec(p){
+  const v={}; let tot=0;
+  for(const [n,d] of Object.entries(p.blend)){ const m=mat(n); if(!m) continue;
+    const w=d*m.str; v[m.fam]=(v[m.fam]||0)+w; tot+=w; }
+  for(const k in v) v[k]/=(tot||1);
+  return v;
+}
+function pSim(a,b){ // 코사인 유사도
+  const keys=new Set([...Object.keys(a),...Object.keys(b)]); let dot=0,na=0,nb=0;
+  keys.forEach(k=>{ const x=a[k]||0,y=b[k]||0; dot+=x*y; na+=x*x; nb+=y*y; });
+  return dot/(Math.sqrt(na*nb)||1);
+}
+function pLong(p){ // 프리셋 배합의 예상 지속(시간)
+  const W=Object.entries(p.blend).map(([n,d])=>{const m=mat(n);return{...m,w:d*m.str};});
+  const I0=W.reduce((s,i)=>s+i.w,0)||1; let h=0;
+  for(let t=0;t<=24;t+=0.1){ if(W.reduce((s,i)=>s+i.w*Math.pow(0.5,t/lastHours(i)),0)<=0.12*I0){h=t;break;} h=t; }
+  return h;
+}
+function initTaste(){
+  const sel=$("#tasteSel"); const byBrand={};
+  PRESETS.forEach((p,i)=>{ (byBrand[p.brand]=byBrand[p.brand]||[]).push(i); });
+  Object.entries(byBrand).forEach(([brand,idxs])=>{
+    const og=document.createElement("optgroup"); og.label=brand;
+    idxs.forEach(i=>{ const o=document.createElement("option"); o.value=i; o.textContent=PRESETS[i].name; og.appendChild(o); });
+    sel.appendChild(og);
+  });
+}
+function showTaste(i){
+  const res=$("#tasteRes"); const p=PRESETS[i];
+  const v=pFamVec(p);
+  const fams=Object.entries(v).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([f])=>FAMILIES[f]);
+  const sims=PRESETS.map((q,j)=>({j,s:j===i?-1:pSim(v,pFamVec(q))}))
+    .sort((a,b)=>b.s-a.s).slice(0,3);
+  res.innerHTML=`
+    <div><b>${p.name}</b> <span class="muted">· ${p.brand}</span></div>
+    <div class="muted" style="font-size:12px;">스타일: ${fams.join(" · ")} · 예상 지속 ${fmtH(pLong(p))}</div>
+    <div style="margin-top:8px; font-size:12px;">비슷한 향수: ${sims.map(s=>`<span class="mtag simlink" data-j="${s.j}">${PRESETS[s.j].name}</span>`).join(" ")}</div>`;
+  res.querySelectorAll(".simlink").forEach(el=>el.onclick=()=>{
+    const j=+el.dataset.j; $("#tasteSel").value=j; showTaste(j);
+  });
+  $("#tasteLoad").disabled=false; $("#tasteVary").disabled=false;
+}
+function tasteLoad(){
+  const i=$("#tasteSel").value; if(i==="") return;
+  blend={...PRESETS[+i].blend}; render(); toast(`${PRESETS[+i].name} 배합을 불러왔어요`);
+}
+function generateSimilar(){
+  const iv=$("#tasteSel").value; if(iv==="") return;
+  const p=PRESETS[+iv]; const v=pFamVec(p);
+  const topF=Object.entries(v).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([f])=>f);
+  const target=Math.round(pLong(p));
+  const dropFor=vol=>vol==="heart"?3:2;
+  const b={};
+  topF.forEach((f,idx)=>{
+    const fromPreset=Object.keys(p.blend).filter(x=>mat(x)&&mat(x).fam===f);
+    const picks=(fromPreset.length?fromPreset:[FAM_PICK[f]]).slice(0, idx===0?2:1);
+    picks.forEach(n=>{ if(n&&mat(n)) b[n]=Math.max(b[n]||0,dropFor(mat(n).vol)); });
+  });
+  const haveVol=vol=>Object.keys(b).some(n=>mat(n).vol===vol);
+  if(!haveVol("top"))   b["베르가못"]=2;
+  if(!haveVol("heart")) b["로즈"]=3;
+  if(!haveVol("base"))  b["샌달우드"]=2;
+  blend=b;
+  const baseNotes=()=>Object.keys(blend).filter(n=>mat(n).vol==="base");
+  for(let k=0;k<40;k++){ const h=longevity(analyze()).hours;
+    if(h<target-0.6){ const bn=baseNotes(); if(bn.length) bn.forEach(n=>{if(blend[n]<6)blend[n]++;}); else break; }
+    else if(h>target+1.2){ let n=baseNotes().find(x=>blend[x]>1)||Object.keys(blend).filter(x=>mat(x).vol==="heart"&&blend[x]>1)[0]; if(n)blend[n]--; else break; }
+    else break; }
+  render(); toast(`${p.name} 스타일 변형을 추천했어요`);
+}
+
 // ---- 재료 분량(실제 제작) ----
 function renderRecipeQty(a){
   const wrap=$("#recipeQty");
@@ -1113,8 +1196,16 @@ $("#simPlay").onclick=toggleSim;
 $("#simTime").addEventListener("input",updateSim);
 $("#goalHours").addEventListener("change",()=>render());
 ["batchMl","conc"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
+$("#tasteSel").addEventListener("change",e=>{
+  const v=e.target.value;
+  if(v===""){ $("#tasteLoad").disabled=$("#tasteVary").disabled=true;
+    $("#tasteRes").innerHTML='<span class="muted" style="font-size:12.5px;">좋아하는 향수를 고르면 그 취향에 맞는 배합과 비슷한 향수를 추천해드려요.</span>'; }
+  else showTaste(+v);
+});
+$("#tasteLoad").onclick=tasteLoad;
+$("#tasteVary").onclick=generateSimilar;
 
-initFilters(); renderMoodTags(); renderLib(); render(); renderPresets(); renderSaved();
+initFilters(); renderMoodTags(); initTaste(); renderLib(); render(); renderPresets(); renderSaved();
 
 // ---- PWA: service worker + install prompt ----
 if("serviceWorker" in navigator){
