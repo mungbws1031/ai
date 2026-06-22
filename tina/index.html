@@ -109,6 +109,18 @@
   .timerbtn{ font-size:11.5px; padding:3px 9px; border-radius:8px; background:transparent; border:1px solid var(--line); color:var(--fg); font-weight:600; }
   .timerbtn.run{ border-color:var(--accent); color:var(--accent); }
 
+  /* 시간 예산별 진단 */
+  .budopt{ display:flex; align-items:center; gap:10px; border:1px solid var(--line); background:var(--card2); border-radius:13px; padding:11px 13px; margin-bottom:8px; cursor:pointer; transition:.12s; }
+  .budopt.on{ border-color:var(--accent); background:rgba(94,200,255,.10); }
+  .budopt .bl{ flex:1; min-width:0; }
+  .budopt .bt{ font-weight:800; font-size:15px; }
+  .budopt .bd{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .budopt .br{ text-align:right; flex:0 0 auto; }
+  .budopt .bg{ font-weight:800; font-size:15px; color:var(--gold); font-variant-numeric:tabular-nums; }
+  .budopt .bj{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .budopt .chk2{ width:20px; height:20px; border-radius:50%; border:2px solid var(--line); flex:0 0 auto; }
+  .budopt.on .chk2{ background:var(--accent); border-color:var(--accent); box-shadow:inset 0 0 0 3px var(--card2); }
+
   /* regions */
   .regions{ display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
   .region{ font-size:12px; padding:5px 10px; border-radius:10px; background:var(--card2); border:1px solid var(--line); }
@@ -180,20 +192,12 @@
       <h3>1시간 정리해도 티가 안 나는 사람을 위한 앱</h3>
       <p>어수선한 공간을 <b>사진 한 장</b>으로 분석해, 눈에 보이는 효과가 <b>가장 큰 순서대로</b> 할 일을 짜드려요. 끝나면 비포/애프터 <b>티 점수</b>로 증명까지.</p>
 
-      <div class="modepick" id="modePick">
-        <div class="seg on" data-mode="normal">
-          <div class="t">🧹 차분히</div>
-          <div class="d">효과 순 미션 풀세트</div>
-        </div>
-        <div class="seg" data-mode="speedrun">
-          <div class="t">⚡ 스피드런</div>
-          <div class="d">게스트 임박·임팩트만</div>
-        </div>
+      <label class="field" style="text-align:left; margin-top:14px">비포 사진 — 지금 공간 그대로</label>
+      <div class="row" style="gap:8px">
+        <button class="big" id="beforeCam">📷 카메라로 촬영</button>
+        <button class="big ghost" id="beforeGallery">🖼️ 기존 사진 선택</button>
       </div>
-
-      <label class="field" style="text-align:left">비포 사진 (지금 공간 그대로)</label>
-      <input type="file" id="beforeInput" accept="image/*" capture="environment" />
-      <div class="note">사진은 이 기기 안에서만 처리돼요. 기본 분석은 <b>온디바이스(서버 전송 없음)</b>로 동작합니다.</div>
+      <div class="note">📷는 카메라, 🖼️는 갤러리·앨범에서 골라요. 사진은 이 기기 안에서만 처리돼요 — 기본 분석은 <b>온디바이스(서버 전송 없음)</b>.</div>
     </div>
 
     <div class="card" id="recentCard" style="display:none">
@@ -246,6 +250,13 @@
     </div>
 
     <div class="card">
+      <h2>⏱ 시간별 최대 효과 진단 <span class="tag">이 시간 안에서 최대 임팩트</span></h2>
+      <p class="muted" style="font-size:12.5px; margin-top:-4px">가진 시간을 고르면, 그 안에서 <b>효과 큰 순서로 꽉 채운</b> 플랜과 예상 결과를 보여줘요.</p>
+      <div id="budgetOptions"></div>
+      <div id="budgetSummary" class="note" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card">
       <h2 id="missionHead">임팩트 순 미션 <span class="tag" id="missionTimeTag"></span></h2>
       <p class="muted" style="font-size:12.5px; margin-top:-4px">효과 큰 순서예요. 건너뛰어도 괜찮아요 — 비난 없음. 막히면 아래 '이거 어디 두지?'를 눌러요.</p>
       <div id="missionList"></div>
@@ -257,7 +268,10 @@
 
     <div class="card" style="text-align:center">
       <p class="muted" style="font-size:13px; margin-top:0">다 했거나, 그만하고 싶을 때 — <b>애프터를 찍어 증명</b>해요.</p>
-      <input type="file" id="afterInput" accept="image/*" capture="environment" />
+      <div class="row" style="gap:8px">
+        <button class="big" id="afterCam">📷 애프터 촬영</button>
+        <button class="big ghost" id="afterGallery">🖼️ 애프터 사진 선택</button>
+      </div>
       <button class="ghost sm" id="btnRestart" style="margin-top:10px">처음으로</button>
     </div>
   </section>
@@ -377,12 +391,13 @@ const HERO_MISSION = { dim:"hero", priority:99, title:"히어로 존 하나만 �
    상태
    =================================================================== */
 let state = {
-  mode: "normal",
+  budget: 30,     // 선택한 정리 시간(분): 10 / 30 / 60
   before: null,   // {dataURL, analysis, levelIdx}
   after: null,
   missions: [],
   startedAt: 0,   // 분석 완료 시각 (시간 효율 계산용)
 };
+const BUDGETS = [10, 30, 60];
 let settings = loadSettings();
 
 function loadSettings(){
@@ -615,34 +630,37 @@ async function runAnalysis(img, dataURL){
 }
 
 /* ===================================================================
-   미션 생성 (6.2 우선순위 + 차원 결핍 기반 임팩트)
+   미션 후보 풀 + 시간 예산 플랜 (정리로 최대 효과)
    =================================================================== */
-function buildMissions(analysis, mode){
+// 결핍 큰 차원 → 예상 임팩트(+점수). 매번 새 객체 생성(플랜별 독립).
+function candidatePool(analysis){
   const d = analysis.dims;
-  // 결핍 = (100-점수)*가중치 → 임팩트 추정(점수 단위로 환산)
   const cand = MISSION_TEMPLATES.map(t=>{
     const dimW = (DIMS.find(x=>x.key===t.dim)||{w:0.1}).w;
-    const deficit = (100 - d[t.dim]) * dimW;          // 0..~30
-    const estImpact = Math.max(2, Math.round(deficit*0.9)); // 보여줄 예상 +점수
-    return Object.assign({}, t, { estImpact, score:deficit, done:false });
-  });
-  // 점수 낮은(결핍 큰) 차원만, 임팩트 순 정렬. 6.2 우선순위로 동점 정리.
-  cand.sort((a,b)=> b.score - a.score || a.priority - b.priority);
-  let picked = cand.filter(c => d[c.dim] < 78);
-  if(!picked.length) picked = cand.slice(0,2); // 이미 깔끔해도 최소 제안
+    const deficit = (100 - d[t.dim]) * dimW;            // 0..~30
+    const estImpact = Math.max(2, Math.round(deficit*0.9));
+    return Object.assign({}, t, { estImpact, done:false });
+  }).filter(c => d[c.dim] < 80);                          // 이미 좋은 차원은 제외
+  cand.push(Object.assign({}, HERO_MISSION, { estImpact:5, done:false }));
+  return cand;
+}
 
-  const limit = mode==="speedrun" ? 2 : 4;
-  picked = picked.slice(0, limit);
-
-  // 스피드런은 시간 압축
-  if(mode==="speedrun") picked.forEach(p=> p.minutes = Math.max(2, p.minutes-1));
-
-  // 히어로 존은 항상 마지막 (스피드런 제외)
-  if(mode!=="speedrun"){
-    picked.push(Object.assign({}, HERO_MISSION, { estImpact:5, done:false }));
+// 주어진 시간(분) 안에서 효과 최대화: 분당 임팩트(효율) 큰 것부터 그리디로 채움.
+function planForBudget(analysis, budget){
+  const pool = candidatePool(analysis);
+  // 효율(임팩트/분) → 임팩트 → 6.2 우선순위 순
+  pool.sort((a,b)=> (b.estImpact/b.minutes)-(a.estImpact/a.minutes) || b.estImpact-a.estImpact || a.priority-b.priority);
+  const picked=[]; let used=0, rawGain=0;
+  for(const m of pool){
+    if(used + m.minutes <= budget){ picked.push(m); used += m.minutes; rawGain += m.estImpact; }
   }
+  if(!picked.length && pool.length){ const m=pool[0]; picked.push(m); used=m.minutes; rawGain=m.estImpact; }
+  // 실행 순서는 6.2 우선순위(평면→바닥→…→히어로)로 표시
+  picked.sort((a,b)=> a.priority - b.priority);
   picked.forEach((p,i)=> p.id = "m"+i);
-  return picked;
+  const projScore = Math.min(100, analysis.total + rawGain);
+  const gain = projScore - analysis.total;               // 100 상한 반영(정직한 표시)
+  return { missions:picked, used, gain, projScore, projLevel:levelIndex(projScore) };
 }
 
 /* ===================================================================
@@ -682,16 +700,61 @@ function renderResult(){
     reg.appendChild(el);
   });
 
-  // missions
-  state.missions = buildMissions(a, state.mode);
-  const totalMin = state.missions.reduce((s,m)=>s+m.minutes,0);
-  $("missionTimeTag").textContent = `총 약 ${totalMin}분 · ${state.missions.length}개`;
-  $("missionHead").firstChild.textContent = state.mode==="speedrun" ? "스피드런 미션 " : "임팩트 순 미션 ";
-  renderMissions();
+  // 시간별 진단 + 활성 플랜
+  renderBudgets();
+  renderActivePlan();
 
   state.startedAt = Date.now();
-  $("afterInput").value = "";
   show("result");
+}
+
+// 10/30/60분 각각의 최대 효과 진단 카드
+function renderBudgets(){
+  const a = state.before.analysis;
+  const curIdx = levelIndex(a.total);
+  const box = $("budgetOptions"); box.innerHTML="";
+  BUDGETS.forEach(b=>{
+    const plan = planForBudget(a, b);
+    const jump = plan.projLevel - curIdx;
+    const lvl = LEVELS[plan.projLevel];
+    const row = document.createElement("div");
+    row.className = "budopt" + (b===state.budget ? " on" : "");
+    row.dataset.b = b;
+    const jumpTxt = jump>0 ? `${jump}단계↑` : "레벨 유지";
+    row.innerHTML = `
+      <div class="chk2"></div>
+      <div class="bl">
+        <div class="bt">${b}분</div>
+        <div class="bd">${plan.missions.length}개 미션 · 실제 약 ${plan.used}분</div>
+      </div>
+      <div class="br">
+        <div class="bg">+${plan.gain}점</div>
+        <div class="bj">${lvl.weather} ${jumpTxt}</div>
+      </div>`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll(".budopt").forEach(r=> r.onclick = ()=>{
+    state.budget = +r.dataset.b; renderBudgets(); renderActivePlan();
+    window.scrollTo({ top: $("missionList").offsetTop-60, behavior:"smooth" });
+  });
+
+  // 진단 요약: 이 공간의 '최대 효과 도달 시간'(스위트 스팟)을 정직하게 안내.
+  const full = planForBudget(a, 9999);
+  const fl = LEVELS[full.projLevel];
+  if(full.used <= 12){
+    $("budgetSummary").innerHTML = `🔎 진단: 이 공간은 <b>약 ${full.used}분</b>이면 최대 효과(${fl.weather} ${fl.name})에 거의 도달해요. 10분만 써도 티가 확 납니다.`;
+  } else {
+    $("budgetSummary").innerHTML = `🔎 진단: 이 공간은 <b>약 ${full.used}분</b>이면 최대 효과(${fl.weather} ${fl.name}, +${full.gain}점)에 도달 — <b>그 이상은 큰 차이가 없어요.</b> 남는 시간은 유지·디테일에 쓰면 됩니다.`;
+  }
+}
+
+// 선택한 시간으로 미션 리스트 채우기
+function renderActivePlan(){
+  const a = state.before.analysis;
+  const plan = planForBudget(a, state.budget);
+  state.missions = plan.missions;
+  $("missionTimeTag").textContent = `${state.budget}분 플랜 · ${plan.missions.length}개 · 예상 +${plan.gain}점`;
+  renderMissions();
 }
 
 function renderMissions(){
@@ -962,38 +1025,39 @@ function openSettings(){
 /* ===================================================================
    플로우 핸들러
    =================================================================== */
-$("modePick").addEventListener("click",(e)=>{
-  const seg=e.target.closest(".seg"); if(!seg) return;
-  state.mode=seg.dataset.mode;
-  $("modePick").querySelectorAll(".seg").forEach(s=> s.classList.toggle("on", s===seg));
-});
+// 카메라(촬영) 또는 갤러리(기존 사진)에서 사진 받기.
+// capture 속성 유무로 카메라/앨범을 가른다(데스크톱은 무시되고 파일 선택).
+function pickPhoto(useCamera, handler){
+  const inp = document.createElement("input");
+  inp.type = "file"; inp.accept = "image/*";
+  if(useCamera) inp.setAttribute("capture", "environment");
+  inp.style.display = "none";
+  inp.addEventListener("change", ()=>{ const f=inp.files[0]; if(f) handler(f); inp.remove(); });
+  document.body.appendChild(inp);
+  inp.click();
+}
 
-$("beforeInput").addEventListener("change", async (e)=>{
-  const f=e.target.files[0]; if(!f) return;
+async function handleBefore(f){
   try{
     $("analyzeMsg").textContent="티 점수 분석 중…";
     show("analyzing");
-    const url=await fileToDataURL(f);
-    const img=await loadImg(url);
+    const img=await loadImg(await fileToDataURL(f));
     const dataURL=downscaleDataURL(img, 1024, 0.85);
     const analysis=await runAnalysis(img, dataURL);
-    state.before={ dataURL, analysis };
-    state.after=null;
+    state.before={ dataURL, analysis }; state.after=null;
     renderResult();
   }catch(err){
     console.error(err);
     toast("분석 실패: 사진이 너무 어둡거나 흔들렸을 수 있어요. 다시 시도해주세요.");
     show("home");
-  }finally{ e.target.value=""; }
-});
+  }
+}
 
-$("afterInput").addEventListener("change", async (e)=>{
-  const f=e.target.files[0]; if(!f) return;
+async function handleAfter(f){
   try{
     $("analyzeMsg").textContent="애프터 재채점 중…";
     show("analyzing");
-    const url=await fileToDataURL(f);
-    const img=await loadImg(url);
+    const img=await loadImg(await fileToDataURL(f));
     const dataURL=downscaleDataURL(img, 1024, 0.85);
     const analysis=await runAnalysis(img, dataURL);
     state.after={ dataURL, analysis, thumb:downscaleDataURL(img, 120, 0.7) };
@@ -1002,8 +1066,13 @@ $("afterInput").addEventListener("change", async (e)=>{
     console.error(err);
     toast("재채점 실패. 다시 찍어볼까요?");
     show("result");
-  }finally{ e.target.value=""; }
-});
+  }
+}
+
+$("beforeCam").onclick     = ()=> pickPhoto(true,  handleBefore);
+$("beforeGallery").onclick = ()=> pickPhoto(false, handleBefore);
+$("afterCam").onclick       = ()=> pickPhoto(true,  handleAfter);
+$("afterGallery").onclick   = ()=> pickPhoto(false, handleAfter);
 
 $("btnChurn").onclick=openChurn;
 $("btnSettings").onclick=openSettings;
