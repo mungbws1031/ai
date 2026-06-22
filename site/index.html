@@ -16,7 +16,7 @@
           align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   header h1{ margin:0; font-size:18px; }
   header .clock{ font-family:ui-monospace,monospace; font-size:13px; color:var(--muted); }
-  .wrap{ max-width:820px; margin:0 auto; padding:20px; }
+  .wrap{ max-width:860px; margin:0 auto; padding:20px; }
   .card{ background:var(--card); border:1px solid var(--line); border-radius:14px;
          padding:20px; margin-bottom:16px; }
   h2{ margin:0 0 14px; font-size:16px; }
@@ -44,26 +44,40 @@
   .capInput{ max-width:220px; text-align:center; font-family:ui-monospace,monospace;
              letter-spacing:6px; font-size:20px; text-transform:uppercase; }
 
-  /* seats */
-  .stagelabel{ text-align:center; color:var(--muted); font-size:12px; letter-spacing:8px;
-               background:#222740; border-radius:6px; padding:6px; margin-bottom:14px; }
-  .seatmap{ display:grid; gap:6px; justify-content:center; margin:0 auto 14px; }
-  .seat{ width:26px; height:26px; border-radius:6px; background:var(--seat); cursor:pointer;
+  /* stage + seats */
+  .stagelabel{ text-align:center; color:#0c0f1c; font-weight:700; font-size:12px; letter-spacing:8px;
+               background:linear-gradient(180deg,#cfd6f5,#8b93c4); border-radius:6px; padding:7px; margin-bottom:14px; }
+  .seatmap{ display:grid; gap:5px; justify-content:center; margin:0 auto 14px; }
+  .seat{ width:24px; height:24px; border-radius:6px; background:var(--seat); cursor:pointer;
          border:1px solid transparent; transition:transform .05s; }
   .seat:hover{ transform:scale(1.12); }
-  .seat.g-S{ background:#d4a431; }   /* S석 - 골드 */
-  .seat.g-A{ background:#e0667a; }   /* A석 - 핑크 */
-  .seat.g-C{ background:#4aa3df; }   /* C석 - 시안 */
-  .seat.g-D{ background:#6b7280; }   /* D석 - 그레이 */
+  .seat.g-VIP{ background:#d4a431; }   /* VIP - 골드 */
+  .seat.g-R{ background:#e0667a; }     /* R   - 핑크 */
+  .seat.g-S{ background:#4aa3df; }     /* S   - 시안 */
+  .seat.g-A{ background:#6b7280; }     /* A   - 그레이 */
   .seat.taken{ background:#2a2f45 !important; cursor:not-allowed; opacity:.5; }
   .seat.sel{ background:var(--good) !important; border-color:#fff; }
   .seat.snatch{ animation:snatch .35s ease; }
   @keyframes snatch{ 0%{ background:var(--bad); transform:scale(1.3); } 100%{ background:#2a2f45; transform:scale(1); } }
-  .legend{ display:flex; gap:16px; justify-content:center; font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .legend{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:8px; }
   .legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; }
 
-  .stat{ display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .stat b{ font-family:ui-monospace,monospace; }
+  /* venue section blocks (overview) */
+  .zoneband{ margin-bottom:12px; }
+  .zonelabel{ font-size:11px; color:var(--muted); letter-spacing:3px; margin-bottom:6px; text-align:center; }
+  .blocks{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
+  .block{ min-width:88px; padding:9px 8px; border-radius:10px; border:2px solid var(--line);
+          background:#222740; color:var(--fg); display:flex; flex-direction:column; gap:2px;
+          align-items:center; font-weight:600; }
+  .block:hover{ background:#2b3155; }
+  .block b{ font-size:13px; } .block span{ font-size:11px; color:var(--muted); font-weight:500; }
+  .block em{ font-size:11px; font-style:normal; color:var(--good); }
+  .block.soldout{ opacity:.4; } .block.soldout em{ color:var(--bad); }
+  .block.g-VIP{ border-color:#d4a431; } .block.g-R{ border-color:#e0667a; }
+  .block.g-S{ border-color:#4aa3df; } .block.g-A{ border-color:#6b7280; }
+
+  .stat{ display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .stat b{ font-family:ui-monospace,monospace; text-align:right; }
   .grade{ font-size:40px; font-weight:800; text-align:center; margin:6px 0; }
   .toast{ position:fixed; left:50%; top:18px; transform:translateX(-50%); background:#15392c;
           color:var(--good); padding:10px 16px; border-radius:10px; font-size:14px; display:none; z-index:9; }
@@ -72,7 +86,7 @@
 </style>
 </head>
 <body>
-<div class="banner">⚠️ 이 프로그램은 <b>연습용 가상 시뮬레이터</b>입니다. 실제 티켓링크 등 어떤 예매 사이트에도 접속하지 않으며, 표시되는 모든 정보는 가짜입니다.</div>
+<div class="banner">⚠️ 이 프로그램은 <b>연습용 가상 시뮬레이터</b>입니다. 실제 예매 사이트에 접속하지 않으며, 좌석도는 실제 배치를 참고한 <b>근사 도면</b>입니다.</div>
 <header>
   <h1>🎫 티켓팅 가상 연습</h1>
   <div style="display:flex;align-items:center;gap:12px">
@@ -87,7 +101,10 @@
   <!-- 0. 설정 -->
   <section id="s_setup" class="card">
     <h2>연습 설정</h2>
-    <div class="meta">실전처럼 오픈 카운트다운 → 정시 클릭 → 보안문자 → 좌석선택 → 결제까지 이어집니다.</div>
+    <div class="meta">공연장 선택 → 오픈 카운트다운 → 정시 클릭 → 보안문자 → 구역·좌석 선택 → 결제까지 이어집니다.</div>
+    <label>공연장 선택</label>
+    <select id="cfg_venue"></select>
+    <div class="meta" id="venueNote" style="margin-top:6px"></div>
     <div class="row">
       <div>
         <label>오픈까지 카운트다운(초)</label>
@@ -118,7 +135,7 @@
 
   <!-- 1. 카운트다운 -->
   <section id="s_count" class="card hidden center">
-    <h2 id="evtTitle">○○ 팬미팅 — 예매 오픈 대기</h2>
+    <h2 id="evtTitle">○○ 콘서트 — 예매 오픈 대기</h2>
     <div class="sub">정확히 <b>00:00.000</b> 이 되는 순간 버튼을 누르세요!</div>
     <div id="count" class="count">00:10</div>
     <div class="sub">남은 시간</div>
@@ -143,15 +160,28 @@
   <!-- 3. 좌석 선택 -->
   <section id="s_seat" class="card hidden">
     <h2>좌석 선택 — <span id="seatNeed"></span></h2>
+    <div class="meta" id="venueName" style="margin-bottom:2px"></div>
+    <div class="meta" style="margin-bottom:10px;font-size:12px">※ 실제 공식 좌석배치를 참고한 근사 도면입니다.</div>
     <div class="stagelabel">S T A G E</div>
     <div class="legend" id="gradeLegend"></div>
     <div class="legend">
       <span><i style="background:#2a2f45"></i>매진</span>
       <span><i style="background:var(--good)"></i>내 선택</span>
     </div>
-    <div id="seatmap" class="seatmap"></div>
-    <div class="meta center" id="seatHint">남은 좌석이 실시간으로 줄어듭니다. 서두르세요!</div>
-    <div style="margin-top:16px"><button id="seatBtn" class="big" disabled onclick="goPay()">선택 완료 · 결제하기</button></div>
+
+    <!-- 3a. 구역 개요 -->
+    <div id="overview"></div>
+
+    <!-- 3b. 구역 상세 좌석 -->
+    <div id="sectionDetail" class="hidden">
+      <button class="ghost" onclick="backToOverview()" style="margin-bottom:10px">◀ 구역 선택으로</button>
+      <div class="meta" id="secTitle" style="margin-bottom:8px"></div>
+      <div id="seatGrid" class="seatmap"></div>
+    </div>
+
+    <div class="meta center" id="seatHint"></div>
+    <div class="meta" id="pickedList" style="margin-top:8px"></div>
+    <div style="margin-top:16px"><button id="seatBtn" class="big" disabled onclick="goPay()">좌석 선택 (0/0)</button></div>
   </section>
 
   <!-- 4. 결제(모의) -->
@@ -175,55 +205,91 @@
 
 <script>
 //// 상태 ////
-const T = { openAt:0, t_open:0, t_capStart:0, t_capDone:0, t_seatDone:0, t_payDone:0,
-            captcha:"", capTries:0, need:2, picked:new Set(), rivals:0, total:0, taken:new Set(),
-            seatTimer:null, earlyClick:false, preempted:0 };
-const EVENTS = ["별빛 팬미팅","2026 단독 팬콘","스페셜 팬미팅 in Seoul","앵콜 팬미팅 데이"];
+const T = { need:2, picked:new Set(), preempted:0, seatTimer:null,
+            venue:null, allSecs:[], secById:{}, secMap:{}, openSec:null,
+            t_open:0, t_capStart:0, t_capDone:0, t_seatDone:0, t_payDone:0, capTries:0, captcha:"" };
+const EVENTS = ["별빛 콘서트","2026 단독 콘서트","스페셜 라이브","앵콜 콘서트 데이","월드투어 in Seoul"];
 
-// 좌석 등급: 무대 앞쪽(윗줄)부터 S → A → C → D 순. (rows=8 기준 2줄씩)
+//// 좌석 등급 (콘서트 실전식: VIP > R > S > A) ////
 const GRADES = {
-  S:{ name:"S석", price:110000, color:"#d4a431" },
-  A:{ name:"A석", price:88000,  color:"#e0667a" },
-  C:{ name:"C석", price:66000,  color:"#4aa3df" },
-  D:{ name:"D석", price:44000,  color:"#6b7280" },
+  VIP:{ name:"VIP석", price:165000, color:"#d4a431" },
+  R:  { name:"R석",   price:143000, color:"#e0667a" },
+  S:  { name:"S석",   price:121000, color:"#4aa3df" },
+  A:  { name:"A석",   price:99000,  color:"#6b7280" },
 };
-function gradeKey(row){ return row < 2 ? "S" : row < 4 ? "A" : row < 6 ? "C" : "D"; }
-const GRADE_RANK = { S:0, A:1, C:2, D:3 };
+const GRADE_RANK = { VIP:0, R:1, S:2, A:3 };
 
-// 난이도 = 매진 속도. interval(ms) 짧을수록·batch 클수록 빨리 매진,
-// preempt 는 좌석 클릭 순간 선점당할 확률.
+//// 공연장 좌석도 (실제 구조 참고한 근사 배치) ////
+function sec(id,label,grade,rows,cols){ return {id,label,grade,rows,cols}; }
+const VENUES = {
+  jamsil: { name:"잠실실내체육관", note:"약 11,000석 · 근사 배치", zones:[
+    { band:"플로어", secs:[ sec("F-A","플로어 A","VIP",5,10), sec("F-B","플로어 B","VIP",5,10), sec("F-C","플로어 C","R",5,10) ] },
+    { band:"1층", secs:[ sec("101","1층 101","R",5,12), sec("102","1층 102","R",5,12), sec("103","1층 103","S",5,12),
+                         sec("104","1층 104","S",5,12), sec("105","1층 105","S",5,12), sec("106","1층 106","R",5,12) ] },
+    { band:"2층", secs:[ sec("201","2층 201","S",6,12), sec("202","2층 202","S",6,12), sec("203","2층 203","A",6,12),
+                         sec("204","2층 204","A",6,12), sec("205","2층 205","A",6,12), sec("206","2층 206","S",6,12) ] },
+    { band:"3층", secs:[ sec("301","3층 301","A",6,14), sec("302","3층 302","A",6,14), sec("303","3층 303","A",6,14), sec("304","3층 304","A",6,14) ] },
+  ]},
+  kspo: { name:"KSPO DOME (올림픽체조경기장)", note:"약 15,000석 · 근사 배치", zones:[
+    { band:"플로어", secs:[ sec("FA","플로어 A","VIP",5,10), sec("FB","플로어 B","VIP",5,10), sec("FC","플로어 C","VIP",5,10), sec("FD","플로어 D","R",5,10) ] },
+    { band:"1층", secs:[ sec("101","1층 101","R",5,12), sec("102","1층 102","R",5,12), sec("103","1층 103","S",5,12),
+                         sec("104","1층 104","S",5,12), sec("105","1층 105","S",5,12), sec("106","1층 106","R",5,12) ] },
+    { band:"2층", secs:[ sec("201","2층 201","S",6,12), sec("202","2층 202","S",6,12), sec("203","2층 203","A",6,12),
+                         sec("204","2층 204","A",6,12), sec("205","2층 205","A",6,12), sec("206","2층 206","S",6,12) ] },
+    { band:"3층", secs:[ sec("301","3층 301","A",6,14), sec("302","3층 302","A",6,14), sec("303","3층 303","A",6,14), sec("304","3층 304","A",6,14) ] },
+  ]},
+  gocheok: { name:"고척스카이돔", note:"약 16,000석 · 야구장형 근사 배치", zones:[
+    { band:"그라운드(플로어)", secs:[ sec("G1","그라운드 1","VIP",5,10), sec("G2","그라운드 2","VIP",5,10), sec("G3","그라운드 3","R",5,10), sec("G4","그라운드 4","R",5,10) ] },
+    { band:"내야 1층", secs:[ sec("I1","1루 내야","R",5,12), sec("IC","중앙 내야","R",5,12), sec("I3","3루 내야","R",5,12) ] },
+    { band:"내야 2층", secs:[ sec("U1","1루 2층","S",6,12), sec("UC","중앙 2층","S",6,12), sec("U3","3루 2층","S",6,12) ] },
+    { band:"외야 3층", secs:[ sec("OL","외야 좌측","A",6,14), sec("OR","외야 우측","A",6,14) ] },
+  ]},
+  inspire: { name:"인스파이어 아레나", note:"약 15,000석 · 근사 배치", zones:[
+    { band:"플로어", secs:[ sec("F1","플로어 1","VIP",5,10), sec("F2","플로어 2","VIP",5,10), sec("F3","플로어 3","R",5,10) ] },
+    { band:"1층", secs:[ sec("101","1층 101","R",5,12), sec("102","1층 102","S",5,12), sec("103","1층 103","S",5,12), sec("104","1층 104","R",5,12) ] },
+    { band:"2층", secs:[ sec("201","2층 201","S",6,12), sec("202","2층 202","A",6,12), sec("203","2층 203","A",6,12), sec("204","2층 204","S",6,12) ] },
+    { band:"3층", secs:[ sec("301","3층 301","A",6,14), sec("302","3층 302","A",6,14) ] },
+  ]},
+  olympichall: { name:"올림픽홀", note:"약 2,500석 · 좌석제 소규모 근사 배치", zones:[
+    { band:"1층", secs:[ sec("1A","1층 1구역","R",5,12), sec("1B","1층 2구역","R",5,12), sec("1C","1층 3구역","S",5,12) ] },
+    { band:"2층", secs:[ sec("2A","2층 1구역","S",5,12), sec("2B","2층 2구역","A",5,12), sec("2C","2층 3구역","A",5,12) ] },
+  ]},
+};
+
+//// 난이도 = 매진 속도 ////
 const DIFFICULTY = {
   easy:   { name:"쉬움",        interval:650, batch:1, preempt:0.06 },
   normal: { name:"보통",        interval:340, batch:2, preempt:0.14 },
-  hard:   { name:"어려움",      interval:190, batch:3, preempt:0.26 },
-  hell:   { name:"피켓팅(헬)",  interval:90,  batch:6, preempt:0.45 },
+  hard:   { name:"어려움",      interval:190, batch:4, preempt:0.26 },
+  hell:   { name:"피켓팅(헬)",  interval:90,  batch:8, preempt:0.45 },
 };
 
 const $ = id => document.getElementById(id);
 function show(id){ ["s_setup","s_count","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
 function toast(msg, err){ const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":""); setTimeout(()=>t.className="toast",1600); }
 function fmt(ms){ const s=Math.max(0,ms)/1000; return s.toFixed(3)+"s"; }
+function rowLetter(r){ return String.fromCharCode(65+r); }
 
 //// 공유 ////
 async function copyOrShare(text, shareTitle){
-  // 1) Web Share API (모바일 카톡/메시지 등), 2) 클립보드 복사 폴백
   if(navigator.share){
     try{ await navigator.share({ title: shareTitle||document.title, text, url: location.href }); return; }
-    catch(e){ /* 사용자가 취소하면 복사로 폴백 */ }
+    catch(e){ /* 취소 시 복사로 폴백 */ }
   }
   try{ await navigator.clipboard.writeText(text); toast("클립보드에 복사했어요! 붙여넣어 공유하세요"); }
   catch(e){ window.prompt("아래 내용을 복사해 공유하세요", text); }
 }
-function shareLink(){
-  copyOrShare("티켓팅 가상 연습 — 실전처럼 손에 익혀봐요! " + location.href, "티켓팅 가상 연습");
-}
+function shareLink(){ copyOrShare("티켓팅 가상 연습 — 실전처럼 손에 익혀봐요! " + location.href, "티켓팅 가상 연습"); }
 let LAST_RESULT="";
-function shareResult(){
-  copyOrShare(LAST_RESULT || ("티켓팅 가상 연습 도전! " + location.href), "내 티켓팅 연습 결과");
-}
+function shareResult(){ copyOrShare(LAST_RESULT || ("티켓팅 가상 연습 도전! " + location.href), "내 티켓팅 연습 결과"); }
 
 //// 벽시계 ////
 setInterval(()=>{ const d=new Date(); $("wallclock").textContent=d.toLocaleTimeString("ko-KR")+"."+String(d.getMilliseconds()).padStart(3,"0"); },53);
+
+//// 설정 초기화 ////
+$("cfg_venue").innerHTML = Object.entries(VENUES).map(([k,v],idx)=>`<option value="${k}"${idx===0?' selected':''}>${v.name}</option>`).join("");
+function showVenueNote(){ const v=VENUES[$("cfg_venue").value]; $("venueNote").textContent = v ? "📍 "+v.note : ""; }
+$("cfg_venue").addEventListener("change", showVenueNote); showVenueNote();
 
 //// 1. 카운트다운 ////
 let rafId=null;
@@ -231,10 +297,11 @@ function startCountdown(){
   const secs = Math.min(60, Math.max(3, parseInt($("cfg_count").value||"10",10)));
   T.need = parseInt($("cfg_seats").value,10);
   T.diff = DIFFICULTY[$("cfg_diff").value] || DIFFICULTY.normal;
+  T.venueKey = $("cfg_venue").value;
   $("evtTitle").textContent = EVENTS[Math.floor(Math.random()*EVENTS.length)] + " — 예매 오픈 대기";
   T.openAt = performance.now() + secs*1000;
+  T.armed = false;
   $("openBtn").disabled = true;
-  T.earlyClick = false;
   show("s_count");
   tick();
 }
@@ -245,7 +312,7 @@ function tick(){
     el.textContent="00:00.000"; el.className="count go";
     $("openBtn").disabled=false;
     if(T.armed!==true){ T.armed=true; T.openEnabledAt=performance.now(); }
-    rafId=requestAnimationFrame(tick); // keep updating elapsed-after-open subtly
+    rafId=requestAnimationFrame(tick);
     return;
   }
   const s=Math.floor(remain/1000), ms=Math.floor(remain%1000);
@@ -254,25 +321,22 @@ function tick(){
   rafId=requestAnimationFrame(tick);
 }
 function hitOpen(){
-  // 버튼은 오픈 전엔 disabled 라 정상 흐름에선 일찍 못 누름. (방어용)
-  if(performance.now() < T.openAt){ T.earlyClick=true; toast("아직 오픈 전입니다!", true); return; }
+  if(performance.now() < T.openAt){ toast("아직 오픈 전입니다!", true); return; }
   cancelAnimationFrame(rafId);
-  T.t_open = performance.now() - T.openEnabledAt; // 반응속도(ms)
+  T.t_open = performance.now() - T.openEnabledAt;
   newCaptcha(); show("s_cap"); T.t_capStart=performance.now(); $("capInput").focus();
 }
 
 //// 2. 보안문자 ////
 function newCaptcha(){
   const len = parseInt($("cfg_caplen").value,10);
-  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 헷갈리는 O0I1 제외
+  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code=""; for(let i=0;i<len;i++) code+=chars[Math.floor(Math.random()*chars.length)];
   T.captcha=code;
   const c=$("cap"), ctx=c.getContext("2d");
   ctx.fillStyle="#fff"; ctx.fillRect(0,0,c.width,c.height);
-  // 노이즈 선
   for(let i=0;i<6;i++){ ctx.strokeStyle=`hsl(${Math.random()*360},60%,70%)`; ctx.beginPath();
     ctx.moveTo(Math.random()*c.width,Math.random()*c.height); ctx.lineTo(Math.random()*c.width,Math.random()*c.height); ctx.stroke(); }
-  // 글자 (회전/색 왜곡)
   const step=c.width/(len+1);
   for(let i=0;i<len;i++){
     ctx.save();
@@ -284,7 +348,6 @@ function newCaptcha(){
     ctx.fillText(code[i],0,0);
     ctx.restore();
   }
-  // 노이즈 점
   for(let i=0;i<80;i++){ ctx.fillStyle=`rgba(0,0,0,${Math.random()*0.4})`; ctx.fillRect(Math.random()*c.width,Math.random()*c.height,2,2); }
   $("capInput").value="";
 }
@@ -294,94 +357,150 @@ function submitCaptcha(){
   T.capTries++;
   if(v!==T.captcha){ toast("보안문자가 일치하지 않습니다", true); newCaptcha(); $("capInput").focus(); return; }
   T.t_capDone=performance.now();
-  buildSeats(); show("s_seat");
+  buildVenue(); show("s_seat");
 }
-$("capInput")&&$("capInput").addEventListener("keydown",e=>{ if(e.key==="Enter") submitCaptcha(); });
+$("capInput") && $("capInput").addEventListener("keydown",e=>{ if(e.key==="Enter") submitCaptcha(); });
 
-//// 3. 좌석 ////
-function buildSeats(){
-  const rows=8, cols=14; T.total=rows*cols; T.taken=new Set(); T.picked=new Set(); T.preempted=0;
-  // 시작 시점에 일부는 이미 매진
-  const preTaken=Math.floor(T.total*0.15);
-  while(T.taken.size<preTaken) T.taken.add(Math.floor(Math.random()*T.total));
-  const map=$("seatmap"); map.style.gridTemplateColumns=`repeat(${cols},26px)`; map.innerHTML="";
-  for(let i=0;i<T.total;i++){
-    const gk=gradeKey(Math.floor(i/cols));
-    const d=document.createElement("div");
-    d.className="seat g-"+gk+(T.taken.has(i)?" taken":""); d.dataset.i=i;
-    d.title=`${GRADES[gk].name} · ${GRADES[gk].price.toLocaleString()}원`;
-    d.onclick=()=>pickSeat(i,d); map.appendChild(d);
-  }
-  // 등급 범례 (S→A→C→D, 가격 포함)
+//// 3. 좌석 (공연장 → 구역 → 좌석) ////
+function buildVenue(){
+  T.venue = VENUES[T.venueKey] || VENUES[Object.keys(VENUES)[0]];
+  T.allSecs=[]; T.secById={}; T.secMap={}; T.picked=new Set(); T.preempted=0; T.openSec=null;
+  T.venue.zones.forEach(z=> z.secs.forEach(s=>{
+    T.allSecs.push(s); T.secById[s.id]=s;
+    T.secMap[s.id]={ total:s.rows*s.cols, taken:new Set() };
+  }));
+  // 시작 시점 일부 매진: 상위 등급일수록 더 많이 빠져 있음
+  T.allSecs.forEach(s=>{
+    const rt=T.secMap[s.id];
+    const base = 0.06 + [0.18,0.12,0.07,0.04][GRADE_RANK[s.grade]];
+    const pre=Math.floor(rt.total*base);
+    while(rt.taken.size<pre) rt.taken.add(Math.floor(Math.random()*rt.total));
+  });
+  $("venueName").textContent = `📍 ${T.venue.name} · ${T.venue.note}`;
+  $("seatNeed").textContent = `${T.need}석 선택`;
   $("gradeLegend").innerHTML = Object.values(GRADES).map(g=>
     `<span><i style="background:${g.color}"></i>${g.name} ${g.price.toLocaleString()}원</span>`).join("");
-  $("seatNeed").textContent=`${T.need}석 선택`;
-  $("seatBtn").disabled=true;
-  updateSeatBtn();
-  updateRemain();
-  // 경쟁자들이 실시간으로 좌석을 채움 (난이도 = 매진 속도)
+  renderOverview(); updatePicked(); updateRemain();
   if(T.seatTimer) clearInterval(T.seatTimer);
   T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval);
 }
+
+function renderOverview(){
+  T.openSec=null;
+  $("sectionDetail").classList.add("hidden");
+  const ov=$("overview"); ov.classList.remove("hidden");
+  ov.innerHTML = T.venue.zones.map(z=>{
+    const blocks=z.secs.map(s=>{
+      const rt=T.secMap[s.id]; const left=rt.total-rt.taken.size; const sold=left<=0;
+      return `<button id="blk-${s.id}" class="block g-${s.grade}${sold?' soldout':''}" ${sold?'disabled':''} onclick="openSection('${s.id}')">
+        <b>${s.label}</b><span>${GRADES[s.grade].name}</span><em>${sold?'매진':left+'석'}</em></button>`;
+    }).join("");
+    return `<div class="zoneband"><div class="zonelabel">${z.band}</div><div class="blocks">${blocks}</div></div>`;
+  }).join("");
+}
+function refreshBlocks(){
+  if($("overview").classList.contains("hidden")) return;
+  T.allSecs.forEach(s=>{
+    const blk=$("blk-"+s.id); if(!blk) return;
+    const left=T.secMap[s.id].total - T.secMap[s.id].taken.size;
+    const em=blk.querySelector("em"); if(em) em.textContent = left<=0?'매진':left+'석';
+    if(left<=0){ blk.classList.add("soldout"); blk.disabled=true; }
+  });
+}
+function openSection(secId){
+  const s=T.secById[secId], rt=T.secMap[secId];
+  T.openSec=secId;
+  $("overview").classList.add("hidden");
+  $("sectionDetail").classList.remove("hidden");
+  $("secTitle").innerHTML = `<b>${T.venue.name}</b> · ${s.label} <span style="color:${GRADES[s.grade].color}">${GRADES[s.grade].name} ${GRADES[s.grade].price.toLocaleString()}원</span>`;
+  const grid=$("seatGrid"); grid.style.gridTemplateColumns=`repeat(${s.cols},24px)`; grid.innerHTML="";
+  for(let i=0;i<rt.total;i++){
+    const d=document.createElement("div");
+    const pid=secId+"#"+i;
+    d.className="seat g-"+s.grade+(rt.taken.has(i)?" taken":"")+(T.picked.has(pid)?" sel":"");
+    d.dataset.sec=secId; d.dataset.i=i;
+    d.title=`${s.label} ${rowLetter(Math.floor(i/s.cols))}열 ${i%s.cols+1}번`;
+    d.onclick=()=>pickSeat(secId,i,d);
+    grid.appendChild(d);
+  }
+}
+function backToOverview(){ renderOverview(); }
+
+function countPickedIn(secId){ let n=0; T.picked.forEach(p=>{ if(p.split("#")[0]===secId) n++; }); return n; }
+function freeInSec(secId){ const rt=T.secMap[secId]; return rt.total - rt.taken.size - countPickedIn(secId); }
+function randomFreeSeat(secId){
+  const rt=T.secMap[secId], tot=rt.total;
+  for(let t=0;t<40;t++){ const i=Math.floor(Math.random()*tot); if(!rt.taken.has(i) && !T.picked.has(secId+"#"+i)) return i; }
+  for(let i=0;i<tot;i++){ if(!rt.taken.has(i) && !T.picked.has(secId+"#"+i)) return i; }
+  return -1;
+}
+function cellEl(secId,i){ return document.querySelector(`#seatGrid .seat[data-sec="${secId}"][data-i="${i}"]`); }
+
 function updateRemain(){
-  const left=T.total - T.taken.size;
+  let left=0,total=0;
+  T.allSecs.forEach(s=>{ const rt=T.secMap[s.id]; left+=rt.total-rt.taken.size; total+=rt.total; });
   const hint=$("seatHint");
   if(left<=0){ hint.innerHTML='<b style="color:var(--bad)">전석 매진!</b> 남은 좌석이 없어요 😭'; return; }
-  const warn = left <= T.total*0.15;
-  hint.innerHTML = `남은 좌석 <b style="color:${warn?'var(--bad)':'var(--warn)'}">${left}</b>석` +
-    (warn ? ' · 매진 임박! 서두르세요!' : ' · 실시간으로 빠르게 줄어듭니다');
+  const warn=left<=total*0.12;
+  hint.innerHTML=`남은 좌석 <b style="color:${warn?'var(--bad)':'var(--warn)'}">${left.toLocaleString()}</b> / ${total.toLocaleString()}석`+(warn?' · 매진 임박! 서두르세요!':' · 실시간으로 줄어듭니다');
 }
+
 function rivalGrab(){
-  // 남은 좌석 중 상위 등급(S→A→C→D)부터 우선적으로 빠르게 빠짐 (내가 고른 건 제외)
-  const free=[...document.querySelectorAll(".seat")].filter(el=>{
-    const i=+el.dataset.i; return !T.taken.has(i) && !T.picked.has(i); });
-  if(!free.length){ clearInterval(T.seatTimer); updateRemain(); return; }
-  free.sort((a,b)=> GRADE_RANK[gradeKey(Math.floor(+a.dataset.i/14))]
-                  - GRADE_RANK[gradeKey(Math.floor(+b.dataset.i/14))]);
-  const batch=Math.min(free.length, T.diff.batch);
-  for(let k=0;k<batch;k++){
-    // pow로 앞쪽(상위 등급)에 강하게 치우치게 선택 → S석이 가장 먼저 매진
-    const idx=Math.floor(Math.pow(Math.random(),3)*free.length);
-    const el=free.splice(idx,1)[0]; if(!el) break;
-    T.taken.add(+el.dataset.i); el.classList.add("taken","snatch"); el.classList.remove("sel");
-    setTimeout(e=>e.classList.remove("snatch"), 350, el);
+  // 경쟁자: 상위 등급(플로어·VIP) 구역부터 빠르게 채감
+  let avail=T.allSecs.filter(s=> freeInSec(s.id)>0);
+  if(!avail.length){ clearInterval(T.seatTimer); updateRemain(); return; }
+  avail.sort((a,b)=> GRADE_RANK[a.grade]-GRADE_RANK[b.grade]);
+  for(let k=0;k<T.diff.batch;k++){
+    const a2=avail.filter(s=> freeInSec(s.id)>0);
+    if(!a2.length) break;
+    const s=a2[Math.floor(Math.pow(Math.random(),2.2)*a2.length)]; // 상위 등급에 치우침
+    const i=randomFreeSeat(s.id); if(i<0) continue;
+    T.secMap[s.id].taken.add(i);
+    if(T.openSec===s.id){ const cell=cellEl(s.id,i);
+      if(cell){ cell.classList.add("taken","snatch"); setTimeout(e=>e.classList.remove("snatch"),350,cell); } }
   }
-  updateRemain();
+  updateRemain(); refreshBlocks();
 }
-function pickSeat(i,d){
-  if(T.taken.has(i)){ toast("이미 매진된 좌석입니다", true); return; }
-  if(T.picked.has(i)){ T.picked.delete(i); d.classList.remove("sel"); }
-  else{
-    if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
-    // 실전 재현: 누르는 순간 다른 사람이 먼저 채갈 수 있음. 상위 등급일수록 확률↑.
-    const gradeBoost = { S:1.6, A:1.2, C:1.0, D:0.8 }[gradeKey(Math.floor(i/14))];
-    const preemptChance = Math.min(0.7, T.diff.preempt * gradeBoost);
-    if(Math.random() < preemptChance){
-      T.taken.add(i); T.preempted++;
-      d.classList.add("taken"); d.classList.remove("sel");
-      d.classList.add("snatch"); setTimeout(()=>d.classList.remove("snatch"), 350);
-      toast("이미 선점된 좌석입니다. 다른 좌석을 선택하세요!", true);
-      updateRemain();
-      return;
-    }
-    T.picked.add(i); d.classList.add("sel");
+
+function pickSeat(secId,i,d){
+  const rt=T.secMap[secId], pid=secId+"#"+i;
+  if(rt.taken.has(i)){ toast("이미 매진된 좌석입니다", true); return; }
+  if(T.picked.has(pid)){ T.picked.delete(pid); d.classList.remove("sel"); updatePicked(); return; }
+  if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
+  // 실전 재현: 누르는 순간 선점당할 수 있음. 상위 등급일수록 확률↑.
+  const boost={ VIP:1.6, R:1.3, S:1.0, A:0.8 }[T.secById[secId].grade];
+  const chance=Math.min(0.7, T.diff.preempt*boost);
+  if(Math.random()<chance){
+    rt.taken.add(i); T.preempted++;
+    d.classList.add("taken","snatch"); d.classList.remove("sel");
+    setTimeout(()=>d.classList.remove("snatch"),350);
+    toast("이미 선점된 좌석입니다. 다른 좌석을 선택하세요!", true);
+    updateRemain(); return;
   }
-  updateSeatBtn();
+  T.picked.add(pid); d.classList.add("sel"); updatePicked();
 }
-function updateSeatBtn(){
-  $("seatBtn").disabled = T.picked.size!==T.need;
-  $("seatBtn").textContent = T.picked.size===T.need ? "선택 완료 · 결제하기" : `좌석 선택 (${T.picked.size}/${T.need})`;
+
+function seatLabel(pid){ const p=pid.split("#"); const sp=T.secById[p[0]]; const i=+p[1];
+  return `${sp.label} ${rowLetter(Math.floor(i/sp.cols))}열 ${i%sp.cols+1}번`; }
+function updatePicked(){
+  const ready = T.picked.size===T.need;
+  $("seatBtn").disabled = !ready;
+  $("seatBtn").textContent = ready ? "선택 완료 · 결제하기" : `좌석 선택 (${T.picked.size}/${T.need})`;
+  $("pickedList").innerHTML = T.picked.size
+    ? "✔ 선택: " + [...T.picked].map(seatLabel).join(", ")
+    : "구역(블록)을 눌러 좌석을 선택하세요.";
 }
+
 function goPay(){
   if(T.picked.size!==T.need) return;
   if(T.seatTimer) clearInterval(T.seatTimer);
   T.t_seatDone=performance.now();
   let total=0;
-  const seatLabels=[...T.picked].map(i=>{ const r=Math.floor(i/14), c=i%14;
-    const g=GRADES[gradeKey(r)]; total+=g.price;
-    return `${g.name} ${String.fromCharCode(65+r)}열 ${c+1}번`; });
+  const labels=[...T.picked].map(pid=>{ const sp=T.secById[pid.split("#")[0]]; total+=GRADES[sp.grade].price; return seatLabel(pid); });
+  T.payTotal=total;
   $("paySummary").innerHTML=`
-    <div class="stat"><span>좌석</span><b>${seatLabels.join(", ")}</b></div>
+    <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
+    <div class="stat"><span>좌석</span><b>${labels.join("<br>")}</b></div>
     <div class="stat"><span>매수</span><b>${T.need}매</b></div>
     <div class="stat"><span>결제 금액</span><b>${total.toLocaleString()}원</b></div>`;
   show("s_pay");
@@ -401,12 +520,13 @@ function finish(){
   else if(totalFlow<20000){ grade="👍 통과"; color="var(--warn)"; }
   else { grade="🐢 연습 필요"; color="var(--bad)"; }
   $("grade").textContent=grade; $("grade").style.color=color;
-  LAST_RESULT=`[티켓팅 가상 연습] ${grade} (난이도: ${T.diff.name})\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 보안문자 ${fmt(capTime)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
+  LAST_RESULT=`[티켓팅 가상 연습] ${grade}\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
   $("result").innerHTML=`
+    <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
     <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
     <div class="stat"><span>보안문자 (${T.capTries}회 시도)</span><b>${fmt(capTime)}</b></div>
-    <div class="stat"><span>좌석 선택</span><b>${fmt(seatTime)}</b></div>
+    <div class="stat"><span>구역·좌석 선택</span><b>${fmt(seatTime)}</b></div>
     <div class="stat"><span>선점당한 좌석</span><b>${T.preempted}회</b></div>
     <div class="stat"><span>결제 화면</span><b>${fmt(payTime)}</b></div>
     <div class="stat" style="border-bottom:none;font-size:16px"><span><b>전체 소요</b></span><b style="color:${color}">${fmt(totalFlow)}</b></div>`;

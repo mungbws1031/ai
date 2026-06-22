@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store-context';
 import { DifficultyKey, Medication, Routine } from '@/lib/types';
 import * as notif from '@/lib/notifications';
 import EddieBubble from '@/components/EddieBubble';
+import EddieFace from '@/components/EddieFace';
 
 const DIFFICULTIES: { key: DifficultyKey; label: string; emoji: string }[] = [
   { key: 'late', label: '지각', emoji: '⏰' },
@@ -129,7 +130,7 @@ export default function OnboardingPage() {
       <div className="flex-1">
         {current === 'intro' && (
           <div className="flex flex-col gap-6">
-            <div className="text-7xl">🐣</div>
+            <EddieFace mood="cheer" size="lg" />
             <h1 className="text-3xl font-bold leading-snug">
               안녕, 나는 에디야.
               <br />
