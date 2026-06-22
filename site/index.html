@@ -44,37 +44,39 @@
   .capInput{ max-width:220px; text-align:center; font-family:ui-monospace,monospace;
              letter-spacing:6px; font-size:20px; text-transform:uppercase; }
 
-  /* stage + seats */
-  .stagelabel{ text-align:center; color:#0c0f1c; font-weight:700; font-size:12px; letter-spacing:8px;
-               background:linear-gradient(180deg,#cfd6f5,#8b93c4); border-radius:6px; padding:7px; margin-bottom:14px; }
-  .seatmap{ display:grid; gap:5px; justify-content:center; margin:0 auto 14px; }
-  .seat{ width:24px; height:24px; border-radius:6px; background:var(--seat); cursor:pointer;
-         border:1px solid transparent; transition:transform .05s; }
-  .seat:hover{ transform:scale(1.12); }
-  .seat.g-VIP{ background:#d4a431; }   /* VIP - 골드 */
-  .seat.g-R{ background:#e0667a; }     /* R   - 핑크 */
-  .seat.g-S{ background:#4aa3df; }     /* S   - 시안 */
-  .seat.g-A{ background:#6b7280; }     /* A   - 그레이 */
-  .seat.taken{ background:#2a2f45 !important; cursor:not-allowed; opacity:.5; }
-  .seat.sel{ background:var(--good) !important; border-color:#fff; }
-  .seat.snatch{ animation:snatch .35s ease; }
-  @keyframes snatch{ 0%{ background:var(--bad); transform:scale(1.3); } 100%{ background:#2a2f45; transform:scale(1); } }
-  .legend{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:8px; }
-  .legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; }
-
-  /* venue section blocks (overview) */
-  .zoneband{ margin-bottom:12px; }
+  /* U자 보울(arena) 개요 */
+  .arena{ margin-bottom:8px; }
+  .stage{ width:56%; max-width:420px; margin:0 auto; text-align:center; color:#0c0f1c; font-weight:800;
+          letter-spacing:8px; font-size:13px; padding:11px; border-radius:10px 10px 4px 4px;
+          background:linear-gradient(180deg,#cfd6f5,#8b93c4); box-shadow:0 6px 20px rgba(139,147,196,.22); }
+  .bowl{ border:2px solid var(--line); border-top:none; border-radius:0 0 90px 90px;
+         padding:16px 10px 22px; margin-top:-2px; }
+  .zoneband{ margin-bottom:10px; }
   .zonelabel{ font-size:11px; color:var(--muted); letter-spacing:3px; margin-bottom:6px; text-align:center; }
-  .blocks{ display:flex; flex-wrap:wrap; gap:8px; justify-content:center; }
-  .block{ min-width:88px; padding:9px 8px; border-radius:10px; border:2px solid var(--line);
+  .blocks{ display:flex; flex-wrap:wrap; gap:7px; justify-content:center; }
+  .block{ min-width:74px; padding:8px 7px; border-radius:9px; border:2px solid var(--line);
           background:#222740; color:var(--fg); display:flex; flex-direction:column; gap:2px;
           align-items:center; font-weight:600; }
   .block:hover{ background:#2b3155; }
-  .block b{ font-size:13px; } .block span{ font-size:11px; color:var(--muted); font-weight:500; }
-  .block em{ font-size:11px; font-style:normal; color:var(--good); }
+  .block b{ font-size:12px; } .block span{ font-size:10px; color:var(--muted); font-weight:500; }
+  .block em{ font-size:10px; font-style:normal; color:var(--good); }
   .block.soldout{ opacity:.4; } .block.soldout em{ color:var(--bad); }
-  .block.g-VIP{ border-color:#d4a431; } .block.g-R{ border-color:#e0667a; }
-  .block.g-S{ border-color:#4aa3df; } .block.g-A{ border-color:#6b7280; }
+  .block.g-VIP{ border-color:#e0a82e; } .block.g-R{ border-color:#e0667a; }
+  .block.g-S{ border-color:#b06be6; } .block.g-A{ border-color:#4aa3df; } .block.g-B{ border-color:#8a94a6; }
+
+  /* 좌석 그리드 */
+  .seatmap{ display:grid; gap:4px; justify-content:center; margin:0 auto 14px; max-width:100%; overflow-x:auto; }
+  .seat{ width:18px; height:18px; border-radius:4px; background:var(--seat); cursor:pointer;
+         border:1px solid transparent; transition:transform .05s; }
+  .seat:hover{ transform:scale(1.2); }
+  .seat.g-VIP{ background:#e0a82e; } .seat.g-R{ background:#e0667a; }
+  .seat.g-S{ background:#b06be6; }  .seat.g-A{ background:#4aa3df; } .seat.g-B{ background:#8a94a6; }
+  .seat.taken{ background:#2a2f45 !important; cursor:not-allowed; opacity:.5; }
+  .seat.sel{ background:var(--good) !important; border-color:#fff; }
+  .seat.snatch{ animation:snatch .35s ease; }
+  @keyframes snatch{ 0%{ background:var(--bad); transform:scale(1.35); } 100%{ background:#2a2f45; transform:scale(1); } }
+  .legend{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:8px; }
+  .legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; }
 
   .stat{ display:flex; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
   .stat b{ font-family:ui-monospace,monospace; text-align:right; }
@@ -162,15 +164,19 @@
     <h2>좌석 선택 — <span id="seatNeed"></span></h2>
     <div class="meta" id="venueName" style="margin-bottom:2px"></div>
     <div class="meta" style="margin-bottom:10px;font-size:12px">※ 실제 공식 좌석배치를 참고한 근사 도면입니다.</div>
-    <div class="stagelabel">S T A G E</div>
     <div class="legend" id="gradeLegend"></div>
     <div class="legend">
       <span><i style="background:#2a2f45"></i>매진</span>
       <span><i style="background:var(--good)"></i>내 선택</span>
     </div>
 
-    <!-- 3a. 구역 개요 -->
-    <div id="overview"></div>
+    <!-- 3a. U자 구역 개요 -->
+    <div id="overview">
+      <div class="arena">
+        <div class="stage">S T A G E</div>
+        <div class="bowl" id="bowl"></div>
+      </div>
+    </div>
 
     <!-- 3b. 구역 상세 좌석 -->
     <div id="sectionDetail" class="hidden">
@@ -210,65 +216,82 @@ const T = { need:2, picked:new Set(), preempted:0, seatTimer:null,
             t_open:0, t_capStart:0, t_capDone:0, t_seatDone:0, t_payDone:0, capTries:0, captcha:"" };
 const EVENTS = ["별빛 콘서트","2026 단독 콘서트","스페셜 라이브","앵콜 콘서트 데이","월드투어 in Seoul"];
 
-//// 좌석 등급 (콘서트 실전식: VIP > R > S > A) ////
+//// 좌석 등급 (VIP > R > S > A > B) ////
 const GRADES = {
-  VIP:{ name:"VIP석", price:165000, color:"#d4a431" },
-  R:  { name:"R석",   price:143000, color:"#e0667a" },
-  S:  { name:"S석",   price:121000, color:"#4aa3df" },
-  A:  { name:"A석",   price:99000,  color:"#6b7280" },
+  VIP:{ name:"VIP석", price:176000, color:"#e0a82e" },
+  R:  { name:"R석",   price:154000, color:"#e0667a" },
+  S:  { name:"S석",   price:132000, color:"#b06be6" },
+  A:  { name:"A석",   price:110000, color:"#4aa3df" },
+  B:  { name:"B석",   price:88000,  color:"#8a94a6" },
 };
-const GRADE_RANK = { VIP:0, R:1, S:2, A:3 };
+const GRADE_RANK = { VIP:0, R:1, S:2, A:3, B:4 };
 
-//// 공연장 좌석도 (실제 구조 참고한 근사 배치) ////
-function sec(id,label,grade,rows,cols){ return {id,label,grade,rows,cols}; }
+//// 공연장 좌석도 (실제 구조 참고 · 근사 배치, 좌석수 확대) ////
+function S(id,label,grade,r,c){ return {id,label,grade,rows:r,cols:c}; }
+// tier 묶음 N구역 생성: nseats("1층","R",10,18,101,104) → 1층 101~104
+function nseats(tier,grade,r,c,from,to){ const a=[]; for(let n=from;n<=to;n++) a.push(S(tier+n, `${tier} ${n}`, grade, r, c)); return a; }
+
 const VENUES = {
-  jamsil: { name:"잠실실내체육관", note:"약 11,000석 · 근사 배치", zones:[
-    { band:"플로어", secs:[ sec("F-A","플로어 A","VIP",5,10), sec("F-B","플로어 B","VIP",5,10), sec("F-C","플로어 C","R",5,10) ] },
-    { band:"1층", secs:[ sec("101","1층 101","R",5,12), sec("102","1층 102","R",5,12), sec("103","1층 103","S",5,12),
-                         sec("104","1층 104","S",5,12), sec("105","1층 105","S",5,12), sec("106","1층 106","R",5,12) ] },
-    { band:"2층", secs:[ sec("201","2층 201","S",6,12), sec("202","2층 202","S",6,12), sec("203","2층 203","A",6,12),
-                         sec("204","2층 204","A",6,12), sec("205","2층 205","A",6,12), sec("206","2층 206","S",6,12) ] },
-    { band:"3층", secs:[ sec("301","3층 301","A",6,14), sec("302","3층 302","A",6,14), sec("303","3층 303","A",6,14), sec("304","3층 304","A",6,14) ] },
+  jamsil: { name:"잠실실내체육관", note:"체조경기장형 · 플로어+1·2·3층", zones:[
+    { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","R",12,16) ] },
+    { band:"1층", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,108) ] },
+    { band:"2층", secs:[ ...nseats("2층","S",11,20,201,205), ...nseats("2층","A",11,20,206,210) ] },
+    { band:"3층", secs:[ ...nseats("3층","A",12,22,301,306), ...nseats("3층","B",12,22,307,312) ] },
   ]},
-  kspo: { name:"KSPO DOME (올림픽체조경기장)", note:"약 15,000석 · 근사 배치", zones:[
-    { band:"플로어", secs:[ sec("FA","플로어 A","VIP",5,10), sec("FB","플로어 B","VIP",5,10), sec("FC","플로어 C","VIP",5,10), sec("FD","플로어 D","R",5,10) ] },
-    { band:"1층", secs:[ sec("101","1층 101","R",5,12), sec("102","1층 102","R",5,12), sec("103","1층 103","S",5,12),
-                         sec("104","1층 104","S",5,12), sec("105","1층 105","S",5,12), sec("106","1층 106","R",5,12) ] },
-    { band:"2층", secs:[ sec("201","2층 201","S",6,12), sec("202","2층 202","S",6,12), sec("203","2층 203","A",6,12),
-                         sec("204","2층 204","A",6,12), sec("205","2층 205","A",6,12), sec("206","2층 206","S",6,12) ] },
-    { band:"3층", secs:[ sec("301","3층 301","A",6,14), sec("302","3층 302","A",6,14), sec("303","3층 303","A",6,14), sec("304","3층 304","A",6,14) ] },
+  kspo: { name:"KSPO DOME (올림픽체조경기장)", note:"돔형 아레나 · 플로어+1·2·3층", zones:[
+    { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","VIP",12,16), S("FD","플로어 D","R",12,16) ] },
+    { band:"1층", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,110) ] },
+    { band:"2층", secs:[ ...nseats("2층","S",11,20,201,206), ...nseats("2층","A",11,20,207,212) ] },
+    { band:"3층", secs:[ ...nseats("3층","A",12,22,301,308), ...nseats("3층","B",12,22,309,314) ] },
   ]},
-  gocheok: { name:"고척스카이돔", note:"약 16,000석 · 야구장형 근사 배치", zones:[
-    { band:"그라운드(플로어)", secs:[ sec("G1","그라운드 1","VIP",5,10), sec("G2","그라운드 2","VIP",5,10), sec("G3","그라운드 3","R",5,10), sec("G4","그라운드 4","R",5,10) ] },
-    { band:"내야 1층", secs:[ sec("I1","1루 내야","R",5,12), sec("IC","중앙 내야","R",5,12), sec("I3","3루 내야","R",5,12) ] },
-    { band:"내야 2층", secs:[ sec("U1","1루 2층","S",6,12), sec("UC","중앙 2층","S",6,12), sec("U3","3루 2층","S",6,12) ] },
-    { band:"외야 3층", secs:[ sec("OL","외야 좌측","A",6,14), sec("OR","외야 우측","A",6,14) ] },
+  gocheok: { name:"고척스카이돔", note:"야구장 돔형 · 그라운드+내야+외야", zones:[
+    { band:"그라운드(플로어)", secs:[ S("G1","그라운드 1","VIP",12,16), S("G2","그라운드 2","VIP",12,16), S("G3","그라운드 3","R",12,16), S("G4","그라운드 4","R",12,16) ] },
+    { band:"내야 1층", secs:[ S("I1","1루 내야","R",10,18), S("I2","1루 중앙","R",10,18), S("IC","중앙 내야","R",10,18), S("I3","3루 중앙","R",10,18), S("I4","3루 내야","R",10,18) ] },
+    { band:"내야 2층", secs:[ ...nseats("2층","S",11,20,201,206) ] },
+    { band:"외야 3층", secs:[ S("OL","외야 좌측","A",12,22), S("OLC","외야 좌중","A",12,22), S("ORC","외야 우중","B",12,22), S("OR","외야 우측","B",12,22) ] },
   ]},
-  inspire: { name:"인스파이어 아레나", note:"약 15,000석 · 근사 배치", zones:[
-    { band:"플로어", secs:[ sec("F1","플로어 1","VIP",5,10), sec("F2","플로어 2","VIP",5,10), sec("F3","플로어 3","R",5,10) ] },
-    { band:"1층", secs:[ sec("101","1층 101","R",5,12), sec("102","1층 102","S",5,12), sec("103","1층 103","S",5,12), sec("104","1층 104","R",5,12) ] },
-    { band:"2층", secs:[ sec("201","2층 201","S",6,12), sec("202","2층 202","A",6,12), sec("203","2층 203","A",6,12), sec("204","2층 204","S",6,12) ] },
-    { band:"3층", secs:[ sec("301","3층 301","A",6,14), sec("302","3층 302","A",6,14) ] },
+  inspire: { name:"인스파이어 아레나", note:"신축 아레나 · 플로어+1·2·3층", zones:[
+    { band:"플로어", secs:[ S("F1","플로어 1","VIP",12,16), S("F2","플로어 2","VIP",12,16), S("F3","플로어 3","R",12,16) ] },
+    { band:"1층", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,108) ] },
+    { band:"2층", secs:[ ...nseats("2층","S",11,20,201,205), ...nseats("2층","A",11,20,206,210) ] },
+    { band:"3층", secs:[ ...nseats("3층","A",12,22,301,304), ...nseats("3층","B",12,22,305,308) ] },
   ]},
-  olympichall: { name:"올림픽홀", note:"약 2,500석 · 좌석제 소규모 근사 배치", zones:[
-    { band:"1층", secs:[ sec("1A","1층 1구역","R",5,12), sec("1B","1층 2구역","R",5,12), sec("1C","1층 3구역","S",5,12) ] },
-    { band:"2층", secs:[ sec("2A","2층 1구역","S",5,12), sec("2B","2층 2구역","A",5,12), sec("2C","2층 3구역","A",5,12) ] },
+  sajik: { name:"부산 사직실내체육관", note:"아레나형 · 플로어+1·2·3층", zones:[
+    { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","R",12,16) ] },
+    { band:"1층", secs:[ ...nseats("1층","R",10,18,101,105), ...nseats("1층","S",10,18,106,110) ] },
+    { band:"2층", secs:[ ...nseats("2층","S",11,20,201,206), ...nseats("2층","A",11,20,207,212) ] },
+    { band:"3층", secs:[ ...nseats("3층","A",12,22,301,306), ...nseats("3층","B",12,22,307,312) ] },
+  ]},
+  handball: { name:"올림픽공원 SK핸드볼경기장", note:"중형 경기장 · 플로어+1·2층", zones:[
+    { band:"플로어", secs:[ S("FA","플로어 A","VIP",10,14), S("FB","플로어 B","R",10,14) ] },
+    { band:"1층", secs:[ ...nseats("1층","R",9,16,101,103), ...nseats("1층","S",9,16,104,106) ] },
+    { band:"2층", secs:[ ...nseats("2층","A",10,18,201,204), ...nseats("2층","B",10,18,205,208) ] },
+  ]},
+  kbsarena: { name:"KBS아레나", note:"공연 전용 아레나 · 플로어+1·2층", zones:[
+    { band:"플로어", secs:[ S("F1","플로어 1","VIP",10,14), S("F2","플로어 2","R",10,14) ] },
+    { band:"1층", secs:[ ...nseats("1층","R",9,16,101,103), ...nseats("1층","S",9,16,104,106) ] },
+    { band:"2층", secs:[ ...nseats("2층","A",10,18,201,203), ...nseats("2층","B",10,18,204,206) ] },
+  ]},
+  olympichall: { name:"올림픽홀", note:"공연 전용홀 · 1·2층 좌석제", zones:[
+    { band:"1층", secs:[ ...nseats("1층","R",8,14,1,2), ...nseats("1층","S",8,14,3,4) ] },
+    { band:"2층", secs:[ ...nseats("2층","A",8,16,1,2), ...nseats("2층","B",8,16,3,4) ] },
   ]},
 };
+function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*s.cols)); return n; }
 
 //// 난이도 = 매진 속도 ////
 const DIFFICULTY = {
-  easy:   { name:"쉬움",        interval:650, batch:1, preempt:0.06 },
-  normal: { name:"보통",        interval:340, batch:2, preempt:0.14 },
-  hard:   { name:"어려움",      interval:190, batch:4, preempt:0.26 },
-  hell:   { name:"피켓팅(헬)",  interval:90,  batch:8, preempt:0.45 },
+  easy:   { name:"쉬움",        interval:600, batch:2,  preempt:0.06 },
+  normal: { name:"보통",        interval:320, batch:5,  preempt:0.14 },
+  hard:   { name:"어려움",      interval:170, batch:10, preempt:0.26 },
+  hell:   { name:"피켓팅(헬)",  interval:80,  batch:22, preempt:0.45 },
 };
 
 const $ = id => document.getElementById(id);
 function show(id){ ["s_setup","s_count","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
 function toast(msg, err){ const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":""); setTimeout(()=>t.className="toast",1600); }
 function fmt(ms){ const s=Math.max(0,ms)/1000; return s.toFixed(3)+"s"; }
-function rowLetter(r){ return String.fromCharCode(65+r); }
+function rowLetter(r){ return r<26 ? String.fromCharCode(65+r) : String.fromCharCode(65+Math.floor(r/26)-1)+String.fromCharCode(65+r%26); }
 
 //// 공유 ////
 async function copyOrShare(text, shareTitle){
@@ -288,7 +311,7 @@ setInterval(()=>{ const d=new Date(); $("wallclock").textContent=d.toLocaleTimeS
 
 //// 설정 초기화 ////
 $("cfg_venue").innerHTML = Object.entries(VENUES).map(([k,v],idx)=>`<option value="${k}"${idx===0?' selected':''}>${v.name}</option>`).join("");
-function showVenueNote(){ const v=VENUES[$("cfg_venue").value]; $("venueNote").textContent = v ? "📍 "+v.note : ""; }
+function showVenueNote(){ const v=VENUES[$("cfg_venue").value]; $("venueNote").textContent = v ? `📍 ${v.note} · 총 ${venueTotal(v).toLocaleString()}석` : ""; }
 $("cfg_venue").addEventListener("change", showVenueNote); showVenueNote();
 
 //// 1. 카운트다운 ////
@@ -361,7 +384,7 @@ function submitCaptcha(){
 }
 $("capInput") && $("capInput").addEventListener("keydown",e=>{ if(e.key==="Enter") submitCaptcha(); });
 
-//// 3. 좌석 (공연장 → 구역 → 좌석) ////
+//// 3. 좌석 (공연장 → U자 구역 → 좌석) ////
 function buildVenue(){
   T.venue = VENUES[T.venueKey] || VENUES[Object.keys(VENUES)[0]];
   T.allSecs=[]; T.secById={}; T.secMap={}; T.picked=new Set(); T.preempted=0; T.openSec=null;
@@ -370,13 +393,13 @@ function buildVenue(){
     T.secMap[s.id]={ total:s.rows*s.cols, taken:new Set() };
   }));
   // 시작 시점 일부 매진: 상위 등급일수록 더 많이 빠져 있음
+  const baseByRank=[0.18,0.13,0.09,0.06,0.03];
   T.allSecs.forEach(s=>{
     const rt=T.secMap[s.id];
-    const base = 0.06 + [0.18,0.12,0.07,0.04][GRADE_RANK[s.grade]];
-    const pre=Math.floor(rt.total*base);
+    const pre=Math.floor(rt.total*(0.04 + baseByRank[GRADE_RANK[s.grade]]));
     while(rt.taken.size<pre) rt.taken.add(Math.floor(Math.random()*rt.total));
   });
-  $("venueName").textContent = `📍 ${T.venue.name} · ${T.venue.note}`;
+  $("venueName").textContent = `📍 ${T.venue.name} · ${T.venue.note} · 총 ${venueTotal(T.venue).toLocaleString()}석`;
   $("seatNeed").textContent = `${T.need}석 선택`;
   $("gradeLegend").innerHTML = Object.values(GRADES).map(g=>
     `<span><i style="background:${g.color}"></i>${g.name} ${g.price.toLocaleString()}원</span>`).join("");
@@ -388,14 +411,17 @@ function buildVenue(){
 function renderOverview(){
   T.openSec=null;
   $("sectionDetail").classList.add("hidden");
-  const ov=$("overview"); ov.classList.remove("hidden");
-  ov.innerHTML = T.venue.zones.map(z=>{
+  $("overview").classList.remove("hidden");
+  const bands=T.venue.zones;
+  $("bowl").innerHTML = bands.map((z,idx)=>{
+    const w = Math.min(100, 52 + idx*16); // 무대에서 멀어질수록 넓어지는 U자 보울
     const blocks=z.secs.map(s=>{
       const rt=T.secMap[s.id]; const left=rt.total-rt.taken.size; const sold=left<=0;
       return `<button id="blk-${s.id}" class="block g-${s.grade}${sold?' soldout':''}" ${sold?'disabled':''} onclick="openSection('${s.id}')">
-        <b>${s.label}</b><span>${GRADES[s.grade].name}</span><em>${sold?'매진':left+'석'}</em></button>`;
+        <b>${s.label}</b><span>${GRADES[s.grade].name}</span><em>${sold?'매진':left}</em></button>`;
     }).join("");
-    return `<div class="zoneband"><div class="zonelabel">${z.band}</div><div class="blocks">${blocks}</div></div>`;
+    return `<div class="zoneband"><div class="zonelabel">${z.band}</div>
+      <div class="blocks" style="max-width:${w}%;margin:0 auto">${blocks}</div></div>`;
   }).join("");
 }
 function refreshBlocks(){
@@ -403,7 +429,7 @@ function refreshBlocks(){
   T.allSecs.forEach(s=>{
     const blk=$("blk-"+s.id); if(!blk) return;
     const left=T.secMap[s.id].total - T.secMap[s.id].taken.size;
-    const em=blk.querySelector("em"); if(em) em.textContent = left<=0?'매진':left+'석';
+    const em=blk.querySelector("em"); if(em) em.textContent = left<=0?'매진':left;
     if(left<=0){ blk.classList.add("soldout"); blk.disabled=true; }
   });
 }
@@ -412,8 +438,9 @@ function openSection(secId){
   T.openSec=secId;
   $("overview").classList.add("hidden");
   $("sectionDetail").classList.remove("hidden");
-  $("secTitle").innerHTML = `<b>${T.venue.name}</b> · ${s.label} <span style="color:${GRADES[s.grade].color}">${GRADES[s.grade].name} ${GRADES[s.grade].price.toLocaleString()}원</span>`;
-  const grid=$("seatGrid"); grid.style.gridTemplateColumns=`repeat(${s.cols},24px)`; grid.innerHTML="";
+  $("secTitle").innerHTML = `<b>${T.venue.name}</b> · ${s.label} <span style="color:${GRADES[s.grade].color}">${GRADES[s.grade].name} ${GRADES[s.grade].price.toLocaleString()}원</span> · ${s.rows}열 ${s.cols}석`;
+  const grid=$("seatGrid"); grid.style.gridTemplateColumns=`repeat(${s.cols},18px)`; grid.innerHTML="";
+  const frag=document.createDocumentFragment();
   for(let i=0;i<rt.total;i++){
     const d=document.createElement("div");
     const pid=secId+"#"+i;
@@ -421,8 +448,9 @@ function openSection(secId){
     d.dataset.sec=secId; d.dataset.i=i;
     d.title=`${s.label} ${rowLetter(Math.floor(i/s.cols))}열 ${i%s.cols+1}번`;
     d.onclick=()=>pickSeat(secId,i,d);
-    grid.appendChild(d);
+    frag.appendChild(d);
   }
+  grid.appendChild(frag);
 }
 function backToOverview(){ renderOverview(); }
 
@@ -430,7 +458,7 @@ function countPickedIn(secId){ let n=0; T.picked.forEach(p=>{ if(p.split("#")[0]
 function freeInSec(secId){ const rt=T.secMap[secId]; return rt.total - rt.taken.size - countPickedIn(secId); }
 function randomFreeSeat(secId){
   const rt=T.secMap[secId], tot=rt.total;
-  for(let t=0;t<40;t++){ const i=Math.floor(Math.random()*tot); if(!rt.taken.has(i) && !T.picked.has(secId+"#"+i)) return i; }
+  for(let t=0;t<50;t++){ const i=Math.floor(Math.random()*tot); if(!rt.taken.has(i) && !T.picked.has(secId+"#"+i)) return i; }
   for(let i=0;i<tot;i++){ if(!rt.taken.has(i) && !T.picked.has(secId+"#"+i)) return i; }
   return -1;
 }
@@ -468,7 +496,7 @@ function pickSeat(secId,i,d){
   if(T.picked.has(pid)){ T.picked.delete(pid); d.classList.remove("sel"); updatePicked(); return; }
   if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
   // 실전 재현: 누르는 순간 선점당할 수 있음. 상위 등급일수록 확률↑.
-  const boost={ VIP:1.6, R:1.3, S:1.0, A:0.8 }[T.secById[secId].grade];
+  const boost={ VIP:1.7, R:1.4, S:1.1, A:0.9, B:0.7 }[T.secById[secId].grade];
   const chance=Math.min(0.7, T.diff.preempt*boost);
   if(Math.random()<chance){
     rt.taken.add(i); T.preempted++;
@@ -497,7 +525,6 @@ function goPay(){
   T.t_seatDone=performance.now();
   let total=0;
   const labels=[...T.picked].map(pid=>{ const sp=T.secById[pid.split("#")[0]]; total+=GRADES[sp.grade].price; return seatLabel(pid); });
-  T.payTotal=total;
   $("paySummary").innerHTML=`
     <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>좌석</span><b>${labels.join("<br>")}</b></div>
