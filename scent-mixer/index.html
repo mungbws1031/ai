@@ -174,6 +174,13 @@
             border-top:1px solid var(--line); padding-top:10px; }
   .qty-sum .qrow{ display:flex; justify-content:space-between; }
   .qty-sum b{ color:var(--fg); }
+  /* supplies checklist */
+  .supply{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; cursor:pointer; }
+  .supply:last-of-type{ border-bottom:none; }
+  .supply input{ width:16px; height:16px; accent-color:var(--accent); flex:0 0 auto; }
+  .supply .sn{ flex:1; }
+  .supply .sq{ color:var(--muted); font-size:12px; text-align:right; max-width:46%; }
+  .supply input:checked ~ .sn{ text-decoration:line-through; color:var(--muted); }
 
   /* ===== UX polish ===== */
   /* sticky summary bar */
@@ -433,6 +440,11 @@
           </div>
         </div>
         <div id="recipeQty" style="margin-top:12px;"><div class="empty">조합을 추가하면 분량이 계산됩니다.</div></div>
+      </details>
+
+      <details class="card">
+        <summary>🧰 준비물 (도구·부자재) <span class="tag">제작에 필요한 것</span></summary>
+        <div id="supplies"></div>
       </details>
 
       <details class="card">
@@ -859,6 +871,7 @@ function render(){
   renderSim(a);
   renderGoal(a);
   renderRecipeQty(a);
+  renderSupplies(a);
 }
 
 function renderLongevity(a){
@@ -1019,6 +1032,33 @@ function renderRecipeQty(a){
       <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div>
     </div>
     <div class="note">① 향료 원액을 위 비율대로 섞고 → ② 퍼퓸용 알코올로 ${batch}ml까지 채운 뒤 → ③ 어두운 곳에서 4~6주 숙성(마세레이션)하면 향이 안정돼요. 방울은 1ml≈20방울 환산.</div>`;
+}
+
+// 제작에 필요한 도구·부자재 (용량/향료 수에 맞춰 수량 계산)
+function renderSupplies(a){
+  const wrap=$("#supplies"); if(!wrap) return;
+  const batch=+$("#batchMl").value, conc=+$("#conc").value;
+  const alc=(batch*(1-conc)).toFixed(0), oil=(batch*conc).toFixed(1);
+  const n=a.items.length;
+  const items=[
+    ["향료 원액 (에센셜·프래그런스 오일)", n? `선택한 ${n}종 · 합계 약 ${oil} ml` : "향료를 먼저 선택"],
+    ["퍼퓸용 알코올 (에탄올·발효주정)", `약 ${alc} ml`],
+    ["유리 향수병 + 분무기/롤온", `${batch} ml 1개`],
+    ["유리 스포이트·피펫", n? `${n}개 (향료별 1개 = 교차오염 방지)` : "향료 수만큼"],
+    ["조향용 유리 비커", "1개 (혼합용)"],
+    ["디지털 저울 (0.01g)", "1개 (정밀 계량)"],
+    ["시향지 (블로터)", "5~10장"],
+    ["소형 깔때기", "1개 (병 옮길 때)"],
+    ["라벨 스티커·유성펜", "이름·날짜·비율 기록"],
+    ["차광 보관 장소(서랍 등)", "4~6주 숙성용"],
+    ["(선택) 니트릴 장갑·정제수", "피부 보호·미세 희석"],
+  ];
+  const prev=[...wrap.querySelectorAll('.supply input')].map(c=>c.checked); // 체크 상태 보존
+  wrap.innerHTML = items.map(it=>
+    `<label class="supply"><input type="checkbox"><span class="sn">${it[0]}</span><span class="sq">${it[1]}</span></label>`
+  ).join("")
+    + `<div class="note">향료·알코올·병을 빼면 대부분 한 번 사두면 계속 쓰는 도구예요. 알코올 양은 농도(${Math.round(conc*100)}%)·용량(${batch}ml)에 맞춰 자동 계산됩니다.</div>`;
+  wrap.querySelectorAll('.supply input').forEach((c,i)=>{ if(prev[i]) c.checked=true; });
 }
 
 // 초보용 스타터: 탑·미들·베이스 기본 3종
