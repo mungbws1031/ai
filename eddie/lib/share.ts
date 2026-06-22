@@ -50,6 +50,63 @@ export async function nativeShare(text: string): Promise<ShareResult> {
   }
 }
 
+/** OS 공유 시트로 링크 공유(카톡·문자 등). 미지원 시 'unsupported'. */
+export async function shareUrl(url: string, title: string): Promise<ShareResult> {
+  if (typeof navigator === 'undefined' || typeof navigator.share !== 'function') {
+    return 'unsupported';
+  }
+  try {
+    await navigator.share({ title, text: title, url });
+    return 'shared';
+  } catch {
+    return 'cancelled';
+  }
+}
+
+// ── 일정 공유 링크 (서버 없이 링크에 일정을 실어 보냄) ──
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
+
+function toB64Url(s: string): string {
+  const b64 = btoa(unescape(encodeURIComponent(s)));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function fromB64Url(s: string): string {
+  const b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+export interface SharedSchedEvent {
+  date: string; // 'YYYY-MM-DD'
+  time?: string;
+  title: string;
+}
+
+export function encodeScheduleEvents(events: SharedSchedEvent[]): string {
+  const compact = events.map((e) => [e.date, e.time || '', e.title]);
+  return toB64Url(JSON.stringify(compact));
+}
+
+export function decodeScheduleEvents(code: string): SharedSchedEvent[] | null {
+  try {
+    const arr = JSON.parse(fromB64Url(code));
+    if (!Array.isArray(arr)) return null;
+    return arr
+      .map((x: unknown) => {
+        const t = x as [string, string, string];
+        return { date: String(t[0]), time: t[1] ? String(t[1]) : undefined, title: String(t[2]) };
+      })
+      .filter((e) => /^\d{4}-\d{2}-\d{2}$/.test(e.date) && e.title.trim());
+  } catch {
+    return null;
+  }
+}
+
+/** 친구에게 보낼 가져오기 링크. (#sched= 해시라 서버 처리 불필요) */
+export function scheduleShareLink(events: SharedSchedEvent[]): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return `${origin}${BASE}/calendar/#sched=${encodeScheduleEvents(events)}`;
+}
+
 /** 클립보드 복사. 실패 시 false. */
 export async function copyText(text: string): Promise<boolean> {
   try {

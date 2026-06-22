@@ -14,6 +14,8 @@ import {
 } from '@/lib/share';
 import PageHeader from '@/components/PageHeader';
 import NoticeImport from '@/components/NoticeImport';
+import ScheduleShare from '@/components/ScheduleShare';
+import ScheduleImport from '@/components/ScheduleImport';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -63,6 +65,8 @@ export default function CalendarPage() {
     <div className="px-4">
       <PageHeader title="달력" subtitle="하루하루의 흐름을 한눈에." />
 
+      <ScheduleImport />
+      <ScheduleShare />
       <NoticeImport />
 
       {/* 월 이동 */}
