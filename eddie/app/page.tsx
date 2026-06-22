@@ -18,13 +18,17 @@ export default function TodayPage() {
     .filter((e) => e.date === today)
     .sort((a, b) => (a.time || '99').localeCompare(b.time || '99'));
 
-  const greetingHour = new Date().getHours();
+  const now = new Date();
+  const greetingHour = now.getHours();
   const greeting = greetingHour < 11 ? '좋은 아침이야' : greetingHour < 18 ? '오늘도 같이 가자' : '오늘 하루도 수고했어';
+  const WD = ['일', '월', '화', '수', '목', '금', '토'];
+  const dateLabel = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WD[now.getDay()]})`;
 
   return (
     <div className="flex flex-col gap-4 px-4">
-      <header className="px-1 pt-6">
-        <EddieBubble line={{ mood: 'calm', text: `${greeting} 🐣` }} />
+      <header className="flex items-center justify-between px-1 pt-6">
+        <EddieBubble line={{ mood: 'calm', text: greeting }} />
+        <span className="shrink-0 text-sm font-medium text-eddie-muted tabular-nums">{dateLabel}</span>
       </header>
 
       <EddieClock />
