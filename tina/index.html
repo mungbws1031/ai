@@ -121,6 +121,19 @@
   .budopt .chk2{ width:20px; height:20px; border-radius:50%; border:2px solid var(--line); flex:0 0 auto; }
   .budopt.on .chk2{ background:var(--accent); border-color:var(--accent); box-shadow:inset 0 0 0 3px var(--card2); }
 
+  /* 정리 거장 팁 카드 */
+  .tip{ border:1px solid var(--line); border-left:4px solid var(--accent); border-radius:13px; padding:13px 14px; margin-bottom:12px; background:var(--card2); }
+  .tip .th{ display:flex; align-items:center; gap:11px; }
+  .tip .em{ font-size:28px; line-height:1; flex:0 0 auto; }
+  .tip .nm{ font-weight:800; font-size:15px; }
+  .tip .who{ font-size:11px; color:var(--muted); margin-top:1px; }
+  .tip .tl{ font-size:13.5px; font-weight:700; margin:9px 0 6px; }
+  .tip ul{ margin:0; padding-left:18px; }
+  .tip li{ font-size:13px; line-height:1.65; margin-bottom:4px; }
+  .tip li b{ color:var(--fg); }
+  .tip .map{ font-size:11.5px; color:var(--muted); margin-top:9px; border-top:1px dashed var(--line); padding-top:8px; }
+  .tip .map b{ color:var(--accent); }
+
   /* regions */
   .regions{ display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
   .region{ font-size:12px; padding:5px 10px; border-radius:10px; background:var(--card2); border:1px solid var(--line); }
@@ -179,6 +192,7 @@
   </div>
   <div class="hbtns">
     <button class="iconbtn" id="btnInstall" title="앱으로 설치" style="display:none">📲</button>
+    <button class="iconbtn" id="btnTips" title="정리 팁">💡</button>
     <button class="iconbtn" id="btnHistory" title="기록">📈</button>
     <button class="iconbtn" id="btnSettings" title="설정">⚙️</button>
   </div>
@@ -336,6 +350,17 @@
     </div>
   </section>
 
+  <!-- ============ TIPS (정리 거장 스타일별) ============ -->
+  <section id="screen-tips" class="hidden">
+    <div class="card">
+      <h2>정리 팁 — 거장들의 스타일별 <span class="tag">깊이 가고 싶을 때</span></h2>
+      <p class="muted" style="font-size:12.5px; margin-top:-4px">티나의 기본은 '버리기'가 아니라 <b>보이는 효과 먼저</b>예요. 아래는 더 멀리 가고 싶을 때 참고하는, 정리로 유명한 사람들의 방식입니다. 각 스타일이 티나의 어떤 점수를 올리는지도 표시했어요.</p>
+      <div id="tipList"></div>
+      <button class="ghost sm" id="btnTipsBack" style="margin-top:6px">← 돌아가기</button>
+      <div class="note" style="margin-top:10px">공개된 정리법을 요약·재구성한 참고용이며, 각 인물·브랜드와 무관한 비공식 정리입니다.</div>
+    </div>
+  </section>
+
 </div>
 
 <div id="toast"></div>
@@ -416,7 +441,7 @@ function saveSettings(){ localStorage.setItem(LS.settings, JSON.stringify(settin
 /* ===================================================================
    화면 전환
    =================================================================== */
-const SCREENS = ["home","analyzing","result","reveal","hist"];
+const SCREENS = ["home","analyzing","result","reveal","hist","tips"];
 function show(name){
   SCREENS.forEach(s => $("screen-"+s).classList.toggle("hidden", s!==name));
   window.scrollTo({top:0, behavior:"instant"});
@@ -971,6 +996,95 @@ function renderRecent(){
 }
 
 /* ===================================================================
+   정리 팁 — 정리로 유명한 사람들의 스타일별 (공개 방법론 요약)
+   =================================================================== */
+const TIPS = [
+  {
+    em:"🦋", color:"#ff8fab", nm:"곤마리 (KonMari)", who:"곤도 마리에 · '설레지 않으면 보낸다'",
+    tl:"장소가 아니라 '카테고리'별로, 한 번에 끝낸다",
+    tips:[
+      "옷→책→서류→소품→추억물 <b>순서</b>로. 같은 카테고리를 다 모은 뒤 시작.",
+      "물건을 손에 쥐고 <b>설렘(spark joy)</b>이 있는지로 남길지 결정.",
+      "남길 옷은 <b>수직으로 세워 접기</b> — 서랍을 열면 한눈에 보임.",
+      "모든 물건에 <b>정해진 자리</b>를 준다. 보낼 물건엔 '고마웠어'.",
+    ],
+    map:"티나 점수로는 <b>담김·라인 정렬</b>↑. 단 '완벽주의'가 부담되면 티나처럼 평면부터 가볍게.",
+  },
+  {
+    em:"🌈", color:"#5ec8ff", nm:"홈에딧 (The Home Edit)", who:"클리아 & 조애나 · '보기 좋아야 유지된다'",
+    tl:"무지개처럼 배열하고, 투명 용기 + 라벨로 '주소'를 준다",
+    tips:[
+      "같은 종류끼리 <b>그룹</b>으로 묶기.",
+      "색 순서(빨주노초파남보)로 <b>배열</b> — 시각 노이즈가 확 줄어듦.",
+      "<b>투명 통 + 라벨</b>로 모든 것에 정해진 자리(주소) 부여.",
+      "자주 쓰는 건 <b>눈높이</b>, 가끔 쓰는 건 위/아래로.",
+    ],
+    map:"티나 점수로는 <b>색 노이즈·담김·라인 정렬</b>↑. '예쁘게'가 유지 동기가 됨.",
+  },
+  {
+    em:"📦", color:"#3ecf8e", nm:"다나 화이트 (A Slob Comes Clean)", who:"Dana K. White · '게으른 나'를 위한 현실 정리",
+    tl:"용기(container)가 한계를 정한다 — 분류 마비 금지",
+    tips:[
+      "\"이거 어디 두지?\" 대신 <b>\"비슷한 게 이미 어디 있지?\"</b> → 바로 거기로.",
+      "용기(서랍·바구니)가 <b>차면 그게 한계</b>. 더 안 들이고, 덜 좋은 걸 뺀다.",
+      "안 보이는 서랍 말고 <b>눈에 보이는 표면·바닥부터</b>(visibility).",
+      "한 번에 <b>한 칸/한 표면</b>만. 다 끝낼 생각 말기.",
+    ],
+    map:"티나의 <b>반-churn·평면·바닥</b> 철학과 가장 가까움. 막막할 때 이 스타일.",
+  },
+  {
+    em:"🎯", color:"#ffd166", nm:"피터 월시 (Peter Walsh)", who:"공간 정리 전문가 · '공간의 목적'부터",
+    tl:"물건이 아니라 '이 공간이 하는 일'부터 정한다",
+    tips:[
+      "이 방·이 책상의 <b>목적을 한 문장</b>으로 정의.",
+      "그 목적에 <b>안 맞는 물건</b>은 다른 곳으로 보낸다.",
+      "평면은 <b>작업 공간이지 창고가 아니다</b> — 위를 비운다.",
+      "<b>들어온 만큼 내보내기</b>(one in, one out).",
+    ],
+    map:"티나 점수로는 <b>평면 비움·시각 밀도</b>↑. '왜 여기 있지?'가 기준.",
+  },
+  {
+    em:"🍃", color:"#7bd16b", nm:"미니멀리스트", who:"사사키 후미오 / The Minimalists · '적게 가지면 정리할 게 없다'",
+    tl:"소유 자체를 줄여서 정리할 일을 없앤다",
+    tips:[
+      "<b>90/90 룰</b>: 지난 90일 안 썼고 앞으로 90일 안 쓸 것 → 보낸다.",
+      "\"혹시 몰라\" 물건은 <b>한 상자에 담아</b> 한 달 테스트.",
+      "표면 위 물건 <b>개수 상한</b>을 정한다(예: 책상 위 5개).",
+      "새것 하나 들이면 <b>헌것 하나</b> 내보내기.",
+    ],
+    map:"티나 점수로는 <b>시각 밀도·평면</b>↑. 단 티나는 '버리기'가 목표가 아니니 무리하지 말 것.",
+  },
+  {
+    em:"🧭", color:"#8b7bff", nm:"신박한 정리 (정희숙)", who:"공간크리에이터 · '비움과 동선'",
+    tl:"동선을 따라, 자주 쓰는 걸 손 닿는 곳에",
+    tips:[
+      "정리 전에 <b>비우기</b>부터 — 공간의 70~80%만 채운다.",
+      "<b>동선</b>을 따라 자주 쓰는 물건을 가장 가까이 배치.",
+      "<b>쓰는 곳 = 두는 곳</b>. 사용 장소 근처에 자리를 만든다.",
+      "가족·식구가 <b>유지할 수 있는</b> 쉬운 규칙으로.",
+    ],
+    map:"티나 점수로는 <b>시각 밀도·담김</b>↑. 비우고 동선 맞추면 다시 안 어질러짐.",
+  },
+];
+
+function renderTips(){
+  const box = $("tipList"); box.innerHTML = "";
+  TIPS.forEach(t=>{
+    const el = document.createElement("div");
+    el.className = "tip"; el.style.borderLeftColor = t.color;
+    el.innerHTML = `
+      <div class="th">
+        <div class="em">${t.em}</div>
+        <div><div class="nm">${t.nm}</div><div class="who">${t.who}</div></div>
+      </div>
+      <div class="tl" style="color:${t.color}">“${t.tl}”</div>
+      <ul>${t.tips.map(x=>`<li>${x}</li>`).join("")}</ul>
+      <div class="map">🎯 티나와 연결 — ${t.map}</div>`;
+    box.appendChild(el);
+  });
+}
+
+/* ===================================================================
    반-churn 결정 헬퍼 모달 (6.3)
    =================================================================== */
 function openChurn(){
@@ -1092,6 +1206,8 @@ $("btnSave").onclick=()=>{
 };
 $("btnHistory").onclick=()=>{ renderHistory(); show("hist"); };
 $("btnHistBack").onclick=()=> show("home");
+$("btnTips").onclick=()=>{ renderTips(); show("tips"); };
+$("btnTipsBack").onclick=()=> show("home");
 $("btnClearHist").onclick=()=>{
   if(confirm("모든 기록을 지울까요?")){ localStorage.removeItem(LS.hist); renderHistory(); renderRecent(); }
 };
