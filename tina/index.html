@@ -134,6 +134,31 @@
   .tip .map{ font-size:11.5px; color:var(--muted); margin-top:9px; border-top:1px dashed var(--line); padding-top:8px; }
   .tip .map b{ color:var(--accent); }
 
+  /* D-day 계획 */
+  .ladder{ display:flex; gap:4px; margin:4px 0 12px; }
+  .ladder .st{ flex:1; text-align:center; padding:8px 2px; border:1px solid var(--line); border-radius:9px; background:var(--card2); font-size:9.5px; color:var(--muted); line-height:1.25; }
+  .ladder .st .e{ font-size:17px; display:block; margin-bottom:2px; }
+  .ladder .st.path{ border-color:var(--accent); color:var(--fg); }
+  .ladder .st.cur{ border-color:var(--bad); color:var(--fg); background:rgba(255,107,107,.10); }
+  .ladder .st.tgt{ border-color:var(--gold); color:var(--fg); background:rgba(255,204,85,.10); }
+  .ladder .st .badge{ display:block; font-size:8.5px; font-weight:800; margin-top:2px; }
+  .ladder .st.cur .badge{ color:var(--bad); }
+  .ladder .st.tgt .badge{ color:var(--gold); }
+  .verdict{ border-radius:12px; padding:12px 14px; font-size:13.5px; line-height:1.55; margin-bottom:12px; }
+  .verdict.ok{ background:linear-gradient(90deg, rgba(62,207,142,.13), transparent); border:1px solid rgba(62,207,142,.32); }
+  .verdict.tight{ background:linear-gradient(90deg, rgba(255,209,102,.13), transparent); border:1px solid rgba(255,209,102,.36); }
+  .verdict.over{ background:linear-gradient(90deg, rgba(255,107,107,.13), transparent); border:1px solid rgba(255,107,107,.36); }
+  .dday{ border:1px solid var(--line); border-radius:13px; padding:12px 14px; margin-bottom:9px; background:var(--card2); }
+  .dday.over{ border-color:rgba(255,107,107,.4); opacity:.9; }
+  .dday .dh{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .dday .dnum{ font-weight:800; font-size:14px; }
+  .dday .dd-tag{ font-size:11px; padding:2px 9px; border-radius:20px; border:1px solid var(--line); color:var(--muted); }
+  .dday .dd-tag.warn{ color:var(--bad); border-color:rgba(255,107,107,.4); }
+  .dday ul{ margin:8px 0 0; padding-left:18px; }
+  .dday li{ font-size:13px; line-height:1.6; margin-bottom:3px; }
+  .dday .reach{ font-size:11.5px; margin-top:8px; color:var(--good); font-weight:600; }
+  .dday.over .reach{ color:var(--muted); }
+
   /* regions */
   .regions{ display:flex; flex-wrap:wrap; gap:7px; margin-top:4px; }
   .region{ font-size:12px; padding:5px 10px; border-radius:10px; background:var(--card2); border:1px solid var(--line); }
@@ -213,6 +238,12 @@
         <button class="big ghost" id="beforeGallery">🖼️ 기존 사진 선택</button>
       </div>
       <div class="note">📷는 카메라, 🖼️는 갤러리·앨범에서 골라요. 사진은 이 기기 안에서만 처리돼요 — 기본 분석은 <b>온디바이스(서버 전송 없음)</b>.</div>
+    </div>
+
+    <div class="card">
+      <h2>📅 D-day 정리 계획 <span class="tag">마감일 역산</span></h2>
+      <p class="muted" style="font-size:12.5px; margin-top:-4px">손님 오는 날 같은 마감을 정하면, 하루에 얼만큼 하면 <b>발 디딜 틈 없음 → 반짝반짝 갤러리</b>까지 갈 수 있는지 단계별·일자별로 짜드려요.</p>
+      <button class="big accent2" id="btnDday">계획 세우기</button>
     </div>
 
     <div class="card" id="installCard" style="display:none">
@@ -361,6 +392,59 @@
     </div>
   </section>
 
+  <!-- ============ D-DAY 계획 ============ -->
+  <section id="screen-dday" class="hidden">
+    <div class="card">
+      <h2>📅 D-day 정리 계획 <span class="tag">손님 오는 날까지</span></h2>
+      <p class="muted" style="font-size:12.5px; margin-top:-4px">마감일까지 하루에 얼만큼 하면 깨끗해지는지, <b>난이도 단계별</b>로 역산해 드려요.</p>
+
+      <label class="field">지금 상태 (난이도)</label>
+      <select id="ddStart">
+        <option value="0">🌫️ 발 디딜 틈 없음 (바닥·평면 점령)</option>
+        <option value="1">🚶 길은 있지만 어수선</option>
+        <option value="2">🪟 평면은 보임, 정돈 필요</option>
+        <option value="3">📦 거의 깔끔, 디테일만</option>
+      </select>
+
+      <label class="field">목표 상태</label>
+      <select id="ddTarget">
+        <option value="2">🪟 봐줄 만 (평면 정돈)</option>
+        <option value="3">📦 깔끔 (담기·정렬)</option>
+        <option value="4" selected>✨ 반짝반짝 갤러리</option>
+      </select>
+
+      <div class="row" style="gap:8px">
+        <div style="flex:1">
+          <label class="field">공간 크기</label>
+          <select id="ddSize">
+            <option value="0.7">작음 (책상·방 한켠)</option>
+            <option value="1" selected>보통 (방 하나)</option>
+            <option value="1.45">큼 (거실·집 전체)</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label class="field">하루 가능 시간</label>
+          <select id="ddDaily">
+            <option value="15">15분</option>
+            <option value="30" selected>30분</option>
+            <option value="45">45분</option>
+            <option value="60">60분</option>
+          </select>
+        </div>
+      </div>
+
+      <label class="field">마감일 (손님 오는 날 등)</label>
+      <input type="date" id="ddDate" />
+
+      <div class="row" style="gap:8px; margin-top:14px">
+        <button class="big" id="ddPlan">계획 세우기</button>
+        <button class="ghost" id="btnDdayBack">닫기</button>
+      </div>
+    </div>
+
+    <div id="ddResult"></div>
+  </section>
+
 </div>
 
 <div id="toast"></div>
@@ -441,7 +525,7 @@ function saveSettings(){ localStorage.setItem(LS.settings, JSON.stringify(settin
 /* ===================================================================
    화면 전환
    =================================================================== */
-const SCREENS = ["home","analyzing","result","reveal","hist","tips"];
+const SCREENS = ["home","analyzing","result","reveal","hist","tips","dday"];
 function show(name){
   SCREENS.forEach(s => $("screen-"+s).classList.toggle("hidden", s!==name));
   window.scrollTo({top:0, behavior:"instant"});
@@ -996,6 +1080,136 @@ function renderRecent(){
 }
 
 /* ===================================================================
+   D-day 정리 계획 — 마감일 역산, 난이도 단계별 일자 플랜
+   =================================================================== */
+// 난이도 사다리: 발 디딜 틈 없음(0) → … → 반짝반짝 갤러리(4)
+const LADDER = [
+  { nm:"발 디딜 틈 없음", em:"🌫️" },
+  { nm:"길이 트임",       em:"🚶" },
+  { nm:"평면이 드러남",   em:"🪟" },
+  { nm:"담기·정렬 완료",  em:"📦" },
+  { nm:"반짝반짝 갤러리", em:"✨" },
+];
+// WORK[L] = 레벨 L 로 '올라가기' 위한 작업(아래 단계에서). L=1..4
+const WORK = [
+  null,
+  { base:22, tasks:["바닥에 닿은 물건을 한곳으로 모아 '지나다닐 길'부터 낸다"] },
+  { base:26, tasks:["책상·식탁·싱크대 등 모든 수평면 위 물건을 통에 담아 비운다"] },
+  { base:24, tasks:["흩어진 낱개를 바구니·상자에 담는다(세부 분류 금지)", "남길 물건은 제자리로 + 모서리·줄 맞추기"] },
+  { base:24, tasks:["표면 먼지·자국 닦기", "튀는 색·잡동사니 시야 밖으로", "중심(히어로) 한 곳 완벽 마무리"] },
+];
+
+function openDday(){
+  // 마지막 분석이 있으면 시작 난이도 자동 추정
+  if(state.before){
+    const li = levelIndex(state.before.analysis.total); // 0..4
+    $("ddStart").value = String(Math.min(3, li));
+  }
+  // 마감일 기본값: 오늘+3일
+  const d = new Date(); d.setDate(d.getDate()+3);
+  $("ddDate").value = d.toISOString().slice(0,10);
+  $("ddResult").innerHTML = "";
+  show("dday");
+}
+
+function planDday(){
+  const start = +$("ddStart").value, target = +$("ddTarget").value;
+  const size = +$("ddSize").value, dailyMin = +$("ddDaily").value;
+  const today = new Date(); today.setHours(0,0,0,0);
+  let days = null;
+  if($("ddDate").value){
+    const dl = new Date($("ddDate").value + "T00:00:00");
+    if(!isNaN(dl.getTime())) days = Math.max(1, Math.round((dl - today)/86400000));
+  }
+  const out = $("ddResult");
+
+  if(start >= target){
+    out.innerHTML = `<div class="card"><div class="verdict ok">이미 목표(${LADDER[target].em} ${LADDER[target].nm}) 수준이에요. 유지만 하면 됩니다 👏</div></div>`;
+    show("dday"); return;
+  }
+
+  // 올라야 할 레벨들(start+1..target) → 작업 블록
+  const blocks = [];
+  for(let L=start+1; L<=target; L++){
+    blocks.push({ level:L, mins:Math.max(5, Math.round(WORK[L].base*size)), tasks:WORK[L].tasks });
+  }
+  const total = blocks.reduce((s,b)=>s+b.mins, 0);
+
+  // 균형 배분: 필요 일수를 먼저 구하고 하루 분량을 고르게(짧은 자투리 날 방지)
+  const needDays = Math.ceil(total / dailyMin);
+  const cap = Math.max(5, Math.ceil(total / needDays));   // 하루 실제 분량(<= 가능 시간)
+  const sched = [{ items:[], mins:0, completes:[] }];
+  for(const b of blocks){
+    let rem = b.mins, first = true;
+    while(rem > 0){
+      let cur = sched[sched.length-1];
+      if(cap - cur.mins <= 0){ cur = { items:[], mins:0, completes:[] }; sched.push(cur); }
+      const take = Math.min(rem, cap - cur.mins);
+      cur.items.push({ level:b.level, mins:take, tasks:b.tasks, cont: !first });
+      cur.mins += take; rem -= take; first = false;
+    }
+    sched[sched.length-1].completes.push(b.level);
+  }
+  const daysNeeded = sched.length;
+
+  // 각 날 종료 시 '도달 레벨'
+  let reached = start;
+  sched.forEach(d=>{ if(d.completes.length) reached = Math.max(reached, ...d.completes); d.reached = reached; });
+
+  // 사다리
+  let ladderHtml = '<div class="ladder">';
+  LADDER.forEach((s,i)=>{
+    let cls = "st"; let badge = "";
+    if(i===start){ cls+=" cur"; badge='<span class="badge">지금</span>'; }
+    else if(i===target){ cls+=" tgt"; badge='<span class="badge">목표</span>'; }
+    else if(i>start && i<target){ cls+=" path"; }
+    ladderHtml += `<div class="${cls}"><span class="e">${s.em}</span>${s.nm}${badge}</div>`;
+  });
+  ladderHtml += '</div>';
+
+  // 판정
+  let verdict;
+  const targetNm = `${LADDER[target].em} ${LADDER[target].nm}`;
+  if(days === null){
+    verdict = `<div class="verdict tight">마감일을 정하면 하루 분량을 더 정확히 맞춰드려요. 현재 계획: <b>최소 ${daysNeeded}일</b>(하루 ${dailyMin}분)이면 ${targetNm}까지.</div>`;
+  } else if(daysNeeded <= days){
+    const early = days - daysNeeded;
+    verdict = `<div class="verdict ok">✅ <b>가능!</b> 하루 약 ${cap}분씩 ${daysNeeded}일이면 ${targetNm}까지 도달 — 마감(D-day)${early>0?` 약 <b>${early}일 전</b>에`:" 딱 맞춰"} 끝나요.</div>`;
+  } else {
+    const need = Math.ceil(total / days);
+    verdict = `<div class="verdict over">⚠️ <b>빠듯해요.</b> 이 속도론 ${daysNeeded}일 필요(마감 ${daysNeeded-days}일 초과). 하루 <b>약 ${need}분</b>으로 늘리거나, 목표를 <b>${LADDER[target-1].em} ${LADDER[target-1].nm}</b>로 한 단계 낮추면 마감 안에 가능해요.</div>`;
+  }
+
+  // 일자 카드
+  let cards = "";
+  sched.forEach((d, k)=>{
+    const over = (days !== null && k >= days);
+    const tag = (days === null) ? `${k+1}일차`
+      : over ? `<span class="dd-tag warn">마감 +${k-days+1}일</span>`
+             : `<span class="dd-tag">D-${days-k}</span>`;
+    const tasks = d.items.map(it=>
+      it.tasks.map(t=> `<li>${t}${it.cont?' <span class="muted">(이어서)</span>':''}</li>`).join("")
+    ).join("");
+    const reachedLv = LADDER[d.reached];
+    cards += `<div class="dday${over?' over':''}">
+      <div class="dh"><div class="dnum">${k+1}일차 · 약 ${d.mins}분</div>${tag}</div>
+      <ul>${tasks}</ul>
+      <div class="reach">오늘 끝나면 → ${reachedLv.em} ${reachedLv.nm}</div>
+    </div>`;
+  });
+
+  out.innerHTML = `<div class="card">
+    <h2>계획 <span class="tag">${LADDER[start].nm} → ${LADDER[target].nm}</span></h2>
+    ${ladderHtml}
+    ${verdict}
+    ${cards}
+    <div class="note" style="margin-top:6px">예상 총 작업량 약 ${total}분. 사진으로 비포를 찍으면 '지금 상태'가 자동으로 맞춰지고, 끝나면 애프터로 실제 점수를 확인할 수 있어요.</div>
+  </div>`;
+  show("dday");
+  window.scrollTo({ top: $("ddResult").offsetTop-60, behavior:"smooth" });
+}
+
+/* ===================================================================
    정리 팁 — 정리로 유명한 사람들의 스타일별 (공개 방법론 요약)
    =================================================================== */
 const TIPS = [
@@ -1208,6 +1422,9 @@ $("btnHistory").onclick=()=>{ renderHistory(); show("hist"); };
 $("btnHistBack").onclick=()=> show("home");
 $("btnTips").onclick=()=>{ renderTips(); show("tips"); };
 $("btnTipsBack").onclick=()=> show("home");
+$("btnDday").onclick=openDday;
+$("ddPlan").onclick=planDday;
+$("btnDdayBack").onclick=()=> show("home");
 $("btnClearHist").onclick=()=>{
   if(confirm("모든 기록을 지울까요?")){ localStorage.removeItem(LS.hist); renderHistory(); renderRecent(); }
 };
