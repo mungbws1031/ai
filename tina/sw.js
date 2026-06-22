@@ -1,5 +1,6 @@
-// 티나 service worker — offline app shell cache
-const CACHE = "tina-v1";
+// 티나 service worker — v2
+// HTML/내비게이션은 network-first(항상 최신), 그 외 자산은 cache-first.
+const CACHE = "tina-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -19,16 +20,32 @@ self.addEventListener("activate", e => {
   );
 });
 
-// cache-first for app shell; never cache cross-origin (e.g. Anthropic API) requests
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return; // let API calls hit the network directly
+  if (url.origin !== location.origin) return; // 교차 출처(API 등)는 SW가 건드리지 않음
+
+  const isHTML = e.request.mode === "navigate" ||
+                 (e.request.headers.get("accept") || "").includes("text/html");
+
+  if (isHTML) {
+    // 최신 index.html을 항상 받아오고, 오프라인이면 캐시로 폴백
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        return res;
+      }).catch(() => caches.match(e.request).then(h => h || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // 아이콘·매니페스트 등 정적 자산: cache-first
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
       return res;
-    }).catch(() => caches.match("./index.html")))
+    }))
   );
 });
