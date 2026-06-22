@@ -3,8 +3,9 @@
 This repository began as an early-stage concept evaluation tool for LFA urine
 stick ideas, but has since grown into a multi-project workspace. It now also
 hosts standalone apps such as `frontend/` (Next.js IVDR workflow UI),
-`backend/` (Python), `ticketing/`, `site/`, and `eddie/` (Next.js ADHD routine
-companion app).
+`backend/` (Python), `ticketing/`, `site/`, `eddie/` (Next.js ADHD routine
+companion app), `scent-mixer/` (single-file PWA), and `tina/` (정리 임팩트
+최적화 PWA — 사진 기반 티 점수 분석).
 
 ## Scope of rules
 
