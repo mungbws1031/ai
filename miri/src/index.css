@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: theme('colors.cream');
+  color: theme('colors.ink');
+  -webkit-font-smoothing: antialiased;
+}
+
+/* WCAG: 색상 단독 정보 금지를 위해 포커스 링은 항상 또렷하게 */
+:focus-visible {
+  outline: 3px solid theme('colors.point');
+  outline-offset: 2px;
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+}
