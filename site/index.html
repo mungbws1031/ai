@@ -449,7 +449,7 @@ $("capInput") && $("capInput").addEventListener("keydown",e=>{ if(e.key==="Enter
 //// 3. 좌석 (공연장 → U자 구역 → 좌석) ////
 function buildVenue(){
   T.venue = VENUES[T.venueKey] || VENUES[Object.keys(VENUES)[0]];
-  T.allSecs=[]; T.secById={}; T.secMap={}; T.picked=new Set(); T.preempted=0; T.openSec=null;
+  T.allSecs=[]; T.secById={}; T.secMap={}; T.picked=new Set(); T.preempted=0; T.openSec=null; T.ended=false;
   T.venue.zones.forEach(z=> z.secs.forEach(s=>{
     T.allSecs.push(s); T.secById[s.id]=s;
     T.secMap[s.id]={ total:s.rows*s.cols, taken:new Set() };
@@ -568,7 +568,13 @@ function rivalGrab(){
     if(T.openSec===s.id){ const cell=cellEl(s.id,i);
       if(cell){ cell.classList.add("taken","snatch"); setTimeout(e=>e.classList.remove("snatch"),350,cell); } }
   }
-  updateRemain(); refreshBlocks();
+  updateRemain(); refreshBlocks(); checkSoldOut();
+}
+// 내가 더 잡을 수 있는 좌석이 부족하면(전석 매진) 예매 실패
+function checkSoldOut(){
+  if(T.ended || T.picked.size>=T.need) return;
+  let free=0; T.allSecs.forEach(s=>{ free+=freeInSec(s.id); });
+  if(free + T.picked.size < T.need) failTicketing();
 }
 
 function pickSeat(secId,i,d){
@@ -584,7 +590,7 @@ function pickSeat(secId,i,d){
     d.classList.add("taken","snatch"); d.classList.remove("sel");
     setTimeout(()=>d.classList.remove("snatch"),350);
     toast("이미 선점된 좌석입니다. 다른 좌석을 선택하세요!", true);
-    updateRemain(); return;
+    updateRemain(); checkSoldOut(); return;
   }
   T.picked.add(pid); d.classList.add("sel"); updatePicked();
 }
@@ -601,7 +607,8 @@ function updatePicked(){
 }
 
 function goPay(){
-  if(T.picked.size!==T.need) return;
+  if(T.picked.size!==T.need || T.ended) return;
+  T.ended=true;
   if(T.seatTimer) clearInterval(T.seatTimer);
   T.t_seatDone=performance.now();
   let total=0;
@@ -627,9 +634,10 @@ function finish(){
   else if(totalFlow<12000){ grade="✅ 성공!"; color="var(--good)"; }
   else if(totalFlow<20000){ grade="👍 통과"; color="var(--warn)"; }
   else { grade="🐢 연습 필요"; color="var(--bad)"; }
-  $("grade").textContent=grade; $("grade").style.color=color;
-  LAST_RESULT=`[티켓팅 가상 연습] ${grade}\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
+  $("grade").textContent="🎉 예매 성공! 축하합니다 🎉"; $("grade").style.color="var(--good)";
+  LAST_RESULT=`[티켓팅 가상 연습] 🎉 예매 성공! ${grade}\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
   $("result").innerHTML=`
+    <div class="stat" style="font-size:16px"><span><b>등급</b></span><b style="color:${color}">${grade}</b></div>
     <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
     <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
@@ -639,6 +647,23 @@ function finish(){
     <div class="stat"><span>선점당한 좌석</span><b>${T.preempted}회</b></div>
     <div class="stat"><span>결제 화면</span><b>${fmt(payTime)}</b></div>
     <div class="stat" style="border-bottom:none;font-size:16px"><span><b>전체 소요</b></span><b style="color:${color}">${fmt(totalFlow)}</b></div>`;
+  show("s_done");
+}
+
+// 전석 매진으로 좌석을 못 잡았을 때
+function failTicketing(){
+  if(T.ended) return;
+  T.ended=true;
+  if(T.seatTimer) clearInterval(T.seatTimer);
+  $("grade").textContent="😭 ㅠㅠ 티켓팅 도전!"; $("grade").style.color="var(--bad)";
+  LAST_RESULT=`[티켓팅 가상 연습] 😭 전석 매진… ㅠㅠ 티켓팅 도전!\n${T.venue.name} · 난이도 ${T.diff.name}\n다시 도전 → ${location.href}`;
+  $("result").innerHTML=`
+    <div class="stat" style="border-bottom:none;justify-content:center;font-size:15px"><b style="color:var(--bad)">아쉽게도 좌석이 모두 매진됐어요.<br>조금만 더 빠르게! 다음엔 성공할 거예요 💪</b></div>
+    <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
+    <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
+    <div class="stat"><span>대기열 새로고침</span><b>${T.refreshes||0}회</b></div>
+    <div class="stat"><span>보안문자 시도</span><b>${T.capTries}회</b></div>
+    <div class="stat" style="border-bottom:none"><span>잡은 좌석</span><b>${T.picked.size} / ${T.need}석</b></div>`;
   show("s_done");
 }
 
