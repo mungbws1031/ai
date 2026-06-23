@@ -332,6 +332,18 @@ function goBack(){
 }
 function toast(msg, err){ const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":""); setTimeout(()=>t.className="toast",1600); }
 function fmt(ms){ const s=Math.max(0,ms)/1000; return s.toFixed(3)+"s"; }
+// 완주 시간(ms) → 상위 백분위(1~99). 빠를수록 상위.
+function topPercent(ms){
+  const s=ms/1000; let p;
+  if(s<=4)      p=1;
+  else if(s<=6) p=1 + (s-4)/2*4;       // 1~5%
+  else if(s<=9) p=5 + (s-6)/3*5;       // 5~10%
+  else if(s<=13)p=10 + (s-9)/4*15;     // 10~25%
+  else if(s<=20)p=25 + (s-13)/7*25;    // 25~50%
+  else if(s<=30)p=50 + (s-20)/10*30;   // 50~80%
+  else          p=80 + Math.min(19,(s-30)/10*10); // 80~99%
+  return Math.max(1, Math.min(99, Math.round(p)));
+}
 function rowLetter(r){ return r<26 ? String.fromCharCode(65+r) : String.fromCharCode(65+Math.floor(r/26)-1)+String.fromCharCode(65+r%26); }
 
 //// 공유 ////
@@ -672,9 +684,13 @@ function finish(){
   else if(totalFlow<12000){ grade="✅ 성공!"; color="var(--good)"; }
   else if(totalFlow<20000){ grade="👍 통과"; color="var(--warn)"; }
   else { grade="🐢 연습 필요"; color="var(--bad)"; }
-  $("grade").textContent="🎉 예매 성공! 축하합니다 🎉"; $("grade").style.color="var(--good)";
-  LAST_RESULT=`[티켓팅 가상 연습] 🎉 예매 성공! ${grade}\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
+  // 난이도 보정: 어려울수록 같은 시간이라도 상위 백분위 가산
+  const diffBonus = { easy:1.15, normal:1.0, hard:0.82, hell:0.65 }[$("cfg_diff").value] || 1;
+  const pct = topPercent(totalFlow * diffBonus);
+  $("grade").textContent=`🎉 예매 성공! 상위 ${pct}%`; $("grade").style.color="var(--good)";
+  LAST_RESULT=`[티켓팅 가상 연습] 🎉 예매 성공! 상위 ${pct}% (${grade})\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
   $("result").innerHTML=`
+    <div class="stat" style="font-size:17px"><span><b>내 순위</b></span><b style="color:var(--good)">상위 ${pct}%</b></div>
     <div class="stat" style="font-size:16px"><span><b>등급</b></span><b style="color:${color}">${grade}</b></div>
     <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
