@@ -73,8 +73,8 @@ export default function NoticeImport() {
           📋
         </span>
         <span className="flex-1">
-          <span className="block font-semibold">공지에서 일정 가져오기</span>
-          <span className="block text-sm text-eddie-muted">하이클래스 등 알림장을 붙여넣으면 자동 정리</span>
+          <span className="block font-semibold">공지·노션에서 일정 가져오기</span>
+          <span className="block text-sm text-eddie-muted">하이클래스·노션 등 내용을 붙여넣으면 자동 정리</span>
         </span>
         <span aria-hidden className="text-eddie-muted">
           ›
@@ -86,7 +86,7 @@ export default function NoticeImport() {
   return (
     <section className="card mb-3 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="font-semibold">공지에서 일정 가져오기</p>
+        <p className="font-semibold">공지·노션에서 일정 가져오기</p>
         <button onClick={() => setOpen(false)} className="text-sm text-eddie-muted" aria-label="닫기">
           닫기
         </button>
@@ -105,10 +105,13 @@ export default function NoticeImport() {
           <textarea
             className="field min-h-tap w-full resize-y py-3"
             rows={5}
-            placeholder="하이클래스 공지 글을 복사해서 붙여넣어줘 (예: 6/27(금) 현장학습, 도시락·물 준비, 동의서 25일까지 제출)"
+            placeholder="하이클래스 공지나 노션 내용을 복사해서 붙여넣어줘 (예: 6/27(금) 현장학습, 도시락·물 준비, 동의서 25일까지 제출). 노션 표·목록도 OK."
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
+          <p className="text-xs text-eddie-muted">
+            노션: 페이지 내용을 복사하거나, 데이터베이스를 ⋯ → 내보내기(Markdown·CSV) 후 붙여넣으면 돼.
+          </p>
           <button onClick={analyze} disabled={!text.trim() || loading} className="btn-primary disabled:opacity-40">
             {loading ? '에디가 읽는 중… 👀' : '일정·할 일 뽑기'}
           </button>
