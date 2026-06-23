@@ -181,6 +181,67 @@
   .supply .sn{ flex:1; }
   .supply .sq{ color:var(--muted); font-size:12px; text-align:right; max-width:46%; }
   .supply input:checked ~ .sn{ text-decoration:line-through; color:var(--muted); }
+  /* tabs */
+  .tabs{ display:flex; gap:6px; margin-bottom:16px; background:var(--card2);
+         border:1px solid var(--line); border-radius:12px; padding:5px; }
+  .tab{ flex:1; background:transparent; color:var(--muted); font-weight:600; border-radius:9px;
+        padding:10px; font-size:13.5px; }
+  .tab.active{ background:var(--accent); color:#1a1024; }
+  .tabpane{ display:none; }
+  .tabpane.active{ display:block; animation:fade .2s ease; }
+  @keyframes fade{ from{ opacity:.4 } to{ opacity:1 } }
+  /* scene cards */
+  .scene-sec{ margin-bottom:18px; }
+  .scene-sec > h3{ font-size:14px; margin:0 0 10px; color:var(--fg); }
+  .scenes-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+  @media(max-width:680px){ .scenes-grid{ grid-template-columns:1fr; } }
+  .scene{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:15px; }
+  .scene .sh{ font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; }
+  .scene .sd{ font-size:12px; color:var(--muted); margin:4px 0 10px; line-height:1.5; }
+  .scene .srow{ font-size:12px; margin-bottom:8px; }
+  .scene .srow b{ color:var(--muted); font-weight:400; }
+  .scene .moodchips{ display:flex; flex-wrap:wrap; gap:5px; margin-top:3px; }
+  .scene .mchip{ font-size:11px; padding:2px 8px; border-radius:14px; background:var(--card2); border:1px solid var(--line); }
+  .scene .plink{ font-size:11px; padding:2px 8px; border-radius:14px; background:var(--card2);
+                 border:1px solid var(--line); cursor:pointer; }
+  .scene .plink:hover{ border-color:var(--accent); color:var(--accent); }
+  .scene .makebtn{ width:100%; margin-top:12px; }
+  /* easy wizard */
+  .wsteps{ display:flex; gap:8px; margin-bottom:16px; }
+  .wdot{ flex:1; text-align:center; font-size:12px; font-weight:600; color:var(--muted);
+         background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 4px; cursor:pointer; }
+  .wdot.active{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .wstep{ display:none; } .wstep.active{ display:block; animation:fade .2s ease; }
+  .bigmoods{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
+  .bigmood{ background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:14px 6px;
+            font-size:13px; font-weight:600; cursor:pointer; text-align:center; user-select:none; transition:.12s; }
+  .bigmood:hover{ border-color:var(--accent); }
+  .bigmood.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .seg{ display:flex; gap:8px; }
+  .seg button{ flex:1; background:var(--card2); border:1px solid var(--line); color:var(--fg);
+               border-radius:10px; padding:10px 4px; font-weight:600; display:flex; flex-direction:column; gap:2px; }
+  .seg button small{ font-weight:400; color:var(--muted); font-size:10px; }
+  .seg button.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .seg button.on small{ color:#3a2a12; }
+  .easy-stat{ display:flex; gap:8px; margin-bottom:10px; }
+  .easy-stat .es{ flex:1; text-align:center; background:var(--card2); border:1px solid var(--line);
+                  border-radius:10px; padding:8px; }
+  .easy-stat .es b{ display:block; font-size:18px; } .easy-stat .es small{ font-size:11px; color:var(--muted); }
+  .easy-say{ font-size:13px; line-height:1.6; background:var(--card2); border:1px solid var(--line);
+             border-radius:10px; padding:10px 12px; }
+  .easy-say b{ color:var(--accent); }
+  .easy-sub{ font-size:12px; color:var(--muted); margin:14px 0 6px; }
+  .easy-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); }
+  .easy-row:last-child{ border-bottom:none; }
+  .easy-row .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .easy-row .nm small{ font-weight:400; color:var(--muted); }
+  .easy-row .drops{ display:flex; align-items:center; gap:8px; }
+  .easy-row .drops button{ width:30px; height:30px; padding:0; border-radius:8px; background:var(--card2);
+            border:1px solid var(--line); color:var(--fg); font-size:17px; line-height:1; }
+  .easy-row .drops b{ min-width:20px; text-align:center; }
+  .easy-reclabel{ font-size:12px; color:var(--muted); margin:12px 0 6px; }
+  .wnav{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .wnav button{ flex:1; min-width:120px; }
 
   /* ===== UX polish ===== */
   /* sticky summary bar */
@@ -306,6 +367,69 @@
     <div class="stat"><span class="sv" id="stLast">–</span><span class="sl">예상 지속</span></div>
   </div>
 
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="easy">🌱 쉽게 만들기</button>
+    <button class="tab" data-tab="studio">🧪 조합 스튜디오</button>
+    <button class="tab" data-tab="virtual">✨ 가상으로 만들기</button>
+  </div>
+
+  <section id="tab-easy" class="tabpane active">
+    <div class="wsteps" id="wsteps">
+      <span class="wdot active" data-go="1">1 느낌 고르기</span>
+      <span class="wdot" data-go="2">2 향 확인</span>
+      <span class="wdot" data-go="3">3 만들기</span>
+    </div>
+
+    <div class="wstep active" data-step="1">
+      <div class="card">
+        <h2>1단계 · 어떤 느낌을 원해요? <span class="tag">여러 개 골라도 돼요</span></h2>
+        <div class="bigmoods" id="easyMoods"></div>
+        <label class="lbl" style="margin-top:14px;">얼마나 오래 가면 좋을까요?</label>
+        <div class="seg" id="easySeg">
+          <button data-h="5">가볍게<small>~5시간</small></button>
+          <button data-h="7" class="on">보통<small>~7시간</small></button>
+          <button data-h="9">오래<small>~9시간</small></button>
+        </div>
+        <button id="easyGen" style="width:100%;margin-top:16px;">✨ 이 느낌으로 향 만들기</button>
+        <div class="note">고르기 어렵다면 아무거나 1~2개만 눌러도 돼요. 다음 단계에서 다듬을 수 있어요.</div>
+      </div>
+    </div>
+
+    <div class="wstep" data-step="2">
+      <div class="card">
+        <h2>2단계 · 만들어진 향 확인 <span class="tag">마음에 들 때까지 다듬기</span></h2>
+        <div id="easyDesc"></div>
+        <div class="easy-sub">들어간 향료 (− / + 로 양 조절)</div>
+        <div id="easyBlend"></div>
+        <div id="easyRecs"></div>
+        <div class="wnav">
+          <button class="ghost sm" data-go="1">← 이전</button>
+          <button data-go="3">다음: 만들기 →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wstep" data-step="3">
+      <div class="card">
+        <h2>3단계 · 이렇게 만들면 돼요 <span class="tag">실제 분량·준비물</span></h2>
+        <label class="lbl">만들 용량</label>
+        <div class="seg" id="easyVolSeg">
+          <button data-v="10">10ml</button>
+          <button data-v="30" class="on">30ml</button>
+          <button data-v="50">50ml</button>
+        </div>
+        <div id="easyRecipe" style="margin-top:12px;"></div>
+        <div id="easySupplies" class="note"></div>
+        <div class="wnav">
+          <button class="ghost sm" data-go="2">← 이전</button>
+          <button class="ghost sm" id="easyReset">처음부터</button>
+          <button class="ghost sm" onclick="switchTab('studio')">전문가 모드에서 더 다듬기 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-studio" class="tabpane">
   <div class="grid">
     <!-- LEFT: library + blend -->
     <div>
@@ -468,6 +592,15 @@
       </details>
     </div>
   </div>
+  </section>
+
+  <section id="tab-virtual" class="tabpane">
+    <div class="card vintro">
+      <h2>✨ 가상으로 향수 만들어보기 <span class="tag">상황·계절·스타일별 추천</span></h2>
+      <div class="note" style="margin-top:0;">언제·어디에 어울리는 향인지 골라보세요. 추천 무드와 어울리는 향수를 보여주고, <b>「이 무드로 만들기」</b>를 누르면 그 분위기의 조합이 자동으로 만들어져 스튜디오에서 다듬을 수 있어요.</div>
+    </div>
+    <div id="scenes"></div>
+  </section>
   <footer>로컬에서만 동작 · 데이터는 브라우저(localStorage)에 저장됩니다.</footer>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -883,6 +1016,7 @@ function render(){
   renderGoal(a);
   renderRecipeQty(a);
   renderSupplies(a);
+  renderEasy(a);
 }
 
 function renderLongevity(a){
@@ -1096,6 +1230,165 @@ function generateSimilar(){
   render(); toast(`${p.name} 스타일 변형을 추천했어요`);
 }
 
+// ---- 가상으로 만들기: 상황·계절·스타일별 추천 ----
+// moods는 MOODS 키, perfumes는 PRESETS 이름과 일치해야 함
+const SCENES = [
+  {cat:"상황(TPO)", emoji:"💕", name:"데이트·로맨틱", hours:7, moods:["꽃향기","달콤"],
+   desc:"부드럽고 사랑스러운 꽃·달콤함으로 가까이서 좋은 인상", perfumes:["Flowerbomb","J'adore","La Vie Est Belle"]},
+  {cat:"상황(TPO)", emoji:"💼", name:"오피스·데일리", hours:6, moods:["시트러스","우드"],
+   desc:"깔끔하고 과하지 않은 클린 우디 — 누구에게나 무난", perfumes:["Light Blue","Acqua di Giò","Bleu de Chanel"]},
+  {cat:"상황(TPO)", emoji:"🤝", name:"면접·격식", hours:7, moods:["우드","파우더리"],
+   desc:"단정하고 신뢰감 있는 파우더리 우디, 은은하게", perfumes:["Dior Homme","Bleu de Chanel","Santal 33"]},
+  {cat:"상황(TPO)", emoji:"🎉", name:"파티·나이트아웃", hours:11, moods:["달콤","앰버"],
+   desc:"멀리 퍼지고 오래 남는 강렬한 오리엔탈·구르망", perfumes:["Black Opium","Angel","Opium"]},
+  {cat:"상황(TPO)", emoji:"🏃", name:"운동·활동적", hours:5, moods:["프레시","시트러스"],
+   desc:"가볍고 시원해 땀과 섞여도 부담 없는 향", perfumes:["Acqua di Giò","Eros","Light Blue"]},
+  {cat:"상황(TPO)", emoji:"🛏️", name:"잠들기 전·릴렉스", hours:6, moods:["파우더리","우드"],
+   desc:"포근하고 안정적인 파우더리 우디로 편안하게", perfumes:["Santal 33","AnOther 13"]},
+
+  {cat:"계절", emoji:"🌸", name:"봄", hours:6, moods:["꽃향기","그린"],
+   desc:"산뜻하게 피어나는 꽃·풀내음", perfumes:["J'adore","Flowerbomb","Coco Mademoiselle"]},
+  {cat:"계절", emoji:"🌊", name:"여름", hours:5, moods:["아쿠아틱","시트러스"],
+   desc:"시원하고 청량한 바다·시트러스", perfumes:["Acqua di Giò","Light Blue","Wood Sage & Sea Salt"]},
+  {cat:"계절", emoji:"🍂", name:"가을", hours:9, moods:["우드","스파이시"],
+   desc:"따뜻하고 깊은 우디·향신료", perfumes:["Opium","Tobacco Vanille","Black Orchid"]},
+  {cat:"계절", emoji:"❄️", name:"겨울", hours:12, moods:["달콤","앰버","가죽"],
+   desc:"포근하고 진한 앰버·구르망으로 오래", perfumes:["Tobacco Vanille","Shalimar","Black Orchid"]},
+
+  {cat:"스타일·무드", emoji:"🤍", name:"미니멀·시크", hours:7, moods:["우드","파우더리"],
+   desc:"군더더기 없는 세련된 스킨 우디", perfumes:["Santal 33","Dior Homme","AnOther 13"]},
+  {cat:"스타일·무드", emoji:"🍮", name:"러블리·스위트", hours:7, moods:["달콤","꽃향기"],
+   desc:"달콤하고 사랑스러운 구르망 플로럴", perfumes:["La Vie Est Belle","Black Opium","Flowerbomb"]},
+  {cat:"스타일·무드", emoji:"🖤", name:"개성·보헤미안", hours:10, moods:["가죽","스파이시","우드"],
+   desc:"독특하고 강한 가죽·스파이시 우디", perfumes:["Black Orchid","Replica Jazz Club","Opium"]},
+  {cat:"스타일·무드", emoji:"👑", name:"클래식·포멀", hours:8, moods:["꽃향기","우드"],
+   desc:"우아하고 격조 있는 정통 플로럴 우디", perfumes:["No.5","Shalimar","Coco Mademoiselle"]},
+];
+function nearestGoal(h){ return [5,7,9,12].reduce((a,b)=>Math.abs(b-h)<Math.abs(a-h)?b:a); }
+function renderScenes(){
+  const wrap=$("#scenes"); if(!wrap) return;
+  const cats=[...new Set(SCENES.map(s=>s.cat))];
+  wrap.innerHTML=cats.map(cat=>{
+    const cards=SCENES.filter(s=>s.cat===cat).map((s,idx)=>{
+      const gi=SCENES.indexOf(s);
+      const moods=s.moods.map(m=>`<span class="mchip">${m}</span>`).join("");
+      const perfs=s.perfumes.filter(n=>PRESETS.some(p=>p.name===n))
+        .map(n=>`<span class="plink" data-perf="${n}">${n}</span>`).join(" ");
+      return `<div class="scene">
+        <div class="sh">${s.emoji} ${s.name}</div>
+        <div class="sd">${s.desc}</div>
+        <div class="srow"><b>추천 무드</b><div class="moodchips">${moods}</div></div>
+        <div class="srow"><b>예상 지속</b> 약 ${s.hours}시간</div>
+        <div class="srow"><b>어울리는 향수</b><div class="moodchips">${perfs}</div></div>
+        <button class="makebtn" data-scene="${gi}">✨ 이 무드로 만들기</button>
+      </div>`;
+    }).join("");
+    return `<div class="scene-sec"><h3>${cat}</h3><div class="scenes-grid">${cards}</div></div>`;
+  }).join("");
+  wrap.querySelectorAll("[data-scene]").forEach(b=>b.onclick=()=>applyScene(SCENES[+b.dataset.scene]));
+  wrap.querySelectorAll("[data-perf]").forEach(b=>b.onclick=()=>loadPresetByName(b.dataset.perf));
+}
+function applyScene(s){
+  selectedMoods.clear(); s.moods.forEach(m=>{ if(MOODS[m]) selectedMoods.add(m); });
+  $("#goalHours").value=String(nearestGoal(s.hours));
+  renderMoodTags(); buildFromGoal(); switchTab("studio");
+  toast(`${s.name} 무드로 만들었어요`);
+}
+function loadPresetByName(name){
+  const i=PRESETS.findIndex(p=>p.name===name); if(i<0) return;
+  blend={...PRESETS[i].blend}; render(); switchTab("studio");
+  const sel=$("#tasteSel"); if(sel){ sel.value=String(i); showTaste(i); }
+  toast(`${name} 배합을 불러왔어요`);
+}
+function switchTab(tab){
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+  document.querySelectorAll(".tabpane").forEach(p=>p.classList.toggle("active",p.id==="tab-"+tab));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+// ---- 쉽게 만들기 위저드 ----
+const EASY_MOODS=[
+  ["시트러스","🍋 상큼"],["꽃향기","🌸 꽃향기"],["우드","🌳 우디"],["달콤","🍯 달콤"],
+  ["파우더리","🤍 파우더리"],["프레시","🌿 시원"],["스파이시","🌶️ 스파이시"],["가죽","🧥 가죽"],
+  ["아쿠아틱","🌊 바다"],["프루티","🍑 과일"],
+];
+let easyHours="7", easyVol="30", easyStep=1;
+function renderEasyMoods(){
+  const wrap=$("#easyMoods"); if(!wrap) return; wrap.innerHTML="";
+  EASY_MOODS.forEach(([key,label])=>{
+    const el=document.createElement("div");
+    el.className="bigmood"+(selectedMoods.has(key)?" on":"");
+    el.textContent=label;
+    el.onclick=()=>{ selectedMoods.has(key)?selectedMoods.delete(key):selectedMoods.add(key);
+      renderEasyMoods(); renderMoodTags(); };
+    wrap.appendChild(el);
+  });
+}
+function goEasy(step){
+  easyStep=step;
+  document.querySelectorAll("#tab-easy .wstep").forEach(s=>s.classList.toggle("active",+s.dataset.step===step));
+  document.querySelectorAll("#wsteps .wdot").forEach(d=>d.classList.toggle("active",+d.dataset.go===step));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function easyGen(){
+  if(!selectedMoods.size){ toast("느낌을 1개 이상 골라주세요"); return; }
+  $("#goalHours").value=easyHours;
+  buildFromGoal(); renderMoodTags();
+  goEasy(2);
+}
+function renderEasy(a){
+  if(!$("#easyBlend")) return;
+  if(!a.items.length){
+    $("#easyDesc").innerHTML='<div class="empty">1단계에서 향을 만들어 보세요.</div>';
+    $("#easyBlend").innerHTML=""; $("#easyRecs").innerHTML="";
+  }else{
+    const L=longevity(a), sc=balanceScore(a.volPct,a.items).score;
+    const open=simAt(a,0).cur[0], late=simAt(a,Math.max(L.hours*0.75,0.5)).cur[0];
+    const bword=sc>=80?"아주 잘 어울려요 👍":sc>=55?"잘 어울려요":"조금 더 다듬으면 좋아요";
+    $("#easyDesc").innerHTML=`
+      <div class="easy-stat">
+        <span class="es"><b>${sc}</b><small>밸런스</small></span>
+        <span class="es"><b>${fmtH(L.hours)}</b><small>지속</small></span>
+        <span class="es"><b>${a.items.length}</b><small>향료</small></span></div>
+      <div class="easy-say">${bword}. 처음엔 <b>${open.n}</b>의 느낌이 퍼지고, 시간이 지나면 <b>${late?late.n:open.n}</b> 잔향이 남아요.</div>`;
+    $("#easyBlend").innerHTML=a.items.map(i=>`<div class="easy-row">
+      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n} <small>${VOL_LABEL[i.vol]}</small></span>
+      <span class="drops"><button data-m="${i.n}">−</button><b>${i.drops}</b><button data-p="${i.n}">+</button></span></div>`).join("");
+    $("#easyBlend").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>addDrop(b.dataset.m,-1));
+    $("#easyBlend").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>addDrop(b.dataset.p,1));
+    const recs=recommend(a).slice(0,2);
+    $("#easyRecs").innerHTML = recs.length
+      ? `<div class="easy-reclabel">이런 걸 더해도 좋아요</div>`+recs.map(r=>`<button class="ghost sm" data-add="${r.name}">+ ${r.name}</button>`).join(" ")
+      : "";
+    $("#easyRecs").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addDrop(b.dataset.add,1));
+  }
+  renderEasyRecipe(a);
+}
+function renderEasyRecipe(a){
+  if(!$("#easyRecipe")) return;
+  if(!a.items.length){ $("#easyRecipe").innerHTML='<div class="empty">향을 먼저 만들어 주세요.</div>'; $("#easySupplies").innerHTML=""; return; }
+  const batch=+easyVol, conc=0.20, DPM=20;
+  const oil=batch*conc, alc=batch-oil, total=a.items.reduce((s,i)=>s+i.drops,0)||1;
+  $("#easyRecipe").innerHTML=a.items.map(i=>{const ml=oil*(i.drops/total);
+    return `<div class="qty-row"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="v">${Math.max(1,Math.round(ml*DPM))}방울</span><span class="v">${ml.toFixed(2)}ml</span></div>`;}).join("")
+    +`<div class="qty-sum">
+      <div class="qrow"><span>향료 원액 합계</span><b>${oil.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>퍼퓸용 알코올(에탄올)</span><b>${alc.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div></div>`;
+  $("#easySupplies").innerHTML=`<b>준비물:</b> ${batch}ml 유리 향수병 · 유리 스포이트 ${a.items.length}개 · 비커 · 시향지 · (선택) 디지털 저울. → 위 분량대로 섞고 알코올로 채운 뒤 <b>어두운 곳에서 4~6주 숙성</b>하면 완성!`;
+}
+function initEasy(){
+  renderEasyMoods();
+  $("#easyGen").onclick=easyGen;
+  $("#easyReset").onclick=()=>{ blend={}; selectedMoods.clear(); renderEasyMoods(); renderMoodTags(); render(); goEasy(1); };
+  $("#easySeg").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{
+    easyHours=b.dataset.h; $("#easySeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#easyVolSeg").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{
+    easyVol=b.dataset.v; $("#easyVolSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); renderEasyRecipe(analyze()); });
+  document.querySelectorAll("#tab-easy [data-go]").forEach(b=>b.onclick=()=>goEasy(+b.dataset.go));
+}
+
 // ---- 재료 분량(실제 제작) ----
 function renderRecipeQty(a){
   const wrap=$("#recipeQty");
@@ -1204,8 +1497,9 @@ $("#tasteSel").addEventListener("change",e=>{
 });
 $("#tasteLoad").onclick=tasteLoad;
 $("#tasteVary").onclick=generateSimilar;
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 
-initFilters(); renderMoodTags(); initTaste(); renderLib(); render(); renderPresets(); renderSaved();
+initFilters(); renderMoodTags(); initTaste(); renderScenes(); initEasy(); renderLib(); render(); renderPresets(); renderSaved();
 
 // ---- PWA: service worker + install prompt ----
 if("serviceWorker" in navigator){
