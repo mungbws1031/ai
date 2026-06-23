@@ -206,6 +206,42 @@
                  border:1px solid var(--line); cursor:pointer; }
   .scene .plink:hover{ border-color:var(--accent); color:var(--accent); }
   .scene .makebtn{ width:100%; margin-top:12px; }
+  /* easy wizard */
+  .wsteps{ display:flex; gap:8px; margin-bottom:16px; }
+  .wdot{ flex:1; text-align:center; font-size:12px; font-weight:600; color:var(--muted);
+         background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 4px; cursor:pointer; }
+  .wdot.active{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .wstep{ display:none; } .wstep.active{ display:block; animation:fade .2s ease; }
+  .bigmoods{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:8px; }
+  .bigmood{ background:var(--card2); border:1px solid var(--line); border-radius:12px; padding:14px 6px;
+            font-size:13px; font-weight:600; cursor:pointer; text-align:center; user-select:none; transition:.12s; }
+  .bigmood:hover{ border-color:var(--accent); }
+  .bigmood.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .seg{ display:flex; gap:8px; }
+  .seg button{ flex:1; background:var(--card2); border:1px solid var(--line); color:var(--fg);
+               border-radius:10px; padding:10px 4px; font-weight:600; display:flex; flex-direction:column; gap:2px; }
+  .seg button small{ font-weight:400; color:var(--muted); font-size:10px; }
+  .seg button.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .seg button.on small{ color:#3a2a12; }
+  .easy-stat{ display:flex; gap:8px; margin-bottom:10px; }
+  .easy-stat .es{ flex:1; text-align:center; background:var(--card2); border:1px solid var(--line);
+                  border-radius:10px; padding:8px; }
+  .easy-stat .es b{ display:block; font-size:18px; } .easy-stat .es small{ font-size:11px; color:var(--muted); }
+  .easy-say{ font-size:13px; line-height:1.6; background:var(--card2); border:1px solid var(--line);
+             border-radius:10px; padding:10px 12px; }
+  .easy-say b{ color:var(--accent); }
+  .easy-sub{ font-size:12px; color:var(--muted); margin:14px 0 6px; }
+  .easy-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); }
+  .easy-row:last-child{ border-bottom:none; }
+  .easy-row .nm{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .easy-row .nm small{ font-weight:400; color:var(--muted); }
+  .easy-row .drops{ display:flex; align-items:center; gap:8px; }
+  .easy-row .drops button{ width:30px; height:30px; padding:0; border-radius:8px; background:var(--card2);
+            border:1px solid var(--line); color:var(--fg); font-size:17px; line-height:1; }
+  .easy-row .drops b{ min-width:20px; text-align:center; }
+  .easy-reclabel{ font-size:12px; color:var(--muted); margin:12px 0 6px; }
+  .wnav{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
+  .wnav button{ flex:1; min-width:120px; }
 
   /* ===== UX polish ===== */
   /* sticky summary bar */
@@ -332,11 +368,68 @@
   </div>
 
   <div class="tabs" role="tablist">
-    <button class="tab active" data-tab="studio">🧪 조합 스튜디오</button>
+    <button class="tab active" data-tab="easy">🌱 쉽게 만들기</button>
+    <button class="tab" data-tab="studio">🧪 조합 스튜디오</button>
     <button class="tab" data-tab="virtual">✨ 가상으로 만들기</button>
   </div>
 
-  <section id="tab-studio" class="tabpane active">
+  <section id="tab-easy" class="tabpane active">
+    <div class="wsteps" id="wsteps">
+      <span class="wdot active" data-go="1">1 느낌 고르기</span>
+      <span class="wdot" data-go="2">2 향 확인</span>
+      <span class="wdot" data-go="3">3 만들기</span>
+    </div>
+
+    <div class="wstep active" data-step="1">
+      <div class="card">
+        <h2>1단계 · 어떤 느낌을 원해요? <span class="tag">여러 개 골라도 돼요</span></h2>
+        <div class="bigmoods" id="easyMoods"></div>
+        <label class="lbl" style="margin-top:14px;">얼마나 오래 가면 좋을까요?</label>
+        <div class="seg" id="easySeg">
+          <button data-h="5">가볍게<small>~5시간</small></button>
+          <button data-h="7" class="on">보통<small>~7시간</small></button>
+          <button data-h="9">오래<small>~9시간</small></button>
+        </div>
+        <button id="easyGen" style="width:100%;margin-top:16px;">✨ 이 느낌으로 향 만들기</button>
+        <div class="note">고르기 어렵다면 아무거나 1~2개만 눌러도 돼요. 다음 단계에서 다듬을 수 있어요.</div>
+      </div>
+    </div>
+
+    <div class="wstep" data-step="2">
+      <div class="card">
+        <h2>2단계 · 만들어진 향 확인 <span class="tag">마음에 들 때까지 다듬기</span></h2>
+        <div id="easyDesc"></div>
+        <div class="easy-sub">들어간 향료 (− / + 로 양 조절)</div>
+        <div id="easyBlend"></div>
+        <div id="easyRecs"></div>
+        <div class="wnav">
+          <button class="ghost sm" data-go="1">← 이전</button>
+          <button data-go="3">다음: 만들기 →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="wstep" data-step="3">
+      <div class="card">
+        <h2>3단계 · 이렇게 만들면 돼요 <span class="tag">실제 분량·준비물</span></h2>
+        <label class="lbl">만들 용량</label>
+        <div class="seg" id="easyVolSeg">
+          <button data-v="10">10ml</button>
+          <button data-v="30" class="on">30ml</button>
+          <button data-v="50">50ml</button>
+        </div>
+        <div id="easyRecipe" style="margin-top:12px;"></div>
+        <div id="easySupplies" class="note"></div>
+        <div class="wnav">
+          <button class="ghost sm" data-go="2">← 이전</button>
+          <button class="ghost sm" id="easyReset">처음부터</button>
+          <button class="ghost sm" onclick="switchTab('studio')">전문가 모드에서 더 다듬기 →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tab-studio" class="tabpane">
   <div class="grid">
     <!-- LEFT: library + blend -->
     <div>
@@ -923,6 +1016,7 @@ function render(){
   renderGoal(a);
   renderRecipeQty(a);
   renderSupplies(a);
+  renderEasy(a);
 }
 
 function renderLongevity(a){
@@ -1212,6 +1306,89 @@ function switchTab(tab){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 
+// ---- 쉽게 만들기 위저드 ----
+const EASY_MOODS=[
+  ["시트러스","🍋 상큼"],["꽃향기","🌸 꽃향기"],["우드","🌳 우디"],["달콤","🍯 달콤"],
+  ["파우더리","🤍 파우더리"],["프레시","🌿 시원"],["스파이시","🌶️ 스파이시"],["가죽","🧥 가죽"],
+  ["아쿠아틱","🌊 바다"],["프루티","🍑 과일"],
+];
+let easyHours="7", easyVol="30", easyStep=1;
+function renderEasyMoods(){
+  const wrap=$("#easyMoods"); if(!wrap) return; wrap.innerHTML="";
+  EASY_MOODS.forEach(([key,label])=>{
+    const el=document.createElement("div");
+    el.className="bigmood"+(selectedMoods.has(key)?" on":"");
+    el.textContent=label;
+    el.onclick=()=>{ selectedMoods.has(key)?selectedMoods.delete(key):selectedMoods.add(key);
+      renderEasyMoods(); renderMoodTags(); };
+    wrap.appendChild(el);
+  });
+}
+function goEasy(step){
+  easyStep=step;
+  document.querySelectorAll("#tab-easy .wstep").forEach(s=>s.classList.toggle("active",+s.dataset.step===step));
+  document.querySelectorAll("#wsteps .wdot").forEach(d=>d.classList.toggle("active",+d.dataset.go===step));
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function easyGen(){
+  if(!selectedMoods.size){ toast("느낌을 1개 이상 골라주세요"); return; }
+  $("#goalHours").value=easyHours;
+  buildFromGoal(); renderMoodTags();
+  goEasy(2);
+}
+function renderEasy(a){
+  if(!$("#easyBlend")) return;
+  if(!a.items.length){
+    $("#easyDesc").innerHTML='<div class="empty">1단계에서 향을 만들어 보세요.</div>';
+    $("#easyBlend").innerHTML=""; $("#easyRecs").innerHTML="";
+  }else{
+    const L=longevity(a), sc=balanceScore(a.volPct,a.items).score;
+    const open=simAt(a,0).cur[0], late=simAt(a,Math.max(L.hours*0.75,0.5)).cur[0];
+    const bword=sc>=80?"아주 잘 어울려요 👍":sc>=55?"잘 어울려요":"조금 더 다듬으면 좋아요";
+    $("#easyDesc").innerHTML=`
+      <div class="easy-stat">
+        <span class="es"><b>${sc}</b><small>밸런스</small></span>
+        <span class="es"><b>${fmtH(L.hours)}</b><small>지속</small></span>
+        <span class="es"><b>${a.items.length}</b><small>향료</small></span></div>
+      <div class="easy-say">${bword}. 처음엔 <b>${open.n}</b>의 느낌이 퍼지고, 시간이 지나면 <b>${late?late.n:open.n}</b> 잔향이 남아요.</div>`;
+    $("#easyBlend").innerHTML=a.items.map(i=>`<div class="easy-row">
+      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n} <small>${VOL_LABEL[i.vol]}</small></span>
+      <span class="drops"><button data-m="${i.n}">−</button><b>${i.drops}</b><button data-p="${i.n}">+</button></span></div>`).join("");
+    $("#easyBlend").querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>addDrop(b.dataset.m,-1));
+    $("#easyBlend").querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>addDrop(b.dataset.p,1));
+    const recs=recommend(a).slice(0,2);
+    $("#easyRecs").innerHTML = recs.length
+      ? `<div class="easy-reclabel">이런 걸 더해도 좋아요</div>`+recs.map(r=>`<button class="ghost sm" data-add="${r.name}">+ ${r.name}</button>`).join(" ")
+      : "";
+    $("#easyRecs").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addDrop(b.dataset.add,1));
+  }
+  renderEasyRecipe(a);
+}
+function renderEasyRecipe(a){
+  if(!$("#easyRecipe")) return;
+  if(!a.items.length){ $("#easyRecipe").innerHTML='<div class="empty">향을 먼저 만들어 주세요.</div>'; $("#easySupplies").innerHTML=""; return; }
+  const batch=+easyVol, conc=0.20, DPM=20;
+  const oil=batch*conc, alc=batch-oil, total=a.items.reduce((s,i)=>s+i.drops,0)||1;
+  $("#easyRecipe").innerHTML=a.items.map(i=>{const ml=oil*(i.drops/total);
+    return `<div class="qty-row"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="v">${Math.max(1,Math.round(ml*DPM))}방울</span><span class="v">${ml.toFixed(2)}ml</span></div>`;}).join("")
+    +`<div class="qty-sum">
+      <div class="qrow"><span>향료 원액 합계</span><b>${oil.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>퍼퓸용 알코올(에탄올)</span><b>${alc.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div></div>`;
+  $("#easySupplies").innerHTML=`<b>준비물:</b> ${batch}ml 유리 향수병 · 유리 스포이트 ${a.items.length}개 · 비커 · 시향지 · (선택) 디지털 저울. → 위 분량대로 섞고 알코올로 채운 뒤 <b>어두운 곳에서 4~6주 숙성</b>하면 완성!`;
+}
+function initEasy(){
+  renderEasyMoods();
+  $("#easyGen").onclick=easyGen;
+  $("#easyReset").onclick=()=>{ blend={}; selectedMoods.clear(); renderEasyMoods(); renderMoodTags(); render(); goEasy(1); };
+  $("#easySeg").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{
+    easyHours=b.dataset.h; $("#easySeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); });
+  $("#easyVolSeg").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{
+    easyVol=b.dataset.v; $("#easyVolSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); renderEasyRecipe(analyze()); });
+  document.querySelectorAll("#tab-easy [data-go]").forEach(b=>b.onclick=()=>goEasy(+b.dataset.go));
+}
+
 // ---- 재료 분량(실제 제작) ----
 function renderRecipeQty(a){
   const wrap=$("#recipeQty");
@@ -1322,7 +1499,7 @@ $("#tasteLoad").onclick=tasteLoad;
 $("#tasteVary").onclick=generateSimilar;
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 
-initFilters(); renderMoodTags(); initTaste(); renderScenes(); renderLib(); render(); renderPresets(); renderSaved();
+initFilters(); renderMoodTags(); initTaste(); renderScenes(); initEasy(); renderLib(); render(); renderPresets(); renderSaved();
 
 // ---- PWA: service worker + install prompt ----
 if("serviceWorker" in navigator){
