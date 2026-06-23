@@ -99,6 +99,7 @@
 <header>
   <h1>🎫 티켓팅 가상 연습</h1>
   <div style="display:flex;align-items:center;gap:12px">
+    <button id="backBtn" class="ghost hidden" onclick="goBack()" style="padding:7px 12px;font-size:13px">← 뒤로</button>
     <button id="installBtn" class="ghost hidden" onclick="installApp()" style="padding:7px 12px;font-size:13px">📲 앱 설치</button>
     <button class="ghost" onclick="shareLink()" style="padding:7px 12px;font-size:13px">🔗 공유</button>
     <div class="clock" id="wallclock">--:--:--</div>
@@ -150,7 +151,7 @@
     <div id="count" class="count">00:05</div>
     <div class="sub">남은 시간</div>
     <button id="openBtn" class="big" disabled onclick="hitOpen()">예매하기</button>
-    <div class="meta" style="margin-top:10px">너무 일찍 누르면 실패로 기록돼요 (실전에서도 버튼이 비활성입니다).</div>
+    <div class="meta" id="openHint" style="margin-top:10px">너무 일찍 누르면 실패로 기록돼요 (실전에서도 버튼이 비활성입니다).</div>
   </section>
 
   <!-- 1.5 접속 대기열 -->
@@ -312,7 +313,23 @@ const DIFFICULTY = {
 };
 
 const $ = id => document.getElementById(id);
-function show(id){ ["s_setup","s_count","s_queue","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
+function show(id){ ["s_setup","s_count","s_queue","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden");
+  const bb=$("backBtn"); if(bb) bb.classList.toggle("hidden", id==="s_setup"); }
+
+//// 뒤로가기 ////
+function cancelRun(){ if(T.seatTimer) clearInterval(T.seatTimer); if(rafId) cancelAnimationFrame(rafId); if(qRaf) cancelAnimationFrame(qRaf); T.ended=true; }
+function resumeSeat(){ T.ended=false; if(T.seatTimer) clearInterval(T.seatTimer); T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval); show("s_seat"); }
+function goBack(){
+  if(!$("s_seat").classList.contains("hidden")){
+    if(!$("sectionDetail").classList.contains("hidden")){ backToOverview(); return; } // 좌석→구역 개요
+    if(confirm("좌석 선택을 취소하고 처음으로 돌아갈까요?")){ cancelRun(); show("s_setup"); }
+    return;
+  }
+  if(!$("s_pay").classList.contains("hidden")){ resumeSeat(); return; } // 결제→좌석 다시 선택(경쟁 재개)
+  if(!$("s_done").classList.contains("hidden")){ cancelRun(); show("s_setup"); return; }
+  // 카운트다운/대기열/보안문자 단계: 진행 취소하고 처음으로
+  cancelRun(); show("s_setup");
+}
 function toast(msg, err){ const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":""); setTimeout(()=>t.className="toast",1600); }
 function fmt(ms){ const s=Math.max(0,ms)/1000; return s.toFixed(3)+"s"; }
 function rowLetter(r){ return r<26 ? String.fromCharCode(65+r) : String.fromCharCode(65+Math.floor(r/26)-1)+String.fromCharCode(65+r%26); }
@@ -350,7 +367,18 @@ function startCountdown(){
   T.armed = false;
   T.capTries = 0;
   T.refreshes = 0;
-  $("openBtn").disabled = true;
+  T.earlyRefresh = 0;
+  // 랜덤(약 50%): 정시에 버튼이 자동 활성화되지 않고 직접 새로고침해야 입장
+  T.mustRefresh = Math.random() < 0.5;
+  if(T.mustRefresh){
+    $("openBtn").disabled = false;
+    $("openBtn").textContent = "🔄 새로고침";
+    $("openHint").innerHTML = "⚠️ 이 공연은 버튼이 자동으로 안 열려요! <b>정시(00:00)에 직접 🔄 새로고침</b>해야 입장됩니다. (너무 일찍 누르면 헛수고)";
+  } else {
+    $("openBtn").disabled = true;
+    $("openBtn").textContent = "예매하기";
+    $("openHint").innerHTML = "정시에 '예매하기'가 활성화돼요. 너무 일찍 누르면 실패로 기록됩니다.";
+  }
   show("s_count");
   tick();
 }
@@ -359,8 +387,11 @@ function tick(){
   const el = $("count");
   if(remain <= 0){
     el.textContent="00:00.000"; el.className="count go";
-    $("openBtn").disabled=false;
-    if(T.armed!==true){ T.armed=true; T.openEnabledAt=performance.now(); }
+    if(T.armed!==true){
+      T.armed=true; T.openEnabledAt=performance.now();
+      $("openBtn").disabled=false;
+      $("openBtn").textContent = T.mustRefresh ? "🔄 새로고침 (지금!)" : "예매하기";
+    }
     rafId=requestAnimationFrame(tick);
     return;
   }
@@ -370,7 +401,14 @@ function tick(){
   rafId=requestAnimationFrame(tick);
 }
 function hitOpen(){
-  if(performance.now() < T.openAt){ toast("아직 오픈 전입니다!", true); return; }
+  if(performance.now() < T.openAt){
+    if(T.mustRefresh){
+      T.earlyRefresh = (T.earlyRefresh||0) + 1;
+      toast("아직 예매 페이지가 안 열렸어요! 정시에 다시 새로고침하세요", true);
+      return;
+    }
+    toast("아직 오픈 전입니다!", true); return;
+  }
   cancelAnimationFrame(rafId);
   T.t_open = performance.now() - T.openEnabledAt;
   startQueue();   // 실전처럼 접속 대기열을 거쳐 입장
@@ -640,7 +678,8 @@ function finish(){
     <div class="stat" style="font-size:16px"><span><b>등급</b></span><b style="color:${color}">${grade}</b></div>
     <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
-    <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
+    <div class="stat"><span>예매 오픈 방식</span><b>${T.mustRefresh ? "🔄 직접 새로고침" : "자동 활성"}</b></div>
+    <div class="stat"><span>반응속도 (오픈→${T.mustRefresh?"새로고침":"클릭"})</span><b>${fmt(reaction)}</b></div>
     <div class="stat"><span>대기열 새로고침</span><b>${T.refreshes||0}회</b></div>
     <div class="stat"><span>보안문자 (${T.capTries}회 시도)</span><b>${fmt(capTime)}</b></div>
     <div class="stat"><span>구역·좌석 선택</span><b>${fmt(seatTime)}</b></div>
