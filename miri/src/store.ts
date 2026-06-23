@@ -98,7 +98,11 @@ export const useStore = create<MiriState>((set, get) => ({
     // 마감/여행은 기본으로 역산 분해 (FR-B01). 그 외 유형은 옵션.
     const shouldDecompose = input.decompose ?? (input.type === 'deadline' || input.type === 'travel');
     if (shouldDecompose) {
-      const busy = new Set(get().tasks.map((t) => t.dueDate));
+      // FR-B03: 기존 일정의 마감일 + 이미 배치된 서브태스크 날짜 모두를 충돌 회피 대상으로.
+      const busy = new Set<string>([
+        ...get().tasks.map((t) => t.dueDate),
+        ...get().subtasks.map((s) => s.scheduledDate),
+      ]);
       subtasks = decomposeDeadline(task, { busy });
       for (const s of subtasks) {
         subReminders.push(...buildRemindersForSubtask(s, undefined, now)); // FR-B04
@@ -130,13 +134,36 @@ export const useStore = create<MiriState>((set, get) => ({
   },
 
   completeSubtask: async (id, done) => {
-    await db.subtasks.update(id, { status: done ? 'done' : 'open' });
+    // 서브태스크 완료 상태를 그 서브태스크의 리마인더와 함께 동기화한다.
+    // (완료된 단계의 D-0 리마인더가 나중에 다시 홈에 뜨는 것 방지)
+    await db.transaction('rw', db.subtasks, db.reminders, async () => {
+      await db.subtasks.update(id, { status: done ? 'done' : 'open' });
+      const rs = await db.reminders.where('subtaskId').equals(id).toArray();
+      if (done) {
+        const active = rs.filter((r) => r.status !== 'done');
+        if (active.length) await db.reminders.bulkPut(active.map((r) => ({ ...r, status: 'done' as const })));
+      } else {
+        // 완료 취소 시: 닫아뒀던 리마인더를 다시 pending으로 되살린다.
+        const closed = rs.filter((r) => r.status === 'done');
+        if (closed.length)
+          await db.reminders.bulkPut(closed.map((r) => ({ ...r, status: 'pending' as const, snoozedUntil: undefined })));
+      }
+    });
     await get().load();
   },
 
   rescheduleSubtask: async (id, scheduledDate) => {
-    // FR-B05: 드래그/편집으로 조정
-    await db.subtasks.update(id, { scheduledDate });
+    // FR-B05: 드래그/편집으로 조정. 옮긴 날짜에 맞춰 리마인더 fireAt도 다시 만든다.
+    const sub = get().subtasks.find((s) => s.id === id);
+    await db.transaction('rw', db.subtasks, db.reminders, async () => {
+      await db.subtasks.update(id, { scheduledDate });
+      await db.reminders.where('subtaskId').equals(id).delete();
+      // 아직 완료 전인 서브태스크만 리마인더를 재생성한다.
+      if (sub && sub.status !== 'done') {
+        const fresh = buildRemindersForSubtask({ ...sub, scheduledDate });
+        if (fresh.length) await db.reminders.bulkPut(fresh);
+      }
+    });
     await get().load();
   },
 
