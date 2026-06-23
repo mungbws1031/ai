@@ -170,6 +170,8 @@
       <span><i style="background:var(--good)"></i>내 선택</span>
     </div>
 
+    <div id="lateNotice"></div>
+
     <!-- 3a. U자 구역 개요 -->
     <div id="overview">
       <div class="arena">
@@ -325,6 +327,7 @@ function startCountdown(){
   $("evtTitle").textContent = EVENTS[Math.floor(Math.random()*EVENTS.length)] + " — 예매 오픈 대기";
   T.openAt = performance.now() + secs*1000;
   T.armed = false;
+  T.capTries = 0;
   $("openBtn").disabled = true;
   show("s_count");
   tick();
@@ -393,21 +396,33 @@ function buildVenue(){
     T.allSecs.push(s); T.secById[s.id]=s;
     T.secMap[s.id]={ total:s.rows*s.cols, taken:new Set() };
   }));
-  // 실전 재현: 오픈~보안문자 통과까지 걸린 시간만큼 이미 매진돼 있음.
-  // 늦게 들어올수록(=경과 시간↑), 상위 등급일수록(=tau↓) 더 많이 빠져 있다.
-  const elapsed = Math.max(0.3, (performance.now() - (T.openEnabledAt||performance.now()))/1000) * (T.diff.preStart||1);
-  const tauBase=[2.2, 5, 9, 15, 24];      // VIP,R,S,A,B 등급별 매진 시간상수(초)
+  // 실전 재현: 오픈~보안문자 통과까지 걸린 시간 + 보안문자 오답 페널티만큼 이미 매진.
+  // 한 번에 통과하면 비교적 자리가 남고, 보안문자를 틀릴수록 크게 늦어져 상위 등급은 전멸.
+  const misses = Math.max(0, (T.capTries||1) - 1);
+  const PENALTY = 9;                       // 보안문자 오답 1회당 9초 늦게 입장한 셈
+  const realElapsed = Math.max(0.3, (performance.now() - (T.openEnabledAt||performance.now()))/1000);
+  const elapsed = (realElapsed + misses*PENALTY) * (T.diff.preStart||1);
+  T.misses = misses; T.lateSec = misses*PENALTY;
+  const tauBase=[3.0, 6, 10, 16, 26];     // VIP,R,S,A,B 등급별 매진 시간상수(초)
   const mul=T.diff.tauMul||1;
   T.allSecs.forEach(s=>{
     const rt=T.secMap[s.id];
     const tau=tauBase[GRADE_RANK[s.grade]]*mul;
-    let frac=1-Math.exp(-elapsed/tau);     // 지수 감쇠: 시간이 갈수록 매진율↑
+    let frac=1-Math.exp(-elapsed/tau);     // 지수 감쇠: 늦을수록 매진율↑
     frac *= 0.82 + Math.random()*0.36;     // 구역별 편차
     frac=Math.min(1, Math.max(0, frac));
     const pre=Math.min(rt.total, Math.round(rt.total*frac));
     while(rt.taken.size<pre) rt.taken.add(Math.floor(Math.random()*rt.total));
   });
   $("venueName").textContent = `📍 ${T.venue.name} · ${T.venue.note} · 총 ${venueTotal(T.venue).toLocaleString()}석`;
+  const ln=$("lateNotice");
+  if(misses>0){
+    ln.style.cssText="margin:6px 0 10px;padding:9px 11px;border-radius:8px;background:#3a1d24;color:var(--bad);font-weight:600";
+    ln.innerHTML = `⚠️ 보안문자 <b>${misses}회</b> 오답 → <b>${misses*PENALTY}초</b> 늦게 입장! 좋은 자리는 이미 다 선점됐어요 😱`;
+  } else {
+    ln.style.cssText="margin:6px 0 10px;padding:9px 11px;border-radius:8px;background:#15392c;color:var(--good);font-weight:600";
+    ln.innerHTML = `✅ 보안문자 한 번에 통과! 남은 좋은 자리를 빠르게 잡으세요.`;
+  }
   $("seatNeed").textContent = `${T.need}석 선택`;
   $("gradeLegend").innerHTML = Object.values(GRADES).map(g=>
     `<span><i style="background:${g.color}"></i>${g.name} ${g.price.toLocaleString()}원</span>`).join("");
