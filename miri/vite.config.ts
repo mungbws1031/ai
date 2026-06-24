@@ -9,6 +9,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // main.tsx에서 직접 등록(자동 갱신 + 주기 확인)
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
         name: '미리 — 외장 전두엽',
