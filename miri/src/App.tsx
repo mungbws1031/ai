@@ -12,7 +12,7 @@ import { syncNativeNotifications } from './lib/native';
 export default function App() {
   const load = useStore((s) => s.load);
   const loaded = useStore((s) => s.loaded);
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useState<Tab>('calendar');
   const [adding, setAdding] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
