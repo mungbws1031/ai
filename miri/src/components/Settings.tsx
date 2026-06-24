@@ -2,11 +2,21 @@ import { useRef, useState } from 'react';
 import { exportAll, downloadBackup, importAll, type BackupShape } from '../lib/backup';
 import { useStore } from '../store';
 import { seedDemoData } from '../lib/demo';
+import { getApiKey, setApiKey, isLLMEnabled, setLLMEnabled } from '../lib/llm';
 
 export function Settings({ onClose }: { onClose: () => void }) {
   const load = useStore((s) => s.load);
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState('');
+  const [apiKey, setKey] = useState(getApiKey());
+  const [llmOn, setLlmOn] = useState(isLLMEnabled());
+
+  const saveLLM = (nextKey: string, nextOn: boolean) => {
+    setApiKey(nextKey);
+    setLLMEnabled(nextOn);
+    setKey(nextKey);
+    setLlmOn(nextOn && nextKey.length > 0);
+  };
 
   const doExport = async () => {
     const data = await exportAll();
@@ -67,6 +77,32 @@ export function Settings({ onClose }: { onClose: () => void }) {
         <button onClick={doDemo} className="w-full rounded-xl border border-dashed border-soft py-3 text-sm text-muted">
           ✨ 샘플 데이터 넣어보기
         </button>
+
+        {/* FR-B02: 선택적 LLM 분해 (Claude API) */}
+        <div className="space-y-2 rounded-xl bg-white p-4 shadow-card">
+          <label className="flex items-center justify-between text-sm font-semibold text-ink">
+            <span>AI로 더 똑똑하게 단계 나누기</span>
+            <input
+              type="checkbox"
+              checked={llmOn}
+              onChange={(e) => saveLLM(apiKey, e.target.checked)}
+              className="h-5 w-5 accent-point"
+            />
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => saveLLM(e.target.value, llmOn)}
+            placeholder="Anthropic API 키 (sk-ant-…)"
+            className="w-full rounded-lg border border-soft px-3 py-2 text-sm"
+            autoComplete="off"
+          />
+          <p className="text-[11px] leading-relaxed text-muted">
+            켜면 마감을 Claude(sonnet)가 분해하고, 실패하면 기본 규칙으로 자동 대체돼요. 키는
+            <span className="font-semibold text-ink"> 이 기기에만</span> 저장되고 브라우저에서 직접 호출돼요.
+            공용 기기에선 끄는 걸 권해요.
+          </p>
+        </div>
 
         {msg && <p className="text-center text-xs text-sage">{msg}</p>}
         <p className="pt-1 text-center text-[11px] text-muted">미리 (MVP) v0.1</p>

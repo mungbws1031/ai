@@ -88,6 +88,9 @@ describe('FR-B01/B03 역산 분해 + 충돌 회피', () => {
     expect(titles).toContain('항공권');
     expect(titles).toContain('연차');
     expect(titles).toContain('숙소');
+    // 확장된 실사용 단계
+    expect(titles).toContain('짐');
+    expect(subs.length).toBeGreaterThanOrEqual(6);
   });
 });
 
