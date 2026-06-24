@@ -4,6 +4,13 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>티켓팅 가상 연습 (연습용 시뮬레이터)</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0f1220" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="티켓팅 연습" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<link rel="icon" type="image/png" href="icon-192.png" />
 <style>
   :root{ --bg:#0f1220; --card:#1a1f35; --line:#2b3252; --fg:#e8ebf5; --muted:#9aa3c4;
          --accent:#5b8cff; --good:#3ecf8e; --bad:#ff6b6b; --warn:#ffd166; --seat:#37406e; }
@@ -75,6 +82,9 @@
   .seat.sel{ background:var(--good) !important; border-color:#fff; }
   .seat.snatch{ animation:snatch .35s ease; }
   @keyframes snatch{ 0%{ background:var(--bad); transform:scale(1.35); } 100%{ background:#2a2f45; transform:scale(1); } }
+  .seat.cancel{ background:var(--good) !important; box-shadow:0 0 0 2px #fff, 0 0 12px var(--good); z-index:2;
+                animation:cancelpulse .45s ease-in-out infinite alternate; cursor:pointer; }
+  @keyframes cancelpulse{ from{ transform:scale(1); } to{ transform:scale(1.3); } }
   .legend{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:8px; }
   .legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; }
 
@@ -92,6 +102,8 @@
 <header>
   <h1>🎫 티켓팅 가상 연습</h1>
   <div style="display:flex;align-items:center;gap:12px">
+    <button id="backBtn" class="ghost hidden" onclick="goBack()" style="padding:7px 12px;font-size:13px">← 뒤로</button>
+    <button id="installBtn" class="ghost hidden" onclick="installApp()" style="padding:7px 12px;font-size:13px">📲 앱 설치</button>
     <button class="ghost" onclick="shareLink()" style="padding:7px 12px;font-size:13px">🔗 공유</button>
     <div class="clock" id="wallclock">--:--:--</div>
   </div>
@@ -110,7 +122,7 @@
     <div class="row">
       <div>
         <label>오픈까지 카운트다운(초)</label>
-        <input id="cfg_count" type="number" min="3" max="60" value="10" />
+        <input id="cfg_count" type="number" min="3" max="60" value="5" />
       </div>
       <div>
         <label>보안문자 길이</label>
@@ -139,10 +151,23 @@
   <section id="s_count" class="card hidden center">
     <h2 id="evtTitle">○○ 콘서트 — 예매 오픈 대기</h2>
     <div class="sub">정확히 <b>00:00.000</b> 이 되는 순간 버튼을 누르세요!</div>
-    <div id="count" class="count">00:10</div>
+    <div id="count" class="count">00:05</div>
     <div class="sub">남은 시간</div>
     <button id="openBtn" class="big" disabled onclick="hitOpen()">예매하기</button>
-    <div class="meta" style="margin-top:10px">너무 일찍 누르면 실패로 기록돼요 (실전에서도 버튼이 비활성입니다).</div>
+    <div class="meta" id="openHint" style="margin-top:10px">너무 일찍 누르면 실패로 기록돼요 (실전에서도 버튼이 비활성입니다).</div>
+  </section>
+
+  <!-- 1.5 접속 대기열 -->
+  <section id="s_queue" class="card hidden center">
+    <h2>🔄 접속 대기열</h2>
+    <div class="sub">현재 접속자가 많아 대기 중입니다. 잠시만 기다려 주세요.</div>
+    <div class="count" id="qnum" style="font-size:46px">0</div>
+    <div class="sub">내 앞에 남은 대기 인원(명)</div>
+    <div style="height:9px;background:#0c0f1c;border-radius:5px;overflow:hidden;margin:6px 0 16px">
+      <i id="qbar" style="display:block;height:100%;width:0;background:var(--good);transition:width .1s linear"></i>
+    </div>
+    <button class="ghost" onclick="refreshQueue()">🔄 새로고침(재접속)</button>
+    <div class="meta" style="margin-top:10px">⚠️ 실전 함정: 대기 중 <b>새로고침하면 대기열 맨 뒤</b>로 갑니다. 가만히 기다리는 게 가장 빨라요!</div>
   </section>
 
   <!-- 2. 보안문자 -->
@@ -167,8 +192,9 @@
     <div class="legend" id="gradeLegend"></div>
     <div class="legend">
       <span><i style="background:#2a2f45"></i>매진</span>
-      <span><i style="background:var(--good)"></i>내 선택</span>
+      <span><i style="background:var(--good)"></i>내 선택 / 취소표</span>
     </div>
+    <div id="ticketBanner" class="hidden"></div>
 
     <div id="lateNotice"></div>
 
@@ -284,16 +310,44 @@ function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*
 //// 난이도 = 매진 속도 ////
 // tauMul: 오픈 직후 매진 진행 속도(작을수록 빨리 매진). preStart: 오픈 순간 기본 매진율 가중.
 const DIFFICULTY = {
-  easy:   { name:"쉬움",        interval:520, batch:4,  preempt:0.10, tauMul:2.0,  preStart:0.6 },
-  normal: { name:"보통",        interval:280, batch:8,  preempt:0.20, tauMul:1.0,  preStart:1.0 },
-  hard:   { name:"어려움",      interval:140, batch:16, preempt:0.34, tauMul:0.55, preStart:1.5 },
-  hell:   { name:"피켓팅(헬)",  interval:65,  batch:30, preempt:0.55, tauMul:0.28, preStart:2.2 },
+  easy:   { name:"쉬움",        interval:520, batch:4,  preempt:0.10, tauMul:2.0,  preStart:0.6, queueSize:500,   queueWait:2.0, cancelWindow:1100, ticketingSec:35 },
+  normal: { name:"보통",        interval:280, batch:8,  preempt:0.20, tauMul:1.0,  preStart:1.0, queueSize:2500,  queueWait:3.5, cancelWindow:800,  ticketingSec:28 },
+  hard:   { name:"어려움",      interval:140, batch:16, preempt:0.34, tauMul:0.55, preStart:1.5, queueSize:7000,  queueWait:5.5, cancelWindow:520,  ticketingSec:22 },
+  hell:   { name:"피켓팅(헬)",  interval:65,  batch:30, preempt:0.55, tauMul:0.28, preStart:2.2, queueSize:21000, queueWait:8.0, cancelWindow:330,  ticketingSec:16 },
 };
 
 const $ = id => document.getElementById(id);
-function show(id){ ["s_setup","s_count","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden"); }
+function show(id){ ["s_setup","s_count","s_queue","s_cap","s_seat","s_pay","s_done"].forEach(s=>$(s).classList.add("hidden")); $(id).classList.remove("hidden");
+  const bb=$("backBtn"); if(bb) bb.classList.toggle("hidden", id==="s_setup"); }
+
+//// 뒤로가기 ////
+function cancelRun(){ if(T.seatTimer) clearInterval(T.seatTimer); if(T.cancelTimer) clearInterval(T.cancelTimer); if(rafId) cancelAnimationFrame(rafId); if(qRaf) cancelAnimationFrame(qRaf); T.ended=true; }
+function resumeSeat(){ T.ended=false; if(T.seatTimer) clearInterval(T.seatTimer); T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval); startCancellations(); show("s_seat"); }
+function goBack(){
+  if(!$("s_seat").classList.contains("hidden")){
+    if(!$("sectionDetail").classList.contains("hidden")){ backToOverview(); return; } // 좌석→구역 개요
+    if(confirm("좌석 선택을 취소하고 처음으로 돌아갈까요?")){ cancelRun(); show("s_setup"); }
+    return;
+  }
+  if(!$("s_pay").classList.contains("hidden")){ resumeSeat(); return; } // 결제→좌석 다시 선택(경쟁 재개)
+  if(!$("s_done").classList.contains("hidden")){ cancelRun(); show("s_setup"); return; }
+  // 카운트다운/대기열/보안문자 단계: 진행 취소하고 처음으로
+  cancelRun(); show("s_setup");
+}
 function toast(msg, err){ const t=$("toast"); t.textContent=msg; t.className="toast show"+(err?" err":""); setTimeout(()=>t.className="toast",1600); }
 function fmt(ms){ const s=Math.max(0,ms)/1000; return s.toFixed(3)+"s"; }
+// 완주 시간(ms) → 상위 백분위(1~99). 빠를수록 상위.
+function topPercent(ms){
+  const s=ms/1000; let p;
+  if(s<=4)      p=1;
+  else if(s<=6) p=1 + (s-4)/2*4;       // 1~5%
+  else if(s<=9) p=5 + (s-6)/3*5;       // 5~10%
+  else if(s<=13)p=10 + (s-9)/4*15;     // 10~25%
+  else if(s<=20)p=25 + (s-13)/7*25;    // 25~50%
+  else if(s<=30)p=50 + (s-20)/10*30;   // 50~80%
+  else          p=80 + Math.min(19,(s-30)/10*10); // 80~99%
+  return Math.max(1, Math.min(99, Math.round(p)));
+}
 function rowLetter(r){ return r<26 ? String.fromCharCode(65+r) : String.fromCharCode(65+Math.floor(r/26)-1)+String.fromCharCode(65+r%26); }
 
 //// 공유 ////
@@ -328,7 +382,19 @@ function startCountdown(){
   T.openAt = performance.now() + secs*1000;
   T.armed = false;
   T.capTries = 0;
-  $("openBtn").disabled = true;
+  T.refreshes = 0;
+  T.earlyRefresh = 0;
+  // 랜덤(약 50%): 정시에 버튼이 자동 활성화되지 않고 직접 새로고침해야 입장
+  T.mustRefresh = Math.random() < 0.5;
+  if(T.mustRefresh){
+    $("openBtn").disabled = false;
+    $("openBtn").textContent = "🔄 새로고침";
+    $("openHint").innerHTML = "⚠️ 이 공연은 버튼이 자동으로 안 열려요! <b>정시(00:00)에 직접 🔄 새로고침</b>해야 입장됩니다. (너무 일찍 누르면 헛수고)";
+  } else {
+    $("openBtn").disabled = true;
+    $("openBtn").textContent = "예매하기";
+    $("openHint").innerHTML = "정시에 '예매하기'가 활성화돼요. 너무 일찍 누르면 실패로 기록됩니다.";
+  }
   show("s_count");
   tick();
 }
@@ -337,8 +403,11 @@ function tick(){
   const el = $("count");
   if(remain <= 0){
     el.textContent="00:00.000"; el.className="count go";
-    $("openBtn").disabled=false;
-    if(T.armed!==true){ T.armed=true; T.openEnabledAt=performance.now(); }
+    if(T.armed!==true){
+      T.armed=true; T.openEnabledAt=performance.now();
+      $("openBtn").disabled=false;
+      $("openBtn").textContent = T.mustRefresh ? "🔄 새로고침 (지금!)" : "예매하기";
+    }
     rafId=requestAnimationFrame(tick);
     return;
   }
@@ -348,9 +417,52 @@ function tick(){
   rafId=requestAnimationFrame(tick);
 }
 function hitOpen(){
-  if(performance.now() < T.openAt){ toast("아직 오픈 전입니다!", true); return; }
+  if(performance.now() < T.openAt){
+    if(T.mustRefresh){
+      T.earlyRefresh = (T.earlyRefresh||0) + 1;
+      toast("아직 예매 페이지가 안 열렸어요! 정시에 다시 새로고침하세요", true);
+      return;
+    }
+    toast("아직 오픈 전입니다!", true); return;
+  }
   cancelAnimationFrame(rafId);
   T.t_open = performance.now() - T.openEnabledAt;
+  startQueue();   // 실전처럼 접속 대기열을 거쳐 입장
+}
+
+//// 1.5 접속 대기열 (NetFunnel 재현) ////
+let qRaf=null;
+function startQueue(){
+  T.queueTotal = T.diff.queueSize;
+  T.queueBaseMs = T.diff.queueWait*1000;
+  T.queueRemainMs = T.queueBaseMs;
+  T.queueMaxMs = T.queueBaseMs;
+  T.queueLastT = performance.now();
+  show("s_queue");
+  queueTick();
+}
+function queueTick(){
+  const now=performance.now(); const dt=now-T.queueLastT; T.queueLastT=now;
+  // 가끔 정체(멈칫) — 실제 대기열처럼
+  if(Math.random() > 0.10) T.queueRemainMs -= dt;
+  if(T.queueRemainMs <= 0){ enterFromQueue(); return; }
+  const pos = Math.max(1, Math.ceil(T.queueTotal * T.queueRemainMs / T.queueBaseMs));
+  $("qnum").textContent = pos.toLocaleString();
+  const prog = Math.min(100, Math.max(0, (1 - T.queueRemainMs/T.queueMaxMs)*100));
+  const bar=$("qbar"); bar.style.width = prog+"%";
+  bar.style.background = prog<50 ? "var(--bad)" : prog<85 ? "var(--warn)" : "var(--good)";
+  qRaf=requestAnimationFrame(queueTick);
+}
+function refreshQueue(){
+  // 실전 함정: 새로고침하면 대기열 맨 뒤로 밀린다!
+  T.refreshes = (T.refreshes||0) + 1;
+  const back = T.queueBaseMs * (0.5 + Math.random()*0.6);
+  T.queueRemainMs += back;
+  T.queueMaxMs = Math.max(T.queueMaxMs, T.queueRemainMs);
+  toast("🔄 새로고침! 대기열 맨 뒤로 밀렸습니다 — 더 늦어졌어요", true);
+}
+function enterFromQueue(){
+  cancelAnimationFrame(qRaf);
   newCaptcha(); show("s_cap"); T.t_capStart=performance.now(); $("capInput").focus();
 }
 
@@ -391,7 +503,7 @@ $("capInput") && $("capInput").addEventListener("keydown",e=>{ if(e.key==="Enter
 //// 3. 좌석 (공연장 → U자 구역 → 좌석) ////
 function buildVenue(){
   T.venue = VENUES[T.venueKey] || VENUES[Object.keys(VENUES)[0]];
-  T.allSecs=[]; T.secById={}; T.secMap={}; T.picked=new Set(); T.preempted=0; T.openSec=null;
+  T.allSecs=[]; T.secById={}; T.secMap={}; T.picked=new Set(); T.preempted=0; T.openSec=null; T.ended=false;
   T.venue.zones.forEach(z=> z.secs.forEach(s=>{
     T.allSecs.push(s); T.secById[s.id]=s;
     T.secMap[s.id]={ total:s.rows*s.cols, taken:new Set() };
@@ -426,9 +538,49 @@ function buildVenue(){
   $("seatNeed").textContent = `${T.need}석 선택`;
   $("gradeLegend").innerHTML = Object.values(GRADES).map(g=>
     `<span><i style="background:${g.color}"></i>${g.name} ${g.price.toLocaleString()}원</span>`).join("");
+  T.ticketingMode=false; $("ticketBanner").classList.add("hidden");
   renderOverview(); updatePicked(); updateRemain();
   if(T.seatTimer) clearInterval(T.seatTimer);
   T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval);
+  startCancellations();
+}
+
+//// 취켓팅: 취소표가 잠깐 떴다가 순삭 ////
+function startCancellations(){
+  if(T.cancelTimer) clearInterval(T.cancelTimer);
+  T.cancelTimer=setInterval(cancelTick, 600);
+}
+function cancelTick(){
+  if(T.ended) return;
+  if(T.ticketingMode){
+    const left=Math.ceil((T.ticketingDeadline-performance.now())/1000);
+    if(left<=0){ failTicketing(); return; }
+    $("ticketBanner").innerHTML=`🎯 <b>전석 매진!</b> 취소표를 노리세요 — 남은 시간 <b>${left}초</b>`;
+  }
+  if(T.openSec){
+    const prob = T.ticketingMode ? 0.8 : 0.4;
+    if(Math.random()<prob) popCancellation(T.openSec);
+  }
+}
+function popCancellation(secId){
+  const rt=T.secMap[secId];
+  const takenArr=[...rt.taken];
+  if(!takenArr.length) return;
+  const i=takenArr[Math.floor(Math.random()*takenArr.length)];
+  const pid=secId+"#"+i;
+  if(T.picked.has(pid)) return;
+  rt.taken.delete(i);
+  const cell=cellEl(secId,i);
+  if(cell){ cell.classList.remove("taken"); cell.classList.add("cancel"); }
+  updateRemain(); refreshBlocks();
+  const win=T.diff.cancelWindow||700;
+  setTimeout(()=>{
+    if(T.ended || T.picked.has(pid) || rt.taken.has(i)) return;
+    rt.taken.add(i); // 순삭: 다시 매진
+    const c2=cellEl(secId,i) || cell;
+    if(c2){ c2.classList.remove("cancel"); c2.classList.add("taken","snatch"); setTimeout(e=>e.classList.remove("snatch"),350,c2); }
+    updateRemain(); refreshBlocks();
+  }, win);
 }
 
 function renderOverview(){
@@ -510,11 +662,30 @@ function rivalGrab(){
     if(T.openSec===s.id){ const cell=cellEl(s.id,i);
       if(cell){ cell.classList.add("taken","snatch"); setTimeout(e=>e.classList.remove("snatch"),350,cell); } }
   }
-  updateRemain(); refreshBlocks();
+  updateRemain(); refreshBlocks(); checkSoldOut();
+}
+// 좌석이 부족해지면(전석 매진) 즉시 실패 대신 '취켓팅 모드'로 전환 (취소표 사냥)
+function checkSoldOut(){
+  if(T.ended || T.ticketingMode || T.picked.size>=T.need) return;
+  let free=0; T.allSecs.forEach(s=>{ free+=freeInSec(s.id); });
+  if(free + T.picked.size < T.need){
+    T.ticketingMode=true;
+    T.ticketingDeadline=performance.now() + (T.diff.ticketingSec||25)*1000;
+    const b=$("ticketBanner"); b.classList.remove("hidden");
+    b.style.cssText="margin:8px 0;padding:10px 12px;border-radius:8px;background:#3a1d24;color:var(--warn);font-weight:700;text-align:center";
+    b.innerHTML="🎯 <b>전석 매진!</b> 취소표를 노리세요!";
+    toast("🎯 전석 매진! 취소표를 노려보세요!", true);
+  }
 }
 
 function pickSeat(secId,i,d){
   const rt=T.secMap[secId], pid=secId+"#"+i;
+  // 취소표(반짝이는 좌석)는 선점 없이 즉시 잡힘
+  if(d.classList && d.classList.contains("cancel")){
+    if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
+    d.classList.remove("cancel"); T.picked.add(pid); d.classList.add("sel");
+    toast("🎯 취소표 잡았다!"); updatePicked(); return;
+  }
   if(rt.taken.has(i)){ toast("이미 매진된 좌석입니다", true); return; }
   if(T.picked.has(pid)){ T.picked.delete(pid); d.classList.remove("sel"); updatePicked(); return; }
   if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
@@ -526,7 +697,7 @@ function pickSeat(secId,i,d){
     d.classList.add("taken","snatch"); d.classList.remove("sel");
     setTimeout(()=>d.classList.remove("snatch"),350);
     toast("이미 선점된 좌석입니다. 다른 좌석을 선택하세요!", true);
-    updateRemain(); return;
+    updateRemain(); checkSoldOut(); return;
   }
   T.picked.add(pid); d.classList.add("sel"); updatePicked();
 }
@@ -543,8 +714,11 @@ function updatePicked(){
 }
 
 function goPay(){
-  if(T.picked.size!==T.need) return;
+  if(T.picked.size!==T.need || T.ended) return;
+  T.ended=true;
   if(T.seatTimer) clearInterval(T.seatTimer);
+  if(T.cancelTimer) clearInterval(T.cancelTimer);
+  $("ticketBanner").classList.add("hidden");
   T.t_seatDone=performance.now();
   let total=0;
   const labels=[...T.picked].map(pid=>{ const sp=T.secById[pid.split("#")[0]]; total+=GRADES[sp.grade].price; return seatLabel(pid); });
@@ -569,18 +743,65 @@ function finish(){
   else if(totalFlow<12000){ grade="✅ 성공!"; color="var(--good)"; }
   else if(totalFlow<20000){ grade="👍 통과"; color="var(--warn)"; }
   else { grade="🐢 연습 필요"; color="var(--bad)"; }
-  $("grade").textContent=grade; $("grade").style.color=color;
-  LAST_RESULT=`[티켓팅 가상 연습] ${grade}\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
+  // 난이도 보정: 어려울수록 같은 시간이라도 상위 백분위 가산
+  const diffBonus = { easy:1.15, normal:1.0, hard:0.82, hell:0.65 }[$("cfg_diff").value] || 1;
+  const pct = topPercent(totalFlow * diffBonus);
+  $("grade").textContent=`🎉 예매 성공! 상위 ${pct}%`; $("grade").style.color="var(--good)";
+  LAST_RESULT=`[티켓팅 가상 연습] 🎉 예매 성공! 상위 ${pct}% (${grade})\n${T.venue.name} · 난이도 ${T.diff.name}\n전체 ${fmt(totalFlow)} · 반응 ${fmt(reaction)} · 좌석 ${fmt(seatTime)}\n도전해보기 → ${location.href}`;
   $("result").innerHTML=`
+    <div class="stat" style="font-size:17px"><span><b>내 순위</b></span><b style="color:var(--good)">상위 ${pct}%</b></div>
+    <div class="stat" style="font-size:16px"><span><b>등급</b></span><b style="color:${color}">${grade}</b></div>
     <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
-    <div class="stat"><span>반응속도 (오픈→클릭)</span><b>${fmt(reaction)}</b></div>
+    <div class="stat"><span>예매 오픈 방식</span><b>${T.mustRefresh ? "🔄 직접 새로고침" : "자동 활성"}</b></div>
+    <div class="stat"><span>반응속도 (오픈→${T.mustRefresh?"새로고침":"클릭"})</span><b>${fmt(reaction)}</b></div>
+    <div class="stat"><span>대기열 새로고침</span><b>${T.refreshes||0}회</b></div>
     <div class="stat"><span>보안문자 (${T.capTries}회 시도)</span><b>${fmt(capTime)}</b></div>
     <div class="stat"><span>구역·좌석 선택</span><b>${fmt(seatTime)}</b></div>
     <div class="stat"><span>선점당한 좌석</span><b>${T.preempted}회</b></div>
     <div class="stat"><span>결제 화면</span><b>${fmt(payTime)}</b></div>
     <div class="stat" style="border-bottom:none;font-size:16px"><span><b>전체 소요</b></span><b style="color:${color}">${fmt(totalFlow)}</b></div>`;
   show("s_done");
+}
+
+// 전석 매진으로 좌석을 못 잡았을 때
+function failTicketing(){
+  if(T.ended) return;
+  T.ended=true;
+  if(T.seatTimer) clearInterval(T.seatTimer);
+  if(T.cancelTimer) clearInterval(T.cancelTimer);
+  $("ticketBanner").classList.add("hidden");
+  $("grade").textContent="😭 ㅠㅠ 티켓팅 도전!"; $("grade").style.color="var(--bad)";
+  LAST_RESULT=`[티켓팅 가상 연습] 😭 전석 매진… ㅠㅠ 티켓팅 도전!\n${T.venue.name} · 난이도 ${T.diff.name}\n다시 도전 → ${location.href}`;
+  $("result").innerHTML=`
+    <div class="stat" style="border-bottom:none;justify-content:center;font-size:15px"><b style="color:var(--bad)">아쉽게도 좌석이 모두 매진됐어요.<br>조금만 더 빠르게! 다음엔 성공할 거예요 💪</b></div>
+    <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
+    <div class="stat"><span>난이도 (매진 속도)</span><b>${T.diff.name}</b></div>
+    <div class="stat"><span>대기열 새로고침</span><b>${T.refreshes||0}회</b></div>
+    <div class="stat"><span>보안문자 시도</span><b>${T.capTries}회</b></div>
+    <div class="stat" style="border-bottom:none"><span>잡은 좌석</span><b>${T.picked.size} / ${T.need}석</b></div>`;
+  show("s_done");
+}
+
+//// PWA: 설치 버튼 + 서비스워커 등록 ////
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt", e=>{
+  e.preventDefault(); deferredPrompt=e;
+  $("installBtn").classList.remove("hidden");
+});
+async function installApp(){
+  if(!deferredPrompt){
+    toast("브라우저 메뉴의 '홈 화면에 추가'로 설치할 수 있어요", false);
+    return;
+  }
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null;
+  $("installBtn").classList.add("hidden");
+}
+window.addEventListener("appinstalled", ()=>{ $("installBtn").classList.add("hidden"); toast("앱이 설치됐어요! 🎉"); });
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
 }
 </script>
 </body>

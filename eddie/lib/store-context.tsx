@@ -79,14 +79,14 @@ interface StoreValue {
   recordBedtime: () => void;
 
   // 빠른 할 일 캡처(브레인 덤프)
-  addTodo: (text: string, remindAt?: string) => void;
+  addTodo: (text: string, remindAt?: string, remindDate?: string) => void;
   toggleTodo: (id: string) => void;
   removeTodo: (id: string) => void;
   clearDoneTodos: () => void;
   setTodoReminder: (id: string, remindAt?: string) => void;
 
   // 스케줄 달력
-  addEvent: (date: string, title: string, time?: string) => void;
+  addEvent: (date: string, title: string, time?: string, leadDays?: number[]) => void;
   updateEvent: (id: string, patch: Partial<Omit<ScheduleEvent, 'id'>>) => void;
   removeEvent: (id: string) => void;
   toggleEvent: (id: string) => void;
@@ -280,6 +280,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           });
         }
       });
+
+      // 일정 미리 알림 (D-7, D-2 ... 며칠 전) — 해당 일정의 시각(없으면 09:00)에 발송
+      s.schedule.forEach((ev) => {
+        if (ev.done || !ev.leadDays || ev.leadDays.length === 0) return;
+        const fireTime = ev.time || '09:00';
+        if (nowHM !== fireTime) return;
+        const [ey, em, ed] = ev.date.split('-').map((x) => parseInt(x, 10));
+        ev.leadDays.forEach((n) => {
+          if (n <= 0) return;
+          const remindDay = new Date(ey, em - 1, ed - n);
+          if (dateKey(remindDay) !== d) return;
+          notif.fire({
+            title: `다가오는 일정 · D-${n}`,
+            body: `${em}월 ${ed}일 · ${ev.title}`,
+            tone,
+            key: `event:${ev.id}:lead:${n}`,
+            date: d,
+            cap,
+            fallback: pushToast,
+          });
+        });
+      });
     }
 
     tick();
@@ -425,10 +447,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── 빠른 할 일 캡처 ──
-  const addTodo = useCallback<StoreValue['addTodo']>((text, remindAt) => {
+  const addTodo = useCallback<StoreValue['addTodo']>((text, remindAt, remindDate) => {
     const t = text.trim();
     if (!t) return;
-    const day = dateKey(new Date());
+    const day = remindDate || dateKey(new Date());
     setState((s) => ({
       ...s,
       todos: [
@@ -470,8 +492,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── 스케줄 달력 ──
-  const addEvent = useCallback<StoreValue['addEvent']>((date, title, time) => {
-    setState((s) => ({ ...s, schedule: [...s.schedule, { id: uid('ev'), date, title, time, done: false }] }));
+  const addEvent = useCallback<StoreValue['addEvent']>((date, title, time, leadDays) => {
+    setState((s) => ({
+      ...s,
+      schedule: [
+        ...s.schedule,
+        { id: uid('ev'), date, title, time, done: false, ...(leadDays && leadDays.length ? { leadDays } : {}) },
+      ],
+    }));
   }, []);
   const updateEvent = useCallback<StoreValue['updateEvent']>((id, patch) => {
     setState((s) => ({ ...s, schedule: s.schedule.map((e) => (e.id === id ? { ...e, ...patch } : e)) }));

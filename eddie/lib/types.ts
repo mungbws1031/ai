@@ -116,6 +116,7 @@ export interface ScheduleEvent {
   time?: string; // 'HH:mm' (선택)
   title: string;
   done: boolean;
+  leadDays?: number[]; // 며칠 전에 미리 알림 (예: [7,2,1])
 }
 
 /** 제자리 물건 (FR-301) */

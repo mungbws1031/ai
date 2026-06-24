@@ -4,18 +4,13 @@ import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '@/lib/store-context';
 import { dateKey } from '@/lib/clock';
 import { isGoodDay } from '@/lib/streak';
-import {
-  canNativeShare,
-  copyText,
-  formatDay,
-  formatEvent,
-  nativeShare,
-  smsHref,
-} from '@/lib/share';
+import { canNativeShare, copyText, formatDay, nativeShare, smsHref } from '@/lib/share';
+import { ScheduleEvent } from '@/lib/types';
 import PageHeader from '@/components/PageHeader';
 import NoticeImport from '@/components/NoticeImport';
 import ScheduleShare from '@/components/ScheduleShare';
 import ScheduleImport from '@/components/ScheduleImport';
+import EventRow from '@/components/EventRow';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -148,20 +143,16 @@ function DayDetail({
   routineDone: number;
   meds: number;
   sleep?: string;
-  events: { id: string; title: string; time?: string; done: boolean }[];
+  events: ScheduleEvent[];
 }) {
-  const { addEvent, toggleEvent, removeEvent, pushToast } = useStore();
+  const { addEvent } = useStore();
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
+  const [leads, setLeads] = useState<number[]>([]);
   const [m, dd] = date.split('-').slice(1);
 
-  // 빠른 공유: 공유 시트(카톡·문자 등) → 미지원이면 복사로 대체.
-  async function quickShare(text: string) {
-    const r = await nativeShare(text);
-    if (r === 'unsupported') {
-      const ok = await copyText(text);
-      pushToast(ok ? '복사했어 — 붙여넣어 보내줘.' : '복사하지 못했어.');
-    }
+  function toggleLead(n: number) {
+    setLeads((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n].sort((a, b) => b - a)));
   }
 
   return (
@@ -178,31 +169,7 @@ function DayDetail({
 
       <ul className="mt-3 flex flex-col gap-2">
         {events.map((e) => (
-          <li key={e.id} className="flex items-center gap-2 rounded-xl border border-eddie-line p-2 dark:border-neutral-700">
-            <button
-              onClick={() => toggleEvent(e.id)}
-              aria-pressed={e.done}
-              className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                e.done ? 'border-eddie-primary bg-eddie-primary text-white' : 'border-eddie-line'
-              }`}
-            >
-              {e.done ? '✓' : ''}
-            </button>
-            <span className={`flex-1 ${e.done ? 'text-eddie-muted line-through' : ''}`}>
-              {e.time && <span className="mr-1 font-mono text-xs text-eddie-primary">{e.time}</span>}
-              {e.title}
-            </span>
-            <button
-              onClick={() => quickShare(formatEvent(date, e))}
-              className="btn-ghost px-2"
-              aria-label="이 일정 친구에게 보내기"
-            >
-              📤
-            </button>
-            <button onClick={() => removeEvent(e.id)} className="btn-ghost px-2 text-red-500" aria-label="일정 삭제">
-              ✕
-            </button>
-          </li>
+          <EventRow key={e.id} date={date} e={e} />
         ))}
         {events.length === 0 && <li className="text-sm text-eddie-muted">이 날 일정이 없어.</li>}
       </ul>
@@ -215,9 +182,10 @@ function DayDetail({
           e.preventDefault();
           const v = title.trim();
           if (!v) return;
-          addEvent(date, v, time || undefined);
+          addEvent(date, v, time || undefined, leads);
           setTitle('');
           setTime('');
+          setLeads([]);
         }}
       >
         <input className="field" placeholder="일정 추가 (예: 병원 예약)" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -227,7 +195,27 @@ function DayDetail({
             추가
           </button>
         </div>
-        <p className="text-xs text-eddie-muted">시각을 정하면 그 시간에 알림을 보내줄게(앱이 열려 있을 때).</p>
+        <div>
+          <p className="mb-1 text-xs text-eddie-muted">미리 알림 (며칠 전, 선택)</p>
+          <div className="flex gap-2">
+            {[7, 2, 1].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => toggleLead(n)}
+                aria-pressed={leads.includes(n)}
+                className={`min-h-tap flex-1 rounded-xl border text-sm font-medium ${
+                  leads.includes(n)
+                    ? 'border-eddie-primary bg-eddie-primary-soft text-eddie-primary'
+                    : 'border-eddie-line text-eddie-muted'
+                }`}
+              >
+                {n}일 전
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="text-xs text-eddie-muted">시각·미리 알림을 정하면 그때 알려줄게(앱이 열려 있을 때).</p>
       </form>
     </section>
   );
