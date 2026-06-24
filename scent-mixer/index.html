@@ -172,8 +172,21 @@
   .qty-row .v{ text-align:right; font-variant-numeric:tabular-nums; font-size:12.5px; color:var(--muted); min-width:64px; }
   .qty-sum{ margin-top:12px; font-size:12.5px; display:grid; gap:3px;
             border-top:1px solid var(--line); padding-top:10px; }
-  .qty-sum .qrow{ display:flex; justify-content:space-between; }
+  .qty-sum .qrow{ display:flex; justify-content:space-between; gap:8px; }
   .qty-sum b{ color:var(--fg); }
+  /* precise recipe rows */
+  .qrow2{ display:flex; justify-content:space-between; align-items:baseline; gap:8px;
+          padding:7px 0; border-bottom:1px solid var(--line); }
+  .qrow2:last-of-type{ border-bottom:none; }
+  .qrow2 .nm{ font-size:13px; font-weight:600; display:flex; align-items:center; gap:7px; }
+  .qrow2 .nm small{ font-weight:400; color:var(--muted); }
+  .qrow2 .met{ text-align:right; font-size:12px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .qrow2 .met small{ color:var(--muted); }
+  .recipe-steps{ margin-top:12px; }
+  .rs-title{ font-size:13px; font-weight:600; margin-bottom:6px; }
+  ol.steps{ margin:0; padding-left:20px; font-size:12.5px; line-height:1.7; color:var(--fg); }
+  ol.steps li{ margin-bottom:3px; }
+  ol.steps b{ color:var(--accent); }
   /* supplies checklist */
   .supply{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; cursor:pointer; }
   .supply:last-of-type{ border-bottom:none; }
@@ -574,6 +587,12 @@
             </select>
           </div>
         </div>
+        <label class="lbl">스포이트 보정 <span style="font-weight:400">(1ml당 방울 수 — 도구마다 달라요)</span></label>
+        <select id="dpm">
+          <option value="20" selected>20방울 / ml (일반 점적기)</option>
+          <option value="25">25방울 / ml</option>
+          <option value="30">30방울 / ml (가는 피펫)</option>
+        </select>
         <div id="recipeQty" style="margin-top:12px;"><div class="empty">조합을 추가하면 분량이 계산됩니다.</div></div>
       </details>
 
@@ -1368,15 +1387,21 @@ function renderEasyRecipe(a){
   if(!$("#easyRecipe")) return;
   if(!a.items.length){ $("#easyRecipe").innerHTML='<div class="empty">향을 먼저 만들어 주세요.</div>'; $("#easySupplies").innerHTML=""; return; }
   const batch=+easyVol, conc=0.20, DPM=20;
-  const oil=batch*conc, alc=batch-oil, total=a.items.reduce((s,i)=>s+i.drops,0)||1;
-  $("#easyRecipe").innerHTML=a.items.map(i=>{const ml=oil*(i.drops/total);
-    return `<div class="qty-row"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
-      <span class="v">${Math.max(1,Math.round(ml*DPM))}방울</span><span class="v">${ml.toFixed(2)}ml</span></div>`;}).join("")
+  const oilMl=batch*conc, alcMl=batch-oilMl, total=a.items.reduce((s,i)=>s+i.drops,0)||1;
+  const oilG=oilMl*OIL_D, alcG=alcMl*ETH_D, totG=oilG+alcG;
+  $("#easyRecipe").innerHTML=a.items.map(i=>{const ml=oilMl*(i.drops/total), g=ml*OIL_D;
+    return `<div class="qrow2"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
+      <span class="met"><b>${g.toFixed(2)} g</b> <small>· ${Math.max(1,Math.round(ml*DPM))}방울</small></span></div>`;}).join("")
     +`<div class="qty-sum">
-      <div class="qrow"><span>향료 원액 합계</span><b>${oil.toFixed(1)} ml</b></div>
-      <div class="qrow"><span>퍼퓸용 알코올(에탄올)</span><b>${alc.toFixed(1)} ml</b></div>
-      <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div></div>`;
-  $("#easySupplies").innerHTML=`<b>준비물:</b> ${batch}ml 유리 향수병 · 유리 스포이트 ${a.items.length}개 · 비커 · 시향지 · (선택) 디지털 저울. → 위 분량대로 섞고 알코올로 채운 뒤 <b>어두운 곳에서 4~6주 숙성</b>하면 완성!`;
+      <div class="qrow"><span>향료 원액</span><b>${oilG.toFixed(2)} g · ${oilMl.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>알코올(에탄올)</span><b>${alcG.toFixed(2)} g · ${alcMl.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>완성 총량</span><b>${totG.toFixed(2)} g · ${batch} ml</b></div></div>
+    <ol class="steps" style="margin-top:10px;">
+      <li>비커를 저울에 올려 <b>영점</b> → 베이스→미들→탑 순으로 각 향료를 <b>g</b>(또는 방울)만큼 계량.</li>
+      <li>잘 저은 뒤 <b>알코올 ${alcG.toFixed(1)}g</b>을 넣어 총 <b>${totG.toFixed(0)}g(${batch}ml)</b>로 맞추기.</li>
+      <li>밀봉해 <b>어두운 곳에서 4~6주 숙성</b> → 향수병에 담으면 완성!</li>
+    </ol>`;
+  $("#easySupplies").innerHTML=`<b>준비물:</b> ${batch}ml 유리 향수병 · 유리 스포이트 ${a.items.length}개 · 비커 · <b>디지털 저울(0.01g, 정확도 ↑)</b> · 시향지. 방울보다 g 계량이 정확해요.`;
 }
 function initEasy(){
   renderEasyMoods();
@@ -1390,24 +1415,39 @@ function initEasy(){
 }
 
 // ---- 재료 분량(실제 제작) ----
+const OIL_D=0.90, ETH_D=0.789; // 밀도(g/ml) 근사: 향료 원액 / 에탄올
 function renderRecipeQty(a){
   const wrap=$("#recipeQty");
   if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 분량이 계산됩니다.</div>'; return; }
-  const batch=+$("#batchMl").value, conc=+$("#conc").value, DPM=20; // 1ml≈20방울
+  const batch=+$("#batchMl").value, conc=+$("#conc").value;
+  const DPM=+(($("#dpm")&&$("#dpm").value)||20); // 1ml당 방울 수(보정)
   const oilMl=batch*conc, alcMl=batch-oilMl;
+  const oilG=oilMl*OIL_D, alcG=alcMl*ETH_D, totG=oilG+alcG;
   const totalDrops=a.items.reduce((s,i)=>s+i.drops,0)||1;
   const rows=a.items.map(i=>{
-    const ml=oilMl*(i.drops/totalDrops);
-    return `<div class="qty-row"><span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}</span>
-      <span class="v">${ml.toFixed(2)} ml</span><span class="v">${Math.max(1,Math.round(ml*DPM))}방울</span></div>`;
+    const ml=oilMl*(i.drops/totalDrops), g=ml*OIL_D, dr=Math.max(1,Math.round(ml*DPM)), pc=i.drops/totalDrops*100;
+    return `<div class="qrow2">
+      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n} <small>${pc.toFixed(0)}%</small></span>
+      <span class="met"><b>${g.toFixed(2)} g</b> <small>· ${ml.toFixed(2)}ml · ${dr}방울</small></span></div>`;
   }).join("");
   wrap.innerHTML=rows+`
     <div class="qty-sum">
-      <div class="qrow"><span>향료 원액 합계</span><b>${oilMl.toFixed(1)} ml (${Math.round(conc*100)}%)</b></div>
-      <div class="qrow"><span>퍼퓸용 알코올</span><b>${alcMl.toFixed(1)} ml</b></div>
-      <div class="qrow"><span>총 용량</span><b>${batch} ml</b></div>
+      <div class="qrow"><span>향료 원액 합계</span><b>${oilG.toFixed(2)} g · ${oilMl.toFixed(1)} ml (${Math.round(conc*100)}%)</b></div>
+      <div class="qrow"><span>퍼퓸용 알코올(에탄올)</span><b>${alcG.toFixed(2)} g · ${alcMl.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>완성 총량</span><b>${totG.toFixed(2)} g · ${batch} ml</b></div>
     </div>
-    <div class="note">① 향료 원액을 위 비율대로 섞고 → ② 퍼퓸용 알코올로 ${batch}ml까지 채운 뒤 → ③ 어두운 곳에서 4~6주 숙성(마세레이션)하면 향이 안정돼요. 방울은 1ml≈20방울 환산.</div>`;
+    <div class="recipe-steps">
+      <div class="rs-title">정확하게 만드는 법 <span class="muted">(저울 g 계량 권장)</span></div>
+      <ol class="steps">
+        <li>빈 비커를 저울에 올리고 <b>영점(0.00 g)</b>을 맞춰요.</li>
+        <li><b>베이스 → 미들 → 탑</b> 순서로 각 향료를 위 <b>g</b>(또는 방울)만큼 정확히 계량해요.</li>
+        <li>유리막대로 충분히 저어 향료를 고르게 섞어요.</li>
+        <li>퍼퓸용 알코올 <b>${alcG.toFixed(1)} g(${alcMl.toFixed(0)} ml)</b>를 넣어 총 <b>${totG.toFixed(0)} g(${batch} ml)</b>로 맞춰요.</li>
+        <li>밀봉해 <b>어두운 곳에서 4~6주 숙성</b>(주 1~2회 가볍게 흔들기).</li>
+        <li>(선택) 커피필터로 한 번 걸러 맑게 한 뒤 향수병에 담아요.</li>
+      </ol>
+      <div class="note">방울 수는 점적기마다 달라 부정확해요 — <b>저울(g)로 계량</b>하면 가장 정확합니다. 밀도는 향료 0.90·에탄올 0.79 g/ml로 근사했어요.</div>
+    </div>`;
 }
 
 // 제작에 필요한 도구·부자재 (용량/향료 수에 맞춰 수량 계산)
@@ -1488,7 +1528,7 @@ $("#genGoalBtn").onclick=buildFromGoal;
 $("#simPlay").onclick=toggleSim;
 $("#simTime").addEventListener("input",updateSim);
 $("#goalHours").addEventListener("change",()=>render());
-["batchMl","conc"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
+["batchMl","conc","dpm"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
 $("#tasteSel").addEventListener("change",e=>{
   const v=e.target.value;
   if(v===""){ $("#tasteLoad").disabled=$("#tasteVary").disabled=true;
