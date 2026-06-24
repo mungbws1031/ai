@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { buildRemindersForSubtask, buildRemindersForTask, dueReminders, snoozeToTomorrow } from './lib/reminders';
 import { decomposeDeadline } from './lib/scheduler';
+import { isLLMEnabled, llmDecompose } from './lib/llm';
 import { dueSeeds, estimateRevisitAt } from './lib/someday';
 import { seedPromptCopy, toneByStage } from './lib/tone';
 import { uid } from './lib/id';
@@ -79,9 +80,13 @@ export const useStore = create<MiriState>((set, get) => ({
 
   createTask: async (input) => {
     const now = new Date();
+    const title = input.title.trim();
+    // 빈 제목/날짜 방어: parseDate('')가 reminder·scheduler·calendar 전반에서 터지는 것 방지
+    if (!title) throw new Error('제목이 필요해요');
+    if (!input.dueDate) throw new Error('날짜가 필요해요');
     const task: Task = {
       id: uid(),
-      title: input.title.trim(),
+      title,
       type: input.type,
       dueDate: input.dueDate,
       subtasks: [],
@@ -95,15 +100,17 @@ export const useStore = create<MiriState>((set, get) => ({
 
     let subtasks: Subtask[] = [];
     const subReminders: Reminder[] = [];
-    // 마감/여행은 기본으로 역산 분해 (FR-B01). 그 외 유형은 옵션.
-    const shouldDecompose = input.decompose ?? (input.type === 'deadline' || input.type === 'travel');
+    // 모든 유형을 등록 즉시 역산 분해(기본값). 필요 시 input.decompose=false로 끔.
+    const shouldDecompose = input.decompose ?? true;
     if (shouldDecompose) {
       // FR-B03: 기존 일정의 마감일 + 이미 배치된 서브태스크 날짜 모두를 충돌 회피 대상으로.
       const busy = new Set<string>([
         ...get().tasks.map((t) => t.dueDate),
         ...get().subtasks.map((s) => s.scheduledDate),
       ]);
-      subtasks = decomposeDeadline(task, { busy });
+      // FR-B02: LLM 분해가 켜져 있으면 우선 시도, 실패 시 규칙 템플릿으로 fallback.
+      const llmSteps = isLLMEnabled() ? await llmDecompose(task) : null;
+      subtasks = decomposeDeadline(task, { busy, steps: llmSteps ?? undefined });
       for (const s of subtasks) {
         subReminders.push(...buildRemindersForSubtask(s, undefined, now)); // FR-B04
       }

@@ -5,7 +5,7 @@ import type { TaskType } from '../types';
 
 const TYPES: { id: TaskType; label: string; hint: string }[] = [
   { id: 'deadline', label: '마감', hint: '쪼개서 역산 배치' },
-  { id: 'appointment', label: '약속·상담', hint: '미리 알림만' },
+  { id: 'appointment', label: '약속·상담', hint: '준비 단계 + 알림' },
   { id: 'recurring', label: '반복', hint: '가볍게' },
   { id: 'travel', label: '여행', hint: 'D-150부터' },
 ];
@@ -19,14 +19,17 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
   const [decompose, setDecompose] = useState<boolean | undefined>(undefined);
   const [saving, setSaving] = useState(false);
 
-  const willDecompose = decompose ?? (type === 'deadline' || type === 'travel');
+  const willDecompose = decompose ?? true;
 
   const submit = async () => {
-    if (!title.trim() || saving) return;
+    if (!title.trim() || !dueDate || saving) return;
     setSaving(true);
-    await createTask({ title, dueDate, type, decompose });
-    setSaving(false);
-    onClose();
+    try {
+      await createTask({ title, dueDate, type, decompose });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -104,7 +107,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
 
         <button
           onClick={submit}
-          disabled={!title.trim() || saving}
+          disabled={!title.trim() || !dueDate || saving}
           className="w-full rounded-xl bg-point py-3 text-base font-semibold text-white disabled:opacity-40"
         >
           {willDecompose ? '등록하고 단계 깔기' : '등록'}

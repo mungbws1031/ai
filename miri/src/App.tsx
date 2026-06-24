@@ -6,13 +6,17 @@ import { CalendarView } from './components/CalendarView';
 import { SomedayBox } from './components/SomedayBox';
 import { QuickAdd } from './components/QuickAdd';
 import { Settings } from './components/Settings';
+import { InstallPrompt } from './components/InstallPrompt';
+import { syncNativeNotifications } from './lib/native';
 
 export default function App() {
   const load = useStore((s) => s.load);
   const loaded = useStore((s) => s.loaded);
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab] = useState<Tab>('calendar');
   const [adding, setAdding] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const reminders = useStore((s) => s.reminders);
 
   // §8.2 / §8.4: appOpen 루프 — 도달한 리마인더/seed 승격 후 로드
   useEffect(() => {
@@ -21,6 +25,11 @@ export default function App() {
       await load();
     })();
   }, [load]);
+
+  // 네이티브(Capacitor) 환경에선 리마인더를 OS 로컬 알림으로 동기화 (FR-A07)
+  useEffect(() => {
+    if (loaded) void syncNativeNotifications(reminders);
+  }, [loaded, reminders]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col">
@@ -55,6 +64,8 @@ export default function App() {
       </button>
 
       <TabBar active={tab} onChange={setTab} />
+
+      <InstallPrompt />
 
       {adding && <QuickAdd onClose={() => setAdding(false)} />}
       {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}

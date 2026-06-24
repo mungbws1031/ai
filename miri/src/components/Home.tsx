@@ -139,8 +139,9 @@ function SeedCard({ card }: { card: Extract<HomeCard, { kind: 'seed' }> }) {
           />
           <div className="flex gap-2">
             <button
-              onClick={() => convert(card.seed.id, due, 'travel')}
-              className="flex-1 rounded-xl bg-point py-2.5 text-sm font-semibold text-white"
+              onClick={() => due && convert(card.seed.id, due, 'travel')}
+              disabled={!due}
+              className="flex-1 rounded-xl bg-point py-2.5 text-sm font-semibold text-white disabled:opacity-40"
             >
               역산 일정으로 만들기
             </button>
