@@ -79,9 +79,13 @@ export const useStore = create<MiriState>((set, get) => ({
 
   createTask: async (input) => {
     const now = new Date();
+    const title = input.title.trim();
+    // 빈 제목/날짜 방어: parseDate('')가 reminder·scheduler·calendar 전반에서 터지는 것 방지
+    if (!title) throw new Error('제목이 필요해요');
+    if (!input.dueDate) throw new Error('날짜가 필요해요');
     const task: Task = {
       id: uid(),
-      title: input.title.trim(),
+      title,
       type: input.type,
       dueDate: input.dueDate,
       subtasks: [],

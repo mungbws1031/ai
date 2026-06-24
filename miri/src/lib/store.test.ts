@@ -13,6 +13,20 @@ async function reset() {
 
 beforeEach(reset);
 
+describe('빈 입력 방어', () => {
+  it('날짜가 비면 createTask가 거부한다', async () => {
+    const { createTask } = useStore.getState();
+    await expect(createTask({ title: '제목', type: 'appointment', dueDate: '' })).rejects.toThrow();
+    expect(useStore.getState().tasks).toHaveLength(0);
+  });
+
+  it('제목이 비면 createTask가 거부한다', async () => {
+    const { createTask } = useStore.getState();
+    await expect(createTask({ title: '  ', type: 'appointment', dueDate: '2026-07-01' })).rejects.toThrow();
+    expect(useStore.getState().tasks).toHaveLength(0);
+  });
+});
+
 describe('FR-B03 충돌 회피: 기존 서브태스크 날짜도 busy에 포함', () => {
   it('두 번째 역산 계획이 첫 계획의 서브태스크 날짜와 겹치지 않는다', async () => {
     const { createTask } = useStore.getState();
