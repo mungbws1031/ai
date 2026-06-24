@@ -100,8 +100,8 @@ export const useStore = create<MiriState>((set, get) => ({
 
     let subtasks: Subtask[] = [];
     const subReminders: Reminder[] = [];
-    // 마감/여행은 기본으로 역산 분해 (FR-B01). 그 외 유형은 옵션.
-    const shouldDecompose = input.decompose ?? (input.type === 'deadline' || input.type === 'travel');
+    // 모든 유형을 등록 즉시 역산 분해(기본값). 필요 시 input.decompose=false로 끔.
+    const shouldDecompose = input.decompose ?? true;
     if (shouldDecompose) {
       // FR-B03: 기존 일정의 마감일 + 이미 배치된 서브태스크 날짜 모두를 충돌 회피 대상으로.
       const busy = new Set<string>([
