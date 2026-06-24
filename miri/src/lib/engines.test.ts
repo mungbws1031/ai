@@ -5,7 +5,8 @@ import { decomposeDeadline } from './scheduler';
 import { estimateRevisitAt, dueSeeds } from './someday';
 import { previousAvailableDay, parseDate, isAvailable } from './dates';
 import { toneByStage, stageFor } from './tone';
-import type { SomedaySeed, Task } from '../types';
+import { selectNotifications } from './native';
+import type { Reminder, SomedaySeed, Task } from '../types';
 
 const NOW = new Date('2026-06-23T09:00:00');
 const dstr = (offset: number) => format(addDays(NOW, offset), 'yyyy-MM-dd');
@@ -104,6 +105,28 @@ describe('previousAvailableDay', () => {
   it('busy 날짜를 피한다', () => {
     const placed = previousAvailableDay(parseDate('2026-06-19'), new Set(['2026-06-19']));
     expect(format(placed, 'yyyy-MM-dd')).toBe('2026-06-18');
+  });
+});
+
+describe('네이티브 알림 선택: 캡 적용 전 정렬', () => {
+  const r = (id: string, days: number): Reminder => ({
+    id,
+    title: id,
+    fireAt: new Date(NOW.getTime() + days * 86400000).toISOString(),
+    stage: 1,
+    status: 'pending',
+  });
+
+  it('가까운 알림이 먼 알림보다 먼저 선택된다 (캡으로 누락 안 됨)', () => {
+    // DB 순서는 무작위(먼 것이 앞)일 수 있음 — 캡=2면 가까운 2개가 남아야 함
+    const reminders = [r('far', 100), r('soon', 1), r('mid', 30)];
+    const picked = selectNotifications(reminders, NOW.getTime(), 2).map((x) => x.r.id);
+    expect(picked).toEqual(['soon', 'mid']);
+  });
+
+  it('과거/도달한 리마인더는 제외된다', () => {
+    const picked = selectNotifications([r('past', -5), r('future', 5)], NOW.getTime());
+    expect(picked.map((x) => x.r.id)).toEqual(['future']);
   });
 });
 
