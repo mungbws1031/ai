@@ -257,6 +257,16 @@
   .wnav button{ flex:1; min-width:120px; }
   /* beaker fill animation */
   .beaker-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:6px 0 16px; }
+  .bk-bubble{ position:relative; max-width:260px; background:var(--card2); border:1px solid var(--line);
+              border-radius:14px; padding:10px 13px; font-size:12.5px; line-height:1.6; color:var(--fg);
+              text-align:center; margin-bottom:6px; }
+  .bk-bubble::before{ content:""; position:absolute; bottom:-10px; left:50%; margin-left:-9px;
+              border:9px solid transparent; border-top-color:var(--line); border-bottom:0; }
+  .bk-bubble::after{ content:""; position:absolute; bottom:-8px; left:50%; margin-left:-8px;
+              border:8px solid transparent; border-top-color:var(--card2); border-bottom:0; }
+  .bk-bubble b{ color:var(--accent); }
+  .bk-bubble.empty-bubble{ color:var(--muted); }
+  .bk-bubble.empty-bubble b{ color:var(--muted); }
   .beaker{ position:relative; width:120px; height:150px; }
   .glass{ position:absolute; inset:0; border:3px solid #3a3f63; border-top:none;
           border-radius:8px 8px 18px 18px; background:rgba(255,255,255,.03); overflow:hidden;
@@ -434,7 +444,7 @@
     <div class="wstep" data-step="2">
       <div class="card">
         <h2>2단계 · 만들어진 향 확인 <span class="tag">마음에 들 때까지 다듬기</span></h2>
-        <div class="beaker-wrap"><div class="beaker">
+        <div class="beaker-wrap"><div class="bk-bubble"></div><div class="beaker">
           <div class="glass"><div class="liquid"></div></div>
           <div class="ticks"><span></span><span></span><span></span><span></span></div>
         </div><div class="bk-label"></div></div>
@@ -452,7 +462,7 @@
     <div class="wstep" data-step="3">
       <div class="card">
         <h2>3단계 · 이렇게 만들면 돼요 <span class="tag">실제 분량·준비물</span></h2>
-        <div class="beaker-wrap"><div class="beaker">
+        <div class="beaker-wrap"><div class="bk-bubble"></div><div class="beaker">
           <div class="glass"><div class="liquid"></div></div>
           <div class="ticks"><span></span><span></span><span></span><span></span></div>
         </div><div class="bk-label"></div></div>
@@ -1415,6 +1425,22 @@ function renderEasy(a){
   renderEasyRecipe(a);
   renderBeaker(a);
 }
+// 비커 옆 말풍선: 현재 조합이 어떤 향인지 한 줄 묘사
+const FAM_FEEL={
+  citrus:"상큼한 시트러스", floral:"화사한 꽃향", woody:"포근한 우디", oriental:"따뜻한 오리엔탈",
+  fresh:"청량한 프레시", green:"싱그러운 그린", spicy:"알싸한 스파이시", gourmand:"달콤한 구르망",
+  fruity:"과즙 가득 프루티", aquatic:"시원한 바다향", leather:"가죽 무드"
+};
+function igaJosa(w){ const c=w.charCodeAt(w.length-1);
+  return (c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28!==0)?"이":"가"; } // 받침 있으면 '이'
+function scentPhrase(a){
+  const fw={}; a.weighted.forEach(i=>fw[i.fam]=(fw[i.fam]||0)+i.w);
+  const fams=Object.entries(fw).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([f])=>FAM_FEEL[f]);
+  const L=longevity(a);
+  const open=simAt(a,0).cur[0], dry=simAt(a,Math.max(L.hours*0.75,0.5)).cur[0];
+  const persist = L.hours<5?"가볍게 즐기기 좋은":L.hours<8?"데일리로 무난한":L.hours<11?"존재감 있게 오래가는":"강하게 오래 남는";
+  return `<b>${fams.join(" + ")}</b> 향이에요.<br>처음엔 <b>${open.n}</b>${igaJosa(open.n)} 퍼지고, 끝엔 <b>${dry?dry.n:open.n}</b> 잔향이 남아요. ${persist} 느낌!`;
+}
 // 컵(비커) 채움: 향료 비율대로 베이스→탑 색층, 방울 수만큼 높이
 function renderBeaker(a){
   const liquids=document.querySelectorAll(".liquid"); if(!liquids.length) return;
@@ -1425,6 +1451,8 @@ function renderBeaker(a){
   const bands=items.map(i=>`<div class="lay" style="height:${i.drops/(total||1)*100}%;background:${famColor(i.fam)}"></div>`).join("");
   liquids.forEach(l=>{ l.style.height=fill+"%"; l.innerHTML=bands; });
   document.querySelectorAll(".bk-label").forEach(el=>el.textContent = total? `${total}방울 채워짐` : "비어 있음");
+  const phrase = total? scentPhrase(a) : "향료를 넣으면 어떤 향인지 알려줄게요 🙂";
+  document.querySelectorAll(".bk-bubble").forEach(el=>{ el.innerHTML=phrase; el.classList.toggle("empty-bubble",!total); });
 }
 function beakerDrip(color){
   document.querySelectorAll(".beaker .glass").forEach(g=>{
