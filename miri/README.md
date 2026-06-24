@@ -36,6 +36,35 @@ npm run preview    # 빌드 결과 미리보기
 
 처음 켜면 설정(⚙︎) → **"샘플 데이터 넣어보기"** 로 PRD 시나리오(S1 상담 / S2 분기 보고서 / S3 가족여행)를 바로 볼 수 있다.
 
+## 앱으로 쓰기
+
+미리는 두 가지 방식으로 "앱"이 된다.
+
+### 1) PWA 설치 (지금 바로, 빌드 불필요)
+폰 브라우저로 열면 하단에 **"앱으로 설치할까요?"** 배너가 뜬다.
+- **Android/Chrome**: "설치하기" → 홈 화면에 추가되어 전체화면 standalone 으로 실행.
+- **iOS/Safari**: 공유 → "홈 화면에 추가". (iOS는 OS 정책상 자동 설치 프롬프트 없음 → 수동 안내)
+
+설치하면 오프라인 동작 + 한 탭 실행. 별도 스토어/빌드 도구 없이 동작한다.
+
+### 2) Capacitor 네이티브 앱 (Android / iOS)
+기존 웹 빌드(`dist`)를 [Capacitor](https://capacitorjs.com)로 네이티브 셸에 담는다.
+**OS 로컬 알림**으로 앱이 닫혀 있어도 리마인더가 발송된다 (FR-A07, `src/lib/native.ts`).
+
+```bash
+# Android (Android Studio + SDK 필요)
+npm run android:open        # 빌드 → 동기화 → Android Studio 열기
+npm run android:apk         # 디버그 APK 빌드 (android/app/build/outputs/apk/debug/)
+
+# iOS (macOS + Xcode + CocoaPods 필요)
+npx cap add ios             # 최초 1회 (Mac에서)
+npm run ios:open            # 빌드 → 동기화 → Xcode 열기
+```
+
+> **참고**: 안드로이드 네이티브 프로젝트(`android/`)는 저장소에 포함되어 있다.
+> iOS 프로젝트(`ios/`)는 macOS에서 `npx cap add ios`로 생성한다(빌드에 Mac 필수).
+> 웹 자산을 바꾼 뒤에는 `npm run cap:sync`로 네이티브에 반영한다.
+
 ## ADHD-UX 원칙 (NFR)
 
 - **무죄책 톤**: 미처리·지연 시 압박 카피 금지. 마스코트 톤 일관.
