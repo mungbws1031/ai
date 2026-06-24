@@ -77,8 +77,25 @@ npm run ios:open            # 빌드 → 동기화 → Xcode 열기
 
 모든 데이터는 기기 안 IndexedDB에만 저장된다. 설정에서 JSON 백업 내보내기/불러오기로 기기 이전 가능.
 
+## AI로 단계 나누기 (선택, FR-B02 두 번째 경로)
+
+설정(⚙︎)에서 **"AI로 더 똑똑하게 단계 나누기"**를 켜고 Anthropic API 키를 넣으면,
+마감을 규칙 템플릿 대신 Claude(`claude-sonnet-4-6`)가 분해한다 (`src/lib/llm.ts`).
+- 호출 실패·키 오류·CORS 시 **규칙 템플릿으로 자동 fallback** — 항상 동작.
+- 키는 **이 기기 localStorage에만** 저장되고 브라우저에서 직접 호출(SDK는 사용 시점에만 동적 로드).
+  공용 기기에선 끄는 걸 권장 (PRD Q1 키 노출 고려).
+
+## 앱 아이콘 재생성
+
+브랜드 아이콘(미리 마크)은 순수 stdlib 스크립트로 생성한다 (외부 의존성 없음).
+```bash
+python3 gen_icons.py          # public/ PWA 아이콘 (192/512)
+python3 gen_android_icons.py  # android/ 런처 아이콘 (전 해상도 + adaptive)
+python3 gen_app_assets.py     # @capacitor/assets용 소스(assets/) — 필요 시
+```
+
 ## MVP 범위 메모
 
-- LLM 분해(FR-B02 두 번째 경로)는 `decomposeDeadline(task, { steps })`로 외부 분해 결과를 주입할 수 있게 **훅만 열어둠** (API 키 노출/비용 이슈로 규칙 템플릿이 MVP fallback — PRD Q1).
+- LLM 분해는 위 설정으로 실연결됨. 규칙 템플릿이 항상 fallback (PRD Q1).
 - PWA 푸시(FR-A07)는 매니페스트/Service Worker까지 준비. 백그라운드 Notification 발송은 Phase 2.
 - 가족공유·외부앱연동·호르몬 모듈은 Non-Goal (Phase 2+).

@@ -38,4 +38,6 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 리마인더 로컬 알림 (Android 13+ 런타임 권한 필요) — FR-A07 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>

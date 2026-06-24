@@ -31,27 +31,38 @@ export async function syncNativeNotifications(reminders: Reminder[]): Promise<vo
     await LocalNotifications.cancel({ notifications: pendingList.notifications.map((n) => ({ id: n.id })) });
   }
 
-  const now = Date.now();
-  // pending은 fireAt에, snoozed("오늘은 패스")는 snoozedUntil에 알림이 떠야 한다.
-  const fireTimeOf = (r: Reminder): number | null => {
-    if (r.status === 'pending') return new Date(r.fireAt).getTime();
-    if (r.status === 'snoozed' && r.snoozedUntil) return new Date(r.snoozedUntil).getTime();
-    return null;
-  };
-
-  const toSchedule = reminders
-    .map((r) => ({ r, at: fireTimeOf(r) }))
-    .filter((x): x is { r: Reminder; at: number } => x.at !== null && x.at > now)
-    .slice(0, 60) // OS 예약 한도 보호
-    .map(({ r, at }) => ({
-      id: hashId(r.id),
-      title: '미리',
-      body: toneByStage(r.stage, r.title),
-      // smallIcon 미지정 → Capacitor가 앱 기본 아이콘 사용 (없는 drawable 참조 방지)
-      schedule: { at: new Date(at), allowWhileIdle: true },
-    }));
+  const toSchedule = selectNotifications(reminders, Date.now()).map(({ r, at }) => ({
+    id: hashId(r.id),
+    title: '미리',
+    body: toneByStage(r.stage, r.title),
+    // smallIcon 미지정 → Capacitor가 앱 기본 아이콘 사용 (없는 drawable 참조 방지)
+    schedule: { at: new Date(at), allowWhileIdle: true },
+  }));
 
   if (toSchedule.length) {
     await LocalNotifications.schedule({ notifications: toSchedule });
   }
+}
+
+// pending은 fireAt에, snoozed("오늘은 패스")는 snoozedUntil에 알림이 떠야 한다.
+function fireTimeOf(r: Reminder): number | null {
+  if (r.status === 'pending') return new Date(r.fireAt).getTime();
+  if (r.status === 'snoozed' && r.snoozedUntil) return new Date(r.snoozedUntil).getTime();
+  return null;
+}
+
+/**
+ * 미래에 떠야 할 리마인더를 빠른 순으로 정렬한 뒤 OS 예약 한도(cap)만큼 자른다.
+ * 정렬을 캡보다 먼저 해야 가까운 알림이 먼 알림에 밀려 누락되지 않는다.
+ */
+export function selectNotifications(
+  reminders: Reminder[],
+  now: number,
+  cap = 60,
+): { r: Reminder; at: number }[] {
+  return reminders
+    .map((r) => ({ r, at: fireTimeOf(r) }))
+    .filter((x): x is { r: Reminder; at: number } => x.at !== null && x.at > now)
+    .sort((a, b) => a.at - b.at)
+    .slice(0, cap);
 }

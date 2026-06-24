@@ -26,12 +26,16 @@ export const RULE_TEMPLATE: Record<TaskType, TemplateStep[]> = {
     { title: '준비', offset: 1 },
     { title: '실행', offset: 0 },
   ],
-  // FR-B06: 여행 전용 템플릿 (D-150/120/90/30)
+  // FR-B06: 여행 전용 템플릿. 핵심 앵커(D-150/120/90/30)에 더해 실사용 단계를 확장.
   travel: [
     { title: '항공권 알아보기 (항공권 타임)', offset: 150 },
     { title: '연차 신청', offset: 120 },
     { title: '숙소 예약', offset: 90 },
-    { title: '준비물·짐 챙기기', offset: 30 },
+    { title: '여권 유효기간·여행자 보험 확인', offset: 60 },
+    { title: '준비물·짐 리스트 작성', offset: 30 },
+    { title: '환전·로밍·유심 준비', offset: 14 },
+    { title: '짐 싸기', offset: 3 },
+    { title: '최종 점검 (여권·티켓·예약 확인)', offset: 1 },
     { title: '출발', offset: 0 },
   ],
 };

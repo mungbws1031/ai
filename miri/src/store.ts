@@ -12,6 +12,7 @@ import type {
 } from './types';
 import { buildRemindersForSubtask, buildRemindersForTask, dueReminders, snoozeToTomorrow } from './lib/reminders';
 import { decomposeDeadline } from './lib/scheduler';
+import { isLLMEnabled, llmDecompose } from './lib/llm';
 import { dueSeeds, estimateRevisitAt } from './lib/someday';
 import { seedPromptCopy, toneByStage } from './lib/tone';
 import { uid } from './lib/id';
@@ -107,7 +108,9 @@ export const useStore = create<MiriState>((set, get) => ({
         ...get().tasks.map((t) => t.dueDate),
         ...get().subtasks.map((s) => s.scheduledDate),
       ]);
-      subtasks = decomposeDeadline(task, { busy });
+      // FR-B02: LLM 분해가 켜져 있으면 우선 시도, 실패 시 규칙 템플릿으로 fallback.
+      const llmSteps = isLLMEnabled() ? await llmDecompose(task) : null;
+      subtasks = decomposeDeadline(task, { busy, steps: llmSteps ?? undefined });
       for (const s of subtasks) {
         subReminders.push(...buildRemindersForSubtask(s, undefined, now)); // FR-B04
       }

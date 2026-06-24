@@ -5,6 +5,7 @@ name: Deploy apps to GitHub Pages
 #   eddie/         -> https://<user>.github.io/<repo>/eddie/       ("에디의 하루" app)
 #   scent-mixer/   -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
 #   tina/          -> https://<user>.github.io/<repo>/tina/        (티나 정리 임팩트 PWA)
+#   miri/          -> https://<user>.github.io/<repo>/miri/        (미리 스케줄 PWA)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
@@ -15,6 +16,7 @@ on:
       - "eddie/**"
       - "scent-mixer/**"
       - "tina/**"
+      - "miri/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
@@ -51,6 +53,12 @@ jobs:
           npm ci
           npm run build
 
+      - name: Build 미리 (Vite PWA)
+        working-directory: miri
+        run: |
+          npm ci
+          npm run build
+
       - name: Assemble Pages site
         run: |
           rm -rf _site
@@ -64,6 +72,8 @@ jobs:
           mkdir -p _site/tina
           cp -r tina/. _site/tina/
           rm -f _site/tina/gen_icons.py
+          mkdir -p _site/miri
+          cp -r miri/dist/. _site/miri/
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
