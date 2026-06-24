@@ -32,15 +32,23 @@ export async function syncNativeNotifications(reminders: Reminder[]): Promise<vo
   }
 
   const now = Date.now();
+  // pending은 fireAt에, snoozed("오늘은 패스")는 snoozedUntil에 알림이 떠야 한다.
+  const fireTimeOf = (r: Reminder): number | null => {
+    if (r.status === 'pending') return new Date(r.fireAt).getTime();
+    if (r.status === 'snoozed' && r.snoozedUntil) return new Date(r.snoozedUntil).getTime();
+    return null;
+  };
+
   const toSchedule = reminders
-    .filter((r) => r.status === 'pending' && new Date(r.fireAt).getTime() > now)
+    .map((r) => ({ r, at: fireTimeOf(r) }))
+    .filter((x): x is { r: Reminder; at: number } => x.at !== null && x.at > now)
     .slice(0, 60) // OS 예약 한도 보호
-    .map((r) => ({
+    .map(({ r, at }) => ({
       id: hashId(r.id),
       title: '미리',
       body: toneByStage(r.stage, r.title),
-      schedule: { at: new Date(r.fireAt), allowWhileIdle: true },
-      smallIcon: 'ic_stat_icon_config_sample',
+      // smallIcon 미지정 → Capacitor가 앱 기본 아이콘 사용 (없는 drawable 참조 방지)
+      schedule: { at: new Date(at), allowWhileIdle: true },
     }));
 
   if (toSchedule.length) {

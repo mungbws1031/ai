@@ -9,8 +9,8 @@ const config: CapacitorConfig = {
   backgroundColor: '#FBF8F4',
   plugins: {
     LocalNotifications: {
-      // 리마인더 알림 (앱이 닫혀 있어도 OS가 발송) — FR-A07
-      smallIcon: 'ic_stat_icon_config_sample',
+      // 리마인더 알림 (앱이 닫혀 있어도 OS가 발송) — FR-A07.
+      // smallIcon은 지정하지 않아 앱 기본 아이콘을 쓴다 (별도 drawable 리소스 불필요).
       iconColor: '#C8453B',
     },
   },

@@ -22,11 +22,14 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
   const willDecompose = decompose ?? (type === 'deadline' || type === 'travel');
 
   const submit = async () => {
-    if (!title.trim() || saving) return;
+    if (!title.trim() || !dueDate || saving) return;
     setSaving(true);
-    await createTask({ title, dueDate, type, decompose });
-    setSaving(false);
-    onClose();
+    try {
+      await createTask({ title, dueDate, type, decompose });
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -104,7 +107,7 @@ export function QuickAdd({ onClose }: { onClose: () => void }) {
 
         <button
           onClick={submit}
-          disabled={!title.trim() || saving}
+          disabled={!title.trim() || !dueDate || saving}
           className="w-full rounded-xl bg-point py-3 text-base font-semibold text-white disabled:opacity-40"
         >
           {willDecompose ? '등록하고 단계 깔기' : '등록'}
