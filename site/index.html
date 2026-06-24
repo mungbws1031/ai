@@ -82,6 +82,9 @@
   .seat.sel{ background:var(--good) !important; border-color:#fff; }
   .seat.snatch{ animation:snatch .35s ease; }
   @keyframes snatch{ 0%{ background:var(--bad); transform:scale(1.35); } 100%{ background:#2a2f45; transform:scale(1); } }
+  .seat.cancel{ background:var(--good) !important; box-shadow:0 0 0 2px #fff, 0 0 12px var(--good); z-index:2;
+                animation:cancelpulse .45s ease-in-out infinite alternate; cursor:pointer; }
+  @keyframes cancelpulse{ from{ transform:scale(1); } to{ transform:scale(1.3); } }
   .legend{ display:flex; gap:12px; justify-content:center; flex-wrap:wrap; font-size:12px; color:var(--muted); margin-bottom:8px; }
   .legend i{ display:inline-block; width:12px; height:12px; border-radius:3px; vertical-align:-1px; margin-right:4px; }
 
@@ -189,8 +192,9 @@
     <div class="legend" id="gradeLegend"></div>
     <div class="legend">
       <span><i style="background:#2a2f45"></i>매진</span>
-      <span><i style="background:var(--good)"></i>내 선택</span>
+      <span><i style="background:var(--good)"></i>내 선택 / 취소표</span>
     </div>
+    <div id="ticketBanner" class="hidden"></div>
 
     <div id="lateNotice"></div>
 
@@ -306,10 +310,10 @@ function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*
 //// 난이도 = 매진 속도 ////
 // tauMul: 오픈 직후 매진 진행 속도(작을수록 빨리 매진). preStart: 오픈 순간 기본 매진율 가중.
 const DIFFICULTY = {
-  easy:   { name:"쉬움",        interval:520, batch:4,  preempt:0.10, tauMul:2.0,  preStart:0.6, queueSize:500,   queueWait:2.0 },
-  normal: { name:"보통",        interval:280, batch:8,  preempt:0.20, tauMul:1.0,  preStart:1.0, queueSize:2500,  queueWait:3.5 },
-  hard:   { name:"어려움",      interval:140, batch:16, preempt:0.34, tauMul:0.55, preStart:1.5, queueSize:7000,  queueWait:5.5 },
-  hell:   { name:"피켓팅(헬)",  interval:65,  batch:30, preempt:0.55, tauMul:0.28, preStart:2.2, queueSize:21000, queueWait:8.0 },
+  easy:   { name:"쉬움",        interval:520, batch:4,  preempt:0.10, tauMul:2.0,  preStart:0.6, queueSize:500,   queueWait:2.0, cancelWindow:1100, ticketingSec:35 },
+  normal: { name:"보통",        interval:280, batch:8,  preempt:0.20, tauMul:1.0,  preStart:1.0, queueSize:2500,  queueWait:3.5, cancelWindow:800,  ticketingSec:28 },
+  hard:   { name:"어려움",      interval:140, batch:16, preempt:0.34, tauMul:0.55, preStart:1.5, queueSize:7000,  queueWait:5.5, cancelWindow:520,  ticketingSec:22 },
+  hell:   { name:"피켓팅(헬)",  interval:65,  batch:30, preempt:0.55, tauMul:0.28, preStart:2.2, queueSize:21000, queueWait:8.0, cancelWindow:330,  ticketingSec:16 },
 };
 
 const $ = id => document.getElementById(id);
@@ -317,8 +321,8 @@ function show(id){ ["s_setup","s_count","s_queue","s_cap","s_seat","s_pay","s_do
   const bb=$("backBtn"); if(bb) bb.classList.toggle("hidden", id==="s_setup"); }
 
 //// 뒤로가기 ////
-function cancelRun(){ if(T.seatTimer) clearInterval(T.seatTimer); if(rafId) cancelAnimationFrame(rafId); if(qRaf) cancelAnimationFrame(qRaf); T.ended=true; }
-function resumeSeat(){ T.ended=false; if(T.seatTimer) clearInterval(T.seatTimer); T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval); show("s_seat"); }
+function cancelRun(){ if(T.seatTimer) clearInterval(T.seatTimer); if(T.cancelTimer) clearInterval(T.cancelTimer); if(rafId) cancelAnimationFrame(rafId); if(qRaf) cancelAnimationFrame(qRaf); T.ended=true; }
+function resumeSeat(){ T.ended=false; if(T.seatTimer) clearInterval(T.seatTimer); T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval); startCancellations(); show("s_seat"); }
 function goBack(){
   if(!$("s_seat").classList.contains("hidden")){
     if(!$("sectionDetail").classList.contains("hidden")){ backToOverview(); return; } // 좌석→구역 개요
@@ -534,9 +538,49 @@ function buildVenue(){
   $("seatNeed").textContent = `${T.need}석 선택`;
   $("gradeLegend").innerHTML = Object.values(GRADES).map(g=>
     `<span><i style="background:${g.color}"></i>${g.name} ${g.price.toLocaleString()}원</span>`).join("");
+  T.ticketingMode=false; $("ticketBanner").classList.add("hidden");
   renderOverview(); updatePicked(); updateRemain();
   if(T.seatTimer) clearInterval(T.seatTimer);
   T.seatTimer=setInterval(()=>rivalGrab(), T.diff.interval);
+  startCancellations();
+}
+
+//// 취켓팅: 취소표가 잠깐 떴다가 순삭 ////
+function startCancellations(){
+  if(T.cancelTimer) clearInterval(T.cancelTimer);
+  T.cancelTimer=setInterval(cancelTick, 600);
+}
+function cancelTick(){
+  if(T.ended) return;
+  if(T.ticketingMode){
+    const left=Math.ceil((T.ticketingDeadline-performance.now())/1000);
+    if(left<=0){ failTicketing(); return; }
+    $("ticketBanner").innerHTML=`🎯 <b>전석 매진!</b> 취소표를 노리세요 — 남은 시간 <b>${left}초</b>`;
+  }
+  if(T.openSec){
+    const prob = T.ticketingMode ? 0.8 : 0.4;
+    if(Math.random()<prob) popCancellation(T.openSec);
+  }
+}
+function popCancellation(secId){
+  const rt=T.secMap[secId];
+  const takenArr=[...rt.taken];
+  if(!takenArr.length) return;
+  const i=takenArr[Math.floor(Math.random()*takenArr.length)];
+  const pid=secId+"#"+i;
+  if(T.picked.has(pid)) return;
+  rt.taken.delete(i);
+  const cell=cellEl(secId,i);
+  if(cell){ cell.classList.remove("taken"); cell.classList.add("cancel"); }
+  updateRemain(); refreshBlocks();
+  const win=T.diff.cancelWindow||700;
+  setTimeout(()=>{
+    if(T.ended || T.picked.has(pid) || rt.taken.has(i)) return;
+    rt.taken.add(i); // 순삭: 다시 매진
+    const c2=cellEl(secId,i) || cell;
+    if(c2){ c2.classList.remove("cancel"); c2.classList.add("taken","snatch"); setTimeout(e=>e.classList.remove("snatch"),350,c2); }
+    updateRemain(); refreshBlocks();
+  }, win);
 }
 
 function renderOverview(){
@@ -620,15 +664,28 @@ function rivalGrab(){
   }
   updateRemain(); refreshBlocks(); checkSoldOut();
 }
-// 내가 더 잡을 수 있는 좌석이 부족하면(전석 매진) 예매 실패
+// 좌석이 부족해지면(전석 매진) 즉시 실패 대신 '취켓팅 모드'로 전환 (취소표 사냥)
 function checkSoldOut(){
-  if(T.ended || T.picked.size>=T.need) return;
+  if(T.ended || T.ticketingMode || T.picked.size>=T.need) return;
   let free=0; T.allSecs.forEach(s=>{ free+=freeInSec(s.id); });
-  if(free + T.picked.size < T.need) failTicketing();
+  if(free + T.picked.size < T.need){
+    T.ticketingMode=true;
+    T.ticketingDeadline=performance.now() + (T.diff.ticketingSec||25)*1000;
+    const b=$("ticketBanner"); b.classList.remove("hidden");
+    b.style.cssText="margin:8px 0;padding:10px 12px;border-radius:8px;background:#3a1d24;color:var(--warn);font-weight:700;text-align:center";
+    b.innerHTML="🎯 <b>전석 매진!</b> 취소표를 노리세요!";
+    toast("🎯 전석 매진! 취소표를 노려보세요!", true);
+  }
 }
 
 function pickSeat(secId,i,d){
   const rt=T.secMap[secId], pid=secId+"#"+i;
+  // 취소표(반짝이는 좌석)는 선점 없이 즉시 잡힘
+  if(d.classList && d.classList.contains("cancel")){
+    if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
+    d.classList.remove("cancel"); T.picked.add(pid); d.classList.add("sel");
+    toast("🎯 취소표 잡았다!"); updatePicked(); return;
+  }
   if(rt.taken.has(i)){ toast("이미 매진된 좌석입니다", true); return; }
   if(T.picked.has(pid)){ T.picked.delete(pid); d.classList.remove("sel"); updatePicked(); return; }
   if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
@@ -660,6 +717,8 @@ function goPay(){
   if(T.picked.size!==T.need || T.ended) return;
   T.ended=true;
   if(T.seatTimer) clearInterval(T.seatTimer);
+  if(T.cancelTimer) clearInterval(T.cancelTimer);
+  $("ticketBanner").classList.add("hidden");
   T.t_seatDone=performance.now();
   let total=0;
   const labels=[...T.picked].map(pid=>{ const sp=T.secById[pid.split("#")[0]]; total+=GRADES[sp.grade].price; return seatLabel(pid); });
@@ -710,6 +769,8 @@ function failTicketing(){
   if(T.ended) return;
   T.ended=true;
   if(T.seatTimer) clearInterval(T.seatTimer);
+  if(T.cancelTimer) clearInterval(T.cancelTimer);
+  $("ticketBanner").classList.add("hidden");
   $("grade").textContent="😭 ㅠㅠ 티켓팅 도전!"; $("grade").style.color="var(--bad)";
   LAST_RESULT=`[티켓팅 가상 연습] 😭 전석 매진… ㅠㅠ 티켓팅 도전!\n${T.venue.name} · 난이도 ${T.diff.name}\n다시 도전 → ${location.href}`;
   $("result").innerHTML=`
