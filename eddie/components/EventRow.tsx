@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useStore } from '@/lib/store-context';
 import { ScheduleEvent } from '@/lib/types';
 import { copyText, formatEvent, nativeShare } from '@/lib/share';
-import { planEvent, PlanTask } from '@/lib/plan-ai';
+import { planEvent, PlanStyle, PlanTask } from '@/lib/plan-ai';
 
 const LEADS = [7, 2, 1];
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -26,7 +26,9 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [place, setPlace] = useState('');
   const [tasks, setTasks] = useState<(PlanTask & { pick: boolean })[] | null>(null);
+  const [style, setStyle] = useState<PlanStyle | null>(null);
 
   const leads = e.leadDays ?? [];
   const hasKey = !!state.settings.apiKey;
@@ -48,9 +50,18 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
     setLoading(true);
     setError(null);
     setTasks(null);
+    setStyle(null);
     try {
-      const r = await planEvent({ apiKey: state.settings.apiKey, title: e.title, date, time: e.time, todayLabel: todayLabel() });
+      const r = await planEvent({
+        apiKey: state.settings.apiKey,
+        title: e.title,
+        date,
+        time: e.time,
+        place: place.trim() || undefined,
+        todayLabel: todayLabel(),
+      });
       setTasks(r.tasks.map((t) => ({ ...t, pick: true })));
+      setStyle(r.style);
       if (r.tasks.length === 0) setError('준비할 일을 못 찾았어.');
     } catch (err) {
       setError(err instanceof Error ? err.message : '계획 짜기에 실패했어.');
@@ -64,6 +75,7 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
     picked.forEach((t) => addTodo(t.text, t.time || '09:00', shiftDate(date, t.daysBefore)));
     pushToast(`준비 할 일 ${picked.length}개를 담았어 🐣`);
     setTasks(null);
+    setStyle(null);
     setOpen(false);
   }
 
@@ -117,6 +129,17 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
             </div>
           </div>
 
+          {/* 준비 계획: 장소/자리 입력(선택) */}
+          {hasKey && (
+            <input
+              className="field text-sm"
+              placeholder="어디서·어떤 자리야? (선택, 예: 홍대 카페 / 면접 / 결혼식)"
+              value={place}
+              onChange={(ev) => setPlace(ev.target.value)}
+              aria-label="장소/자리 (선택)"
+            />
+          )}
+
           {/* 액션 */}
           <div className="flex gap-2">
             <button onClick={share} className="btn-soft flex-1 text-sm">
@@ -134,6 +157,28 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
           </div>
 
           {error && <p className="text-sm text-eddie-accent">{error}</p>}
+
+          {/* 장소 맞춤 화장·옷·신발 추천 */}
+          {style && (style.makeup || style.clothes || style.shoes) && (
+            <div className="flex flex-col gap-1 rounded-xl border border-eddie-line p-2 text-sm dark:border-neutral-700">
+              <p className="font-semibold">이 자리엔 이렇게 🎀</p>
+              {style.makeup && (
+                <p>
+                  <span className="text-eddie-muted">💄 화장</span> · {style.makeup}
+                </p>
+              )}
+              {style.clothes && (
+                <p>
+                  <span className="text-eddie-muted">👕 옷</span> · {style.clothes}
+                </p>
+              )}
+              {style.shoes && (
+                <p>
+                  <span className="text-eddie-muted">👟 신발</span> · {style.shoes}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* AI 준비 계획 결과 */}
           {tasks && tasks.length > 0 && (
