@@ -1,0 +1,60 @@
+name: Build 미리 Android APK
+
+# 미리(Capacitor) 디버그 APK를 GitHub 러너에서 빌드한다.
+# (클라우드 개발환경은 org egress 정책상 dl.google.com/maven.google.com 차단으로
+#  로컬 빌드가 불가 — Android SDK·네트워크가 갖춰진 CI에서 산출물을 만든다.)
+# 완료 후 Actions 실행 페이지의 Artifacts에서 app-debug.apk 를 내려받아 폰에 설치.
+
+on:
+  push:
+    branches: [main, claude/schedule-app-44vgwx]
+    paths:
+      - "miri/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: miri/package-lock.json
+
+      - name: Install deps & build web
+        working-directory: miri
+        run: |
+          npm ci
+          npm run build
+
+      - name: Sync Capacitor (web -> android)
+        working-directory: miri
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: miri/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: miri-debug-apk
+          path: miri/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

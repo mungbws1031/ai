@@ -300,6 +300,13 @@
     </div>
 
     <div class="card">
+      <h2>🪄 정리 미리보기 <span class="tag">AI 시뮬레이션</span></h2>
+      <p class="muted" style="font-size:12.5px; margin-top:-4px">어수선한 부분을 치웠을 때 대략 어떤 느낌인지 미리 보여줘요. <b>사진 합성·생성이 아니라</b> 온디바이스 시뮬레이션이에요 — 진짜 결과는 직접 정리하고 애프터로 확인!</p>
+      <div id="previewWrap"></div>
+      <button class="ghost sm" id="btnPreview">미리보기 생성</button>
+    </div>
+
+    <div class="card">
       <h2>6차원 채점 <span class="tag" id="engineTag">온디바이스 추정</span></h2>
       <div id="dimBars"></div>
       <div style="margin-top:12px">
@@ -789,6 +796,122 @@ function planForBudget(analysis, budget){
 }
 
 /* ===================================================================
+   정리 미리보기 — 어수선한 영역을 주변 표면 톤으로 '치운' 시뮬레이션
+   (사진 합성/생성이 아님. 온디바이스 이미지 처리.)
+   =================================================================== */
+function boxBlur(d, w, h, rad){
+  const tmp = new Float32Array(w*h*4), out = new Float32Array(w*h*4);
+  const div = 2*rad+1;
+  for(let y=0;y<h;y++){ const row=y*w;
+    for(let ch=0;ch<3;ch++){
+      let sum=0;
+      for(let x=-rad;x<=rad;x++){ const xx=Math.min(w-1,Math.max(0,x)); sum+=d[(row+xx)*4+ch]; }
+      for(let x=0;x<w;x++){
+        tmp[(row+x)*4+ch]=sum/div;
+        const xo=Math.max(0,x-rad), xn=Math.min(w-1,x+rad+1);
+        sum+=d[(row+xn)*4+ch]-d[(row+xo)*4+ch];
+      }
+    }
+  }
+  for(let x=0;x<w;x++){
+    for(let ch=0;ch<3;ch++){
+      let sum=0;
+      for(let y=-rad;y<=rad;y++){ const yy=Math.min(h-1,Math.max(0,y)); sum+=tmp[(yy*w+x)*4+ch]; }
+      for(let y=0;y<h;y++){
+        out[(y*w+x)*4+ch]=sum/div;
+        const yo=Math.max(0,y-rad), yn=Math.min(h-1,y+rad+1);
+        sum+=tmp[(yn*w+x)*4+ch]-tmp[(yo*w+x)*4+ch];
+      }
+    }
+  }
+  return out;
+}
+
+// 순수 함수: RGBA 버퍼 → 정리 미리보기 RGBA 버퍼
+function cleanPreviewPixels(d, w, h){
+  const gray = new Float32Array(w*h);
+  for(let i=0,p=0;i<gray.length;i++,p+=4) gray[i]=0.299*d[p]+0.587*d[p+1]+0.114*d[p+2];
+  const mag = new Float32Array(w*h);
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){ const i=y*w+x;
+    const gx=(gray[i-w+1]+2*gray[i+1]+gray[i+w+1])-(gray[i-w-1]+2*gray[i-1]+gray[i+w-1]);
+    const gy=(gray[i+w-1]+2*gray[i+w]+gray[i+w+1])-(gray[i-w-1]+2*gray[i-w]+gray[i-w+1]);
+    mag[i]=Math.sqrt(gx*gx+gy*gy);
+  }
+  const B=20, gw=Math.ceil(w/B), gh=Math.ceil(h/B), GN=gw*gh;
+  const mr=new Float32Array(GN), mg=new Float32Array(GN), mb=new Float32Array(GN), clut=new Float32Array(GN);
+  for(let by=0;by<gh;by++) for(let bx=0;bx<gw;bx++){
+    const x0=bx*B,y0=by*B,x1=Math.min(w,x0+B),y1=Math.min(h,y0+B);
+    let sr=0,sg=0,sb=0,sl=0,sl2=0,em=0,n=0;
+    for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){ const i=y*w+x,p=i*4;
+      sr+=d[p];sg+=d[p+1];sb+=d[p+2]; const l=gray[i]; sl+=l;sl2+=l*l;em+=mag[i];n++; }
+    const bi=by*gw+bx; mr[bi]=sr/n;mg[bi]=sg/n;mb[bi]=sb/n;
+    const mean=sl/n, std=Math.sqrt(Math.max(0,sl2/n-mean*mean));
+    clut[bi]=clamp01(std/38)*0.6 + clamp01((em/n)/52)*0.4;
+  }
+  const SMOOTH=0.42;
+  const tr=new Float32Array(GN), tg=new Float32Array(GN), tb=new Float32Array(GN);
+  let gsr=0,gsg=0,gsb=0,gsn=0;
+  for(let i=0;i<GN;i++) if(clut[i]<SMOOTH){ gsr+=mr[i];gsg+=mg[i];gsb+=mb[i];gsn++; }
+  if(gsn===0){ gsr=140;gsg=140;gsb=140;gsn=1; } gsr/=gsn;gsg/=gsn;gsb/=gsn;
+  for(let by=0;by<gh;by++) for(let bx=0;bx<gw;bx++){ const bi=by*gw+bx;
+    if(clut[bi]<SMOOTH){ tr[bi]=mr[bi];tg[bi]=mg[bi];tb[bi]=mb[bi]; continue; }
+    let fr=0,fg=0,fb=0,wsum=0;
+    for(let rad=1; rad<=Math.max(gw,gh) && wsum<3; rad++){
+      for(let yy=by-rad;yy<=by+rad;yy++) for(let xx=bx-rad;xx<=bx+rad;xx++){
+        if(xx<0||yy<0||xx>=gw||yy>=gh) continue;
+        if(Math.max(Math.abs(xx-bx),Math.abs(yy-by))!==rad) continue;   // 현재 반경 링만
+        const ni=yy*gw+xx; if(clut[ni]>=SMOOTH) continue;
+        const dist=Math.abs(yy-by)*1.6+Math.abs(xx-bx), wgt=1/(1+dist);  // 같은 표면(세로 근접) 우대
+        fr+=mr[ni]*wgt;fg+=mg[ni]*wgt;fb+=mb[ni]*wgt;wsum+=wgt;
+      }
+    }
+    if(wsum>0){ tr[bi]=fr/wsum;tg[bi]=fg/wsum;tb[bi]=fb/wsum; }
+    else{ tr[bi]=gsr;tg[bi]=gsg;tb[bi]=gsb; }
+  }
+  const blur = boxBlur(d, w, h, 5);
+  const out = new Uint8ClampedArray(w*h*4);
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    const i=y*w+x, p=i*4;
+    const fx=Math.min(gw-1,Math.max(0,x/B-0.5)), fy=Math.min(gh-1,Math.max(0,y/B-0.5));
+    const x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(gw-1,x0+1),y1=Math.min(gh-1,y0+1);
+    const ax=fx-x0, ay=fy-y0;
+    const bil=(arr)=>{ const a=arr[y0*gw+x0],b=arr[y0*gw+x1],c=arr[y1*gw+x0],e=arr[y1*gw+x1];
+      return (a*(1-ax)+b*ax)*(1-ay)+(c*(1-ax)+e*ax)*ay; };
+    const s=clamp01((bil(clut)-0.30)/0.5);     // 확실히 어수선한 곳만 치움
+    const TR=bil(tr),TG=bil(tg),TB=bil(tb);
+    const cr=blur[p]*0.38+TR*0.62, cg=blur[p+1]*0.38+TG*0.62, cb=blur[p+2]*0.38+TB*0.62;
+    let R=d[p]*(1-s)+cr*s, G=d[p+1]*(1-s)+cg*s, Bl=d[p+2]*(1-s)+cb*s;
+    out[p]  =Math.min(255,R*1.05+4);
+    out[p+1]=Math.min(255,G*1.05+4);
+    out[p+2]=Math.min(255,Bl*1.05+4);
+    out[p+3]=255;
+  }
+  return out;
+}
+
+function cleanPreviewDataURL(img){
+  const W=460, r=img.height/img.width, w=W, h=Math.max(120, Math.round(W*r));
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  const ctx=c.getContext("2d", { willReadFrequently:true });
+  ctx.drawImage(img,0,0,w,h);
+  const id=ctx.getImageData(0,0,w,h);
+  const out=cleanPreviewPixels(id.data, w, h);
+  ctx.putImageData(new ImageData(out, w, h), 0, 0);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+
+async function makeCleanPreview(){
+  const img = await loadImg(state.before.dataURL);
+  const url = cleanPreviewDataURL(img);
+  $("previewWrap").innerHTML = `
+    <div class="ba">
+      <figure><img class="photo" src="${state.before.dataURL}" alt="비포"><figcaption>지금 (비포)</figcaption></figure>
+      <figure><img class="photo" src="${url}" alt="정리 후 예상"><figcaption>정리 후 예상 (시뮬)</figcaption></figure>
+    </div>
+    <div class="note" style="margin-top:8px">⚠️ 실제 사진을 합성·생성한 게 아니라, 어수선한 영역을 주변 표면 톤으로 정리한 <b>근사 미리보기</b>예요. 디테일은 다를 수 있어요 — 진짜 변화는 직접 정리하고 애프터를 찍어 확인하세요.</div>`;
+}
+
+/* ===================================================================
    렌더링 — 분석 결과
    =================================================================== */
 function renderResult(){
@@ -803,6 +926,7 @@ function renderResult(){
   animateNumber($("lvScore"), 0, a.total, 700);
 
   $("beforeImg").src = state.before.dataURL;
+  $("previewWrap").innerHTML = ""; $("btnPreview").textContent = "미리보기 생성"; $("btnPreview").disabled = false;
   $("engineTag").textContent = a.engine==="claude" ? "Claude 비전" : "온디바이스 추정";
 
   // dim bars
@@ -1431,6 +1555,14 @@ $("beforeGallery").onclick = ()=> pickPhoto(false, handleBefore);
 $("afterCam").onclick       = ()=> pickPhoto(true,  handleAfter);
 $("afterGallery").onclick   = ()=> pickPhoto(false, handleAfter);
 
+$("btnPreview").onclick=()=>{
+  $("btnPreview").textContent="생성 중…"; $("btnPreview").disabled=true;
+  setTimeout(async ()=>{
+    try{ await makeCleanPreview(); $("btnPreview").textContent="다시 생성"; }
+    catch(e){ console.error(e); toast("미리보기 생성 실패"); $("btnPreview").textContent="미리보기 생성"; }
+    $("btnPreview").disabled=false;
+  }, 30);
+};
 $("btnChurn").onclick=openChurn;
 $("btnSettings").onclick=openSettings;
 $("btnRestart").onclick=()=>{ resetFlow(); show("home"); };
