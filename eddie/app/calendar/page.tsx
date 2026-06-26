@@ -10,6 +10,7 @@ import PageHeader from '@/components/PageHeader';
 import NoticeImport from '@/components/NoticeImport';
 import ScheduleShare from '@/components/ScheduleShare';
 import ScheduleImport from '@/components/ScheduleImport';
+import CalendarExport from '@/components/CalendarExport';
 import EventRow from '@/components/EventRow';
 
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -62,6 +63,7 @@ export default function CalendarPage() {
 
       <ScheduleImport />
       <ScheduleShare />
+      <CalendarExport />
       <NoticeImport />
 
       {/* 월 이동 */}

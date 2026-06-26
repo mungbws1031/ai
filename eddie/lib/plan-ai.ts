@@ -11,9 +11,15 @@ export interface PlanTask {
   daysBefore: number; // 며칠 전에 (0=당일)
   time: string; // 'HH:mm' (없으면 '')
 }
+export interface PlanStyle {
+  makeup: string; // 화장 추천 (장소·상황에 맞게)
+  clothes: string; // 옷 추천
+  shoes: string; // 신발 추천
+}
 export interface EventPlan {
   summary: string;
   tasks: PlanTask[];
+  style: PlanStyle;
 }
 
 const SCHEMA = {
@@ -33,29 +39,44 @@ const SCHEMA = {
         additionalProperties: false,
       },
     },
+    style: {
+      type: 'object',
+      properties: {
+        makeup: { type: 'string' },
+        clothes: { type: 'string' },
+        shoes: { type: 'string' },
+      },
+      required: ['makeup', 'clothes', 'shoes'],
+      additionalProperties: false,
+    },
   },
-  required: ['summary', 'tasks'],
+  required: ['summary', 'tasks', 'style'],
   additionalProperties: false,
 } as const;
 
 const SYSTEM = `너는 ADHD 사용자의 일정 준비를 돕는 따뜻한 플래너 '에디'야. 한국어로 답한다.
 규칙:
-- 주어진 일정 하나를 잘 치르기 위한 준비 할 일을 시간 순서대로 제안한다.
+- 주어진 일정 하나를 잘 치르기 위한 준비 할 일(tasks)을 시간 순서대로 제안한다.
 - 누구를 만나는 약속이면: 약속 시간·장소 확인, 가는 길/교통 미리 확인, 가져갈 것(선물·서류 등), 옷 준비 같은 현실적 준비를 포함.
 - 각 할 일은 아주 작고 구체적이며 바로 할 수 있게("약속 장소·시간 한 번 더 확인하기").
 - daysBefore: 그 할 일을 며칠 전에 하면 좋은지(예: 7,3,2,1,0). 멀수록 큰 준비, 가까울수록 당일 챙기기.
 - 보통 3~6개. 너무 많게 만들지 말 것. 비난·압박 없는 톤.
-- time은 보통 비워('') 두고, 꼭 필요할 때만 'HH:mm'.`;
+- time은 보통 비워('') 두고, 꼭 필요할 때만 'HH:mm'.
+- style: 가는 '장소·상황'과 '계절(일정 날짜 기준)'에 맞춰 화장·옷·신발을 구체적으로 추천한다.
+  예) 면접→단정한 화장·셔츠/슬랙스·구두, 등산→자외선차단 위주·기능성 옷·등산화, 결혼식→하객룩, 데이트/카페→캐주얼.
+  장소가 불명확하면 일반적인 무난한 추천 + 한 줄 가정만 적는다. 각 항목은 1~2문장으로 짧고 실용적으로.`;
 
 export async function planEvent(opts: {
   apiKey: string;
   title: string;
   date: string; // 'YYYY-MM-DD'
   time?: string;
+  place?: string;
   todayLabel: string;
 }): Promise<EventPlan> {
-  const { apiKey, title, date, time, todayLabel } = opts;
+  const { apiKey, title, date, time, place, todayLabel } = opts;
   const when = `${date}${time ? ' ' + time : ''}`;
+  const placeLine = place && place.trim() ? `\n장소/상황: ${place.trim()}` : '';
 
   let res: Response;
   try {
@@ -75,7 +96,7 @@ export async function planEvent(opts: {
         messages: [
           {
             role: 'user',
-            content: `오늘은 ${todayLabel}. 다음 일정을 잘 준비하도록 할 일을 짜줘.\n일정: "${title}" (${when})`,
+            content: `오늘은 ${todayLabel}. 다음 일정을 잘 준비하도록 할 일 체크리스트와 화장·옷·신발 추천을 짜줘.\n일정: "${title}" (${when})${placeLine}`,
           },
         ],
       }),
@@ -100,6 +121,11 @@ export async function planEvent(opts: {
       tasks: (parsed.tasks ?? [])
         .filter((t) => t.text?.trim())
         .map((t) => ({ text: t.text, daysBefore: Math.max(0, t.daysBefore | 0), time: t.time || '' })),
+      style: {
+        makeup: parsed.style?.makeup ?? '',
+        clothes: parsed.style?.clothes ?? '',
+        shoes: parsed.style?.shoes ?? '',
+      },
     };
   } catch {
     throw new Error('결과를 읽지 못했어. 다시 한 번 시도해줄래?');
