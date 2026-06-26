@@ -187,6 +187,14 @@
   ol.steps{ margin:0; padding-left:20px; font-size:12.5px; line-height:1.7; color:var(--fg); }
   ol.steps li{ margin-bottom:3px; }
   ol.steps b{ color:var(--accent); }
+  .usetip{ font-size:12px; line-height:1.55; color:var(--muted); margin-top:8px;
+           background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:9px 11px; }
+  .usetip b{ color:var(--fg); }
+  .usetip .applybtn{ margin-top:8px; }
+  .safe{ font-size:10px; margin-left:4px; }
+  .safety-box{ margin-top:10px; border:1px solid #5a431c; background:#241a0c; border-radius:10px; padding:9px 11px; font-size:12px; line-height:1.55; }
+  .safety-box .sh{ color:var(--warn); font-weight:600; margin-bottom:4px; }
+  .safety-box .si{ color:var(--fg); }
   /* supplies checklist */
   .supply{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px; cursor:pointer; }
   .supply:last-of-type{ border-bottom:none; }
@@ -255,6 +263,39 @@
   .easy-reclabel{ font-size:12px; color:var(--muted); margin:12px 0 6px; }
   .wnav{ display:flex; gap:8px; flex-wrap:wrap; margin-top:16px; }
   .wnav button{ flex:1; min-width:120px; }
+  /* beaker fill animation */
+  .beaker-wrap{ display:flex; flex-direction:column; align-items:center; gap:6px; margin:6px 0 16px; }
+  .bk-bubble{ position:relative; max-width:260px; background:var(--card2); border:1px solid var(--line);
+              border-radius:14px; padding:10px 13px; font-size:12.5px; line-height:1.6; color:var(--fg);
+              text-align:center; margin-bottom:6px; }
+  .bk-bubble::before{ content:""; position:absolute; bottom:-10px; left:50%; margin-left:-9px;
+              border:9px solid transparent; border-top-color:var(--line); border-bottom:0; }
+  .bk-bubble::after{ content:""; position:absolute; bottom:-8px; left:50%; margin-left:-8px;
+              border:8px solid transparent; border-top-color:var(--card2); border-bottom:0; }
+  .bk-bubble b{ color:var(--accent); }
+  .bk-bubble.empty-bubble{ color:var(--muted); }
+  .bk-bubble.empty-bubble b{ color:var(--muted); }
+  .beaker{ position:relative; width:120px; height:150px; }
+  .glass{ position:absolute; inset:0; border:3px solid #3a3f63; border-top:none;
+          border-radius:8px 8px 18px 18px; background:rgba(255,255,255,.03); overflow:hidden;
+          box-shadow:inset 0 0 12px rgba(0,0,0,.35); }
+  .glass::after{ content:""; position:absolute; top:0; left:10%; width:18%; height:100%;
+          background:linear-gradient(to right, rgba(255,255,255,.12), transparent); }
+  .liquid{ position:absolute; left:0; right:0; bottom:0; height:0%;
+           display:flex; flex-direction:column-reverse;
+           transition:height .55s cubic-bezier(.22,.9,.25,1); }
+  .liquid .lay{ width:100%; transition:height .4s ease; }
+  .liquid::before{ content:""; position:absolute; top:-3px; left:0; right:0; height:6px;
+           background:rgba(255,255,255,.25); border-radius:50%; }
+  .ticks{ position:absolute; right:7px; top:14px; bottom:18px; display:flex;
+          flex-direction:column; justify-content:space-between; pointer-events:none; }
+  .ticks span{ display:block; width:9px; height:1px; background:rgba(255,255,255,.18); }
+  .bk-label{ font-size:11.5px; color:var(--muted); }
+  .drop{ position:absolute; left:50%; top:-10px; width:8px; height:11px; margin-left:-4px;
+         border-radius:0 50% 50% 50%; transform:rotate(45deg); z-index:3;
+         animation:drip .6s ease-in forwards; }
+  @keyframes drip{ 0%{ top:-12px; opacity:0 } 25%{ opacity:1 } 100%{ top:80%; opacity:.2 } }
+  @media(prefers-reduced-motion:reduce){ .liquid,.liquid .lay{ transition:none } .drop{ display:none } }
 
   /* ===== UX polish ===== */
   /* sticky summary bar */
@@ -411,6 +452,10 @@
     <div class="wstep" data-step="2">
       <div class="card">
         <h2>2단계 · 만들어진 향 확인 <span class="tag">마음에 들 때까지 다듬기</span></h2>
+        <div class="beaker-wrap"><div class="bk-bubble"></div><div class="beaker">
+          <div class="glass"><div class="liquid"></div></div>
+          <div class="ticks"><span></span><span></span><span></span><span></span></div>
+        </div><div class="bk-label"></div></div>
         <div id="easyDesc"></div>
         <div class="easy-sub">들어간 향료 (− / + 로 양 조절)</div>
         <div id="easyBlend"></div>
@@ -425,6 +470,10 @@
     <div class="wstep" data-step="3">
       <div class="card">
         <h2>3단계 · 이렇게 만들면 돼요 <span class="tag">실제 분량·준비물</span></h2>
+        <div class="beaker-wrap"><div class="bk-bubble"></div><div class="beaker">
+          <div class="glass"><div class="liquid"></div></div>
+          <div class="ticks"><span></span><span></span><span></span><span></span></div>
+        </div><div class="bk-label"></div></div>
         <label class="lbl">만들 용량</label>
         <div class="seg" id="easyVolSeg">
           <button data-v="10">10ml</button>
@@ -568,7 +617,16 @@
 
       <details class="card">
         <summary>🧴 재료 분량 <span class="tag">실제로 만들 때</span></summary>
-        <div class="row">
+        <label class="lbl">용도 (만들 제품)</label>
+        <select id="useSel">
+          <option value="perfume" selected>향수</option>
+          <option value="room">룸 스프레이</option>
+          <option value="diffuser">리드 디퓨저</option>
+          <option value="lotion">무향 로션·바디오일 (피부)</option>
+          <option value="candle">캔들</option>
+        </select>
+        <div id="useTip" class="usetip"></div>
+        <div class="row" style="margin-top:10px;">
           <div>
             <label class="lbl">만들 용량</label>
             <select id="batchMl">
@@ -578,7 +636,7 @@
               <option value="100">100 ml</option>
             </select>
           </div>
-          <div>
+          <div id="concWrap">
             <label class="lbl">농도 타입</label>
             <select id="conc">
               <option value="0.10">오 드 뚜왈렛 (10%)</option>
@@ -799,7 +857,8 @@ function renderLib(){
   list.forEach(m=>{
     const cnt=blend[m.n]||0;
     const el=document.createElement("div"); el.className="mat"+(cnt?" in":"");
-    el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}
+    const sf=SAFETY[m.n]? ` <span class="safe" title="${SAFE_TXT[SAFETY[m.n]]}">${SAFE_ICON[SAFETY[m.n]]}</span>`:"";
+    el.innerHTML=`<div class="nm"><span class="dot" style="background:${famColor(m.fam)}"></span>${m.n}${sf}
         <span class="vol ${m.vol}">${VOL_LABEL[m.vol]}</span></div>
       <div class="meta">${FAMILIES[m.fam]} · 지속 ~${fmtHc(lastHours(m))} · ${m.d}</div>
       ${cnt?`<span class="badge">${cnt}방울</span>`:""}`;
@@ -811,7 +870,7 @@ function renderLib(){
 
 // ---- blend ops ----
 function mat(n){ return MATERIALS.find(m=>m.n===n); }
-function addDrop(n,k=1){ blend[n]=(blend[n]||0)+k; if(blend[n]<=0) delete blend[n]; render(); if(k>0) toast(`${n} +${k}방울 · ${Object.keys(blend).length}종`); }
+function addDrop(n,k=1){ const m=mat(n); blend[n]=(blend[n]||0)+k; if(blend[n]<=0) delete blend[n]; render(); if(k>0){ toast(`${n} +${k}방울 · ${Object.keys(blend).length}종`); beakerDrip(m?famColor(m.fam):null); } }
 let toastT=null;
 function toast(msg){
   let el=$("#toast"); if(!el) return;
@@ -1382,6 +1441,42 @@ function renderEasy(a){
     $("#easyRecs").querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addDrop(b.dataset.add,1));
   }
   renderEasyRecipe(a);
+  renderBeaker(a);
+}
+// 비커 옆 말풍선: 현재 조합이 어떤 향인지 한 줄 묘사
+const FAM_FEEL={
+  citrus:"상큼한 시트러스", floral:"화사한 꽃향", woody:"포근한 우디", oriental:"따뜻한 오리엔탈",
+  fresh:"청량한 프레시", green:"싱그러운 그린", spicy:"알싸한 스파이시", gourmand:"달콤한 구르망",
+  fruity:"과즙 가득 프루티", aquatic:"시원한 바다향", leather:"가죽 무드"
+};
+function igaJosa(w){ const c=w.charCodeAt(w.length-1);
+  return (c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28!==0)?"이":"가"; } // 받침 있으면 '이'
+function scentPhrase(a){
+  const fw={}; a.weighted.forEach(i=>fw[i.fam]=(fw[i.fam]||0)+i.w);
+  const fams=Object.entries(fw).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([f])=>FAM_FEEL[f]);
+  const L=longevity(a);
+  const open=simAt(a,0).cur[0], dry=simAt(a,Math.max(L.hours*0.75,0.5)).cur[0];
+  const persist = L.hours<5?"가볍게 즐기기 좋은":L.hours<8?"데일리로 무난한":L.hours<11?"존재감 있게 오래가는":"강하게 오래 남는";
+  return `<b>${fams.join(" + ")}</b> 향이에요.<br>처음엔 <b>${open.n}</b>${igaJosa(open.n)} 퍼지고, 끝엔 <b>${dry?dry.n:open.n}</b> 잔향이 남아요. ${persist} 느낌!`;
+}
+// 컵(비커) 채움: 향료 비율대로 베이스→탑 색층, 방울 수만큼 높이
+function renderBeaker(a){
+  const liquids=document.querySelectorAll(".liquid"); if(!liquids.length) return;
+  const total=a.items.reduce((s,i)=>s+i.drops,0);
+  const CAP=24, fill=Math.min(100, total/CAP*100);
+  const ord={base:0,heart:1,top:2};
+  const items=[...a.items].sort((x,y)=>ord[x.vol]-ord[y.vol]);
+  const bands=items.map(i=>`<div class="lay" style="height:${i.drops/(total||1)*100}%;background:${famColor(i.fam)}"></div>`).join("");
+  liquids.forEach(l=>{ l.style.height=fill+"%"; l.innerHTML=bands; });
+  document.querySelectorAll(".bk-label").forEach(el=>el.textContent = total? `${total}방울 채워짐` : "비어 있음");
+  const phrase = total? scentPhrase(a) : "향료를 넣으면 어떤 향인지 알려줄게요 🙂";
+  document.querySelectorAll(".bk-bubble").forEach(el=>{ el.innerHTML=phrase; el.classList.toggle("empty-bubble",!total); });
+}
+function beakerDrip(color){
+  document.querySelectorAll(".beaker .glass").forEach(g=>{
+    const d=document.createElement("span"); d.className="drop"; d.style.background=color||"var(--accent)";
+    g.appendChild(d); setTimeout(()=>{ d.remove(); },600);
+  });
 }
 function renderEasyRecipe(a){
   if(!$("#easyRecipe")) return;
@@ -1416,37 +1511,76 @@ function initEasy(){
 
 // ---- 재료 분량(실제 제작) ----
 const OIL_D=0.90, ETH_D=0.789; // 밀도(g/ml) 근사: 향료 원액 / 에탄올
+// 용도별 베이스·농도·캐리어 밀도·추천 무드·제작 순서
+const USES={
+  perfume:{ name:"향수", carrier:"퍼퓸용 에탄올", carrierD:ETH_D, skin:true, picksConc:true,
+    tip:"무드는 자유롭게. 베이스노트를 늘리면 더 오래 가요.", moods:[],
+    steps:(c)=>["빈 비커를 저울에 올려 <b>영점(0.00g)</b>.","<b>베이스→미들→탑</b> 순으로 향료를 g(또는 방울)만큼 계량.","유리막대로 충분히 저어 섞기.",`퍼퓸용 에탄올 <b>${c.carG}g(${c.carMl}ml)</b>로 총 <b>${c.totG}g(${c.batch}ml)</b> 맞추기.`,"밀봉해 어두운 곳에서 <b>4~6주 숙성</b>.","(선택) 커피필터로 걸러 병입."] },
+  room:{ name:"룸 스프레이", carrier:"에탄올 + 정제수(8:2)", carrierD:0.82, conc:0.10, skin:false,
+    tip:"시트러스·프레시가 산뜻해요. 분사 후 환기하고 가구 직접 분사는 피하기.", moods:["시트러스","프레시"],
+    steps:(c)=>["향료를 계량해 비커에 담기.",`에탄올 일부에 향료를 먼저 녹인 뒤 나머지 에탄올·정제수로 <b>${c.batch}ml</b> 맞추기.`,"스프레이 병에 담기.","<b>1~2주 숙성</b> 후 사용, 쓸 때마다 가볍게 흔들기."] },
+  diffuser:{ name:"리드 디퓨저", carrier:"디퓨저 베이스(DPG 등)", carrierD:1.0, conc:0.25, skin:false,
+    tip:"우드·머스크·앰버가 오래 은은히 퍼져요. 알코올은 쓰지 않아요.", moods:["우드","앰버"],
+    steps:(c)=>["향료를 계량해 비커에 담기.",`디퓨저 베이스 <b>${c.carG}g(${c.carMl}ml)</b>를 넣어 섞기.`,"디퓨저 용기에 붓고 리드 스틱 꽂기.","<b>1주</b>쯤 지나면 향이 올라와요. 스틱을 뒤집어 세기 조절."] },
+  lotion:{ name:"무향 로션·바디오일", carrier:"무향 로션 / 호호바오일", carrierD:0.95, conc:0.02, skin:true, skinLimit:true,
+    tip:"피부에 직접 닿아요 — 저자극 향료로, <b>1~3% 이하</b>가 안전. 반드시 패치테스트!", moods:["꽃향기","파우더리"],
+    steps:(c)=>[`무향 로션/오일 <b>${c.carMl}ml</b> 준비.`,`향료 <b>${c.oilMl}ml</b>(저농도)를 넣고 멍울 없이 잘 섞기.`,"팔 안쪽에 소량 발라 <b>24시간 패치테스트</b>.","광독성 향료가 있으면 바른 뒤 <b>직사광선 주의</b>."] },
+  candle:{ name:"캔들", carrier:"소이/파라핀 왁스", carrierD:0.90, conc:0.08, skin:false,
+    tip:"바닐라·우드·스파이시가 잘 퍼져요. 왁스 녹는점·발화점을 확인하세요.", moods:["달콤","우드"],
+    steps:(c)=>[`왁스 <b>${c.carG}g</b>를 70~75℃로 녹이기.`,"불을 끄고 향료를 넣어 1~2분 저어 섞기.","60℃쯤 식으면 심지 고정한 용기에 붓기.","굳힌 뒤 <b>48시간 큐어링</b> 후 사용."] },
+};
+// 피부 안전: 광독성(햇빛) / 자극·알레르겐
+const SAFETY={ "베르가못":"photo","레몬":"photo","자몽":"photo","라임":"photo",
+  "시나몬":"irritant","클로브":"irritant","자스민":"irritant","일랑일랑":"irritant","오크모스":"irritant","통카빈":"irritant" };
+const SAFE_ICON={photo:"☀️",irritant:"⚠️"};
+const SAFE_TXT={photo:"광독성(바른 뒤 햇빛 주의)",irritant:"자극·알레르겐(저농도·패치테스트)"};
 function renderRecipeQty(a){
   const wrap=$("#recipeQty");
+  const useKey=($("#useSel")&&$("#useSel").value)||"perfume", U=USES[useKey];
+  const cw=$("#concWrap"); if(cw) cw.style.display = U.picksConc? "" : "none";
+  if($("#useTip")){
+    const moodBtn = U.moods.length? `<button class="ghost sm applybtn" id="useMoodBtn">✨ ${U.moods.join("·")} 무드로 만들기</button>`:"";
+    $("#useTip").innerHTML=`💡 <b>${U.name}</b> · 베이스: ${U.carrier}<br>${U.tip}${moodBtn?"<br>"+moodBtn:""}`;
+    const mb=$("#useMoodBtn"); if(mb) mb.onclick=()=>{ selectedMoods.clear(); U.moods.forEach(m=>selectedMoods.add(m)); renderMoodTags(); buildFromGoal(); toast(`${U.name} 추천 무드로 만들었어요`); };
+  }
   if(!a.items.length){ wrap.innerHTML='<div class="empty">조합을 추가하면 분량이 계산됩니다.</div>'; return; }
-  const batch=+$("#batchMl").value, conc=+$("#conc").value;
-  const DPM=+(($("#dpm")&&$("#dpm").value)||20); // 1ml당 방울 수(보정)
-  const oilMl=batch*conc, alcMl=batch-oilMl;
-  const oilG=oilMl*OIL_D, alcG=alcMl*ETH_D, totG=oilG+alcG;
+  const batch=+$("#batchMl").value;
+  const conc = U.picksConc? +$("#conc").value : U.conc;
+  const DPM=+(($("#dpm")&&$("#dpm").value)||20);
+  const oilMl=batch*conc, carMl=batch-oilMl;
+  const oilG=oilMl*OIL_D, carG=carMl*U.carrierD, totG=oilG+carG;
   const totalDrops=a.items.reduce((s,i)=>s+i.drops,0)||1;
   const rows=a.items.map(i=>{
     const ml=oilMl*(i.drops/totalDrops), g=ml*OIL_D, dr=Math.max(1,Math.round(ml*DPM)), pc=i.drops/totalDrops*100;
+    const sf=SAFETY[i.n]? ` <span class="safe">${SAFE_ICON[SAFETY[i.n]]}</span>`:"";
     return `<div class="qrow2">
-      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n} <small>${pc.toFixed(0)}%</small></span>
+      <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n}${sf} <small>${pc.toFixed(0)}%</small></span>
       <span class="met"><b>${g.toFixed(2)} g</b> <small>· ${ml.toFixed(2)}ml · ${dr}방울</small></span></div>`;
   }).join("");
+  const ctx={batch,carMl:carMl.toFixed(0),carG:carG.toFixed(1),oilMl:oilMl.toFixed(1),totG:totG.toFixed(0)};
+  const steps=U.steps(ctx).map(s=>`<li>${s}</li>`).join("");
+  // 피부 안전(피부에 닿는 용도)
+  let safety="";
+  if(U.skin){
+    const flagged=a.items.filter(i=>SAFETY[i.n]);
+    if(flagged.length){
+      const lines=flagged.map(i=>`${SAFE_ICON[SAFETY[i.n]]} <b>${i.n}</b> — ${SAFE_TXT[SAFETY[i.n]]}`).join("<br>");
+      safety=`<div class="safety-box"><div class="sh">피부 안전 주의 (${U.name})</div><div class="si">${lines}${U.skinLimit?"<br>· 무향 베이스 기준 <b>향료 1~3% 이하</b>로 낮추고, 바르기 전 <b>팔 안쪽 패치테스트</b>하세요.":""}</div></div>`;
+    } else if(U.skinLimit){
+      safety=`<div class="safety-box"><div class="sh">피부 사용 팁</div><div class="si">저자극 조합이에요. 그래도 처음엔 <b>패치테스트</b>를 권장해요. (현재 농도 ${Math.round(conc*100)}%)</div></div>`;
+    }
+  }
   wrap.innerHTML=rows+`
     <div class="qty-sum">
       <div class="qrow"><span>향료 원액 합계</span><b>${oilG.toFixed(2)} g · ${oilMl.toFixed(1)} ml (${Math.round(conc*100)}%)</b></div>
-      <div class="qrow"><span>퍼퓸용 알코올(에탄올)</span><b>${alcG.toFixed(2)} g · ${alcMl.toFixed(1)} ml</b></div>
+      <div class="qrow"><span>${U.carrier}</span><b>${carG.toFixed(2)} g · ${carMl.toFixed(1)} ml</b></div>
       <div class="qrow"><span>완성 총량</span><b>${totG.toFixed(2)} g · ${batch} ml</b></div>
     </div>
+    ${safety}
     <div class="recipe-steps">
-      <div class="rs-title">정확하게 만드는 법 <span class="muted">(저울 g 계량 권장)</span></div>
-      <ol class="steps">
-        <li>빈 비커를 저울에 올리고 <b>영점(0.00 g)</b>을 맞춰요.</li>
-        <li><b>베이스 → 미들 → 탑</b> 순서로 각 향료를 위 <b>g</b>(또는 방울)만큼 정확히 계량해요.</li>
-        <li>유리막대로 충분히 저어 향료를 고르게 섞어요.</li>
-        <li>퍼퓸용 알코올 <b>${alcG.toFixed(1)} g(${alcMl.toFixed(0)} ml)</b>를 넣어 총 <b>${totG.toFixed(0)} g(${batch} ml)</b>로 맞춰요.</li>
-        <li>밀봉해 <b>어두운 곳에서 4~6주 숙성</b>(주 1~2회 가볍게 흔들기).</li>
-        <li>(선택) 커피필터로 한 번 걸러 맑게 한 뒤 향수병에 담아요.</li>
-      </ol>
-      <div class="note">방울 수는 점적기마다 달라 부정확해요 — <b>저울(g)로 계량</b>하면 가장 정확합니다. 밀도는 향료 0.90·에탄올 0.79 g/ml로 근사했어요.</div>
+      <div class="rs-title">${U.name} 만드는 법 <span class="muted">(저울 g 계량 권장)</span></div>
+      <ol class="steps">${steps}</ol>
+      <div class="note">방울 수는 점적기마다 달라 부정확해요 — <b>저울(g)</b>이 가장 정확. 밀도 근사: 향료 0.90 g/ml.</div>
     </div>`;
 }
 
@@ -1528,7 +1662,7 @@ $("#genGoalBtn").onclick=buildFromGoal;
 $("#simPlay").onclick=toggleSim;
 $("#simTime").addEventListener("input",updateSim);
 $("#goalHours").addEventListener("change",()=>render());
-["batchMl","conc","dpm"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
+["batchMl","conc","dpm","useSel"].forEach(id=>$("#"+id).addEventListener("change",()=>render()));
 $("#tasteSel").addEventListener("change",e=>{
   const v=e.target.value;
   if(v===""){ $("#tasteLoad").disabled=$("#tasteVary").disabled=true;
