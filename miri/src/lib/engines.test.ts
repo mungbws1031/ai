@@ -6,7 +6,9 @@ import { estimateRevisitAt, dueSeeds } from './someday';
 import { previousAvailableDay, parseDate, isAvailable } from './dates';
 import { toneByStage, stageFor } from './tone';
 import { selectNotifications } from './native';
-import type { Reminder, SomedaySeed, Task } from '../types';
+import { upcomingItems } from './upcoming';
+import { needsBackup } from './backup';
+import type { Reminder, SomedaySeed, Subtask, Task } from '../types';
 
 const NOW = new Date('2026-06-23T09:00:00');
 const dstr = (offset: number) => format(addDays(NOW, offset), 'yyyy-MM-dd');
@@ -127,6 +129,66 @@ describe('네이티브 알림 선택: 캡 적용 전 정렬', () => {
   it('과거/도달한 리마인더는 제외된다', () => {
     const picked = selectNotifications([r('past', -5), r('future', 5)], NOW.getTime());
     expect(picked.map((x) => x.r.id)).toEqual(['future']);
+  });
+});
+
+describe('홈 "곧 다가와요" 미리보기', () => {
+  const task = (id: string, due: number, status: 'open' | 'done' = 'open'): Task => ({
+    id,
+    title: id,
+    type: 'deadline',
+    dueDate: dstr(due),
+    subtasks: [],
+    reminderConfig: [7, 3, 1],
+    status,
+    createdAt: NOW.toISOString(),
+  });
+  const sub = (id: string, taskId: string, day: number, status: 'open' | 'done' = 'open'): Subtask => ({
+    id,
+    taskId,
+    title: id,
+    scheduledDate: dstr(day),
+    status,
+  });
+
+  it('14일 이내 open 서브태스크를 가까운 순으로 보여준다', () => {
+    const tasks = [task('t1', 30)];
+    const subs = [sub('s-far', 't1', 20), sub('s-soon', 't1', 3), sub('s-past', 't1', -2)];
+    const up = upcomingItems(tasks, subs, NOW);
+    expect(up.map((u) => u.id)).toEqual(['s-soon']); // 20일은 창 밖, -2는 과거
+    expect(up[0].dday).toBe('D-3');
+  });
+
+  it('분해 안 된 일정은 마감일 자체를 보여준다', () => {
+    const up = upcomingItems([task('t1', 5)], [], NOW);
+    expect(up).toHaveLength(1);
+    expect(up[0].kind).toBe('deadline');
+  });
+
+  it('완료된 서브태스크/일정은 제외', () => {
+    const up = upcomingItems([task('t1', 30)], [sub('s1', 't1', 3, 'done')], NOW);
+    expect(up).toHaveLength(0);
+  });
+});
+
+describe('데이터 백업 권유(needsBackup)', () => {
+  it('데이터 없으면 권하지 않는다', () => {
+    expect(needsBackup(false, NOW, null, null)).toBe(false);
+  });
+  it('데이터 있고 한 번도 백업 안 했으면 권한다', () => {
+    expect(needsBackup(true, NOW, null, null)).toBe(true);
+  });
+  it('최근(7일 이내) 백업했으면 권하지 않는다', () => {
+    const recent = new Date(NOW.getTime() - 2 * 86400000).toISOString();
+    expect(needsBackup(true, NOW, recent, null)).toBe(false);
+  });
+  it('7일 초과면 다시 권한다', () => {
+    const old = new Date(NOW.getTime() - 10 * 86400000).toISOString();
+    expect(needsBackup(true, NOW, old, null)).toBe(true);
+  });
+  it('스누즈 중이면 권하지 않는다', () => {
+    const future = new Date(NOW.getTime() + 86400000).toISOString();
+    expect(needsBackup(true, NOW, null, future)).toBe(false);
   });
 });
 
