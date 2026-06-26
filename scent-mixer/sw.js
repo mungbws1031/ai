@@ -1,5 +1,5 @@
 // Scent Mixer service worker — offline app shell cache
-const CACHE = "scent-mixer-v14";
+const CACHE = "scent-mixer-v15";
 const ASSETS = [
   "./",
   "./index.html",
