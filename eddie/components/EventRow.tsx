@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store-context';
 import { ScheduleEvent } from '@/lib/types';
 import { copyText, formatEvent, nativeShare } from '@/lib/share';
 import { planEvent, PlanStyle, PlanTask } from '@/lib/plan-ai';
+import { buildEventICS, downloadICS, googleCalUrl } from '@/lib/ics';
 
 const LEADS = [7, 2, 1];
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -36,6 +37,11 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
   function toggleLead(n: number) {
     const next = leads.includes(n) ? leads.filter((x) => x !== n) : [...leads, n].sort((a, b) => b - a);
     updateEvent(e.id, { leadDays: next });
+  }
+
+  function addToCalendar() {
+    downloadICS(`${e.title || '일정'}.ics`, buildEventICS(e, new Date()));
+    pushToast('캘린더 파일을 내려받았어 — 열어서 추가하면 앱이 꺼져도 알림이 와 📅');
   }
 
   async function share() {
@@ -154,6 +160,26 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
                 🤖 준비 계획 (키 등록)
               </Link>
             )}
+          </div>
+
+          {/* OS 캘린더로 보내기 (앱이 꺼져도 알림) */}
+          <div>
+            <div className="flex gap-2">
+              <button onClick={addToCalendar} className="btn-soft flex-1 text-sm">
+                📅 캘린더에 추가
+              </button>
+              <a
+                href={googleCalUrl(e)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-soft flex-1 text-center text-sm"
+              >
+                구글 캘린더
+              </a>
+            </div>
+            <p className="mt-1 text-xs text-eddie-muted">
+              캘린더에 넣으면 앱이 꺼져 있어도 알림이 와. 미리 알림(위 칩)도 함께 등록돼.
+            </p>
           </div>
 
           {error && <p className="text-sm text-eddie-accent">{error}</p>}
