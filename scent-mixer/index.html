@@ -238,6 +238,7 @@
             font-size:13px; font-weight:600; cursor:pointer; text-align:center; user-select:none; transition:.12s; }
   .bigmood:hover{ border-color:var(--accent); }
   .bigmood.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
+  .bigmood small{ display:block; font-size:10px; font-weight:400; opacity:0.65; margin-top:3px; }
   .seg{ display:flex; gap:8px; }
   .seg button{ flex:1; background:var(--card2); border:1px solid var(--line); color:var(--fg);
                border-radius:10px; padding:10px 4px; font-weight:600; display:flex; flex-direction:column; gap:2px; }
@@ -776,6 +777,7 @@ const MOODS = {
   "가죽":     ["가죽","자작나무","파출리"],
 };
 const selectedMoods = new Set();
+const selectedFeels = new Set();
 
 // ---- 유명 향수 근사 재현 프리셋 ----
 // 실제 향수의 노트 피라미드를 라이브러리 향료로 단순 근사한 것 (정확한 포뮬러 아님)
@@ -1385,20 +1387,43 @@ function switchTab(tab){
 }
 
 // ---- 쉽게 만들기 위저드 ----
-const EASY_MOODS=[
-  ["시트러스","🍋 상큼"],["꽃향기","🌸 꽃향기"],["우드","🌳 우디"],["달콤","🍯 달콤"],
-  ["파우더리","🤍 파우더리"],["프레시","🌿 시원"],["스파이시","🌶️ 스파이시"],["가죽","🧥 가죽"],
-  ["아쿠아틱","🌊 바다"],["프루티","🍑 과일"],
+// 느낌(feel) → 무드(mood) 매핑
+const FEEL_MAP={
+  "고혹적인": ["앰버","가죽","스파이시"],
+  "사랑스러운":["꽃향기","달콤","프루티"],
+  "몽환적인": ["파우더리","달콤","꽃향기"],
+  "신비로운": ["앰버","우드","스파이시"],
+  "우아한":  ["꽃향기","우드","파우더리"],
+  "청량한":  ["시트러스","아쿠아틱","프레시"],
+  "포근한":  ["앰버","우드","달콤"],
+  "활기찬":  ["시트러스","프레시","그린"],
+  "로맨틱한": ["꽃향기","프루티","파우더리"],
+  "섹시한":  ["가죽","앰버","스파이시"],
+  "순수한":  ["프레시","꽃향기","아쿠아틱"],
+};
+// [key, 이모지+라벨, 서브힌트]
+const EASY_FEEL=[
+  ["고혹적인","✨ 고혹적인","앰버·가죽"],
+  ["사랑스러운","🌸 사랑스러운","플로럴·달콤"],
+  ["몽환적인","🌙 몽환적인","파우더리·달콤"],
+  ["신비로운","🖤 신비로운","우디·앰버"],
+  ["우아한","👑 우아한","플로럴·우디"],
+  ["청량한","💨 청량한","시트러스·바다"],
+  ["포근한","🍂 포근한","앰버·우디"],
+  ["활기찬","⚡ 활기찬","시트러스·그린"],
+  ["로맨틱한","💕 로맨틱한","플로럴·프루티"],
+  ["섹시한","🔥 섹시한","가죽·스파이시"],
+  ["순수한","🤍 순수한","프레시·플로럴"],
 ];
 let easyHours="7", easyVol="30", easyStep=1;
 function renderEasyMoods(){
   const wrap=$("#easyMoods"); if(!wrap) return; wrap.innerHTML="";
-  EASY_MOODS.forEach(([key,label])=>{
+  EASY_FEEL.forEach(([key,label,hint])=>{
     const el=document.createElement("div");
-    el.className="bigmood"+(selectedMoods.has(key)?" on":"");
-    el.textContent=label;
-    el.onclick=()=>{ selectedMoods.has(key)?selectedMoods.delete(key):selectedMoods.add(key);
-      renderEasyMoods(); renderMoodTags(); };
+    el.className="bigmood"+(selectedFeels.has(key)?" on":"");
+    el.innerHTML=`${label}<small>${hint}</small>`;
+    el.onclick=()=>{ selectedFeels.has(key)?selectedFeels.delete(key):selectedFeels.add(key);
+      renderEasyMoods(); };
     wrap.appendChild(el);
   });
 }
@@ -1409,7 +1434,12 @@ function goEasy(step){
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function easyGen(){
-  if(!selectedMoods.size){ toast("느낌을 1개 이상 골라주세요"); return; }
+  if(!selectedFeels.size){ toast("느낌을 1개 이상 골라주세요"); return; }
+  // 느낌 → 무드 키 변환 (각 느낌에서 최대 2개 무드)
+  selectedMoods.clear();
+  selectedFeels.forEach(feel=>{
+    (FEEL_MAP[feel]||[]).slice(0,2).forEach(m=>selectedMoods.add(m));
+  });
   $("#goalHours").value=easyHours;
   buildFromGoal(); renderMoodTags();
   goEasy(2);
@@ -1501,7 +1531,7 @@ function renderEasyRecipe(a){
 function initEasy(){
   renderEasyMoods();
   $("#easyGen").onclick=easyGen;
-  $("#easyReset").onclick=()=>{ blend={}; selectedMoods.clear(); renderEasyMoods(); renderMoodTags(); render(); goEasy(1); };
+  $("#easyReset").onclick=()=>{ blend={}; selectedMoods.clear(); selectedFeels.clear(); renderEasyMoods(); renderMoodTags(); render(); goEasy(1); };
   $("#easySeg").querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{
     easyHours=b.dataset.h; $("#easySeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b)); });
   $("#easyVolSeg").querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{
