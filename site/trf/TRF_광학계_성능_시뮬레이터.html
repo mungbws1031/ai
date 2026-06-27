@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>TRF 광학계 성능 시뮬레이터</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#eef1fa;color:#1e2540;font-family:'Segoe UI',sans-serif;font-size:13px;min-height:100vh;display:flex;flex-direction:column}
+#header{padding:18px 24px 10px;border-bottom:1px solid #dde2f0}
+#header h1{font-size:20px;font-weight:700;color:#1e2540;margin-bottom:4px}
+#header p{font-size:11px;color:#7080a8;letter-spacing:.5px}
+#main{display:flex;flex:1;overflow:hidden}
+#sidebar{width:290px;min-width:290px;padding:14px;overflow-y:auto;border-right:1px solid #dde2f0;background:#f4f6fc}
+#content{flex:1;padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:14px}
+.card{background:#ffffff;border:1px solid #dde2f0;border-radius:10px;padding:14px}
+.card-title{font-size:10px;font-weight:700;color:#2060c0;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.card-title span{color:#9098c0;font-weight:400}
+.ctrl{margin-bottom:10px}
+.ctrl label{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;font-size:11px;color:#6878a8}
+.ctrl label .val{color:#2060c0;font-weight:700;font-size:12px}
+input[type=range]{width:100%;height:4px;appearance:none;background:#f0f4ff;border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:#7eb8f7;cursor:pointer}
+select{width:100%;background:#f4f6fc;color:#1e2540;border:1px solid #dde2f0;border-radius:6px;padding:6px 8px;font-size:12px;outline:none}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.stat{background:#f4f6fc;border:1px solid #dde2f0;border-radius:8px;padding:10px 8px;text-align:center}
+.stat .sv{font-size:18px;font-weight:700;margin-bottom:2px}
+.stat .sk{font-size:10px;color:#7080a8}
+canvas{display:block;border-radius:6px}
+.row2{display:flex;gap:14px}
+.row2>div{flex:1}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>⚡ TRF 광학계 성능 시뮬레이터</h1>
+  <p>Time-Resolved Fluorescence &middot; Lateral Flow Strip &middot; 광학 파라미터 실시간 시뮬레이션</p>
+</div>
+<div id="main">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-title">광원 <span>/ EXCITATION</span></div>
+      <div class="ctrl"><label>여기 파장 (nm)<span class="val" id="v_ex">340</span></label><input type="range" id="r_ex" min="300" max="420" value="340" oninput="go()"></div>
+      <div class="ctrl"><label>광원 파워 (mW)<span class="val" id="v_pw">50</span></label><input type="range" id="r_pw" min="1" max="200" value="50" oninput="go()"></div>
+      <div class="ctrl"><label>빔 직경 (μm)<span class="val" id="v_bd">500</span></label><input type="range" id="r_bd" min="100" max="2000" value="500" oninput="go()"></div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-title">형광체 <span>/ FLUOROPHORE</span></div>
+      <div class="ctrl"><label style="margin-bottom:6px;display:block;color:#6878a8;font-size:11px">형광체 종류</label>
+        <select id="r_fl" onchange="go()">
+          <option value="eu">Eu³⁺ chelate (615 nm)</option>
+          <option value="tb">Tb³⁺ chelate (545 nm)</option>
+          <option value="sm">Sm³⁺ chelate (643 nm)</option>
+          <option value="dy">Dy³⁺ chelate (572 nm)</option>
+        </select>
+      </div>
+      <div class="ctrl" style="margin-top:10px"><label>형광 수명 (μs)<span class="val" id="v_tau">600</span></label><input type="range" id="r_tau" min="50" max="2000" value="600" oninput="go()"></div>
+      <div class="ctrl"><label>양자 수율 (%)<span class="val" id="v_qy">25</span></label><input type="range" id="r_qy" min="1" max="80" value="25" oninput="go()"></div>
+    </div>
+    <div class="card" style="margin-bottom:10px">
+      <div class="card-title">검출계 <span>/ DETECTOR</span></div>
+      <div class="ctrl"><label>검출기 감도 (%)<span class="val" id="v_det">70</span></label><input type="range" id="r_det" min="10" max="100" value="70" oninput="go()"></div>
+      <div class="ctrl"><label>지연시간 게이트 (μs)<span class="val" id="v_gate">100</span></label><input type="range" id="r_gate" min="10" max="500" value="100" oninput="go()"></div>
+      <div class="ctrl"><label>배경 형광 (%)<span class="val" id="v_bg">5</span></label><input type="range" id="r_bg" min="0" max="50" value="5" oninput="go()"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">스트립 농도 범위</div>
+      <div class="ctrl"><label>최소 신호 (LOD ×)<span class="val" id="v_cmin">1</span></label><input type="range" id="r_cmin" min="1" max="10" value="1" oninput="go()"></div>
+      <div class="ctrl"><label>최대 신호 (LOD ×)<span class="val" id="v_cmax">5000</span></label><input type="range" id="r_cmax" min="100" max="20000" value="5000" oninput="go()"></div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+    <div class="card">
+      <div class="card-title">광학계 구성도</div>
+      <canvas id="c_diagram" width="820" height="130"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">스트립 밴드 시뮬레이션 <span style="color:#7080a8">(약신호 → 강신호)</span></div>
+      <canvas id="c_strip" width="820" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">신호 강도 프로파일 &amp; SNR 곡선</div>
+      <canvas id="c_snr" width="820" height="200"></canvas>
+    </div>
+  </div>
+</div>
+
+<script>
+var FL_PROPS = {
+  eu: {em:615, tau:600, stokes:275, color:'#e05050'},
+  tb: {em:545, tau:1200, stokes:205, color:'#50c050'},
+  sm: {em:643, tau:50,  stokes:270, color:'#e07030'},
+  dy: {em:572, tau:20,  stokes:230, color:'#d0c030'}
+};
+
+function go() {
+  var ex   = parseInt(document.getElementById('r_ex').value);
+  var pw   = parseInt(document.getElementById('r_pw').value);
+  var bd   = parseInt(document.getElementById('r_bd').value);
+  var fl   = document.getElementById('r_fl').value;
+  var tau  = parseInt(document.getElementById('r_tau').value);
+  var qy   = parseInt(document.getElementById('r_qy').value);
+  var det  = parseInt(document.getElementById('r_det').value);
+  var gate = parseInt(document.getElementById('r_gate').value);
+  var bg   = parseInt(document.getElementById('r_bg').value);
+  var cmin = parseInt(document.getElementById('r_cmin').value);
+  var cmax = parseInt(document.getElementById('r_cmax').value);
+
+  document.getElementById('v_ex').textContent   = ex;
+  document.getElementById('v_pw').textContent   = pw;
+  document.getElementById('v_bd').textContent   = bd;
+  document.getElementById('v_tau').textContent  = tau;
+  document.getElementById('v_qy').textContent   = qy;
+  document.getElementById('v_det').textContent  = det;
+  document.getElementById('v_gate').textContent = gate;
+  document.getElementById('v_bg').textContent   = bg;
+  document.getElementById('v_cmin').textContent = cmin;
+  document.getElementById('v_cmax').textContent = cmax >= 1000 ? (cmax/1000).toFixed(0)+'k' : cmax;
+
+  var fp = FL_PROPS[fl];
+  // η = e^(-t_d/τ) × (1 - e^(-t_g/τ))  — 정확한 TRF 수집 효율 수식
+  // gate = t_d(지연), tg_width = t_g(게이트 폭, τ의 2배 기본값)
+  var tg_width = tau * 2; // 게이트 폭: 슬라이더에 별도 t_g가 없으므로 τ×2 사용
+  var eta = (qy/100) * (det/100) * Math.exp(-gate/tau) * (1 - Math.exp(-tg_width/tau));
+  var bgSup = 100 - bg;
+  var snrMid = (pw/50) * eta * (1 - bg/100) * 40;
+  var lod = Math.round(100 / Math.max(0.1, snrMid) * 335);
+  var stokes = fp.stokes + (ex - 340);
+  var dynRange = Math.log10(cmax/cmin).toFixed(1);
+
+  document.getElementById('stats').innerHTML =
+    '<div class="stat"><div class="sv" style="color:#f0b93a">'+snrMid.toFixed(1)+'</div><div class="sk">SNR (중간농도)</div></div>'+
+    '<div class="stat"><div class="sv" style="color:#2060c0">'+lod+'×</div><div class="sk">LOD (검출한계)</div></div>'+
+    '<div class="stat"><div class="sv" style="color:#4caf7d">'+stokes+'nm</div><div class="sk">스토크스 이동</div></div>'+
+    '<div class="stat"><div class="sv" style="color:#b080ff">'+bgSup+'%</div><div class="sk">배경 제거율</div></div>'+
+    '<div class="stat"><div class="sv" style="color:#f07070">'+dynRange+' dec</div><div class="sk">동적범위</div></div>'+
+    '<div class="stat"><div class="sv" style="color:#2060c0">'+fp.em+'nm</div><div class="sk">방출 파장</div></div>';
+
+  drawDiagram(ex, gate, fp, fl);
+  drawStrip(pw, qy, det, gate, tau, bg, cmin, cmax, fp);
+  drawSNRcurve(pw, qy, det, gate, tau, bg, cmin, cmax, fp);
+}
+
+function drawDiagram(ex, gate, fp, fl) {
+  var c = document.getElementById('c_diagram').getContext('2d');
+  var W = 820, H = 130;
+  c.clearRect(0,0,W,H);
+
+  var items = [
+    {x:70,  icon:'star',  color:'#f0d050', label:'광원',    sub:'LED/Laser'},
+    {x:210, icon:'rect',  color:'#a060f0', label:'여기필터', sub:ex+'nm'},
+    {x:350, icon:'lens',  color:'#60b0f0', label:'집광렌즈', sub:'Lens'},
+    {x:490, icon:'strip', color:'#c8b89a', label:'스트립',   sub:'Strip'},
+    {x:620, icon:'rect',  color:'#60d080', label:'방출필터', sub:fp.em+'nm'},
+    {x:760, icon:'det',   color:'#e05050', label:'검출기',   sub:'PMT/APD'}
+  ];
+
+  // connecting line
+  c.strokeStyle='#e8eeff'; c.lineWidth=2; c.setLineDash([4,4]);
+  c.beginPath(); c.moveTo(30,60); c.lineTo(W-30,60); c.stroke(); c.setLineDash([]);
+
+  // beam path (colored)
+  var grd = c.createLinearGradient(100,0,760,0);
+  grd.addColorStop(0,'rgba(160,96,240,0.4)');
+  grd.addColorStop(0.4,'rgba(160,96,240,0.1)');
+  grd.addColorStop(0.5,'rgba(200,184,154,0.05)');
+  grd.addColorStop(0.6,'rgba(96,208,128,0.1)');
+  grd.addColorStop(1,'rgba(224,80,80,0.3)');
+  c.fillStyle=grd; c.fillRect(100,50,660,20);
+
+  // gate annotation
+  c.fillStyle='rgba(126,184,247,0.1)'; c.fillRect(430,28,220,65);
+  c.strokeStyle='#2060c0'; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(430,28); c.lineTo(650,28); c.stroke();
+  c.beginPath(); c.moveTo(430,93); c.lineTo(650,93); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#2060c0'; c.font='bold 10px sans-serif'; c.fillText('Gate '+gate+'μs',520,22);
+
+  items.forEach(function(it) {
+    var x=it.x, y=60;
+    if (it.icon==='star') {
+      c.fillStyle=it.color;
+      c.beginPath(); c.arc(x,y,16,0,Math.PI*2); c.fill();
+      c.fillStyle='#f0f4ff'; c.font='bold 14px sans-serif'; c.textAlign='center'; c.fillText('✦',x,y+5);
+    } else if (it.icon==='rect') {
+      c.fillStyle=it.color+'33'; c.strokeStyle=it.color; c.lineWidth=2;
+      c.fillRect(x-10,y-22,20,44); c.strokeRect(x-10,y-22,20,44);
+    } else if (it.icon==='lens') {
+      c.fillStyle='rgba(96,176,240,0.2)'; c.strokeStyle=it.color; c.lineWidth=2;
+      c.beginPath(); c.ellipse(x,y,10,22,0,0,Math.PI*2); c.fill(); c.stroke();
+    } else if (it.icon==='strip') {
+      c.fillStyle='#c8b89a'; c.fillRect(x-14,y-24,28,48);
+      c.fillStyle='#e04040'; c.fillRect(x-10,y-8,20,7);
+      c.fillStyle='#4040c0'; c.fillRect(x-10,y+5,20,7);
+      c.strokeStyle='#888'; c.lineWidth=1; c.strokeRect(x-14,y-24,28,48);
+    } else if (it.icon==='det') {
+      c.fillStyle=it.color+'33'; c.strokeStyle=it.color; c.lineWidth=2;
+      c.fillRect(x-16,y-20,32,40); c.strokeRect(x-16,y-20,32,40);
+      c.strokeStyle=it.color; c.lineWidth=1.5;
+      c.beginPath(); c.moveTo(x-8,y-12); c.lineTo(x+8,y+12); c.stroke();
+      c.beginPath(); c.moveTo(x+8,y-12); c.lineTo(x-8,y+12); c.stroke();
+    }
+    c.textAlign='center'; c.fillStyle='#6878a8'; c.font='11px sans-serif'; c.fillText(it.label,x,y+38);
+    c.fillStyle='#7080a8'; c.font='10px sans-serif'; c.fillText(it.sub,x,y+50);
+  });
+  c.textAlign='left';
+}
+
+function drawStrip(pw, qy, det, gate, tau, bg, cmin, cmax, fp) {
+  var c = document.getElementById('c_strip').getContext('2d');
+  var W = 820, H = 160;
+  c.clearRect(0,0,W,H);
+
+  var N = 10;
+  var sw = (W-20)/N;
+  var sh = H - 35;
+
+  // label top
+  c.fillStyle='#7080a8'; c.font='10px sans-serif';
+  c.fillText('← 약신호 (Weak)', 10, 12);
+  c.textAlign='center'; c.fillStyle='#6878a8'; c.font='10px sans-serif';
+  c.fillText('T-line: Eu³⁺  |  C-line: Anti-species IgG', W/2, 12);
+  c.textAlign='right'; c.fillStyle='#7080a8';
+  c.fillText('강신호 (Strong) →', W-10, 12);
+  c.textAlign='left';
+
+  for (var i=0; i<N; i++) {
+    var t = i/(N-1);
+    var conc = cmin * Math.pow(cmax/cmin, t);
+    var sigT = (pw/50)*(qy/25)*(det/70)*Math.exp(-gate/tau)*t; // T fades with more analyte (competitive)
+    var tSignal = Math.max(0, 1 - t*0.85); // T-line competitive: decreases
+    var cSignal = 0.85; // C-line constant
+    var snr = (pw/50)*(qy/100)*(det/100)*(1-bg/100)*Math.exp(-gate/tau)*conc/cmin*0.3;
+
+    var x = 10 + i*sw;
+
+    // pad background
+    var padGrd = c.createLinearGradient(x, 18, x+sw-2, 18);
+    padGrd.addColorStop(0,'#d4c9b0');
+    padGrd.addColorStop(1,'#c8b89a');
+    c.fillStyle=padGrd;
+    c.fillRect(x, 18, sw-2, sh);
+
+    // subtle fiber texture
+    var rnd = seededRand(i*31+7);
+    c.strokeStyle='rgba(0,0,0,0.04)';
+    for (var j=0;j<6;j++) { var ty=18+rnd()*sh; c.beginPath(); c.moveTo(x,ty); c.lineTo(x+sw-2,ty+rnd()*2-1); c.stroke(); }
+
+    // T-line (red, competitive — decreases with concentration)
+    var tAlpha = tSignal;
+    var tR=Math.round(180+tSignal*60), tG=Math.round(30+tSignal*20), tB=Math.round(30+tSignal*20);
+    c.fillStyle='rgb('+tR+','+tG+','+tB+')';
+    var tH = Math.max(2, tSignal*22);
+    c.fillRect(x+4, 18+sh*0.28, sw-8, tH);
+    // T-line Eu particles
+    if (tSignal > 0.05) {
+      var rnd2=seededRand(i*111+3), nP=Math.round(tSignal*30);
+      for (var p=0;p<nP;p++) {
+        var px=x+4+rnd2()*(sw-8), py=18+sh*0.28+rnd2()*tH;
+        c.fillStyle='rgba(255,'+(180+Math.round(rnd2()*60))+',20,0.8)';
+        c.beginPath(); c.arc(px,py,1.2,0,Math.PI*2); c.fill();
+      }
+    }
+
+    // C-line (blue, constant)
+    c.fillStyle='rgb(60,80,180)';
+    c.fillRect(x+4, 18+sh*0.62, sw-8, 14);
+    var rnd3=seededRand(i*222+9);
+    for (var p=0;p<12;p++) {
+      var px=x+4+rnd3()*(sw-8), py=18+sh*0.62+rnd3()*14;
+      c.fillStyle='rgba(160,180,255,0.7)';
+      c.beginPath(); c.arc(px,py,1.0,0,Math.PI*2); c.fill();
+    }
+
+    // border
+    c.strokeStyle='#a09080'; c.lineWidth=0.5; c.strokeRect(x,18,sw-2,sh);
+
+    // label bottom
+    var label = conc >= 1000 ? '×'+(conc/1000).toFixed(1)+'k' : '×'+Math.round(conc);
+    var snrLabel = 'SNR:'+(snr>0.1?snr.toFixed(1):'0.1');
+    c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.textAlign='center';
+    c.fillText(label, x+sw/2, H-14);
+    c.fillStyle='#7080a8'; c.font='8px sans-serif';
+    c.fillText(snrLabel, x+sw/2, H-4);
+    c.textAlign='left';
+  }
+}
+
+function seededRand(s) {
+  var x=s;
+  return function(){x=(x*9301+49297)%233280; return x/233280;};
+}
+
+function drawSNRcurve(pw, qy, det, gate, tau, bg, cmin, cmax, fp) {
+  var c = document.getElementById('c_snr').getContext('2d');
+  var W = 820, H = 200;
+  c.clearRect(0,0,W,H);
+
+  var xS=60, xE=W-30, yB=H-30, yT=15;
+  var logMin=Math.log10(cmin), logMax=Math.log10(cmax);
+
+  // grid
+  var yGrids=[0,25,50,75,100];
+  yGrids.forEach(function(v){
+    var y=yB-(yB-yT)*v/100;
+    c.strokeStyle='#e8eeff'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(xS,y); c.lineTo(xE,y); c.stroke();
+    c.fillStyle='#c8d2e8'; c.font='10px sans-serif'; c.textAlign='right';
+    c.fillText(v+'%',xS-5,y+4);
+  });
+
+  // X axis ticks (log scale)
+  var xTicks=[1,3,10,30,100,300,1000,3000,10000,20000];
+  xTicks.forEach(function(v){
+    if(v<cmin||v>cmax*1.2) return;
+    var xp=xS+(Math.log10(v)-logMin)/(logMax-logMin)*(xE-xS);
+    c.strokeStyle='#e8eeff'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(xp,yT); c.lineTo(xp,yB); c.stroke();
+    c.fillStyle='#c8d2e8'; c.font='10px sans-serif'; c.textAlign='center';
+    var lbl=v>=1000?(v/1000)+'k':v+'';
+    c.fillText(lbl,xp,yB+14);
+  });
+
+  // axes
+  c.strokeStyle='#e8eeff'; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+
+  // axis labels
+  c.fillStyle='#7080a8'; c.font='11px sans-serif'; c.textAlign='center';
+  c.fillText('농도 (LOD 배수, log scale)',W/2,H-4);
+  c.save(); c.translate(14,(yT+yB)/2); c.rotate(-Math.PI/2);
+  c.fillStyle='#7080a8'; c.font='11px sans-serif'; c.fillText('신호 / SNR (%)',0,0); c.restore();
+
+  var baseScale=(pw/50)*(qy/25)*(det/70)*Math.exp(-gate/tau)*(1-bg/100);
+
+  // fluorescence signal (red solid)
+  c.strokeStyle='#e05050'; c.lineWidth=2.5; c.beginPath();
+  var first=true;
+  for(var i=0;i<=200;i++){
+    var lc=logMin+i*(logMax-logMin)/200, cv=Math.pow(10,lc);
+    var sig=baseScale*Math.min(1,cv/cmin*0.03)*100;
+    sig=Math.min(100,sig);
+    var x=xS+i*(xE-xS)/200, y=yB-(yB-yT)*sig/100;
+    if(first){c.moveTo(x,y);first=false;}else c.lineTo(x,y);
+  }
+  c.stroke();
+
+  // SNR dashed (cyan)
+  c.strokeStyle='#40d0d0'; c.lineWidth=2; c.setLineDash([6,4]); c.beginPath();
+  first=true;
+  for(var i=0;i<=200;i++){
+    var lc=logMin+i*(logMax-logMin)/200, cv=Math.pow(10,lc);
+    var snr=baseScale*Math.min(1,cv/cmin*0.03)*100*(1+cv/cmin*0.005);
+    snr=Math.min(100,snr);
+    var x=xS+i*(xE-xS)/200, y=yB-(yB-yT)*snr/100;
+    if(first){c.moveTo(x,y);first=false;}else c.lineTo(x,y);
+  }
+  c.stroke(); c.setLineDash([]);
+
+  // SNR=3 LOD line
+  var snr3y=yB-(yB-yT)*3/100*baseScale*15;
+  snr3y=Math.max(yT+5,Math.min(yB-5,yB-(yB-yT)*0.12));
+  c.strokeStyle='#c03030'; c.lineWidth=1; c.setLineDash([4,4]);
+  c.beginPath(); c.moveTo(xS,snr3y); c.lineTo(xE,snr3y); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#c03030'; c.font='10px sans-serif'; c.textAlign='left';
+  c.fillText('SNR=3 (LOD)',xS+4,snr3y-4);
+
+  // legend
+  c.fillStyle='#e05050'; c.fillRect(xE-120,yT+5,18,3);
+  c.fillStyle='#c8ccd8'; c.font='10px sans-serif'; c.textAlign='left'; c.fillText('형광 신호',xE-98,yT+10);
+  c.strokeStyle='#40d0d0'; c.lineWidth=2; c.setLineDash([5,3]);
+  c.beginPath(); c.moveTo(xE-120,yT+22); c.lineTo(xE-102,yT+22); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#c8ccd8'; c.fillText('SNR',xE-98,yT+26);
+
+  c.textAlign='left';
+}
+
+window.onload = function(){
+  setTimeout(function(){
+    go();
+    setTimeout(go, 200);
+  }, 80);
+};
+</script>
+</body>
+</html>

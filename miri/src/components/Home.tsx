@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useStore } from '../store';
 import type { HomeCard, ReminderStage } from '../types';
 import { addDays, format } from 'date-fns';
+import { upcomingItems } from '../lib/upcoming';
 
 const STAGE_BADGE: Record<ReminderStage, { label: string; cls: string }> = {
   1: { label: '미리', cls: 'bg-soft text-muted' },
@@ -9,12 +10,19 @@ const STAGE_BADGE: Record<ReminderStage, { label: string; cls: string }> = {
   3: { label: '코앞', cls: 'bg-point-soft text-point' },
 };
 
-export function Home() {
+export function Home({ onSeeCalendar }: { onSeeCalendar?: () => void } = {}) {
   const cards = useStore((s) => s.buildHomeCards());
   // buildHomeCards는 store 상태에서 파생 — 상태 변경 시 자동 리렌더
   const reminders = useStore((s) => s.reminders);
   const seeds = useStore((s) => s.seeds);
+  const tasks = useStore((s) => s.tasks);
+  const subtasks = useStore((s) => s.subtasks);
   const list = useMemo(() => cards, [reminders, seeds]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 곧 다가올 항목(아직 리마인더로 안 뜬 가까운 미래) — 선제성 빈 화면 해소
+  const upcoming = useMemo(
+    () => upcomingItems(tasks, subtasks),
+    [tasks, subtasks],
+  );
 
   const [expanded, setExpanded] = useState(false);
   const visible = expanded ? list : list.slice(0, 3); // NFR-UX-01: 동시 노출 ≤ 3
@@ -45,6 +53,35 @@ export function Home() {
         <button onClick={() => setExpanded(false)} className="w-full py-2 text-sm text-muted">
           접기
         </button>
+      )}
+
+      {upcoming.length > 0 && (
+        <section className="pt-2">
+          <div className="mb-1.5 flex items-baseline justify-between px-1">
+            <h2 className="text-sm font-bold text-muted">곧 다가와요</h2>
+            {onSeeCalendar && (
+              <button onClick={onSeeCalendar} className="text-xs text-point">
+                캘린더에서 보기
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            {upcoming.map((u) => (
+              <button
+                key={`${u.kind}-${u.id}`}
+                onClick={onSeeCalendar}
+                className="flex w-full items-center gap-2 rounded-xl bg-white px-3 py-2.5 text-left shadow-card"
+              >
+                <span aria-hidden>{u.kind === 'deadline' ? '🎯' : '◻️'}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-ink">{u.title}</p>
+                  {u.taskTitle && <p className="truncate text-xs text-muted">{u.taskTitle}</p>}
+                </div>
+                <span className="whitespace-nowrap text-xs font-medium text-point">{u.dday}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );

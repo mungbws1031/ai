@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { exportAll, downloadBackup, importAll, type BackupShape } from '../lib/backup';
+import { exportAll, downloadBackup, importAll, markBackedUp, type BackupShape } from '../lib/backup';
 import { useStore } from '../store';
 import { seedDemoData } from '../lib/demo';
 import { getApiKey, setApiKey, isLLMEnabled, setLLMEnabled } from '../lib/llm';
@@ -21,6 +21,7 @@ export function Settings({ onClose }: { onClose: () => void }) {
   const doExport = async () => {
     const data = await exportAll();
     downloadBackup(data);
+    markBackedUp();
     setMsg('백업 파일을 내려받았어요.');
   };
 
