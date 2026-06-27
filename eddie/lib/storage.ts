@@ -11,6 +11,7 @@ export function defaultState(): AppState {
     routines: [],
     checkIns: [],
     todos: [],
+    deadlines: [],
     medications: [],
     medLogs: [],
     departure: {
