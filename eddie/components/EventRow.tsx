@@ -7,6 +7,7 @@ import { ScheduleEvent } from '@/lib/types';
 import { copyText, formatEvent, nativeShare } from '@/lib/share';
 import { planEvent, PlanStyle, PlanTask } from '@/lib/plan-ai';
 import { buildEventICS, downloadICS, googleCalUrl } from '@/lib/ics';
+import { detectTemplate } from '@/lib/prep-templates';
 
 const LEADS = [7, 2, 1];
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -33,6 +34,16 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
 
   const leads = e.leadDays ?? [];
   const hasKey = !!state.settings.apiKey;
+  const [tplOpen, setTplOpen] = useState(false);
+  const tpl = detectTemplate(e.title);
+
+  function addTemplate() {
+    if (!tpl) return;
+    tpl.tasks.forEach((t) => addTodo(t.text, '09:00', shiftDate(date, t.daysBefore)));
+    pushToast(`${tpl.name} 준비 ${tpl.tasks.length}개를 담았어 🐣`);
+    setTplOpen(false);
+    setOpen(false);
+  }
 
   function toggleLead(n: number) {
     const next = leads.includes(n) ? leads.filter((x) => x !== n) : [...leads, n].sort((a, b) => b - a);
@@ -134,6 +145,34 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
               ))}
             </div>
           </div>
+
+          {/* 유형별 준비 체크리스트 템플릿 (예: 출장) */}
+          {tpl && (
+            <div className="rounded-xl border border-eddie-line p-2 dark:border-neutral-700">
+              <button
+                onClick={() => setTplOpen((o) => !o)}
+                className="flex w-full items-center justify-between text-sm font-semibold"
+              >
+                <span>📋 {tpl.name} 준비 체크리스트</span>
+                <span className="text-eddie-muted">{tplOpen ? '▾' : '›'}</span>
+              </button>
+              {tplOpen && (
+                <div className="mt-2 flex flex-col gap-1">
+                  <ul className="flex flex-col gap-1 text-sm">
+                    {tpl.tasks.map((t, i) => (
+                      <li key={i}>
+                        · {t.text}{' '}
+                        <span className="text-eddie-muted">{t.daysBefore > 0 ? `(${t.daysBefore}일 전)` : '(당일)'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button onClick={addTemplate} className="btn-primary mt-1 text-sm">
+                    {tpl.tasks.length}개 할 일로 담기 (날짜별 알림)
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 준비 계획: 장소/자리 입력(선택) */}
           {hasKey && (
