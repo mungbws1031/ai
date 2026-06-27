@@ -2,15 +2,34 @@
 
 import { useState } from 'react';
 import { useStore } from '@/lib/store-context';
+import { parseWhen } from '@/lib/parse-when';
 
 /**
  * 할 일 빠른 담기(브레인 덤프).
  * ADHD에서 떠오른 일은 즉시 적지 않으면 사라진다 — 날짜·시간 고를 필요 없이 한 줄로 담는 인박스.
+ * '내일 3시 치과'처럼 날짜 표현이 있으면 달력 일정으로 넣는다.
  */
 export default function QuickTodos() {
-  const { state, today, addTodo, toggleTodo, removeTodo, clearDoneTodos, setTodoReminder } = useStore();
+  const { state, today, addTodo, addEvent, pushToast, toggleTodo, removeTodo, clearDoneTodos, setTodoReminder } =
+    useStore();
   const [text, setText] = useState('');
   const [remindAt, setRemindAt] = useState('');
+
+  function submit() {
+    const v = text.trim();
+    if (!v) return;
+    const parsed = parseWhen(v, new Date());
+    if (parsed.date) {
+      const title = parsed.cleanedText || v;
+      addEvent(parsed.date, title, parsed.time || remindAt || undefined);
+      const [, mo, d] = parsed.date.split('-');
+      pushToast(`달력 ${parseInt(mo, 10)}월 ${parseInt(d, 10)}일에 넣었어 🗓️`);
+    } else {
+      addTodo(v, remindAt || undefined);
+    }
+    setText('');
+    setRemindAt('');
+  }
 
   const todos = state.todos;
   const openCount = todos.filter((t) => !t.done).length;
@@ -27,15 +46,13 @@ export default function QuickTodos() {
         className="flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault();
-          addTodo(text, remindAt || undefined);
-          setText('');
-          setRemindAt('');
+          submit();
         }}
       >
         <div className="flex gap-2">
           <input
             className="field flex-1"
-            placeholder="떠오른 일 적어두기 (예: 택배 부치기)"
+            placeholder="떠오른 일 적어두기 (예: 다음주 화요일 치과)"
             value={text}
             onChange={(e) => setText(e.target.value)}
             aria-label="할 일 입력"
@@ -45,6 +62,7 @@ export default function QuickTodos() {
             담기
           </button>
         </div>
+        <p className="text-xs text-eddie-muted">‘내일’, ‘다음주 화요일’, ‘6/27 3시’처럼 날짜를 적으면 달력에 들어가.</p>
         <label className="flex items-center gap-2 text-xs text-eddie-muted">
           🔔 알림 시각(선택)
           <input
