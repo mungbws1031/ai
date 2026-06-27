@@ -7,6 +7,7 @@ import { SomedayBox } from './components/SomedayBox';
 import { QuickAdd } from './components/QuickAdd';
 import { Settings } from './components/Settings';
 import { InstallPrompt } from './components/InstallPrompt';
+import { BackupNudge } from './components/BackupNudge';
 import { syncNativeNotifications } from './lib/native';
 
 export default function App() {
@@ -37,7 +38,7 @@ export default function App() {
         {!loaded ? (
           <p className="pt-20 text-center text-sm text-muted">불러오는 중…</p>
         ) : tab === 'home' ? (
-          <Home />
+          <Home onSeeCalendar={() => setTab('calendar')} />
         ) : tab === 'calendar' ? (
           <CalendarView />
         ) : (
@@ -66,6 +67,7 @@ export default function App() {
       <TabBar active={tab} onChange={setTab} />
 
       <InstallPrompt />
+      <BackupNudge />
 
       {adding && <QuickAdd onClose={() => setAdding(false)} />}
       {settingsOpen && <Settings onClose={() => setSettingsOpen(false)} />}

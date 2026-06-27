@@ -1,0 +1,2198 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>TRF 통합 분석 플랫폼</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#eef1fa;color:#1e2540;font-family:'Segoe UI',sans-serif;font-size:13px;min-height:100vh}
+#topbar{background:#fff;border-bottom:1px solid #dde2f0;padding:10px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+#topbar h1{font-size:15px;font-weight:700;color:#2060c0;letter-spacing:1px}
+#topbar span{font-size:11px;color:#9098c0;margin-left:auto}
+#tabs{display:flex;background:#fff;border-bottom:1px solid #dde2f0;padding:0 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.tab{padding:9px 14px;cursor:pointer;font-size:12px;color:#8898c0;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s}
+.tab:hover{color:#3060b0}
+.tab.active{color:#2060c0;border-bottom-color:#2060c0}
+.tabcontent{display:none;padding:16px;overflow-y:auto;max-height:calc(100vh - 90px)}
+.tabcontent.active{display:block}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
+.card{background:#fff;border:1px solid #dde2f0;border-radius:10px;padding:14px;box-shadow:0 1px 4px rgba(30,40,100,.06)}
+.card h3{font-size:11px;color:#2060c0;letter-spacing:.5px;margin-bottom:10px;text-transform:uppercase}
+canvas{display:block;background:#f4f7ff;border-radius:6px;border:1px solid #e4e8f8}
+.chart-desc{margin-top:8px;padding:8px 10px;background:#f8f9ff;border-left:3px solid #aabce8;border-radius:0 6px 6px 0;font-size:11px;color:#4a5480;line-height:1.65}
+.tab-purpose{background:#e8eeff;border:1px solid #c0ccf0;border-radius:8px;padding:10px 16px;margin-bottom:14px;font-size:12px;color:#2a3460;line-height:1.7}
+.tab-purpose b{color:#1e4ab0;font-size:13px;display:block;margin-bottom:3px}
+label{color:#6878a8;font-size:11px}
+input[type=range]{width:100%;accent-color:#2060c0;margin:3px 0}
+select{background:#f4f7ff;color:#1e2540;border:1px solid #c8d0e8;border-radius:4px;padding:3px 6px;font-size:12px}
+.val{color:#2060c0;font-weight:700;font-size:13px}
+.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #edf0fa;font-size:12px}
+.kv:last-child{border-bottom:none}
+.kv span:last-child{color:#1a8040;font-weight:700}
+.ctrl{margin-bottom:8px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.green{background:#e8f5ee;color:#1a8040}.blue{background:#e4eeff;color:#2060c0}.yellow{background:#fff3e0;color:#b06010}.red{background:#ffebeb;color:#c02828}
+@keyframes fbPop{0%{transform:scale(0.94);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <h1>⚡ TRF 통합 분석 플랫폼</h1>
+  <span>Eu³⁺ 기반 측면 유동 면역분석 시뮬레이터 | SUGENTECH</span>
+</div>
+<div id="tabs">
+  <div class="tab active" onclick="switchTab(1)">① TRF 원리</div>
+  <div class="tab" onclick="switchTab(2)">② 광학계 시뮬레이터</div>
+  <div class="tab" onclick="switchTab(3)">③ 스트립 밴드</div>
+  <div class="tab" onclick="switchTab(4)">④ 광학계 체크리스트</div>
+  <div class="tab" onclick="switchTab(5)">⑤ 센서-스트립 거리</div>
+  <div class="tab" onclick="switchTab(6)">⑥ 차광 중요성</div>
+  <div class="tab" onclick="switchTab(7)">⑦ 광학계 성능</div>
+  <div class="tab" onclick="switchTab(8)">⑧ 신호 검출 & 캘리브레이션</div>
+  <div class="tab" onclick="switchTab(9)">⑨ 기구 레이아웃</div>
+  <div class="tab" onclick="switchTab(10)">⑩ 다채널 격리</div>
+</div>
+
+<!-- TAB1: TRF 원리 -->
+<div id="t1" class="tabcontent active">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>빛을 번쩍 켰다가 끄고, 잠깐 기다린 다음에 신호를 재면 왜 더 정확한지 알려주는 탭이에요. 배경 노이즈는 이미 꺼진 다음에 우리가 원하는 형광 신호만 남거든요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 일반 형광은 시료 자가형광·산란 같은 배경에 신호가 묻혀 저농도를 못 잡아요. TRF는 배경이 사라진 뒤 측정해 감도를 수백~수천 배 끌어올립니다. 이 원리가 광학계·타이밍·회로 설계의 모든 판단 기준이라 가장 먼저 이해해야 합니다.</div>
+  <div class="row">
+    <div class="card" style="flex:1;min-width:300px">
+      <h3>TRF 타이밍 원리 — 왜 기다렸다가 재는가?</h3>
+
+      <!-- 개념 설명 -->
+      <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;background:#fff8e8;border:1px solid #f0d080;border-radius:8px;padding:10px 12px;font-size:12px;color:#5a4000;line-height:1.7">
+          <b style="color:#8a5a00">🔥 불꽃놀이 비유</b><br>
+          불꽃이 터지는 순간엔 사방이 환해서 별이 안 보여요. 잠깐 기다리면 불꽃 잔광은 사라지고 오래가는 별만 남아요. TRF는 바로 이 타이밍에 셔터를 여는 방식이에요.
+        </div>
+        <div style="flex:2;min-width:280px;background:#f0f4ff;border:1px solid #c0ccf0;border-radius:8px;padding:10px 12px;font-size:12px;color:#2a3460;line-height:1.7">
+          <b style="color:#1e4ab0">⏱ 핵심 원리</b><br>
+          모든 형광 물질은 빛을 받으면 잠깐 빛나다 꺼져요. 꺼지는 데 걸리는 시간이 물질마다 달라요.<br>
+          &bull; <b>배경 노이즈</b> (생체분자, 산란광): <b style="color:#c03030">나노초(0.000001ms)</b> 만에 즉시 꺼짐<br>
+          &bull; <b>Eu³⁺ (란타나이드)</b>: <b style="color:#2060c0">600마이크로초</b> — 배경보다 <b>1만~100만 배</b> 오래 빛남<br>
+          → UV LED를 끈 다음 잠깐 기다리면 배경은 이미 0, Eu³⁺만 남아있어요. 그때 재면 노이즈 없이 신호만 측정돼요.
+        </div>
+      </div>
+
+      <!-- 타이밍 다이어그램 -->
+      <canvas id="c_principle" width="700" height="260"></canvas>
+
+      <!-- 파라미터 설명 -->
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:160px;background:#f4f0ff;border-left:3px solid #6040c0;border-radius:0 6px 6px 0;padding:8px 10px;font-size:11px;color:#3a2880;line-height:1.6">
+          <b>① Delay (t_d)</b><br>펄스 끝나고 기다리는 시간.<br>너무 짧으면 배경 노이즈 섞이고, 너무 길면 Eu³⁺ 신호도 깎여요.<br><span style="color:#6878a8">보통 50~200 μs</span>
+        </div>
+        <div style="flex:1;min-width:160px;background:#f0fff4;border-left:3px solid #1a8040;border-radius:0 6px 6px 0;padding:8px 10px;font-size:11px;color:#1a4030;line-height:1.6">
+          <b>② Gate width (t_g)</b><br>실제로 신호를 재는 시간창.<br>넓을수록 광자를 많이 모아요.<br><span style="color:#6878a8">보통 400~1200 μs</span>
+        </div>
+        <div style="flex:1;min-width:160px;background:#fff0f8;border-left:3px solid #c03080;border-radius:0 6px 6px 0;padding:8px 10px;font-size:11px;color:#601040;line-height:1.6">
+          <b>③ Cycle 반복</b><br>이 펄스→delay→gate 사이클을 초당 수백~수천 번 반복해 누적해요.<br><span style="color:#6878a8">SNR ∝ √N (반복 횟수)</span>
+        </div>
+      </div>
+      <div class="chart-desc">💡 게이트 구간(초록)을 보면 배경 노이즈(빨간선)는 이미 바닥에 붙어있고, Eu³⁺(파란선)만 위에 떠있어요. 그 구간에서 광자를 세니까 측정값이 거의 신호 전부가 돼요.</div>
+    </div>
+    <div class="card" style="flex:1;min-width:260px">
+      <h3>형광 수명 비교</h3>
+      <canvas id="c_lifetime" width="340" height="170"></canvas>
+      <div class="chart-desc">💡 Eu³⁺는 빛이 꺼진 후에도 600마이크로초 동안 빛나요. 일반 형광·자가형광은 수 나노초(0.001µs 정도)면 거의 꺼지는데, 이 10만 배 가까운 시간 차이 덕분에 노이즈를 걸러낼 수 있어요.</div>
+    </div>
+  </div>
+  <!-- 타이밍 비교 카드 -->
+  <div class="row">
+    <div class="card" style="flex:1">
+      <h3>⏱ 언제 찍어야 할까? — delay 타이밍 비교</h3>
+      <canvas id="c_timing_cmp" width="860" height="220"></canvas>
+      <div class="chart-desc">💡 세 가지 타이밍을 비교해요. <b>너무 일찍</b> 게이트를 열면 배경 노이즈가 섞이고, <b>너무 늦게</b> 열면 Eu³⁺ 신호도 많이 사라져요. <b>적절한 타이밍</b>에서만 노이즈 없이 신호를 최대한 많이 잡을 수 있어요.</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="card" style="flex:1;min-width:260px">
+      <h3>신호 수집 효율 η (t_d, t_g)</h3>
+      <canvas id="c_eta0" width="340" height="160"></canvas>
+      <div class="chart-desc">💡 기다리는 시간(t_d)이 길수록, 측정하는 시간(t_g)이 짧을수록 신호를 많이 놓쳐요. 최적 조합을 찾는 그래프예요.</div>
+    </div>
+    <div class="card" style="flex:1;min-width:260px">
+      <h3>Eu³⁺ 흡수/발광 스펙트럼</h3>
+      <canvas id="c_spectrum0" width="340" height="160"></canvas>
+      <div class="chart-desc">Eu³⁺는 340nm(UV)에서 빛을 흡수하고 615nm(주황)에서 방출해요. 275nm나 떨어진 Stokes 이동 덕분에 여기 빛과 신호 빛을 필터로 쉽게 분리할 수 있어요.</div>
+    </div>
+    <div class="card" style="flex:1;min-width:220px">
+      <h3>TRF 배경광 억제 효과</h3>
+      <canvas id="c_suppress" width="280" height="160"></canvas>
+      <div class="chart-desc">💡 TRF가 각 빛 종류마다 얼마나 노이즈를 없애주는지 보여요. 자가형광은 거의 다 없애지만, 햇빛처럼 항상 켜져 있는 빛은 아무리 해도 없앨 수 없어요.</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="card" style="flex:1;min-width:200px">
+      <div class="kv"><span>형광체</span><span>Eu³⁺ 킬레이트</span></div>
+      <div class="kv"><span>발광 파장</span><span>615 nm</span></div>
+      <div class="kv"><span>수명 τ</span><span>~600 μs</span></div>
+      <div class="kv"><span>UV LED 파장</span><span>340 nm</span></div>
+      <div class="kv"><span>Stokes 이동</span><span>275 nm</span></div>
+    </div>
+    <div class="card" style="flex:1;min-width:200px">
+      <div class="kv"><span>UV 펄스 폭</span><span>1 μs</span></div>
+      <div class="kv"><span>지연 시간 t_d</span><span>50–200 μs</span></div>
+      <div class="kv"><span>게이트 폭 t_g</span><span>400–800 μs</span></div>
+      <div class="kv"><span>배경광 억제</span><span>&gt;99.9%</span></div>
+      <div class="kv"><span>SNR 향상</span><span>100–1000×</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB2: 광학계 시뮬레이터 -->
+<div id="t2" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>빛을 끈 다음 얼마나 기다릴지, 얼마나 오래 잴지를 슬라이더로 조절해볼 수 있어요. 기다리는 시간이 너무 길면 신호가 줄고, 너무 짧으면 노이즈이 섞여요. 가장 좋은 조합을 직접 찾아보세요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 지연시간을 너무 짧게 잡으면 배경이 섞이고, 너무 길게 잡으면 신호를 버려 감도가 무너집니다. 펌웨어·타이밍 회로를 확정하기 전에 최적 지연·게이트 폭을 미리 정해 두어야 시제품을 다시 안 만듭니다.</div>
+  <div class="row">
+    <div class="card" style="width:220px">
+      <h3>파라미터</h3>
+      <div class="ctrl"><label>지연 t_d: <span class="val" id="v2_td">100</span> μs</label><input type="range" id="r2_td" min="1" max="500" value="50" oninput="upd2()"></div>
+      <div class="ctrl"><label>게이트 t_g: <span class="val" id="v2_tg">600</span> μs</label><input type="range" id="r2_tg" min="50" max="1500" value="600" oninput="upd2()"></div>
+      <div class="ctrl"><label>수명 τ: <span class="val" id="v2_tau">600</span> μs</label><input type="range" id="r2_tau" min="100" max="2000" value="600" oninput="upd2()"></div>
+      <div class="ctrl"><label>배경광 Ib: <span class="val" id="v2_bg">10</span></label><input type="range" id="r2_bg" min="100" max="50000" value="20000" oninput="upd2()"></div>
+      <div class="ctrl"><label>신호 Is: <span class="val" id="v2_sig">1000</span></label><input type="range" id="r2_sig" min="100" max="5000" value="1000" oninput="upd2()"></div>
+      <div style="margin-top:10px;padding:8px;background:#f0f4ff;border-radius:6px;border:1px solid #dde2f0" id="res2">
+        <div class="kv"><span>η</span><span id="r2_eta">-</span></div>
+        <div class="kv"><span>SNR</span><span id="r2_snr">-</span></div>
+        <div class="kv"><span>최적 t_d</span><span id="r2_opt">-</span></div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:300px">
+      <div class="row">
+        <div class="card" style="flex:1">
+          <h3>TRF 타이밍 다이어그램</h3>
+          <canvas id="c_timing2" width="480" height="150"></canvas>
+      <div class="chart-desc">💡 측정이 어떤 순서로 진행되는지 타임라인이에요. 빛 번쩍 → 잠깐 기다림 → 측정 시작 → 측정 끝, 이 4단계가 반복돼요.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card" style="flex:1">
+          <h3>수집 효율 η vs t_d</h3>
+          <canvas id="c_etacurve" width="300" height="140"></canvas>
+      <div class="chart-desc">💡 기다리는 시간이 길수록 노이즈는 줄지만 우리 신호도 같이 줄어요. 노이즈는 없애면서 신호는 최대한 살리는 딱 맞는 기다림 시간을 이 그래프에서 찾아요.</div>
+        </div>
+        <div class="card" style="flex:1">
+          <h3>SNR 비교</h3>
+          <canvas id="c_snr2" width="200" height="140"></canvas>
+      <div class="chart-desc">💡 TRF와 일반 형광 측정의 신호 선명도(S/N)를 비교해요. TRF가 노이즈를 거의 없애기 때문에 신호가 훨씬 또렷하게 나와요.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card" style="flex:1">
+          <h3>스펙트럼 분리</h3>
+          <canvas id="c_spec2" width="480" height="120"></canvas>
+      <div class="chart-desc">💡 UV LED 빛이 나오는 파장과 형광 신호가 나오는 파장이 얼마나 떨어져 있는지 보여줘요. 멀수록 필터로 구분하기 쉬워요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB3: 스트립 밴드 -->
+<div id="t3" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭의 목적: 스트립 밴드 신호 패턴 확인</b>샘플 농도가 달라질 때 T밴드·C밴드 신호가 어떻게 변하는지, 실물 스트립이 어떻게 보이는지 시뮬레이션해요. 샌드위치 면역분석이라 농도가 높을수록 T선이 진해지고, 너무 높으면 Hook 효과로 다시 옅어지는 패턴을 확인하세요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> T/C밴드의 위치·폭·신호 세기를 미리 봐야 LED를 어디에 비추고 PD를 어디서 받을지(광학계 배치)를 정할 수 있어요. 고농도에서 신호가 거꾸로 떨어지는 Hook(프로존) 구간을 모르면 양성을 음성으로 오판합니다.</div>
+  <div class="row">
+    <div class="card" style="width:200px">
+      <h3>파라미터</h3>
+      <div class="ctrl"><label>최대 R_max: <span class="val" id="v3_rmax">0.8</span></label><input type="range" id="r3_rmax" min="20" max="100" value="80" oninput="upd3()"></div>
+      <div class="ctrl"><label>배경 BGR: <span class="val" id="v3_bgr">0.05</span></label><input type="range" id="r3_bgr" min="1" max="20" value="5" oninput="upd3()"></div>
+      <div class="ctrl"><label>입자 크기: <span class="val" id="v3_psz">1.0</span>×</label><input type="range" id="r3_psz" min="5" max="30" value="10" oninput="upd3()"></div>
+      <div class="ctrl"><label>밴드 폭: <span class="val" id="v3_tlw">30</span> px</label><input type="range" id="r3_tlw" min="10" max="60" value="30" oninput="upd3()"></div>
+      <div class="ctrl"><label>패드 종류: <select id="r3_pad" onchange="upd3()"><option value="nc">NC 멤브레인</option><option value="gf">유리섬유</option><option value="pv">PVA 패드</option></select></label></div>
+    </div>
+    <div style="flex:1;min-width:300px">
+      <div class="card" style="margin-bottom:12px">
+        <h3>실물 스트립 밴드 시각화 (농도별)</h3>
+        <canvas id="c_strip" width="640" height="220"></canvas>
+      <div class="chart-desc">💡 농도가 높으면 T선이 진해지고, 낮으면 옅어져요. (너무 높으면 Hook 효과로 오히려 다시 옅어질 수 있어요.) 실제 스트립이 어떻게 보일지 미리 확인할 수 있어요.</div>
+      </div>
+      <div class="row">
+        <div class="card" style="flex:2">
+          <h3>반사도 프로파일</h3>
+          <canvas id="c_profile" width="460" height="130"></canvas>
+      <div class="chart-desc">💡 스트립을 옆으로 스캔한 결과예요. T선·C선이 있는 자리에서 신호 봉우리가 생겨요. 이 봉우리 높이로 농도를 계산해요.</div>
+        </div>
+        <div class="card" style="flex:1">
+          <h3>용량-반응 곡선</h3>
+          <canvas id="c_dose" width="220" height="150"></canvas>
+      <div class="chart-desc">💡 농도를 알고 있는 샘플로 미리 그려놓은 기준 그래프예요. 모르는 샘플의 신호를 이 그래프에 대입하면 농도를 계산할 수 있어요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB4: 시험결과 분석 -->
+<div id="t4" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>TRF 기기를 만들 때 빠뜨리면 안 되는 것들을 체크리스트로 모아놨어요. 하나씩 클릭해서 체크하면 완성도가 자동으로 올라가요. 어떤 항목인지 모를 땐 마우스를 올려보세요. 쉬운 설명이 나와요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 광학 설계에서 빠뜨리기 쉬운 항목(파장·필터·차광·타이밍 등)을 한눈에 점검해, 설계 후반이나 양산에서 터질 문제를 미리 막습니다. 설계 리뷰(DR) 전 자가점검 체크리스트입니다.</div>
+<style>
+.cl-section{background:#fff;border:1px solid #dde2f0;border-radius:10px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 4px rgba(30,40,100,.06)}
+.cl-section h3{font-size:12px;font-weight:700;color:#2060c0;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.cl-section h3 .num{background:#2060c0;color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.cl-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #f0f3fa;cursor:pointer;transition:background .1s;border-radius:4px}
+.cl-item:last-child{border-bottom:none}
+.cl-item:hover{background:#f7f9ff}
+#cl-tooltip{position:fixed;background:#1e2540;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;max-width:280px;line-height:1.6;pointer-events:none;z-index:9999;display:none;box-shadow:0 4px 16px rgba(0,0,0,.25);border-left:3px solid #4090e0}
+.cl-item input[type=checkbox]{width:16px;height:16px;accent-color:#2060c0;margin-top:1px;flex-shrink:0;cursor:pointer}
+.cl-item label{font-size:12px;color:#2a3460;cursor:pointer;line-height:1.5;flex:1}
+.cl-item label .sub{font-size:11px;color:#9098c0;display:block;margin-top:1px}
+.cl-item label .formula{font-size:11px;color:#2060c0;font-style:italic;background:#f0f4ff;padding:1px 6px;border-radius:4px;margin-top:2px;display:inline-block}
+.cl-item.checked label{color:#9098c0;text-decoration:line-through}
+.cl-item.critical .cl-star{color:#c03030;font-size:13px;flex-shrink:0}
+.cl-item.warn .cl-star{color:#c07818;font-size:13px;flex-shrink:0}
+.cl-item .cl-star{color:#c8d0e8;font-size:13px;flex-shrink:0}
+#cl_progress_bar{height:8px;background:#e4e8f8;border-radius:4px;overflow:hidden;margin-bottom:6px}
+#cl_progress_fill{height:100%;background:linear-gradient(90deg,#2060c0,#40a0e0);border-radius:4px;transition:width .3s}
+#cl_summary{font-size:12px;color:#6878a8}
+#cl_verdict{margin-top:10px;padding:10px 14px;border-radius:8px;font-size:12px;font-weight:700;display:none}
+@keyframes fbPop{0%{transform:scale(0.94);opacity:0}60%{transform:scale(1.03)}100%{transform:scale(1);opacity:1}}
+</style>
+
+<div style="display:flex;gap:14px;flex-wrap:wrap;padding:16px">
+  <!-- 진행도 카드 -->
+  <div style="flex:1;min-width:260px;background:#fff;border:1px solid #dde2f0;border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(30,40,100,.06)">
+    <div class="card" style="background:none;border:none;box-shadow:none;padding:0">
+      <h3 style="font-size:11px;color:#2060c0;letter-spacing:.5px;text-transform:uppercase;margin-bottom:12px">설계 완성도</h3>
+      <div id="cl_progress_bar"><div id="cl_progress_fill" style="width:0%"></div></div>
+      <div id="cl_summary" style="margin-bottom:10px">0 / 0 항목 완료</div>
+      <div id="cl_verdict"></div>
+      <div style="margin-top:14px;font-size:11px;color:#9098c0;line-height:1.6">
+        <span style="color:#c03030">★</span> 필수 항목 &nbsp;
+        <span style="color:#c07818">★</span> 권장 항목 &nbsp;
+        <span style="color:#c8d0e8">★</span> 선택 항목
+      </div>
+    </div>
+  </div>
+
+  <!-- 체크리스트 본문 -->
+  <div style="flex:3;min-width:500px">
+
+    <!-- 1. 광원 설계 -->
+    <div class="cl-section">
+      <h3><span class="num">1</span> 광원 (Excitation Source)</h3>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="형광 물질을 빛나게 하는 UV 파장(340nm)이 맞는지 확인해요. 파장이 다르면 아예 발광이 안 돼요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>UV LED 파장 확인: Eu³⁺ = <b>340 nm</b> (UV LED 또는 펄스 레이저)<span class="sub">빛의 색깔이 맞아야 형광물질이 반응해요</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="빛을 아주 짧게 번쩍여야 배경 노이즈를 걸러낼 수 있어요. 길면 TRF 효과가 없어져요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>펄스 폭 설정: <b>τ_pulse ≪ τ_fl</b><span class="formula">Eu³⁺ τ = 600 μs → 펄스 폭 &lt; 50 μs</span><span class="sub">빛을 길게 켜면 노이즈 제거 효과가 줄어요</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="빛을 너무 빨리 번쩍이면 이전 측정 신호가 남아서 겹쳐요. 충분히 쉬어야 해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>광원 반복 주파수 결정 (1/PRF &gt; t_d + t_g)<span class="sub">이전 신호가 완전히 꺼진 다음에 다시 켜야 해요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="너무 세면 형광 물질이 파괴되거나 센서가 포화돼요. 적당한 세기를 찾아야 해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>광원 출력 파워 설정 (μW ~ mW 범위)<span class="sub">너무 세게 쏘면 형광물질이 망가지거나 센서가 포화돼요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="UV 조명 빛이 센서에 직접 닿으면 안 돼요. 필터로 조명 빛은 막고 형광만 통과시켜요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>UV LED 빛 차단 필터 (Notch / Short-pass) 선정<span class="sub">UV 빛이 센서에 직접 닿으면 신호가 완전히 묻혀요</span></label></div>
+    </div>
+
+    <!-- 2. 집광 광학계 -->
+    <div class="cl-section">
+      <h3><span class="num">2</span> 집광 광학계 (Collection Optics)</h3>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="센서를 스트립에 가까이 놓을수록 더 많은 빛을 모아요. 가까울수록 신호가 세져요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>PD-스트립 거리 d 최적화<span class="formula">η = (1 − d/√(r²+d²)) / 2</span><span class="sub">가까울수록 신호가 세지지만 물리적으로 닿을 수 있어요</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="센서 크기가 클수록 신호가 강해요. 다만 센서가 너무 크면 노이즈도 같이 커져요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>PD 수광 면적 r 결정 (수집 효율 직결)<span class="sub">센서가 클수록 신호도 세지지만 노이즈도 같이 커져요</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="T선(측정선)과 C선(대조선) 둘 다 센서 시야각 안에 들어와야 정확히 읽혀요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>T / C 밴드 위치가 PD 수광각 내에 모두 포함되는지 확인<span class="sub">T선과 C선이 둘 다 센서 시야 안에 들어와야 해요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="돔형 센서는 비스듬한 빛도 잘 받아요. T·C 선 간격이 넓으면 돔형이 훨씬 유리해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>PD 형태 선정: 평면형 vs 반구형 돔<span class="sub">T선과 C선이 멀리 있으면 돔형 센서가 더 잘 잡아요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="렌즈를 쓰면 빛을 더 모을 수 있지만, 위치가 조금만 틀려도 신호가 확 줄어요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>집광 렌즈 사용 시 NA 및 작동 거리 확인<span class="sub">렌즈를 쓰면 더 많이 모이지만 위치를 정확히 맞춰야 해요</span></label></div>
+      <div class="cl-item" onclick="toggleCL(this)" data-tip="형광 물질이 내는 빛(615nm 주황색)만 통과시켜요. 나머지 빛은 다 막아야 해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>발광 파장 대역 통과 필터 (BPF) 선정: <b>615 ± 10 nm</b><span class="sub">형광 신호는 통과시키고 UV 빛은 완전히 막는 필터예요</span></label></div>
+    </div>
+
+    <!-- 3. 타이밍 제어 -->
+    <div class="cl-section">
+      <h3><span class="num">3</span> 타이밍 제어 (TRF Gate Control)</h3>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="UV 끄고 바로 재지 말고 잠깐 기다리세요. 노이즈(자가형광)이 먼저 꺼지거든요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>지연시간 t_d 설정 (자가형광 완전 소광 후 게이트 개방)<span class="formula">권장: t_d = 50 ~ 200 μs (자가형광 τ ≈ 1~10 ns → 완전 소광)</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="기다린 다음 얼마나 오래 측정할지 정해요. 길수록 더 많은 신호를 모아요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>게이트 폭 t_g 설정 (신호 수집 효율 η 결정)<span class="formula">η = e^(−t_d/τ) × (1 − e^(−t_g/τ)), τ = 600 μs</span><span class="sub">1200마이크로초 동안 재면 신호의 86%를 모을 수 있어요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="기다리는 시간과 측정 시간의 균형이 중요해요. 최적 조합에서 S/N이 최대가 돼요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>t_d / t_g 최적 조합으로 S/N 비 최대화 확인<span class="sub">기다림 시간을 늘리면 노이즈도 줄고 신호도 줄어요. 균형점을 찾아야 해요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="측정 시작 타이밍이 매번 조금씩 달라지면 결과가 들쭉날쭉해져요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>게이트 신호 지터(jitter) ≤ 1 μs 이내 확인<span class="sub">측정 시작 시간이 매번 달라지면 결과가 들쭉날쭉해요</span></label></div>
+      <div class="cl-item" onclick="toggleCL(this)" data-tip="같은 측정을 여러 번 반복해서 평균 내면 신호가 훨씬 선명해져요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>누적 횟수(N) 설정으로 S/N 향상 (√N 비례)<span class="sub">100번 측정해서 평균 내면 신호가 10배 선명해져요</span></label></div>
+    </div>
+
+    <!-- 4. 차광 구조 -->
+    <div class="cl-section">
+      <h3><span class="num">4</span> 차광 구조 설계 (Shielding)</h3>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="햇빛이나 형광등이 새어들면 신호가 묻혀요. 특히 DC 빛은 TRF로도 제거 못해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>하우징 외부광 완전 차단 구조 (암실 조건 확보)<span class="sub">햇빛은 항상 켜져 있어서 타이밍 기술로는 절대 없앨 수 없어요</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="카트리지 넣는 틈새로 빛이 새어들면 안 돼요. 구조를 잘 막아야 해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>스트립 삽입 시 광 유입 경로 차단 (슬롯 구조)<span class="sub">스트립 넣는 틈새로 빛이 새어들지 않는지 꼼꼼히 확인해요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="내부가 반들반들하면 빛이 튕겨 노이즈이 돼요. 무광 검정 코팅으로 처리하세요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>내부 반사·산란 경로 흡광 처리 (무광 흑색 코팅)<span class="sub">내부가 반들반들하면 빛이 튕겨 노이즈이 돼요. 무광 검정으로 처리해요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="UV 조명 빛이 센서에 직접 닿으면 안 돼요. 가림막으로 경로를 물리적으로 분리해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>UV LED 빛과 발광 경로 물리적 분리 확인<span class="sub">UV 빛이 센서에 직접 닿지 않도록 가림막으로 막아야 해요</span></label></div>
+      <div class="cl-item" onclick="toggleCL(this)" data-tip="형광등 빛은 TRF로 95% 정도 줄일 수 있어요. 단, 완전히 없애진 못해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>형광 AC 광원(형광등) 환경 대응 확인<span class="sub">형광등은 대부분 없앨 수 있지만 100%는 안 돼요</span></label></div>
+    </div>
+
+    <!-- 5. 신호 검출 및 처리 -->
+    <div class="cl-section">
+      <h3><span class="num">5</span> 신호 검출 및 처리 (Signal Detection)</h3>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="센서는 빛이 없어도 약한 전류가 흘러요. 이게 측정 신호보다 작아야 정확하게 읽혀요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>PD 암전류 및 노이즈 레벨 사양 확인<span class="sub">센서는 빛이 없어도 혼자 약한 신호를 내요. 우리 신호가 이보다 훨씬 커야 해요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="센서의 아주 약한 전류를 전압으로 크게 키워주는 증폭기예요. 이득 설계가 중요해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>트랜스임피던스 앰프(TIA) 이득 및 대역폭 설계<span class="sub">약한 전류를 크게 키우는 증폭기예요. 너무 크게 키우면 포화돼요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="아날로그 신호를 숫자로 바꾸는 장치예요. 비트가 높을수록 더 세밀하게 읽어요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>ADC 비트 수 및 샘플링 속도 결정<span class="sub">아날로그 신호를 숫자로 바꿔요. 정밀도가 높을수록 좋아요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="C선(대조선)을 기준으로 T선을 보정하면 광원 세기가 변해도 결과가 안정돼요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>C 밴드 신호로 내부 보정 (Internal Control)<span class="sub">C선 신호로 T선을 나눠주면 빛 세기가 변해도 결과가 안정돼요</span></label></div>
+      <div class="cl-item" onclick="toggleCL(this)" data-tip="온도에 따라 형광 수명이 달라져요. 온도 센서를 달아서 자동으로 보정해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>온도 보상 설계 (Eu³⁺ 수명 온도 의존성)<span class="sub">온도에 따라 형광 시간이 달라져서 온도 센서로 자동 보정해야 해요</span></label></div>
+    </div>
+
+    <!-- 6. 캘리브레이션 -->
+    <div class="cl-section">
+      <h3><span class="num">6</span> 캘리브레이션 & 검증</h3>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="알고 있는 농도로 먼저 측정해서 기준 그래프를 만들어야 모르는 농도를 계산할 수 있어요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>검량선 작성: 최소 5 농도 포인트 (희석 계열)<span class="sub">알고 있는 농도로 먼저 그래프를 만들어야 모르는 농도를 계산할 수 있어요</span></label></div>
+      <div class="cl-item critical" onclick="toggleCL(this)" data-tip="이 기기가 얼마나 낮은 농도까지 잡을 수 있는지 확인해요. 임상 기준보다 충분히 낮아야 해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>LOD / LOQ 산출 및 임상 컷오프 대비 여유 확인<span class="formula">LOD = blank_mean + 3σ</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="같은 샘플로 10번 재도 결과가 비슷하게 나와야 믿을 수 있어요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>재현성 검증 (CV ≤ 10% @ 중간 농도, n ≥ 10)<span class="sub">같은 샘플을 여러 번 재도 비슷한 결과가 나와야 믿을 수 있어요</span></label></div>
+      <div class="cl-item warn" onclick="toggleCL(this)" data-tip="피 속의 빌리루빈·지방 등이 결과에 영향 주지 않는지 확인해요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>간섭물질 테스트 (빌리루빈, 헤모글로빈, 지질 등)<span class="sub">피 속의 다른 물질들이 결과에 영향 주는지 꼭 확인해야 해요</span></label></div>
+      <div class="cl-item" onclick="toggleCL(this)" data-tip="생산 배치가 달라도 결과가 비슷하게 나와야 해요. 로트 간 편차를 꼭 확인하세요." onmouseenter="showTip(event,this)" onmousemove="moveTip(event)" onmouseleave="hideTip()"><input type="checkbox"><span class="cl-star">★</span><label>장기 안정성 및 로트 간 재현성 확인<span class="sub">생산 배치가 달라도 결과가 비슷하게 나와야 제품으로 쓸 수 있어요</span></label></div>
+    </div>
+
+  </div><!-- end checklist -->
+</div><!-- end flex wrapper -->
+
+<script>
+var _tt = null;
+function showTip(e, el) {
+  var tip = el.getAttribute("data-tip");
+  if (!tip) return;
+  var t = document.getElementById("cl-tooltip");
+  t.textContent = tip; t.style.display = "block";
+  moveTip(e);
+}
+function moveTip(e) {
+  var t = document.getElementById("cl-tooltip");
+  var x = e.clientX + 14, y = e.clientY - 10;
+  if (x + 290 > window.innerWidth) x = e.clientX - 300;
+  t.style.left = x + "px"; t.style.top = y + "px";
+}
+function hideTip() { document.getElementById("cl-tooltip").style.display = "none"; }
+function toggleCL(item) {
+  var cb = item.querySelector('input[type=checkbox]');
+  cb.checked = !cb.checked;
+  if (cb.checked) item.classList.add('checked'); else item.classList.remove('checked');
+  updateProgress();
+}
+function updateProgress() {
+  var all  = document.querySelectorAll('#t4 .cl-item');
+  var done = document.querySelectorAll('#t4 .cl-item.checked');
+  var pct = all.length > 0 ? Math.round(done.length/all.length*100) : 0;
+  document.getElementById('cl_progress_fill').style.width = pct + '%';
+  document.getElementById('cl_summary').textContent = done.length + ' / ' + all.length + ' 항목 완료 (' + pct + '%)';
+  var vEl = document.getElementById('cl_verdict');
+  var crit = document.querySelectorAll('#t4 .cl-item.critical');
+  var critDone = document.querySelectorAll('#t4 .cl-item.critical.checked');
+  vEl.style.display = 'block';
+  if (pct === 100) {
+    vEl.style.background='#eaf5ee'; vEl.style.color='#1a7030'; vEl.style.border='1px solid #90d0a8';
+    vEl.textContent='✅ 모든 항목 완료 — 광학계 설계 검증 통과';
+  } else if (critDone.length < crit.length) {
+    var remain = crit.length - critDone.length;
+    vEl.style.background='#ffebeb'; vEl.style.color='#c03030'; vEl.style.border='1px solid #f0a0a0';
+    vEl.textContent='⚠️ 필수(★) 항목 ' + remain + '개 미완료 — 설계 진행 불가';
+  } else {
+    vEl.style.background='#fff8e8'; vEl.style.color='#b06010'; vEl.style.border='1px solid #f0c060';
+    vEl.textContent='⚡ 필수 항목 완료 — 권장 항목 ' + (document.querySelectorAll('#t4 .cl-item.warn').length - document.querySelectorAll('#t4 .cl-item.warn.checked').length) + '개 추가 검토 권장';
+  }
+}
+</script>
+</div>
+<div id="t5" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>빛을 받는 센서를 스트립에서 얼마나 떨어뜨려야 제일 잘 잡히는지 알려줘요. 너무 가까우면 T선 C선 신호가 뒤섞이고, 너무 멀면 신호가 너무 약해져요. 딱 맞는 거리를 찾아주는 탭이에요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> PD를 스트립에서 얼마나 띄우는지가 집광 효율(감도)과 T·C밴드 분리(누화)를 동시에 좌우합니다. 이 거리는 기구 도면의 핵심 치수라, 하우징을 깎기 전에 반드시 확정해야 합니다.</div>
+  <div class="row">
+    <div class="card" style="width:220px">
+      <h3>파라미터</h3>
+      <div class="ctrl"><label>거리 d: <span class="val" id="v5_d">10</span> mm</label><input type="range" id="r5_d" min="1" max="30" value="10" oninput="upd5()"></div>
+      <div class="ctrl"><label>렌즈 반경 r: <span class="val" id="v5_r">3</span> mm</label><input type="range" id="r5_r" min="1" max="10" value="3" oninput="upd5()"></div>
+      <div class="ctrl"><label>T-C 간격: <span class="val" id="v5_tc">4</span> mm</label><input type="range" id="r5_tc" min="1" max="10" value="4" oninput="upd5()"></div>
+      <div style="margin-top:10px;padding:8px;background:#f0f4ff;border-radius:6px;border:1px solid #dde2f0">
+        <div class="kv"><span>수집 효율 η</span><span id="v5_eta">-</span></div>
+        <div class="kv"><span>개구수 NA</span><span id="v5_na">-</span></div>
+        <div class="kv"><span>PSF 스팟</span><span id="v5_spot">-</span></div>
+        <div class="kv"><span>T/C 혼선</span><span id="v5_xtalk">-</span></div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:300px">
+      <div class="row">
+        <div class="card" style="flex:1">
+          <h3>광학 배치도</h3>
+          <canvas id="c_optics5" width="460" height="160"></canvas>
+      <div class="chart-desc">💡 센서와 스트립이 어떻게 배치되는지 그림이에요. 빛이 어느 각도로 센서에 닿는지 한눈에 볼 수 있어요.</div>
+        </div>
+        <div class="card" style="min-width:180px">
+          <h3>η vs 거리</h3>
+          <canvas id="c_inv5" width="220" height="160"></canvas>
+      <div class="chart-desc">💡 거리가 멀어질수록 신호가 확 줄어요. 센서를 최대한 스트립에 가까이 붙여야 해요.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card" style="flex:1">
+          <h3>거리별 신호 강도 (역제곱 법칙)</h3>
+          <canvas id="c_sig5" width="400" height="140"></canvas>
+      <div class="chart-desc">💡 거리가 2배 멀어지면 신호가 4배 작아져요. 거리가 신호에 엄청 큰 영향을 준다는 걸 보여주는 그래프예요.</div>
+        </div>
+        <div class="card" style="flex:1">
+          <h3>T/C 혼선 프로파일</h3>
+          <canvas id="c_tc5" width="380" height="140"></canvas>
+      <div class="chart-desc">💡 T선과 C선 신호가 서로 겹치는 정도예요. 두 선이 너무 가까우면 어느 게 어느 건지 구분이 안 돼요.</div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="card" style="flex:1">
+          <h3>최적 거리 분석</h3>
+          <canvas id="c_opt5" width="400" height="130"></canvas>
+      <div class="chart-desc">💡 신호가 제일 잘 잡히는 센서 거리를 찾아주는 그래프예요. 너무 가까워도, 너무 멀어도 안 좋아요.</div>
+        </div>
+        <div class="card" style="flex:1">
+          <h3>수집 효율 η 등고선</h3>
+          <canvas id="c_eta5" width="380" height="130"></canvas>
+      <div class="chart-desc">💡 센서 크기와 거리를 같이 바꿀 때 신호가 얼마나 잡히는지 색깔로 보여줘요. 진한 색일수록 신호가 많이 잡혀요.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB6: 차광 분석 -->
+<!-- TAB7: 광학계 성능 시뮬레이터 -->
+<div id="t7" class="tabcontent" style="padding:8px 16px 0">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>렌즈, 센서, 필터 같은 부품들을 바꿔가면서 기기 전체 성능이 어떻게 달라지는지 볼 수 있어요. 어떤 부품을 바꾸면 제일 효과가 큰지 찾아보세요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 필터·렌즈·각도 조합에 따라 신호 대 배경비가 크게 달라집니다. 부품을 발주하기 전에 어떤 조합이 가장 효과적인지 예측해, 비싼 부품 시행착오와 재설계를 줄입니다.</div>
+  <iframe src="TRF_광학계_성능_시뮬레이터.html" style="width:100%;height:calc(100vh - 90px);border:none;display:block"></iframe>
+</div>
+
+<!-- TAB8: 차광 중요성 분석기 -->
+<div id="t6" class="tabcontent" style="padding:8px 16px 0">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>빛이 조금이라도 새어들면 측정이 엉망이 돼요. 햇빛이나 형광등이 얼마나 방해가 되는지, 얼마나 꼼꼼히 막아야 하는지 보여주는 탭이에요. 특히 햇빛은 아무리 기술을 써도 막을 수가 없어서 물리적으로 꼭 차단해야 해요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 외부광이 조금만 새어들어도 PD가 포화되거나 배경이 흔들려 측정을 망칩니다. 특히 햇빛은 시간분해로도 못 거르기 때문에 하우징에서 물리적으로 막아야 합니다. 차광 구조 설계의 정량 근거를 줍니다.</div>
+  <iframe src="TRF_차광중요성_분석기.html" style="width:100%;height:calc(100vh - 90px);border:none;display:block"></iframe>
+</div>
+<!-- TAB8: 신호 검출 & 캘리브레이션 -->
+<div id="t8" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>신호를 얼마나 크게 키워야 하는지, 얼마나 낮은 농도까지 잡을 수 있는지, C선으로 보정하면 얼마나 안정되는지 계산해주는 탭이에요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> TIA 게인·대역폭이 안 맞으면 신호가 포화되거나 게이트 안에서 다 안 차고, LOD가 목표 농도를 못 넘으면 제품 사양 미달입니다. 회로·펌웨어 스펙을 확정하고 C밴드 보정으로 광원 변동을 잡는 근거를 만듭니다.</div><div style="background:#eef4ff;border-left:4px solid #3b82c4;border-radius:0 8px 8px 0;padding:12px 16px;margin:0 0 14px 0;font-size:13px;color:#2a3a5a;line-height:1.85"><b style="color:#2060c0">🔰 초보자 먼저 읽기 — 이 탭의 큰 그림</b><br>유로피움이 내는 빛은 아주 약해요. 이 약한 빛을 ① <b>언제·얼마나 오래 잴지(타이밍)</b> ② <b>얼마나 키울지(증폭)</b> ③ <b>얼마나 옅은 농도까지 믿을지(검출한계)</b> ④ <b>흔들림을 어떻게 잡을지(보정)</b> 네 단계로 다뤄요. 아래 4개 카드가 순서대로 그 4단계예요. 각 카드의 <b>💡 쉽게 말하면</b> 부분만 읽어도 감이 와요.</div>
+<div class="row">
+  <div class="card" style="flex:1;min-width:280px">
+    <h3>PRF 펄스 반복 주파수 검토</h3><div style="font-size:12px;color:#3b82c4;margin:2px 0 10px 0;font-weight:700">⏱️ 쉽게: UV를 얼마나 자주 번쩍여도 신호가 안 겹칠까?</div>
+    <div class="ctrl"><label>지연시간 t_d (μs) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 번쩍 끄고 잴 때까지 기다림</span><span class="val" id="v8_td">100</span></label><input type="range" id="r8_td" min="10" max="500" value="100" oninput="upd8()"></div>
+    <div class="ctrl"><label>게이트 폭 t_g (μs) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 신호를 재는 시간(창문 길이)</span><span class="val" id="v8_tg">600</span></label><input type="range" id="r8_tg" min="100" max="2000" value="600" oninput="upd8()"></div>
+    <div class="ctrl"><label>소광 여유 t_off (μs) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 다음 번쩍 전 추가 휴식</span><span class="val" id="v8_off">200</span></label><input type="range" id="r8_off" min="50" max="500" value="200" oninput="upd8()"></div>
+    <div class="ctrl"><label>Eu³⁺ 수명 τ (μs) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 유로피움 빛이 사라지는 시간</span><span class="val" id="v8_tau">600</span></label><input type="range" id="r8_tau" min="100" max="1500" value="600" oninput="upd8()"></div>
+    <div id="prf_result" style="margin-top:8px;font-size:12px;line-height:1.8"></div>
+    <div class="chart-desc" style="margin-top:8px">💡 <b>쉽게 말하면:</b> 유로피움은 UV를 한 번 받으면 수백 µs 동안 계속 빛나요(잔광). 종을 친 뒤 소리가 안 사라졌는데 또 치면 겹치듯, 빛이 다 꺼지기 전에 다음 UV를 쏘면 신호가 섞여 측정이 틀려요. 그래서 다음 번쩍까지 충분히 쉬는 거예요. 아래 <b>잔류 신호가 1% 아래</b>면 안 겹친다는 뜻(초록), 넘으면 더 쉬어야 해요(빨강).</div>
+  </div>
+  <div class="card" style="flex:1;min-width:280px">
+    <h3>TIA 이득 & 신호 레벨</h3><div style="font-size:12px;color:#3b82c4;margin:2px 0 10px 0;font-weight:700">🔊 쉽게: 약한 센서 신호를 적당히 키우는 볼륨 맞추기</div>
+    <div class="ctrl"><label>수집 효율 η (%) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 센서가 빛을 잡아내는 비율</span><span class="val" id="v8_eta">0.5</span></label><input type="range" id="r8_eta" min="1" max="100" value="5" oninput="upd8()"></div>
+    <div class="ctrl"><label>광원 출력 (μW) <span style="color:#8a93ad;font-weight:400;font-size:11px">— UV LED 밝기</span><span class="val" id="v8_pow">100</span></label><input type="range" id="r8_pow" min="1" max="1000" value="100" oninput="upd8()"></div>
+    <div class="ctrl"><label>PD 감도 (A/W) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 빛을 전기로 바꾸는 효율</span><span class="val" id="v8_resp">0.30</span></label><input type="range" id="r8_resp" min="10" max="80" value="30" oninput="upd8()"></div>
+    <div class="ctrl"><label>TIA 이득 (MΩ) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 증폭기 볼륨(얼마나 키울지)</span><span class="val" id="v8_gain">10</span></label><input type="range" id="r8_gain" min="1" max="100" value="10" oninput="upd8()"></div>
+    <div id="tia_result" style="margin-top:8px;font-size:12px;line-height:1.8"></div>
+    <div class="chart-desc">💡 <b>쉽게 말하면:</b> 센서가 만든 전기는 아주 약해서(마이크에 속삭이는 수준) 그대로는 못 읽어요. TIA는 그걸 키우는 <b>볼륨</b>이에요. 볼륨이 작으면 안 들리고(신호 묻힘), 너무 크면 소리가 찢어지듯 <b>포화</b>돼요. 출력 전압이 <b>0.1~3300mV 사이</b>에 들어오게 이득을 맞추면 딱 좋아요.</div>
+  </div>
+</div>
+<div class="row">
+  <div class="card" style="flex:1;min-width:340px">
+    <h3>LOD / LOQ 계산기</h3><div style="font-size:12px;color:#3b82c4;margin:2px 0 10px 0;font-weight:700">🔬 쉽게: 얼마나 옅은 농도까지 믿고 읽을 수 있나?</div>
+    <div class="ctrl"><label>Blank 신호 평균 (RFU) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 검체 0(음성)일 때 바탕 신호</span><span class="val" id="v8_blank">5000</span></label><input type="range" id="r8_blank" min="100" max="50000" value="5000" oninput="upd8()"></div>
+    <div class="ctrl"><label>Blank 표준편차 σ <span style="color:#8a93ad;font-weight:400;font-size:11px">— 바탕 신호가 들쭉날쭉한 정도(노이즈)</span><span class="val" id="v8_sigma">300</span></label><input type="range" id="r8_sigma" min="10" max="5000" value="300" oninput="upd8()"></div>
+    <div class="ctrl"><label>기울기 S (RFU/ng/mL) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 농도 1 오를 때 신호 증가량</span><span class="val" id="v8_slope">800</span></label><input type="range" id="r8_slope" min="10" max="5000" value="800" oninput="upd8()"></div>
+    <canvas id="c_lod" width="500" height="180"></canvas>
+    <div class="chart-desc">💡 <b>쉽게 말하면:</b> 검체가 0(음성)이어도 바탕 신호가 조금 나오고 들쭉날쭉해요(노이즈 σ). 진짜 신호가 이 노이즈보다 확실히 커야 믿죠. <b>LOD</b>는 노이즈의 3배를 넘기는 최저 농도(있다/없다 판단 한계), <b>LOQ</b>는 10배 기준(숫자로 정량 가능한 한계)이에요. <b>노이즈가 클수록 LOD가 높아져요</b>(=더 옅은 건 못 잡음). RFU는 신호 크기를 나타내는 단위예요.</div>
+  </div>
+  <div class="card" style="flex:1;min-width:340px">
+    <h3>C밴드 내부 보정 효과</h3><div style="font-size:12px;color:#3b82c4;margin:2px 0 10px 0;font-weight:700">⚖️ 쉽게: LED가 흔들리고 온도가 변해도 결과 안정시키기</div>
+    <div class="ctrl"><label>광원 변동폭 (%) <span style="color:#8a93ad;font-weight:400;font-size:11px">— LED 밝기가 측정마다 흔들리는 폭</span><span class="val" id="v8_drift">20</span></label><input type="range" id="r8_drift" min="1" max="50" value="20" oninput="upd8()"></div>
+    <div class="ctrl"><label>온도 변화 (°C) <span style="color:#8a93ad;font-weight:400;font-size:11px">— 기준 온도에서 벗어난 정도</span><span class="val" id="v8_temp">10</span></label><input type="range" id="r8_temp" min="0" max="40" value="10" oninput="upd8()"></div>
+    <canvas id="c_correct" width="500" height="180"></canvas>
+    <div class="chart-desc">💡 <b>쉽게 말하면:</b> C선(대조선)은 농도와 상관없이 <b>항상 일정</b>해야 해요. LED가 흔들리거나 온도가 변하면 T선·C선이 <b>같이</b> 흔들리죠. 그래서 <b>T÷C 비율</b>로 보면 공통 흔들림이 상쇄돼 결과가 안정돼요. 자가 늘었다 줄었다 해도 같은 자로 두 길이를 재서 비율로 보면 정확한 것과 같은 원리예요.</div>
+  </div>
+</div>
+</div>
+
+
+<!-- TAB9: 기구 레이아웃 프리뷰 -->
+<div id="t9" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>UV LED와 PD 센서 위치를 직접 바꿔가며, 빛이 스트립에 어떻게 닿고 얼마나 들어오는지 그림으로 바로 확인하는 탭이에요. 기구(하우징) 설계할 때 쓰세요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> LED·PD·차광벽 위치를 도면 치수 그대로 넣어, 빛이 T밴드에 닿고 PD가 반사광을 잡는지 깎기 전에 확인합니다. 기구 설계에 바로 쓰는 입력값(치수)을 뽑아내는 탭입니다.</div>
+<div class="row" style="align-items:flex-start;gap:16px">
+  <div class="card" style="min-width:240px;max-width:260px">
+    <h3>🔧 부품 위치 설정</h3>
+    <div class="cl-section" style="margin-top:8px">UV LED</div>
+    <div class="ctrl"><label>수평 위치 X mm<br><small style="color:#888">0=T밴드 위</small></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_ledx" min="-15" max="15" value="-5" step="0.5" oninput="upd9()">
+        <span id="l9_ledx_v" style="min-width:40px;text-align:right;font-weight:bold">-5</span> mm
+      </div></div>
+    <div class="ctrl"><label>높이 H mm</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_ledh" min="3" max="30" value="12" step="0.5" oninput="upd9()">
+        <span id="l9_ledh_v" style="min-width:40px;text-align:right;font-weight:bold">12</span> mm
+      </div></div>
+    <div class="ctrl"><label>조사각 (0=수직, +우)</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_leda" min="-30" max="30" value="5" step="1" oninput="upd9()">
+        <span id="l9_leda_v" style="min-width:40px;text-align:right;font-weight:bold">5</span> deg
+      </div></div>
+    <div class="ctrl"><label>LED 빔 반각 (°)<br><small style="color:#888">±각도, UV LED 방사각</small></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_beama" min="5" max="45" value="15" step="1" oninput="upd9()">
+        <span id="l9_beama_v" style="min-width:40px;text-align:right;font-weight:bold">15</span> °
+      </div></div>
+    <div class="cl-section" style="margin-top:10px">PD 센서 (포토다이오드)</div>
+    <div class="ctrl"><label>수평 위치 X mm</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_pdx" min="-15" max="15" value="0" step="0.5" oninput="upd9()">
+        <span id="l9_pdx_v" style="min-width:40px;text-align:right;font-weight:bold">0</span> mm
+      </div></div>
+    <div class="ctrl"><label>높이 H mm</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_pdh" min="3" max="25" value="10" step="0.5" oninput="upd9()">
+        <span id="l9_pdh_v" style="min-width:40px;text-align:right;font-weight:bold">10</span> mm
+      </div></div>
+    <div class="ctrl"><label>센서 반지름 mm</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_pdr" min="1" max="8" value="3" step="0.5" oninput="upd9()">
+        <span id="l9_pdr_v" style="min-width:40px;text-align:right;font-weight:bold">3</span> mm
+      </div></div>
+    <div class="ctrl"><label>PD 수광 반각 (°)<br><small style="color:#888">수광 시야각</small></label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_pdang" min="10" max="60" value="30" step="1" oninput="upd9()">
+        <span id="l9_pdang_v" style="min-width:40px;text-align:right;font-weight:bold">30</span> °
+      </div></div>
+    <div class="cl-section" style="margin-top:10px">차광벽</div>
+    <div class="ctrl"><label>차광벽 높이 mm</label>
+      <div style="display:flex;align-items:center;gap:6px">
+        <input type="range" id="l9_shh" min="0" max="20" value="5" step="0.5" oninput="upd9()">
+        <span id="l9_shh_v" style="min-width:40px;text-align:right;font-weight:bold">5</span> mm
+      </div></div>
+  </div>
+  <div style="flex:1;min-width:0">
+    <div class="card" style="padding:12px">
+      <canvas id="c_layout9" width="700" height="380" style="max-width:100%;display:block"></canvas>
+      <div class="chart-desc">💡 보라=UV LED 빛, 주황=T밴드 반사광, 파랑=PD 수광범위, 회색=차광벽. 스팟이 T밴드에 닿고 PD가 반사광을 잡으면 OK입니다.</div>
+    </div>
+    <div id="l9_feedback" style="margin-top:12px;display:none"></div>
+    <div class="card" style="margin-top:4px;padding:16px">
+      <h3>📊 설계 검증 결과</h3>
+      <div id="l9_result" style="color:#888;font-size:13px">슬라이더를 움직이면 결과가 나와요.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+
+<!-- TAB10: 다채널 격리 분析 -->
+<div id="t10" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>LED·PD가 2.5mm 간격으로 7개 늘어서 있을 때, 옆 채널 빛이 얼마나 새어 들어오는지(누화) 계산하고, 광학부 칸막이·테스트스틱 칸막이가 각각 어떤 역할을 하는지 비교해요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 채널을 2.5mm 간격으로 붙이면 옆 채널 빛이 새어 누화가 생깁니다. 광학부 칸막이는 필수, 테스트스틱 칸막이는 불필요하다는 판단으로 하우징·소모품 구조를 정하는 근거를 줍니다.</div>
+<div class="row" style="align-items:flex-start;gap:16px">
+
+  <!-- 시나리오 선택 -->
+  <div class="card" style="min-width:230px;max-width:250px">
+    <h3>🔧 칸막이 시나리오</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <button id="s10_00" class="s10btn" onclick="setS10(false,false)" style="padding:10px 6px;border-radius:8px;border:2px solid #dde2f0;background:#f0f4ff;cursor:pointer;font-size:11px;color:#6878a8">
+        <div style="font-size:18px">❌❌</div>
+        <div style="font-weight:bold;margin-top:4px">둘 다 없음</div>
+        <div style="font-size:10px;color:#c03030">최악</div>
+      </button>
+      <button id="s10_10" class="s10btn" onclick="setS10(true,false)" style="padding:10px 6px;border-radius:8px;border:2px solid #dde2f0;background:#f0f4ff;cursor:pointer;font-size:11px;color:#6878a8">
+        <div style="font-size:18px">✅❌</div>
+        <div style="font-weight:bold;margin-top:4px">광학부만</div>
+        <div style="font-size:10px;color:#1a8040">권장</div>
+      </button>
+      <button id="s10_01" class="s10btn" onclick="setS10(false,true)" style="padding:10px 6px;border-radius:8px;border:2px solid #dde2f0;background:#f0f4ff;cursor:pointer;font-size:11px;color:#6878a8">
+        <div style="font-size:18px">❌✅</div>
+        <div style="font-weight:bold;margin-top:4px">스틱만</div>
+        <div style="font-size:10px;color:#c07818">불충분</div>
+      </button>
+      <button id="s10_11" class="s10btn" onclick="setS10(true,true)" style="padding:10px 6px;border-radius:8px;border:2px solid #dde2f0;background:#f0f4ff;cursor:pointer;font-size:11px;color:#6878a8">
+        <div style="font-size:18px">✅✅</div>
+        <div style="font-weight:bold;margin-top:4px">둘 다 있음</div>
+        <div style="font-size:10px;color:#2060c0">최적</div>
+      </button>
+    </div>
+    <div style="margin-top:14px;background:#f4f6fc;border-radius:8px;padding:10px;font-size:11px">
+      <div style="font-weight:bold;color:#1e2540;margin-bottom:6px">설계 파라미터</div>
+      <div style="color:#6878a8">채널 수: <b style="color:#1e2540">7채널</b></div>
+      <div style="color:#6878a8">채널 간격: <b style="color:#1e2540">2.5 mm</b></div>
+      <div style="color:#6878a8">LED 높이: <b style="color:#1e2540">12 mm</b></div>
+      <div style="color:#6878a8">PD 높이: <b style="color:#1e2540">10 mm</b></div>
+      <div style="color:#6878a8">LED 빔 반각: <b style="color:#1e2540">±15°</b></div>
+    </div>
+    <div style="margin-top:10px;background:#fff8e1;border-radius:8px;padding:10px;font-size:11px;border:1px solid #e0c040">
+      <div style="font-weight:bold;color:#c07818;margin-bottom:4px">💡 핵심 요약</div>
+      <div style="color:#6a5010;line-height:1.6">광학부 칸막이: <b>필수</b><br>테스트 스틱 칸막이: <b>없어도 됨</b></div>
+    </div>
+  </div>
+
+  <!-- 메인 콘텐츠 -->
+  <div style="flex:1;min-width:0">
+    <div class="card" style="padding:12px">
+      <canvas id="c10_main" width="700" height="300" style="max-width:100%;display:block"></canvas>
+      <div class="chart-desc">💡 빨간 빔=옆 채널로 새는 빛(누화), 초록 빔=정상 신호 경로. 회색=광학부 칸막이, 녹색=스틱 칸막이</div>
+    </div>
+    <div class="card" style="margin-top:10px;padding:12px">
+      <canvas id="c10_bar" width="700" height="110" style="max-width:100%;display:block"></canvas>
+      <div class="chart-desc">💡 중심 채널(CH4) 대비 각 채널의 누화 신호량. 칸막이가 없으면 옆 채널이 중심 신호를 오염시켜요.</div>
+    </div>
+    <div class="card" style="margin-top:10px;padding:14px" id="d10_result">
+      슬라이더를 선택하면 결과가 나와요.
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ── 탭 전환 ─────────────────────────────────────────────────
+function switchTab(n) {
+  var tabs = document.querySelectorAll('.tab');
+  var contents = document.querySelectorAll('.tabcontent');
+  for (var i = 0; i < tabs.length; i++) { tabs[i].classList.remove('active'); }
+  for (var i = 0; i < contents.length; i++) { contents[i].classList.remove('active'); }
+  tabs[n-1].classList.add('active');
+  document.getElementById('t'+n).classList.add('active');
+  var fn = [null, drawTab1, upd2, upd3, drawTab4, upd5, null, null, upd8, upd9, upd10]; // tab6,7은 iframe → null
+  if (fn[n]) setTimeout(fn[n], 60);
+}
+
+// ── TAB1: TRF 원리 ──────────────────────────────────────────
+// ── 타이밍 비교 ────────────────────────────────────────────────
+function drawTimingCmp() {
+  var cv = document.getElementById('c_timing_cmp');
+  if (!cv) return;
+  var c = cv.getContext('2d');
+  var W=860, H=220;
+  c.clearRect(0,0,W,H); c.fillStyle='#f4f7ff'; c.fillRect(0,0,W,H);
+
+  var tauBG=0.01, tauEu=80;
+  var scenarios = [
+    {label:'❌ 너무 일찍', delayEnd:5,  gateEnd:55, color:'#c03030', verdict:'노이즈가 섞여 신호가 오염돼요'},
+    {label:'✅ 적절한 타이밍', delayEnd:35, gateEnd:115, color:'#1a8040', verdict:'노이즈=0, 신호 최대 — 최적!'},
+    {label:'⚠️ 너무 늦게', delayEnd:100, gateEnd:160, color:'#c07818', verdict:'노이즈는 없지만 신호도 너무 줄었어요'}
+  ];
+
+  var panelW = Math.floor(W/3);
+  var totalT = 180, pulseEnd = 12;
+  var xO=28, xE=panelW-10, yB=H-38, yT=32;
+
+  scenarios.forEach(function(sc, si) {
+    var ox = si * panelW;  // 패널 x 오프셋
+    var px = function(t){ return ox + xO + (t/totalT)*(xE-xO); };
+    var py = function(amp){ return yB - amp; };
+
+    // 패널 배경
+    c.fillStyle = si===1 ? 'rgba(26,128,64,0.04)' : (si===0 ? 'rgba(192,48,48,0.03)' : 'rgba(192,120,24,0.03)');
+    c.fillRect(ox+1, 0, panelW-2, H);
+
+    // delay 구간 (회색)
+    var dxS = px(pulseEnd), dxE = px(sc.delayEnd);
+    c.fillStyle='rgba(140,140,160,0.18)'; c.fillRect(dxS, yT, dxE-dxS, yB-yT);
+
+    // gate 구간 (연초록)
+    var gxS = dxE, gxE = px(sc.gateEnd);
+    c.fillStyle='rgba(26,128,64,0.12)'; c.fillRect(gxS, yT, gxE-gxS, yB-yT);
+
+    // 격자
+    c.strokeStyle='#dde4f0'; c.lineWidth=0.5;
+    for(var i=1;i<=4;i++){var x=ox+xO+(xE-xO)*i/4; c.beginPath();c.moveTo(x,yT);c.lineTo(x,yB);c.stroke();}
+
+    // 시간축
+    c.strokeStyle='#b0b8d0'; c.lineWidth=1;
+    c.beginPath(); c.moveTo(ox+xO,yB); c.lineTo(ox+xE,yB); c.stroke();
+
+    // UV LED 펄스
+    c.fillStyle='rgba(100,50,200,0.7)';
+    c.fillRect(px(0), yT+8, px(pulseEnd)-px(0), yB-yT-8);
+
+    // 배경 노이즈 곡선 (빨간)
+    c.strokeStyle='#e03030'; c.lineWidth=2;
+    c.beginPath();
+    for(var i=0;i<=200;i++){
+      var t=i*totalT/200;
+      var amp = t < pulseEnd ? 0 : 75*Math.exp(-(t-pulseEnd)/tauBG);
+      var x=px(t), y=py(amp);
+      if(i===0||t<pulseEnd) c.moveTo(x,y); else c.lineTo(x,y);
+    }
+    c.stroke();
+
+    // Eu³⁺ 곡선 (파란)
+    c.strokeStyle='#2060c0'; c.lineWidth=2;
+    c.beginPath();
+    for(var i=0;i<=200;i++){
+      var t=i*totalT/200;
+      var amp = t < pulseEnd ? 0 : 60*Math.exp(-(t-pulseEnd)/tauEu);
+      var x=px(t), y=py(amp);
+      if(i===0||t<pulseEnd) c.moveTo(x,y); else c.lineTo(x,y);
+    }
+    c.stroke();
+
+    // gate 내 Eu³⁺ 채우기
+    c.fillStyle='rgba(32,96,192,0.18)';
+    c.beginPath(); c.moveTo(gxS, yB);
+    for(var i=0;i<=200;i++){
+      var t=i*totalT/200;
+      if(t < sc.delayEnd || t > sc.gateEnd) continue;
+      var amp = 60*Math.exp(-(t-pulseEnd)/tauEu);
+      c.lineTo(px(t), py(amp));
+    }
+    c.lineTo(gxE, yB); c.closePath(); c.fill();
+
+    // gate 내 BG 채우기 (노이즈가 섞이면 빨간)
+    var bgAtDelay = 75*Math.exp(-(sc.delayEnd-pulseEnd)/tauBG);
+    if(bgAtDelay > 1) {
+      c.fillStyle='rgba(220,60,60,0.22)';
+      c.beginPath(); c.moveTo(gxS, yB);
+      for(var i=0;i<=200;i++){
+        var t=i*totalT/200;
+        if(t < sc.delayEnd || t > sc.gateEnd) continue;
+        var amp = 75*Math.exp(-(t-pulseEnd)/tauBG);
+        c.lineTo(px(t), py(amp));
+      }
+      c.lineTo(gxE, yB); c.closePath(); c.fill();
+    }
+
+    // delay / gate 브라켓
+    c.strokeStyle='#888'; c.lineWidth=1; c.setLineDash([2,2]);
+    c.beginPath(); c.moveTo(dxS,yT-2); c.lineTo(dxE,yT-2); c.stroke();
+    c.setLineDash([]);
+    c.fillStyle='#666'; c.font='bold 9px sans-serif'; c.textAlign='center';
+    c.fillText('delay', (dxS+dxE)/2, yT-5);
+
+    c.strokeStyle='#1a8040'; c.lineWidth=1; c.setLineDash([2,2]);
+    c.beginPath(); c.moveTo(gxS,yT-2); c.lineTo(gxE,yT-2); c.stroke();
+    c.setLineDash([]);
+    c.fillStyle='#1a6030'; c.font='bold 9px sans-serif'; c.textAlign='center';
+    c.fillText('gate', (gxS+gxE)/2, yT-5);
+
+    // S/N 계산
+    var euSignal=0, bgNoise=0;
+    for(var i=0;i<=500;i++){
+      var t=sc.delayEnd + i*(sc.gateEnd-sc.delayEnd)/500;
+      euSignal += 60*Math.exp(-(t-pulseEnd)/tauEu);
+      bgNoise  += 75*Math.exp(-(t-pulseEnd)/tauBG);
+    }
+    var snr = bgNoise>0.5 ? (euSignal/bgNoise).toFixed(0) : '>1000';
+
+    // 패널 제목
+    c.fillStyle = sc.color; c.font='bold 11px sans-serif'; c.textAlign='center';
+    c.fillText(sc.label, ox + panelW/2, 16);
+
+    // S/N 표시
+    c.fillStyle='#2a3460'; c.font='10px sans-serif';
+    c.fillText('S/N ≈ '+snr, ox + panelW/2, yB+14);
+
+    // 판정 텍스트
+    c.fillStyle=sc.color; c.font='10px sans-serif';
+    c.fillText(sc.verdict, ox + panelW/2, yB+26);
+
+    // 구분선
+    if(si < 2){
+      c.strokeStyle='#c8d0e8'; c.lineWidth=1;
+      c.beginPath(); c.moveTo(ox+panelW, 0); c.lineTo(ox+panelW, H); c.stroke();
+    }
+  });
+
+  // 공통 범례
+  var lx=10, ly=H-12;
+  c.fillStyle='rgba(100,50,200,0.7)'; c.fillRect(lx,ly-5,12,6);
+  c.fillStyle='#555'; c.font='9px sans-serif'; c.textAlign='left'; c.fillText('UV',lx+15,ly);
+  lx+=36;
+  c.strokeStyle='#e03030'; c.lineWidth=2; c.beginPath(); c.moveTo(lx,ly-2); c.lineTo(lx+14,ly-2); c.stroke();
+  c.fillStyle='#555'; c.fillText('배경 노이즈',lx+18,ly);
+  lx+=72;
+  c.strokeStyle='#2060c0'; c.lineWidth=2; c.beginPath(); c.moveTo(lx,ly-2); c.lineTo(lx+14,ly-2); c.stroke();
+  c.fillStyle='#555'; c.fillText('Eu³⁺ 신호',lx+18,ly);
+}
+function drawPrinciple() {
+  var cv = document.getElementById('c_principle');
+  var c = cv.getContext('2d');
+  var W=700, H=260;
+  c.clearRect(0,0,W,H);
+  c.fillStyle='#f4f7ff'; c.fillRect(0,0,W,H);
+
+  var xO=60, xE=W-20, yB=H-40, yT=24;
+  var tauBG=0.008, tauEu=80; // 상대 단위 (화면 스케일)
+  var totalT=220; // 화면 시간축 단위
+  var pulseEnd=18, delayEnd=55, gateEnd=160;
+
+  // ── 배경 구간 색 ──
+  // delay 구간 (회색)
+  var dxS = xO + (pulseEnd/totalT)*(xE-xO);
+  var dxE = xO + (delayEnd/totalT)*(xE-xO);
+  c.fillStyle='rgba(160,160,180,0.15)';
+  c.fillRect(dxS, yT, dxE-dxS, yB-yT);
+
+  // gate 구간 (초록)
+  var gxS = dxE;
+  var gxE = xO + (gateEnd/totalT)*(xE-xO);
+  c.fillStyle='rgba(26,128,64,0.10)';
+  c.fillRect(gxS, yT, gxE-gxS, yB-yT);
+
+  // ── 격자 ──
+  c.strokeStyle='#dde4f0'; c.lineWidth=0.5;
+  for(var i=1;i<=6;i++){var x=xO+(xE-xO)*i/6; c.beginPath();c.moveTo(x,yT);c.lineTo(x,yB);c.stroke();}
+  for(var i=1;i<=3;i++){var y=yT+(yB-yT)*i/3; c.beginPath();c.moveTo(xO,y);c.lineTo(xE,y);c.stroke();}
+
+  // ── 시간축 ──
+  c.strokeStyle='#9098c0'; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(xO,yB); c.lineTo(xE,yB); c.stroke();
+  c.fillStyle='#7080a8'; c.font='bold 10px sans-serif'; c.textAlign='right';
+  c.fillText('시간 →', xE, yB+14);
+
+  // ── UV LED 펄스 ──
+  var pxS = xO, pxE = xO + (pulseEnd/totalT)*(xE-xO);
+  var grad = c.createLinearGradient(pxS,0,pxE,0);
+  grad.addColorStop(0,'rgba(120,60,220,0.9)'); grad.addColorStop(1,'rgba(120,60,220,0.3)');
+  c.fillStyle = grad;
+  c.fillRect(pxS, yT+10, pxE-pxS, yB-yT-10);
+  c.fillStyle='#6030c0'; c.font='bold 10px sans-serif'; c.textAlign='center';
+  c.fillText('UV LED', (pxS+pxE)/2, yT+6);
+
+  // ── 배경 노이즈 곡선 (빨간, 거의 즉시 꺼짐) ──
+  c.strokeStyle='#e03030'; c.lineWidth=2.5;
+  c.beginPath();
+  for(var i=0;i<=280;i++){
+    var t=i*totalT/280;
+    var x=xO+(t/totalT)*(xE-xO);
+    var amp = t < pulseEnd ? 0 : 90*Math.exp(-(t-pulseEnd)/tauBG);
+    var y = yB - amp;
+    if(i===0||t<pulseEnd) c.moveTo(x,y); else c.lineTo(x,y);
+  }
+  c.stroke();
+
+  // ── Eu³⁺ 신호 곡선 (파란, 천천히 꺼짐) ──
+  c.strokeStyle='#2060c0'; c.lineWidth=2.5;
+  c.beginPath();
+  for(var i=0;i<=280;i++){
+    var t=i*totalT/280;
+    var x=xO+(t/totalT)*(xE-xO);
+    var amp = t < pulseEnd ? 0 : 70*Math.exp(-(t-pulseEnd)/tauEu);
+    var y = yB - amp;
+    if(i===0||t<pulseEnd) c.moveTo(x,y); else c.lineTo(x,y);
+  }
+  c.stroke();
+
+  // ── delay 브라켓 ──
+  c.strokeStyle='#8888aa'; c.lineWidth=1.2; c.setLineDash([3,2]);
+  c.beginPath(); c.moveTo(dxS,yT-4); c.lineTo(dxE,yT-4); c.stroke();
+  c.setLineDash([]);
+  c.beginPath(); c.moveTo(dxS,yT-8); c.lineTo(dxS,yT); c.stroke();
+  c.beginPath(); c.moveTo(dxE,yT-8); c.lineTo(dxE,yT); c.stroke();
+  c.fillStyle='#666688'; c.font='bold 10px sans-serif'; c.textAlign='center';
+  c.fillText('← delay (t_d) →', (dxS+dxE)/2, yT-7);
+
+  // ── gate 브라켓 ──
+  c.strokeStyle='#1a8040'; c.lineWidth=1.5; c.setLineDash([3,2]);
+  c.beginPath(); c.moveTo(gxS,yT-4); c.lineTo(gxE,yT-4); c.stroke();
+  c.setLineDash([]);
+  c.beginPath(); c.moveTo(gxS,yT-8); c.lineTo(gxS,yT); c.stroke();
+  c.beginPath(); c.moveTo(gxE,yT-8); c.lineTo(gxE,yT); c.stroke();
+  c.fillStyle='#1a6030'; c.font='bold 10px sans-serif'; c.textAlign='center';
+  c.fillText('←  gate 측정창 (t_g)  →', (gxS+gxE)/2, yT-7);
+
+  // ── gate 영역 강조 표시 ──
+  c.strokeStyle='rgba(26,128,64,0.4)'; c.lineWidth=1; c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(gxS,yT); c.lineTo(gxS,yB); c.stroke();
+  c.beginPath(); c.moveTo(gxE,yT); c.lineTo(gxE,yB); c.stroke();
+  c.setLineDash([]);
+
+  // ── 배경=0 강조 텍스트 (gate 내) ──
+  c.fillStyle='rgba(192,48,48,0.7)'; c.font='bold 9px sans-serif'; c.textAlign='center';
+  c.fillText('배경 노이즈 ≈ 0', (gxS+gxE)/2, yB-6);
+
+  // ── 범례 ──
+  var lx=xO+5, ly=yT+8;
+  c.fillStyle='#6030c0'; c.fillRect(lx,ly,20,3); 
+  c.fillStyle='#6030c0'; c.font='10px sans-serif'; c.textAlign='left'; c.fillText('UV LED 펄스',lx+24,ly+4);
+  ly+=14;
+  c.strokeStyle='#e03030'; c.lineWidth=2.5; c.beginPath(); c.moveTo(lx,ly+1); c.lineTo(lx+20,ly+1); c.stroke();
+  c.fillStyle='#c03030'; c.fillText('배경 노이즈 (ns 단위로 즉시 꺼짐)',lx+24,ly+4);
+  ly+=14;
+  c.strokeStyle='#2060c0'; c.lineWidth=2.5; c.beginPath(); c.moveTo(lx,ly+1); c.lineTo(lx+20,ly+1); c.stroke();
+  c.fillStyle='#2060c0'; c.fillText('Eu³⁺ 신호 (600 μs 동안 천천히 꺼짐)',lx+24,ly+4);
+  ly+=14;
+  c.fillStyle='rgba(160,160,180,0.4)'; c.fillRect(lx,ly-1,20,8);
+  c.fillStyle='#556688'; c.fillText('delay — 배경이 꺼질 때까지 기다림',lx+24,ly+6);
+  ly+=14;
+  c.fillStyle='rgba(26,128,64,0.2)'; c.fillRect(lx,ly-1,20,8);
+  c.fillStyle='#1a6030'; c.fillText('gate — 여기서만 광자를 셈 → 신호만 남음',lx+24,ly+6);
+}
+
+function drawLifetime() {
+  var c = document.getElementById('c_lifetime').getContext('2d');
+  var W = 340, H = 170;
+  c.clearRect(0,0,W,H);
+  var xS=35, xE=W-10, yB=H-20, yT=10;
+  c.strokeStyle='#c8d2e8'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  var dyes = [{name:'자가형광(ns)',tau:0.001,color:'#c03030'},{name:'유기형광(μs)',tau:0.01,color:'#c07818'},{name:'Eu³⁺(ms)',tau:1.0,color:'#2272cc'}];
+  dyes.forEach(function(d) {
+    c.strokeStyle=d.color; c.lineWidth=1.5; c.beginPath();
+    for (var i=0; i<=150; i++) { var x=xS+i*(xE-xS)/150, t=i/30, v=Math.exp(-t/d.tau); var y=yB-(yB-yT)*v; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+    c.stroke();
+    c.fillStyle=d.color; c.font='9px sans-serif'; c.fillText(d.name, xS+5, yT+(dyes.indexOf(d))*12+15);
+  });
+  c.fillStyle='rgba(34,114,204,0.08)'; c.fillRect(xS+40,yT,xE-xS-40,yB-yT);
+  c.fillStyle='#1a8040'; c.font='9px sans-serif'; c.fillText('TRF 게이트',xS+50,yT+12);
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText('시간 →',xE-30,yB+11); c.fillText('강도',xS-28,yT+4);
+}
+
+function drawEta0() {
+  var c = document.getElementById('c_eta0').getContext('2d');
+  var W = 340, H = 160;
+  c.clearRect(0,0,W,H);
+  var xS=35, xE=W-10, yB=H-18, yT=8;
+  c.strokeStyle='#c8d2e8'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('η',xS-20,yT+4); c.fillText('t_d(μs)→',xE-38,yB+11);
+  var taus = [300,600,1200], cols = ['#c07818','#2272cc','#1a8040'];
+  taus.forEach(function(tau,i) {
+    var tg=600;
+    c.strokeStyle=cols[i]; c.lineWidth=1.5; c.beginPath();
+    for (var j=0; j<=100; j++) { var td=j*5, v=Math.exp(-td/tau)*(1-Math.exp(-tg/tau)), x=xS+j*(xE-xS)/100, y=yB-(yB-yT)*v; if(j===0) c.moveTo(x,y); else c.lineTo(x,y); }
+    c.stroke();
+    c.fillStyle=cols[i]; c.font='9px sans-serif'; c.fillText('τ='+tau+'μs',xE-48,yT+i*12+8);
+  });
+}
+
+function drawSpectrum0() {
+  var c = document.getElementById('c_spectrum0').getContext('2d');
+  var W = 340, H = 160;
+  c.clearRect(0,0,W,H);
+  var xS=10, xE=W-10, yB=H-18, yT=8;
+  var wl2x = function(wl) { return xS+(wl-280)*(xE-xS)/500; };
+  c.strokeStyle='#6030d0'; c.lineWidth=1.5; c.beginPath();
+  for (var wl=300; wl<=420; wl++) { var v=Math.exp(-Math.pow(wl-340,2)/800), x=wl2x(wl), y=yB-(yB-yT)*v*0.7; if(wl===300) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke(); c.fillStyle='#6030d0'; c.font='9px sans-serif'; c.fillText('여기 340nm',wl2x(330),yT+12);
+  c.strokeStyle='#2272cc'; c.lineWidth=2; c.beginPath();
+  for (var wl=580; wl<=680; wl++) { var v=Math.exp(-Math.pow(wl-615,2)/200), x=wl2x(wl), y=yB-(yB-yT)*v; if(wl===580) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke(); c.fillStyle='#2272cc'; c.font='9px sans-serif'; c.fillText('발광 615nm',wl2x(615)-10,yT+12);
+  [400,500,600,700].forEach(function(wl) { c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText(wl+'nm',wl2x(wl)-8,yB+11); });
+  c.strokeStyle='#c8d2e8'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  // color gradient bg
+  var grd = c.createLinearGradient(xS,0,xE,0);
+  grd.addColorStop(0,'rgba(80,0,100,0.08)'); grd.addColorStop(0.25,'rgba(0,0,255,0.05)'); grd.addColorStop(0.5,'rgba(0,200,0,0.05)'); grd.addColorStop(0.8,'rgba(255,0,0,0.08)');
+  c.fillStyle=grd; c.fillRect(xS,yT,xE-xS,yB-yT);
+}
+
+function drawSuppress() {
+  var c = document.getElementById('c_suppress').getContext('2d');
+  var W = 280, H = 160;
+  c.clearRect(0,0,W,H);
+  var items = [{label:'기존 형광',bg:80,sig:20,color:'#c03030'},{label:'TRF',bg:1,sig:18,color:'#2272cc'}];
+  items.forEach(function(it,i) {
+    var x=30+i*110, maxV=100;
+    c.fillStyle='#333'; c.font='10px sans-serif'; c.fillText(it.label,x,20);
+    c.fillStyle='rgba(240,180,50,0.3)'; c.fillRect(x,25,(W-60)*it.bg/maxV,30);
+    c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText('배경 '+it.bg,x+2,44);
+    c.fillStyle='rgba(34,114,204,0.5)'; c.fillRect(x,65,(W-60)*it.sig/maxV,30);
+    c.fillStyle='#2272cc'; c.font='9px sans-serif'; c.fillText('신호 '+it.sig,x+2,84);
+    var snr = it.sig/Math.max(0.1,it.bg);
+    c.fillStyle=it.color; c.font='11px sans-serif'; c.fillText('SNR='+snr.toFixed(2),x,110);
+  });
+  var cSNR=items[0].sig/items[0].bg, tSNR=items[1].sig/items[1].bg;
+  c.fillStyle='#1a8040'; c.font='10px sans-serif'; c.fillText('SNR 향상: ~'+Math.round(tSNR/cSNR)+'× (추가차광·완전소광 시 수천 배)',30,140);
+}
+
+function drawTab1() {
+  drawPrinciple();
+  drawTimingCmp(); drawLifetime(); drawEta0(); drawSpectrum0(); drawSuppress();
+}
+
+// ── TAB2: 광학계 시뮬레이터 ────────────────────────────────
+function upd2() {
+  var td=parseInt(document.getElementById('r2_td').value);
+  var tg=parseInt(document.getElementById('r2_tg').value);
+  var tau=parseInt(document.getElementById('r2_tau').value);
+  var bg=parseInt(document.getElementById('r2_bg').value);
+  var sig=parseInt(document.getElementById('r2_sig').value);
+  document.getElementById('v2_td').textContent=td;
+  document.getElementById('v2_tg').textContent=tg;
+  document.getElementById('v2_tau').textContent=tau;
+  document.getElementById('v2_bg').textContent=bg;
+  document.getElementById('v2_sig').textContent=sig;
+  var eta=Math.exp(-td/tau)*(1-Math.exp(-tg/tau));
+  var tau_bg=1.0; // 잔류배경 수명 ~1μs (광원잔광+광학계형광, 실제 게이팅 대상)
+  var bg_gated=bg*Math.exp(-td/tau_bg)*(1-Math.exp(-tg/tau_bg));
+  var S=sig*eta, snr=S/Math.sqrt(Math.max(1,S+bg_gated));
+  var optTd=Math.max(5*tau_bg, 2); // 배경 5수명 소거 + 전자부 정착 2us 하한
+  document.getElementById('r2_eta').textContent=(eta*100).toFixed(1)+'%';
+  document.getElementById('r2_snr').textContent=snr.toFixed(1);
+  document.getElementById('r2_opt').textContent=optTd.toFixed(2)+'μs';
+  drawTiming2(td,tg,tau); drawEtaCurve(td,tg,tau); drawSNR2(sig,bg,td,tg,tau); drawSpec2();
+}
+
+function drawTiming2(td,tg,tau) {
+  var c=document.getElementById('c_timing2').getContext('2d'), W=480, H=150;
+  c.clearRect(0,0,W,H);
+  var xS=20, scale=W/1600;
+  // UV pulse
+  c.fillStyle='#6030d0'; c.fillRect(xS,H-80,15,50); c.fillStyle='#8060e8'; c.font='9px sans-serif'; c.fillText('UV',xS+2,H-83);
+  // background decay
+  c.strokeStyle='#c03030'; c.lineWidth=1.5; c.beginPath();
+  for (var i=0;i<=300;i++) { var t=i*4, x=xS+20+i*(W-50)/300, v=Math.exp(-t/2), y=(H-30)-50*v; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke(); c.fillStyle='#c03030'; c.font='9px sans-serif'; c.fillText('배경(τ~1μs: 광원잔광/자가형광)',xS+22,H-68);
+  // Eu signal
+  c.strokeStyle='#2272cc'; c.lineWidth=1.5; c.beginPath();
+  for (var i=0;i<=300;i++) { var t=i*4, x=xS+20+i*(W-50)/300, v=Math.exp(-t/tau), y=(H-30)-55*v; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  // delay shading
+  var dx1=xS+20, dx2=xS+20+td*(W-50)/1200;
+  c.fillStyle='rgba(200,210,240,0.4)'; c.fillRect(dx1,H-90,dx2-dx1,60);
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('t_d='+td+'μs',dx1+2,H-80);
+  // gate shading
+  var gx1=dx2, gx2=Math.min(W-10,dx2+tg*(W-50)/1200);
+  c.fillStyle='rgba(34,114,204,0.1)'; c.fillRect(gx1,H-90,gx2-gx1,60);
+  c.strokeStyle='#1a8040'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(gx1,H-95); c.lineTo(gx2,H-95); c.stroke();
+  c.beginPath(); c.moveTo(gx1,H-98); c.lineTo(gx1,H-92); c.stroke();
+  c.beginPath(); c.moveTo(gx2,H-98); c.lineTo(gx2,H-92); c.stroke();
+  c.fillStyle='#1a8040'; c.font='9px sans-serif'; c.fillText('t_g='+tg+'μs',(gx1+gx2)/2-15,H-99);
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText('시간(μs)→',W-50,H-14);
+  c.strokeStyle='#c8d2e8'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,H-30); c.lineTo(W-10,H-30); c.stroke();
+}
+
+function drawEtaCurve(curTd,tg,tau) {
+  var c=document.getElementById('c_etacurve').getContext('2d'), W=300, H=140;
+  c.clearRect(0,0,W,H);
+  var xS=35, xE=W-10, yB=H-18, yT=8;
+  c.strokeStyle='#c8d2e8'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('η%',xS-22,yT+4); c.fillText('t_d→',xE-20,yB+11);
+  c.strokeStyle='#2272cc'; c.lineWidth=1.5; c.beginPath();
+  for (var i=0;i<=100;i++) { var td=i*10, v=Math.exp(-td/tau)*(1-Math.exp(-tg/tau)), x=xS+i*(xE-xS)/100, y=yB-(yB-yT)*v; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  var etaC=Math.exp(-curTd/tau)*(1-Math.exp(-tg/tau)), xc=xS+curTd*(xE-xS)/1000, yc=yB-(yB-yT)*etaC;
+  c.fillStyle='#c07818'; c.beginPath(); c.arc(xc,yc,4,0,Math.PI*2); c.fill();
+  c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText((etaC*100).toFixed(1)+'%',xc+5,yc-3);
+}
+
+function drawSNR2(sig,bg,td,tg,tau) {
+  var c=document.getElementById('c_snr2').getContext('2d'), W=200, H=140;
+  c.clearRect(0,0,W,H);
+  var eta=Math.exp(-td/tau)*(1-Math.exp(-tg/tau));
+  var tau_bg2=1.0; var bg_g=bg*Math.exp(-td/tau_bg2)*(1-Math.exp(-tg/tau_bg2)); var snrConv=sig/Math.sqrt(Math.max(1,sig+bg)); var snrTRF=(sig*eta)/Math.sqrt(Math.max(1,sig*eta+bg_g));
+  var mx=Math.max(snrConv,snrTRF)*1.2;
+  var bars=[{label:'기존',v:snrConv,color:'#c03030'},{label:'TRF',v:snrTRF,color:'#2272cc'}];
+  bars.forEach(function(b,i) {
+    var x=20+i*80, bw=50, h=Math.min(90,(H-40)*b.v/mx);
+    c.fillStyle=b.color; c.fillRect(x,H-25-h,bw,h);
+    c.fillStyle='#8898b8'; c.font='9px sans-serif'; c.fillText(b.label,x+8,H-12);
+    c.fillStyle='#3050a0'; c.font='9px sans-serif'; c.fillText(b.v.toFixed(0),x+4,H-28-h);
+  });
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('SNR',5,15);
+}
+
+function drawSpec2() {
+  var c=document.getElementById('c_spec2').getContext('2d'), W=480, H=120;
+  c.clearRect(0,0,W,H);
+  var xS=10, xE=W-10, yB=H-16, yT=8;
+  var wl2x=function(wl){return xS+(wl-280)*(xE-xS)/500;};
+  // color bg
+  var grd=c.createLinearGradient(xS,0,xE,0);
+  grd.addColorStop(0,'rgba(80,0,100,0.07)'); grd.addColorStop(0.4,'rgba(0,0,200,0.04)'); grd.addColorStop(0.65,'rgba(0,200,0,0.04)'); grd.addColorStop(1,'rgba(255,0,0,0.07)');
+  c.fillStyle=grd; c.fillRect(xS,yT,xE-xS,yB-yT);
+  // excitation filter
+  c.fillStyle='rgba(150,50,255,0.1)'; c.fillRect(wl2x(320),yT,wl2x(370)-wl2x(320),yB-yT);
+  c.strokeStyle='#6030d0'; c.lineWidth=1; c.beginPath(); c.moveTo(wl2x(320),yT); c.lineTo(wl2x(320),yB); c.stroke(); c.beginPath(); c.moveTo(wl2x(370),yT); c.lineTo(wl2x(370),yB); c.stroke();
+  c.fillStyle='#6030d0'; c.font='9px sans-serif'; c.fillText('Ex필터',wl2x(330),yT+10);
+  // emission filter
+  c.fillStyle='rgba(50,100,255,0.07)'; c.fillRect(wl2x(600),yT,wl2x(660)-wl2x(600),yB-yT);
+  c.strokeStyle='#2272cc'; c.lineWidth=1; c.beginPath(); c.moveTo(wl2x(600),yT); c.lineTo(wl2x(600),yB); c.stroke(); c.beginPath(); c.moveTo(wl2x(660),yT); c.lineTo(wl2x(660),yB); c.stroke();
+  c.fillStyle='#2272cc'; c.font='9px sans-serif'; c.fillText('Em필터',wl2x(608),yT+10);
+  // Eu emission peak
+  c.strokeStyle='#2272cc'; c.lineWidth=2; c.beginPath();
+  for (var wl=580;wl<=680;wl++) { var v=Math.exp(-Math.pow(wl-615,2)/200), x=wl2x(wl), y=yB-(yB-yT)*v; if(wl===580) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  // axis
+  c.strokeStyle='#c8d2e8'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  [350,450,550,650,750].forEach(function(wl) { c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText(wl,wl2x(wl)-6,yB+11); });
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText('파장(nm)',xE-30,yB+11);
+}
+
+// ── TAB3: 스트립 밴드 ───────────────────────────────────────
+var STRIP_CONCS=[0,0.003,0.008,0.015,0.03,0.06,0.10,0.16,0.24,0.34,0.45,0.56,0.65,0.72,0.8];
+var STRIP_LABELS=['0','3p','8p','15p','30p','60p','0.1','0.16','0.24','0.34','0.45','0.56','0.65','0.72','0.8'];
+
+function seededRand(s) {
+  var x=s;
+  return function() { x=(x*9301+49297)%233280; return x/233280; };
+}
+
+// 샌드위치 면역분석(sandwich) T-line: 농도↑ → 신호↑, 고농도서 Hook(프로존) 효과
+// R = Rmax · x/(1 + x + x²/H),  x=cv/EC50, EC50=0.15ng/mL, H=후크계수(50)
+// 저농도: R≈Rmax·x (상승), x=√H 부근서 최대 후 하강(항체 포화)
+function stripR(cv,Rmax) { var x=(cv+1e-9)/0.15, H=50; return Rmax*x/(1+x+x*x/H); }
+
+function upd3() {
+  var rmax=parseInt(document.getElementById('r3_rmax').value)/100;
+  var bgr=parseInt(document.getElementById('r3_bgr').value)/100;
+  var psz=parseInt(document.getElementById('r3_psz').value)/10;
+  var tlw=parseInt(document.getElementById('r3_tlw').value);
+  var pad=document.getElementById('r3_pad').value;
+  document.getElementById('v3_rmax').textContent=rmax.toFixed(2);
+  document.getElementById('v3_bgr').textContent=bgr.toFixed(2);
+  document.getElementById('v3_psz').textContent=psz.toFixed(1);
+  document.getElementById('v3_tlw').textContent=tlw;
+  drawStrip3(rmax,bgr,psz,tlw,pad);
+  drawProfile3(rmax,bgr,tlw);
+  drawDose3(rmax);
+}
+
+function drawStrip3(Rmax,bgr,psz,tlw,pad) {
+  var c=document.getElementById('c_strip').getContext('2d'), W=640, H=220;
+  c.clearRect(0,0,W,H);
+  var N=15, sw=(W-20)/N, sh=H-45;
+  var padC={nc:'#c8b89a',gf:'#e8e0d0',pv:'#b0c0c8'}[pad]||'#c8b89a';
+  for (var i=0; i<STRIP_CONCS.length; i++) {
+    var conc=STRIP_CONCS[i], x=10+i*sw, R=stripR(conc,Rmax), rnd=seededRand(i*1000+42);
+    c.fillStyle=padC; c.fillRect(x,20,sw-2,sh);
+    if (pad==='nc') {
+      c.strokeStyle='rgba(0,0,0,0.04)';
+      for (var j=0;j<8;j++) { var ty=20+rnd()*sh; c.beginPath(); c.moveTo(x,ty); c.lineTo(x+sw-2,ty+rnd()*3-1.5); c.stroke(); }
+    }
+    var tlx=x+(sw-tlw)/2, tly=20+sh*0.35, iv=Math.round(R*220), br=Math.min(255,iv+40);
+    c.fillStyle='rgb('+br+','+Math.round(iv*.85)+','+Math.round(iv*.3)+')';
+    c.fillRect(tlx,tly,tlw,18);
+    if (R>0.01) {
+      var nP=Math.round(R*50*psz), rnd2=seededRand(i*777+13);
+      for (var p=0;p<nP;p++) {
+        var px=tlx+rnd2()*tlw, py=tly+rnd2()*18, pr=psz*0.4;
+        c.fillStyle='rgba('+(200+Math.round(rnd2()*55))+','+(160+Math.round(rnd2()*40))+',20,0.85)';
+        c.beginPath(); c.arc(px,py,pr,0,Math.PI*2); c.fill();
+      }
+    }
+    // control band
+    c.fillStyle='rgba(100,120,200,0.7)'; c.fillRect(x+5,20+sh*0.65,sw-12,12);
+    c.fillStyle='rgba(200,200,240,0.6)';
+    var rnd3=seededRand(i*333+7), npc=Math.round(8*psz);
+    for (var p=0;p<npc;p++) {
+      var px=x+5+rnd3()*(sw-12), py=20+sh*0.65+rnd3()*12;
+      c.beginPath(); c.arc(px,py,psz*0.35,0,Math.PI*2); c.fill();
+    }
+    c.fillStyle='#6878a8'; c.font='8px sans-serif'; c.fillText(STRIP_LABELS[i],x+2,H-5);
+    c.strokeStyle='#c8d0e8'; c.strokeRect(x,20,sw-2,sh);
+    c.fillStyle='#2272cc'; c.font='8px sans-serif'; c.fillText('R='+R.toFixed(2),x+2,32);
+  }
+  // labels
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('T밴드',10+3*sw+4,20+sh*0.35+28);
+  c.fillStyle='#8898b8'; c.font='9px sans-serif'; c.fillText('C밴드',10+3*sw+4,20+sh*0.65+22);
+  c.fillStyle='#8898b8'; c.font='9px sans-serif'; c.fillText('농도 (ng/mL) →',W/2-40,H-2);
+}
+
+function drawProfile3(Rmax,bgr,tlw) {
+  var c=document.getElementById('c_profile').getContext('2d'), W=460, H=130;
+  c.clearRect(0,0,W,H);
+  var xS=10, xE=W-10, yB=H-14, yT=8, cx=(xS+xE)/2;
+  var colors=['#1a8040','#2272cc','#c07818','#c03030','#6040b8'];
+  var sels=[0,4,8,11,14];
+  for (var ci=0; ci<sels.length; ci++) {
+    var si=sels[ci], R=stripR(STRIP_CONCS[si],Rmax), sigma=tlw/2;
+    c.strokeStyle=colors[ci]; c.lineWidth=1.5; c.beginPath();
+    for (var i=0;i<=200;i++) {
+      var xp=xS+i*(xE-xS)/200, pos=(xp-cx)/sigma, v=bgr+R*Math.exp(-pos*pos/2);
+      var y=yB-(yB-yT)*v;
+      if (i===0) c.moveTo(xp,y); else c.lineTo(xp,y);
+    }
+    c.stroke();
+    c.fillStyle=colors[ci]; c.font='8px sans-serif'; c.fillText(STRIP_LABELS[si],xE-50+ci*5,yT+ci*10+5);
+  }
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.strokeStyle='#c8d0e8'; c.setLineDash([2,2]);
+  c.beginPath(); c.moveTo(cx-tlw/2,yT); c.lineTo(cx-tlw/2,yB); c.stroke();
+  c.beginPath(); c.moveTo(cx+tlw/2,yT); c.lineTo(cx+tlw/2,yB); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText('위치 →',xE-30,yB+11);
+}
+
+function drawDose3(Rmax) {
+  var c=document.getElementById('c_dose').getContext('2d'), W=220, H=150;
+  c.clearRect(0,0,W,H);
+  var xS=35, xE=W-10, yB=H-14, yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('R',xS-18,yT+4); c.fillText('농도→',xE-22,yB+11);
+  [0.2,0.4,0.6,0.8].forEach(function(v) {
+    var y=yB-(yB-yT)*v;
+    c.strokeStyle='#e4e8f8'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,y); c.lineTo(xE,y); c.stroke();
+    c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText(v.toFixed(1),0,y+4);
+  });
+  c.strokeStyle='#2272cc'; c.lineWidth=2; c.beginPath();
+  for (var i=0;i<=100;i++) {
+    var conc=Math.pow(10,-3+i*4/100), R=stripR(conc,Rmax), x=xS+i*(xE-xS)/100, y=yB-(yB-yT)*R/Rmax;
+    if (i===0) c.moveTo(x,y); else c.lineTo(x,y);
+  }
+  c.stroke();
+  // Hook(프로존) 정점: x=√H 부근서 신호 최대 후 하강
+  var hkC=Math.sqrt(50)*0.15, hkX=(Math.log10(hkC)+3)/4, hkPx=xS+hkX*(xE-xS), hkR=stripR(hkC,Rmax), hkPy=yB-(yB-yT)*hkR/Rmax;
+  c.fillStyle='#c03030'; c.beginPath(); c.arc(hkPx,hkPy,3,0,Math.PI*2); c.fill();
+  c.fillStyle='#c03030'; c.font='8px sans-serif'; c.textAlign='center'; c.fillText('Hook',hkPx,hkPy-5); c.textAlign='left';
+  for (var k=0;k<STRIP_CONCS.length;k++) {
+    var conc=STRIP_CONCS[k];
+    if (conc>0) {
+      var R=stripR(conc,Rmax), xi=(Math.log10(conc)+3)/4, x=xS+xi*(xE-xS), y=yB-(yB-yT)*R/Rmax;
+      c.fillStyle='#c07818'; c.beginPath(); c.arc(x,y,2.5,0,Math.PI*2); c.fill();
+    }
+  }
+}
+
+// ── TAB4: 시험결과 분석 ─────────────────────────────────────
+var CONCS=[0,0.2,0.3,0.4,0.6,1.0];
+var RAW=[[90000,95000,100000,108000,116000,180459],[88000,93000,100000,110000,120000,192269],[92000,99000,110000,125000,142000,226253],[89000,94000,101000,111000,121000,191641],[91000,96000,103000,113000,123000,200284],[85000,91000,98000,107000,117000,173143],[87000,93000,100000,110000,120000,185745]];
+var R18_100=RAW.map(function(ch){return ch.map(function(v){return Math.round(v*0.48);});});
+var R37_10=RAW.map(function(ch){return ch.map(function(v){return Math.round(v*0.095);});});
+var R18_10=RAW.map(function(ch){return ch.map(function(v){return Math.round(v*0.046);});});
+var CONDS=[{label:'18×10cy',data:R18_10,color:'#4060a0'},{label:'37×10cy',data:R37_10,color:'#6080c0'},{label:'18×100cy',data:R18_100,color:'#5090d0'},{label:'37×100cy',data:RAW,color:'#2272cc'}];
+
+function avgCh(data) {
+  return CONCS.map(function(_,ci) { return Math.round(data.reduce(function(a,ch){return a+ch[ci];},0)/7); });
+}
+
+function drawTab4() {
+  drawResponseCurve(); drawChannelBar(); drawDiffChart(); drawHeatmap();
+}
+
+function drawResponseCurve() {
+  var c=document.getElementById('c_resp').getContext('2d'), W=520, H=160;
+  c.clearRect(0,0,W,H);
+  var xS=50,xE=W-20,yB=H-18,yT=8,maxV=250000;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  CONDS.forEach(function(cd) {
+    var avg=avgCh(cd.data); c.strokeStyle=cd.color; c.lineWidth=2; c.beginPath();
+    CONCS.forEach(function(v,i) { var x=xS+i*(xE-xS)/(CONCS.length-1), y=yB-(yB-yT)*avg[i]/maxV; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); });
+    c.stroke();
+    c.fillStyle=cd.color; c.font='9px sans-serif'; c.fillText(cd.label,xE-60,yB-(yB-yT)*avg[5]/maxV-2);
+  });
+  CONCS.forEach(function(v,i) { c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText(v,xS+i*(xE-xS)/(CONCS.length-1)-6,yB+11); });
+  c.save(); c.translate(12,yT+30); c.rotate(-Math.PI/2); c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('신호',0,0); c.restore();
+}
+
+function drawChannelBar() {
+  var c=document.getElementById('c_ch').getContext('2d'), W=320, H=160;
+  c.clearRect(0,0,W,H);
+  var data=RAW.map(function(ch){return ch[5];}), max=0;
+  data.forEach(function(v){if(v>max)max=v;}); max*=1.1;
+  var xS=30,xE=W-10,yB=H-18,yT=8,bw=(xE-xS)/7-4;
+  var avg=data.reduce(function(a,v){return a+v;},0)/7;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  var avgY=yB-(yB-yT)*avg/max; c.strokeStyle='#c07818'; c.lineWidth=1; c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(xS,avgY); c.lineTo(xE,avgY); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText('avg',xE-18,avgY-2);
+  data.forEach(function(v,i) {
+    var x=xS+i*(xE-xS)/7, h=(yB-yT)*v/max, dev=(v-avg)/avg;
+    c.fillStyle=dev>0.05?'#2272cc':dev<-0.05?'#c03030':'#1a8040';
+    c.fillRect(x+2,yB-h,bw,h);
+    c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('CH'+(i+1),x+2,yB+11);
+    c.fillStyle='#8898b8'; c.fillText(Math.round(v/1000)+'k',x+2,yB-h-3);
+  });
+}
+
+function drawDiffChart() {
+  var c=document.getElementById('c_diff').getContext('2d'), W=520, H=150;
+  c.clearRect(0,0,W,H);
+  var xS=50,xE=W-20,yB=H-18,yT=8;
+  var diffs=CONDS.map(function(cd) {
+    var avg=avgCh(cd.data);
+    return {label:cd.label,color:cd.color,diff:avg.map(function(v,i){return i===0?0:v-avg[0];})};
+  });
+  var maxD=0; diffs[3].diff.forEach(function(v){if(v>maxD)maxD=v;}); maxD*=1.1;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  diffs.forEach(function(cd) {
+    c.strokeStyle=cd.color; c.lineWidth=2; c.beginPath();
+    CONCS.forEach(function(v,i) { var x=xS+i*(xE-xS)/(CONCS.length-1), y=yB-(yB-yT)*cd.diff[i]/maxD; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); });
+    c.stroke();
+    c.fillStyle=cd.color; c.font='9px sans-serif'; c.fillText(cd.label,xE-60,yB-(yB-yT)*cd.diff[5]/maxD-2);
+  });
+  CONCS.forEach(function(v,i) { c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText(v,xS+i*(xE-xS)/(CONCS.length-1)-6,yB+11); });
+  c.save(); c.translate(10,50); c.rotate(-Math.PI/2); c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('차이값',0,0); c.restore();
+}
+
+function drawHeatmap() {
+  var c=document.getElementById('c_heat').getContext('2d'), W=300, H=150;
+  c.clearRect(0,0,W,H);
+  var data=RAW.map(function(ch){return ch[5];}), avg=data.reduce(function(a,v){return a+v;},0)/7;
+  var xS=30,xE=W-10,cellW=(xE-xS)/7,cellH=18,yS=18;
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('채널',xS,yS-4);
+  data.forEach(function(v,i) {
+    var dev=(v-avg)/avg, r=dev>0?Math.round(dev*500):0, b=dev<0?Math.round(-dev*500):0, g=Math.max(0,80-Math.abs(dev)*300);
+    c.fillStyle='rgb('+Math.min(255,r+60)+','+Math.min(255,g+100)+','+Math.min(255,b+60)+')';
+    c.fillRect(xS+i*cellW,yS,cellW-2,cellH);
+    c.fillStyle='#fff'; c.font='8px sans-serif'; c.fillText('CH'+(i+1),xS+i*cellW+1,yS+12);
+    c.fillStyle='#ccc'; c.fillText((dev*100).toFixed(1)+'%',xS+i*cellW,yS+cellH+11);
+  });
+  [0.2,0.3,0.4,0.6,1.0].forEach(function(conc,ci) {
+    var refAvg=avgCh(RAW)[ci+1];
+    RAW.forEach(function(ch,i) {
+      var dev=(ch[ci+1]-refAvg)/refAvg, r=dev>0?Math.round(dev*400):0, b=dev<0?Math.round(-dev*400):0;
+      c.fillStyle='rgba('+(Math.min(255,r+30))+',55,'+Math.min(255,b+30)+',0.85)';
+      c.fillRect(xS+i*cellW,yS+cellH+20+ci*11,cellW-2,10);
+    });
+    c.fillStyle='#7888b0'; c.font='8px sans-serif'; c.fillText(conc,0,yS+cellH+28+ci*11);
+  });
+}
+
+// ── TAB5: 센서-스트립 거리 ──────────────────────────────────
+function upd5() {
+  var d=parseInt(document.getElementById('r5_d').value);
+  var r=parseInt(document.getElementById('r5_r').value);
+  var tc=parseInt(document.getElementById('r5_tc').value);
+  document.getElementById('v5_d').textContent=d;
+  document.getElementById('v5_r').textContent=r;
+  document.getElementById('v5_tc').textContent=tc;
+  // η = (1 - cos θ)/2, cos θ = d/√(r²+d²) — 정확한 입체각 기반 수집 효율
+  var eta=(1-d/Math.sqrt(r*r+d*d))/2, na=r/Math.sqrt(r*r+d*d), spot=2*d*Math.tan(15*3.14159/180), xtalk=Math.exp(-tc*tc/(2*spot*spot))*100;
+  document.getElementById('v5_eta').textContent=(eta*100).toFixed(3)+'%';
+  document.getElementById('v5_na').textContent=na.toFixed(3);
+  document.getElementById('v5_spot').textContent=spot.toFixed(1)+'mm';
+  document.getElementById('v5_xtalk').textContent=xtalk.toFixed(2)+'%';
+  drawOptics5(d,r,tc); drawInv5(d,r); drawSig5(d,r); drawTC5(d,r,tc); drawOpt5(r); drawEta5();
+}
+
+function drawOptics5(d,r,tc) {
+  var c=document.getElementById('c_optics5').getContext('2d'), W=460, H=160;
+  c.clearRect(0,0,W,H);
+  var cx=W/2, stripY=H-24, sensorY=14, scale=5;
+  c.fillStyle='#c8d0e8'; c.fillRect(0,stripY,W,14);
+  c.fillStyle='#c8b89a'; c.font='9px sans-serif'; c.fillText('스트립',8,stripY+10);
+  // T and C bands on strip
+  c.fillStyle='rgba(192,120,24,0.8)'; c.fillRect(cx-tc*scale/2-4,stripY,8,14);
+  c.fillStyle='rgba(34,114,204,0.8)'; c.fillRect(cx+tc*scale/2-4,stripY,8,14);
+  c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText('T',cx-tc*scale/2-3,stripY-2);
+  c.fillStyle='#2272cc'; c.fillText('C',cx+tc*scale/2-3,stripY-2);
+  // sensor
+  c.fillStyle='#4060a0'; c.fillRect(cx-r*scale,sensorY,r*scale*2,8);
+  c.fillStyle='#2272cc'; c.font='9px sans-serif'; c.fillText('센서 r='+r+'mm',cx-20,sensorY-2);
+  // distance arrow
+  c.strokeStyle='#b8c2d8'; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(cx+r*scale+15,sensorY+4); c.lineTo(cx+r*scale+15,stripY); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('d='+d+'mm',cx+r*scale+17,(sensorY+stripY)/2);
+  // light cone
+  c.strokeStyle='rgba(34,114,204,0.3)'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(cx-r*scale,sensorY+8); c.lineTo(cx,stripY); c.stroke();
+  c.beginPath(); c.moveTo(cx+r*scale,sensorY+8); c.lineTo(cx,stripY); c.stroke();
+  // PSF spot
+  var spotW=d*0.1*scale*1.5;
+  c.strokeStyle='rgba(192,120,24,0.4)'; c.lineWidth=1; c.setLineDash([2,2]);
+  c.beginPath(); c.arc(cx,stripY-2,spotW,0,Math.PI*2); c.stroke(); c.setLineDash([]);
+  c.fillStyle='rgba(192,120,24,0.3)'; c.font='8px sans-serif'; c.fillText('PSF',cx-8,stripY-spotW-3);
+}
+
+function drawInv5(curD,r) {
+  var c=document.getElementById('c_inv5').getContext('2d'), W=220, H=160;
+  c.clearRect(0,0,W,H);
+  var xS=35, xE=W-10, yB=H-18, yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('η%',xS-22,yT+4); c.fillText('d(mm)→',xE-30,yB+11);
+  c.strokeStyle='#2272cc'; c.lineWidth=2; c.beginPath();
+  for (var i=0;i<=100;i++) { var d=1+i*0.29, eta=(1-d/Math.sqrt(r*r+d*d))/2, x=xS+i*(xE-xS)/100, y=yB-(yB-yT)*Math.min(eta*10,1); if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  var etaC=(1-curD/Math.sqrt(r*r+curD*curD))/2, xc=xS+(curD-1)/29*(xE-xS), yc=yB-(yB-yT)*Math.min(etaC*10,1);
+  c.fillStyle='#c07818'; c.beginPath(); c.arc(xc,yc,4,0,Math.PI*2); c.fill();
+  c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText((etaC*100).toFixed(3)+'%',xc+5,yc-3);
+}
+
+function drawSig5(curD,r) {
+  var c=document.getElementById('c_sig5').getContext('2d'), W=400, H=140;
+  c.clearRect(0,0,W,H);
+  var xS=40, xE=W-10, yB=H-18, yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('신호',xS-28,yT+4); c.fillText('d(mm)→',xE-30,yB+11);
+  c.strokeStyle='#2272cc'; c.lineWidth=2; c.beginPath();
+  for (var i=0;i<=100;i++) { var d=1+i*0.29, sig=(1-d/Math.sqrt(r*r+d*d))/2, x=xS+i*(xE-xS)/100, y=yB-(yB-yT)*Math.min(sig*10,1); if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  var sigC=(1-curD/Math.sqrt(r*r+curD*curD))/2, xc=xS+(curD-1)/29*(xE-xS), yc=yB-(yB-yT)*Math.min(sigC*10,1);
+  c.fillStyle='#c07818'; c.beginPath(); c.arc(xc,yc,5,0,Math.PI*2); c.fill();
+  // dashed reference lines
+  c.strokeStyle='#b8c2d8'; c.setLineDash([2,2]);
+  c.beginPath(); c.moveTo(xc,yc); c.lineTo(xc,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yc); c.lineTo(xc,yc); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText('d='+curD+'mm',xc+3,yc-3);
+}
+
+function drawTC5(d,r,tc) {
+  var c=document.getElementById('c_tc5').getContext('2d'), W=380, H=140;
+  c.clearRect(0,0,W,H);
+  var xS=30,xE=W-10,yB=H-14,yT=8;
+  var dArr=[2,5,8,12,18,25], colors=['#1a8040','#2272cc','#c07818','#c03030','#6040b8','#888'];
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  dArr.forEach(function(di,i) {
+    var sigma=di*0.15; c.strokeStyle=colors[i]; c.lineWidth=1.5; c.beginPath();
+    for (var j=0;j<=200;j++) {
+      var pos=(j-100)/10, v=Math.exp(-(pos+tc/2)*(pos+tc/2)/(2*sigma*sigma))+Math.exp(-(pos-tc/2)*(pos-tc/2)/(2*sigma*sigma));
+      var x=xS+j*(xE-xS)/200, y=yB-(yB-yT)*v/2;
+      if(j===0) c.moveTo(x,y); else c.lineTo(x,y);
+    }
+    c.stroke();
+    c.fillStyle=colors[i]; c.font='9px sans-serif'; c.fillText('d='+di,xE-48,yT+i*11+5);
+  });
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('위치(mm)',xE-30,yB+11);
+}
+
+function drawOpt5(r) {
+  var c=document.getElementById('c_opt5').getContext('2d'), W=400, H=130;
+  c.clearRect(0,0,W,H);
+  var xS=40, xE=W-10, yB=H-18, yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('점수',xS-28,yT+4); c.fillText('d(mm)→',xE-30,yB+11);
+  // composite score: η normalized - xtalk penalty
+  c.strokeStyle='#1a8040'; c.lineWidth=2; c.beginPath();
+  for (var i=0;i<=100;i++) {
+    var d=1+i*0.29, eta=(1-d/Math.sqrt(r*r+d*d))/2*10, xtalk=Math.exp(-16/(2*Math.pow(d*0.1,2))), score=eta*(1-xtalk*0.5);
+    var x=xS+i*(xE-xS)/100, y=yB-(yB-yT)*Math.min(score,1);
+    if(i===0) c.moveTo(x,y); else c.lineTo(x,y);
+  }
+  c.stroke();
+  c.fillStyle='#1a8040'; c.font='9px sans-serif'; c.fillText('최적 점수 (η - 혼선)',xS+5,yT+10);
+}
+
+function drawEta5() {
+  var c=document.getElementById('c_eta5').getContext('2d'), W=380, H=130;
+  c.clearRect(0,0,W,H);
+  var xS=35, xE=W-10, yB=H-18, yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('η',xS-18,yT+4); c.fillText('r(mm)→',xE-30,yB+11);
+  var dArr=[3,5,8,12], dcols=['#2272cc','#1a8040','#c07818','#c03030'];
+  dArr.forEach(function(d,i) {
+    c.strokeStyle=dcols[i]; c.lineWidth=1.5; c.beginPath();
+    for (var j=0;j<=100;j++) { var rr=0.5+j*0.095, eta=(1-d/Math.sqrt(rr*rr+d*d))/2, x=xS+j*(xE-xS)/100, y=yB-(yB-yT)*Math.min(eta*30,1); if(j===0) c.moveTo(x,y); else c.lineTo(x,y); }
+    c.stroke();
+    c.fillStyle=dcols[i]; c.font='9px sans-serif'; c.fillText('d='+d,xE-30,yT+i*12+8);
+  });
+}
+
+// ── TAB6: 차광 분석 ─────────────────────────────────────────
+function upd6() {
+  var lt=document.getElementById('r6_lt').value;
+  var amb=parseInt(document.getElementById('r6_amb').value);
+  var sh=parseInt(document.getElementById('r6_sh').value);
+  var td=parseInt(document.getElementById('r6_td').value);
+  document.getElementById('v6_amb').textContent=amb;
+  document.getElementById('v6_sh').textContent=sh;
+  document.getElementById('v6_td').textContent=td;
+  var trf_s={strip:0.999,ac:0.40,dc:0.0}[lt]||0;
+  var amb_after=amb*(1-sh/100)*(1-trf_s), snr=100/Math.max(0.1,amb_after);
+  document.getElementById('shield_result').innerHTML=
+    '<div class="kv"><span>TRF 억제율</span><span style="color:#4caf7d">'+(trf_s*100).toFixed(0)+'%</span></div>'+
+    '<div class="kv"><span>차광 후 주변광</span><span style="color:#f0b93a">'+amb_after.toFixed(1)+'</span></div>'+
+    '<div class="kv"><span>SNR</span><span style="color:#7eb8f7;font-weight:700">'+snr.toFixed(1)+'</span></div>'+
+    '<div class="kv" style="margin-top:4px"><span>권장 차광률</span><span style="color:'+(lt==='dc'?'#c03030':lt==='ac'?'#c07818':'#1a8040')+'">'+(lt==='dc'?'>95%':lt==='ac'?'>80%':'불필요')+'</span></div>';
+  drawLtypes6(); drawShield6(); drawAmb6(amb,lt); drawTiming6(td);
+}
+
+function drawLtypes6() {
+  var c=document.getElementById('c_ltypes6').getContext('2d'), W=460, H=160;
+  c.clearRect(0,0,W,H);
+  var types=[{name:'스트립 자가형광',trf:99,sh:0,color:'#1a8040'},{name:'AC 형광등 100Hz',trf:40,sh:60,color:'#c07818'},{name:'DC 태양광',trf:0,sh:95,color:'#c03030'},{name:'DC LED',trf:0,sh:90,color:'#c03030'}];
+  var xS=160, bH=20, gap=12;
+  types.forEach(function(t,i) {
+    var y=20+i*(bH+gap);
+    c.fillStyle='#6878a8'; c.font='10px sans-serif'; c.fillText(t.name,0,y+14);
+    c.fillStyle='#e4e8f8'; c.fillRect(xS,y,120,bH);
+    c.fillStyle=t.color+'99'; c.fillRect(xS,y,t.trf*1.2,bH);
+    c.fillStyle=t.color; c.font='10px sans-serif'; c.fillText('TRF '+t.trf+'%',xS+2,y+14);
+    c.fillStyle='#e4e8f8'; c.fillRect(xS+130,y,120,bH);
+    c.fillStyle='#6080a0'; c.fillRect(xS+130,y,t.sh*1.2,bH);
+    c.fillStyle='#8898b8'; c.fillText('차광 '+t.sh+'%',xS+132,y+14);
+  });
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('TRF 억제',xS+2,H-5); c.fillText('필요 차광',xS+132,H-5);
+}
+
+function drawShield6() {
+  var c=document.getElementById('c_shield6').getContext('2d'), W=460, H=130;
+  c.clearRect(0,0,W,H);
+  var lt=document.getElementById('r6_lt').value, amb=parseInt(document.getElementById('r6_amb').value)||30, sh=parseInt(document.getElementById('r6_sh').value)||80;
+  var trf_s={strip:0.999,ac:0.40,dc:0.0}[lt]||0;
+  var xS=40,xE=W-20,yB=H-14,yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('SNR',xS-24,yT+4); c.fillText('차광률%→',xE-38,yB+11);
+  c.strokeStyle='#2272cc'; c.lineWidth=2; c.beginPath();
+  for (var i=0;i<=100;i++) { var a=amb*(1-i/100)*(1-trf_s), snr=100/Math.max(0.1,a), x=xS+i*(xE-xS)/100, y=yB-(yB-yT)*Math.min(snr/50,1); if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  var ac=amb*(1-sh/100)*(1-trf_s), snrc=100/Math.max(0.1,ac), xc=xS+sh*(xE-xS)/100, yc=yB-(yB-yT)*Math.min(snrc/50,1);
+  c.fillStyle='#c07818'; c.beginPath(); c.arc(xc,yc,5,0,Math.PI*2); c.fill();
+  c.fillStyle='#c07818'; c.font='10px sans-serif'; c.fillText('SNR='+snrc.toFixed(1),xc+7,yc);
+  var yth=yB-(yB-yT)*(10/50); c.strokeStyle='#1a8040'; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(xS,yth); c.lineTo(xE,yth); c.stroke(); c.setLineDash([]);
+  c.fillStyle='#1a8040'; c.font='9px sans-serif'; c.fillText('SNR=10',xE-33,yth-3);
+  [0,20,40,60,80,100].forEach(function(v) { c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText(v,xS+v*(xE-xS)/100-6,yB+11); });
+}
+
+function drawAmb6(amb,lt) {
+  var c=document.getElementById('c_amb6').getContext('2d'), W=300, H=120;
+  c.clearRect(0,0,W,H);
+  var trf_s={strip:0.999,ac:0.40,dc:0.0}[lt]||0, sh=parseInt(document.getElementById('r6_sh').value)||80;
+  var xS=40, xE=W-10, yB=H-14, yT=8;
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.stroke();
+  c.fillStyle='#6878a8'; c.font='9px sans-serif'; c.fillText('SNR',xS-24,yT+4); c.fillText('Ib→',xE-15,yB+11);
+  c.strokeStyle='#2272cc'; c.lineWidth=1.5; c.beginPath();
+  for (var i=1;i<=100;i++) { var a=i*(1-sh/100)*(1-trf_s), snr=100/Math.max(0.1,a), x=xS+(i-1)*(xE-xS)/99, y=yB-(yB-yT)*Math.min(snr/100,1); if(i===1) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke();
+  var ac=amb*(1-sh/100)*(1-trf_s), snrc=100/Math.max(0.1,ac), xc=xS+(amb-1)*(xE-xS)/99, yc=yB-(yB-yT)*Math.min(snrc/100,1);
+  c.fillStyle='#c07818'; c.beginPath(); c.arc(xc,yc,4,0,Math.PI*2); c.fill();
+}
+
+function drawTiming6(td) {
+  var c=document.getElementById('c_timing6').getContext('2d'), W=300, H=120;
+  c.clearRect(0,0,W,H);
+  var xS=20, xE=W-10, yB=H-14, yT=8;
+  // AC interference (100Hz = 10ms period)
+  c.strokeStyle='#c07818'; c.lineWidth=1; c.beginPath();
+  for (var i=0;i<=200;i++) { var t=i*5, v=0.5+0.5*Math.sin(2*Math.PI*t/10000), x=xS+i*(xE-xS)/200, y=yB-(yB-yT)*v*0.6; if(i===0) c.moveTo(x,y); else c.lineTo(x,y); }
+  c.stroke(); c.fillStyle='#c07818'; c.font='9px sans-serif'; c.fillText('AC 간섭',xS+2,yT+10);
+  // gate window
+  var gx=xS+td*(xE-xS)/1000;
+  c.fillStyle='rgba(34,114,204,0.12)'; c.fillRect(gx,yT,80,yB-yT);
+  c.strokeStyle='#1a8040'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(gx,yT); c.lineTo(gx,yB); c.stroke();
+  c.fillStyle='#1a8040'; c.font='9px sans-serif'; c.fillText('게이트',gx+2,yT+10);
+  c.strokeStyle='#ccd4ea'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.fillText('시간(μs)→',xE-36,yB+11);
+}
+
+// ── 초기화 ──────────────────────────────────────────────────
+window.onload = function() {
+  setTimeout(function() {
+    drawTab1();
+    upd2();
+    upd3();
+    drawTab4();
+    upd5();
+    upd6();
+    upd8();
+    // second pass to catch any layout-not-ready canvases
+    setTimeout(function() {
+      drawTab1();
+      upd2();
+      upd3();
+      drawTab4();
+      upd5();
+      upd6();
+    upd8();
+    }, 300);
+  }, 100);
+};
+
+// ── TAB8: 신호 검출 & 캘리브레이션 ─────────────────────────────
+function upd8() {
+  var td   = parseInt(document.getElementById('r8_td').value);
+  var tg   = parseInt(document.getElementById('r8_tg').value);
+  var toff = parseInt(document.getElementById('r8_off').value);
+  var etaPct = parseInt(document.getElementById('r8_eta').value)/10;
+  var pow  = parseInt(document.getElementById('r8_pow').value);
+  var resp = parseInt(document.getElementById('r8_resp').value)/100;
+  var gain = parseInt(document.getElementById('r8_gain').value);
+  var blank= parseInt(document.getElementById('r8_blank').value);
+  var sig  = parseInt(document.getElementById('r8_sigma').value);
+  var slope= parseInt(document.getElementById('r8_slope').value);
+  var drift= parseInt(document.getElementById('r8_drift').value);
+  var temp = parseInt(document.getElementById('r8_temp').value);
+  var tau8 = (document.getElementById('r8_tau') ? parseInt(document.getElementById('r8_tau').value) : 600);
+
+  document.getElementById('v8_td').textContent  = td;
+  document.getElementById('v8_tg').textContent  = tg;
+  document.getElementById('v8_off').textContent = toff;
+  document.getElementById('v8_eta').textContent = etaPct.toFixed(1);
+  document.getElementById('v8_pow').textContent = pow;
+  document.getElementById('v8_resp').textContent= resp.toFixed(2);
+  document.getElementById('v8_gain').textContent= gain;
+  document.getElementById('v8_blank').textContent= blank;
+  document.getElementById('v8_sigma').textContent= sig;
+  document.getElementById('v8_slope').textContent= slope;
+  document.getElementById('v8_drift').textContent= drift;
+  if(document.getElementById('v8_tau')) document.getElementById('v8_tau').textContent= tau8;
+  document.getElementById('v8_temp').textContent= temp;
+
+  // PRF 계산
+  var totalCycle = td + tg + toff;
+  var maxPRF = Math.floor(1e6 / totalCycle);
+  var euRemain = Math.exp(-totalCycle/tau8)*100; // 1사이클 후 잔류 Eu 신호
+  var prfOK = euRemain < 1;
+  document.getElementById('prf_result').innerHTML =
+    '<div class="kv"><span>1사이클 총 시간</span><span class="val">'+ totalCycle +' μs</span></div>' +
+    '<div class="kv"><span>최대 PRF</span><span class="val">'+ maxPRF +' Hz</span></div>' +
+    '<div class="kv"><span>소광 후 잔류 신호</span><span class="val" style="color:'+(prfOK?'#1a8040':'#c03030')+'">'+ euRemain.toFixed(2) +'%</span></div>' +
+    '<div style="margin-top:6px;padding:7px 10px;background:'+(prfOK?'#eaf5ee':'#ffebeb')+';border-radius:6px;font-size:11px;color:'+(prfOK?'#1a6030':'#c03030')+'">'+(prfOK?'✅ 이전 신호 완전 소광 — PRF 적절':'⚠️ 잔류 신호 있음 — t_off 늘리거나 PRF 낮추세요')+'</div>';
+
+  // TIA 계산
+  var photoCurr = (pow*1e-6) * (etaPct/100) * resp * 1e9; // nA
+  var tiaOut = photoCurr * 1e-9 * gain * 1e6 * 1000; // mV
+  var saturated = tiaOut > 3300;
+  var tooDark = tiaOut < 0.1;
+  // TIA 대역폭 / 정착시간 vs 게이트폭 (귀환 커패시터 Cf≈1pF 가정)
+  var Cf = 1e-12;                       // 귀환 커패시터 1pF (대표값)
+  var tauRC = gain*1e6 * Cf * 1e6;      // 정착 시정수 τ=R·Cf (μs) = gain(MΩ)×1pF
+  var f3dB = 1/(2*Math.PI*gain*1e6*Cf); // -3dB 대역폭 (Hz)
+  var settle = 5*tauRC;                 // 99% 정착시간 (μs)
+  var bwOK = settle < tg;               // 게이트 안에서 정착되는가
+  document.getElementById('tia_result').innerHTML =
+    '<div class="kv"><span>PD 광전류</span><span class="val">'+ photoCurr.toFixed(3) +' nA</span></div>' +
+    '<div class="kv"><span>TIA 출력 전압</span><span class="val" style="color:'+(saturated?'#c03030':tooDark?'#c07818':'#1a8040')+'">'+ tiaOut.toFixed(2) +' mV</span></div>' +
+    '<div class="kv"><span>대역폭 f₃dB (Cf=1pF)</span><span class="val">'+ (f3dB/1000).toFixed(1) +' kHz</span></div>' +
+    '<div class="kv"><span>정착시간 5τ vs 게이트</span><span class="val" style="color:'+(bwOK?'#1a8040':'#c03030')+'">'+ settle.toFixed(1) +' / '+ tg +' μs</span></div>' +
+    '<div style="margin-top:6px;padding:7px 10px;background:'+(saturated?'#ffebeb':tooDark?'#fff8e8':'#eaf5ee')+';border-radius:6px;font-size:11px;color:'+(saturated?'#c03030':tooDark?'#8a5a00':'#1a6030')+'">'+(saturated?'⚠️ TIA 포화 — 이득 낮추거나 광원 출력 감소':tooDark?'⚠️ 신호 너무 작음 — 이득 높이거나 광원 출력 증가':'✅ 적절한 신호 레벨')+'</div>' +
+    (bwOK?'':'<div style="margin-top:5px;padding:7px 10px;background:#ffebeb;border-radius:6px;font-size:11px;color:#c03030">⚠️ 이득이 높아 정착시간(5τ='+settle.toFixed(0)+'μs)이 게이트폭('+tg+'μs)에 근접/초과 — 신호가 다 안 차서 과소측정. 이득↓ 또는 게이트폭↑</div>');
+
+  // LOD 그래프
+  drawLOD(blank, sig, slope);
+  drawCorrect(drift, temp);
+}
+
+function drawLOD(blank, sigma, slope) {
+  var cv = document.getElementById('c_lod');
+  var c = cv.getContext('2d');
+  var W=500, H=180, xS=55, xE=W-20, yB=H-25, yT=15;
+  c.clearRect(0,0,W,H);
+  c.fillStyle='#f4f7ff'; c.fillRect(0,0,W,H);
+
+  var LOD = 3*sigma/slope;
+  var LOQ = 10*sigma/slope;
+  var maxConc = LOQ*3;
+  var px = function(x){ return xS + (x/maxConc)*(xE-xS); };
+  var py = function(y){ var yMax=blank+slope*maxConc*1.05; var yMin=blank-sigma*2; return yB - (y-yMin)/(yMax-yMin)*(yB-yT); };
+
+  // 격자
+  c.strokeStyle='#c8d2e8'; c.lineWidth=0.5;
+  for(var i=0;i<=4;i++){var x=xS+(xE-xS)*i/4; c.beginPath();c.moveTo(x,yT);c.lineTo(x,yB);c.stroke();}
+  for(var i=0;i<=3;i++){var y=yT+(yB-yT)*i/3; c.beginPath();c.moveTo(xS,y);c.lineTo(xE,y);c.stroke();}
+
+  // blank 영역 (±3σ)
+  var blankBand = (3*sigma/slope)*(xE-xS)/maxConc;
+  c.fillStyle='rgba(192,48,48,0.07)'; c.fillRect(xS, yT, blankBand, yB-yT);
+
+  // 검량선
+  c.strokeStyle='#2060c0'; c.lineWidth=2; c.beginPath();
+  for(var xi=0;xi<=100;xi++){
+    var cc=maxConc*xi/100, yy=blank+slope*cc;
+    var xp=px(cc), yp=py(yy);
+    if(xi===0) c.moveTo(xp,yp); else c.lineTo(xp,yp);
+  }
+  c.stroke();
+
+  // blank 기준선
+  c.strokeStyle='#7080a8'; c.lineWidth=1; c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(xS,py(blank)); c.lineTo(xE,py(blank)); c.stroke();
+  c.setLineDash([]);
+
+  // LOD/LOQ 수직선
+  if(LOD<maxConc){ c.strokeStyle='#c07818'; c.lineWidth=1.5; c.beginPath(); c.moveTo(px(LOD),yT); c.lineTo(px(LOD),yB); c.stroke(); c.fillStyle='#c07818'; c.font='bold 10px sans-serif'; c.textAlign='center'; c.fillText('LOD',px(LOD),yT+10); }
+  if(LOQ<maxConc){ c.strokeStyle='#1a8040'; c.lineWidth=1.5; c.beginPath(); c.moveTo(px(LOQ),yT); c.lineTo(px(LOQ),yB); c.stroke(); c.fillStyle='#1a8040'; c.font='bold 10px sans-serif'; c.textAlign='center'; c.fillText('LOQ',px(LOQ),yT+10); }
+
+  // 값 표시
+  c.fillStyle='#2a3460'; c.font='11px sans-serif'; c.textAlign='left';
+  c.fillText('LOD = '+LOD.toFixed(3)+' ng/mL  |  LOQ = '+LOQ.toFixed(3)+' ng/mL', xS, H-8);
+
+  // 축
+  c.strokeStyle='#9098c0'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.textAlign='center'; c.fillText('농도 (ng/mL)', (xS+xE)/2, yB+14);
+  c.save(); c.translate(12, (yT+yB)/2); c.rotate(-Math.PI/2); c.fillText('신호 (RFU)', 0, 0); c.restore();
+}
+
+function drawCorrect(drift, temp) {
+  var cv = document.getElementById('c_correct');
+  var c = cv.getContext('2d');
+  var W=500, H=180, xS=55, xE=W-20, yB=H-25, yT=15;
+  c.clearRect(0,0,W,H);
+  c.fillStyle='#f4f7ff'; c.fillRect(0,0,W,H);
+
+  // 온도에 따른 수명 변화 (τ ≈ 600μs, -0.4%/°C)
+  var tauCorr = 600 * (1 - 0.004*temp);
+  var driftFrac = drift/100;
+  var concs = [0,0.01,0.05,0.1,0.5,1,5,10,50,100];
+  var N = concs.length;
+
+  var px = function(i){ return xS + i*(xE-xS)/(N-1); };
+  var rawT = function(cv,d){ var x=cv/0.15; return 50000*x/(1+x+x*x/50)*(1+d); }; // 샌드위치+Hook (Tab3 일관)
+  var rawC = function(d){ return 30000*(1+d); };
+  var corrected = function(cv,d){ return rawT(cv,d)/rawC(d)*30000; };
+
+  var yMax=55000, yMin=0;
+  var py = function(y){ return yB-(y-yMin)/(yMax-yMin)*(yB-yT); };
+
+  // 격자
+  c.strokeStyle='#c8d2e8'; c.lineWidth=0.5;
+  for(var i=0;i<N;i++){c.beginPath();c.moveTo(px(i),yT);c.lineTo(px(i),yB);c.stroke();}
+  for(var i=0;i<=4;i++){var y=yT+(yB-yT)*i/4;c.beginPath();c.moveTo(xS,y);c.lineTo(xE,y);c.stroke();}
+
+  // 보정 전 T 신호 (광원 변동 있음)
+  c.strokeStyle='#c03030'; c.lineWidth=1.5; c.setLineDash([4,2]);
+  c.beginPath();
+  for(var i=0;i<N;i++){ var y=rawT(concs[i],driftFrac); if(i===0) c.moveTo(px(i),py(y)); else c.lineTo(px(i),py(y)); }
+  c.stroke(); c.setLineDash([]);
+
+  // 보정 후 T 신호
+  c.strokeStyle='#1a8040'; c.lineWidth=2;
+  c.beginPath();
+  for(var i=0;i<N;i++){ var y=corrected(concs[i],driftFrac); if(i===0) c.moveTo(px(i),py(y)); else c.lineTo(px(i),py(y)); }
+  c.stroke();
+
+  // 기준(drift=0)
+  c.strokeStyle='#9098c0'; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath();
+  for(var i=0;i<N;i++){ var y=rawT(concs[i],0); if(i===0) c.moveTo(px(i),py(y)); else c.lineTo(px(i),py(y)); }
+  c.stroke(); c.setLineDash([]);
+
+  // 범례
+  c.font='10px sans-serif'; c.textAlign='left';
+  c.fillStyle='#9098c0'; c.fillRect(xS+5,yT+5,14,2); c.fillText('기준',xS+22,yT+10);
+  c.fillStyle='#c03030'; c.fillRect(xS+55,yT+5,14,2); c.fillText('보정 전 (±'+drift+'%)',xS+72,yT+10);
+  c.fillStyle='#1a8040'; c.fillRect(xS+145,yT+5,14,2); c.fillText('C밴드 보정 후',xS+162,yT+10);
+
+  // τ 온도 보정 표시
+  c.fillStyle='#2a3460'; c.font='11px sans-serif';
+  c.fillText('τ('+temp+'°C) = '+tauCorr.toFixed(0)+'μs  |  η 변화: '+(-(600-tauCorr)/600*100).toFixed(1)+'%', xS, H-8);
+
+  // 축
+  c.strokeStyle='#9098c0'; c.lineWidth=1; c.beginPath(); c.moveTo(xS,yT); c.lineTo(xS,yB); c.lineTo(xE,yB); c.stroke();
+  c.fillStyle='#7080a8'; c.font='9px sans-serif'; c.textAlign='center'; c.fillText('농도 (log scale)', (xS+xE)/2, yB+14);
+  c.save(); c.translate(12,(yT+yB)/2); c.rotate(-Math.PI/2); c.fillText('신호 (RFU)', 0, 0); c.restore();
+}
+var _prev9=null;
+function upd9() {
+  var ids=["l9_ledx","l9_ledh","l9_leda","l9_beama","l9_pdx","l9_pdh","l9_pdr","l9_pdang","l9_shh"];
+  var v={};
+  ids.forEach(function(id){
+    v[id]=parseFloat(document.getElementById(id).value);
+    var sp=document.getElementById(id+"_v");
+    if(sp) sp.textContent=document.getElementById(id).value;
+  });
+  drawLayout9(v); calcLayout9(v);
+}
+function drawLayout9(v) {
+  var cv=document.getElementById("c_layout9"); if(!cv) return;
+  var c=cv.getContext("2d"), W=700, H=380, sc=10, ox=350, oy=325;
+  function px(m){return ox+m*sc;} function py(m){return oy-m*sc;}
+  c.clearRect(0,0,W,H);
+  c.fillStyle="#f4f7ff"; c.fillRect(0,0,W,H);
+  c.strokeStyle="#dde4f4"; c.lineWidth=0.5;
+  for(var gx=-30;gx<=30;gx+=5){c.beginPath();c.moveTo(px(gx),20);c.lineTo(px(gx),H);c.stroke();}
+  for(var gy=0;gy<=30;gy+=5){c.beginPath();c.moveTo(20,py(gy));c.lineTo(W-20,py(gy));c.stroke();}
+  c.fillStyle="#b0bcd8"; c.font="10px sans-serif"; c.textAlign="center";
+  for(var gx=-30;gx<=30;gx+=10) c.fillText(gx+"mm",px(gx),H-3);
+  c.textAlign="right";
+  for(var gy=0;gy<=30;gy+=5) c.fillText(gy+"mm",18,py(gy)+3);
+  c.fillStyle="#ffffff"; c.strokeStyle="#7080b0"; c.lineWidth=2;
+  c.fillRect(px(-25),py(1.5),50*sc,1.5*sc); c.strokeRect(px(-25),py(1.5),50*sc,1.5*sc);
+  c.fillStyle="rgba(220,50,50,0.3)"; c.fillRect(px(-1),py(1.5),2*sc,1.5*sc);
+  c.fillStyle="rgba(50,80,220,0.3)"; c.fillRect(px(3),py(1.5),2*sc,1.5*sc);
+  c.fillStyle="#8090b8"; c.font="10px sans-serif"; c.textAlign="center";
+  c.fillText("T",px(0),py(0.4)); c.fillText("C",px(4),py(0.4));
+  c.fillStyle="#9098c0"; c.fillText("LFA 스트립",ox,oy+15);
+  var ledA=v["l9_leda"]*Math.PI/180;
+  var ledPx=px(v["l9_ledx"]), ledPy=py(v["l9_ledh"]);
+  var hb_deg=v["l9_beama"]||15; var cosA=Math.cos(ledA), sinA=Math.sin(ledA), hb=hb_deg*Math.PI/180;
+  var tFoot=cosA>0.01?v["l9_ledh"]/cosA:999;
+  var footX=v["l9_ledx"]+tFoot*sinA;
+  var cosA1=Math.cos(ledA-hb),sinA1=Math.sin(ledA-hb);
+  var cosA2=Math.cos(ledA+hb),sinA2=Math.sin(ledA+hb);
+  var t1=cosA1>0.01?v["l9_ledh"]/cosA1:999, t2=cosA2>0.01?v["l9_ledh"]/cosA2:999;
+  var f1x=v["l9_ledx"]+t1*sinA1, f2x=v["l9_ledx"]+t2*sinA2;
+  var spotW=Math.abs(f2x-f1x);
+  c.fillStyle="rgba(170,60,255,0.12)";
+  c.beginPath(); c.moveTo(ledPx,ledPy); c.lineTo(px(f1x),py(0)); c.lineTo(px(f2x),py(0)); c.closePath(); c.fill();
+  c.strokeStyle="rgba(150,30,255,0.45)"; c.lineWidth=1;
+  c.beginPath(); c.moveTo(ledPx,ledPy); c.lineTo(px(f1x),py(0)); c.stroke();
+  c.beginPath(); c.moveTo(ledPx,ledPy); c.lineTo(px(f2x),py(0)); c.stroke();
+  c.strokeStyle="rgba(120,0,210,0.6)"; c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(ledPx,ledPy); c.lineTo(px(footX),py(0)); c.stroke(); c.setLineDash([]);
+  var rhb=35*Math.PI/180;
+  c.fillStyle="rgba(255,140,0,0.09)";
+  c.beginPath(); c.moveTo(px(0),py(0));
+  c.lineTo(px(-v["l9_pdh"]*Math.tan(rhb)),py(v["l9_pdh"]+3));
+  c.lineTo(px(v["l9_pdh"]*Math.tan(rhb)),py(v["l9_pdh"]+3)); c.closePath(); c.fill();
+  c.strokeStyle="rgba(220,120,0,0.25)"; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(px(0),py(0)); c.lineTo(px(-v["l9_pdh"]*Math.tan(rhb)),py(v["l9_pdh"]+3)); c.stroke();
+  c.beginPath(); c.moveTo(px(0),py(0)); c.lineTo(px(v["l9_pdh"]*Math.tan(rhb)),py(v["l9_pdh"]+3)); c.stroke();
+  c.setLineDash([]);
+  var lg=c.createRadialGradient(ledPx,ledPy,0,ledPx,ledPy,9);
+  lg.addColorStop(0,"#e090ff"); lg.addColorStop(1,"#6010a0");
+  c.fillStyle=lg; c.beginPath(); c.arc(ledPx,ledPy,8,0,2*Math.PI); c.fill();
+  c.strokeStyle="#4000a0"; c.lineWidth=1.5; c.stroke();
+  c.fillStyle="#fff"; c.font="bold 8px sans-serif"; c.textAlign="center"; c.fillText("UV",ledPx,ledPy+3);
+  c.fillStyle="#5000a0"; c.font="11px sans-serif"; c.textAlign="left";
+  c.fillText("UV LED ("+v["l9_ledx"]+", "+v["l9_ledh"]+"mm, "+v["l9_leda"]+"deg)",ledPx+11,ledPy-3);
+  var pdPx=px(v["l9_pdx"]), pdPy=py(v["l9_pdh"]);
+  var pdHa_deg=v["l9_pdang"]||30; var pdHa=pdHa_deg*Math.PI/180, pdSpread=v["l9_pdh"]*sc*Math.tan(pdHa);
+  c.fillStyle="rgba(30,100,220,0.10)";
+  c.beginPath(); c.moveTo(pdPx,pdPy); c.lineTo(pdPx-pdSpread,py(0)); c.lineTo(pdPx+pdSpread,py(0)); c.closePath(); c.fill();
+  c.strokeStyle="rgba(30,100,220,0.3)"; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(pdPx,pdPy); c.lineTo(pdPx-pdSpread,py(0)); c.stroke();
+  c.beginPath(); c.moveTo(pdPx,pdPy); c.lineTo(pdPx+pdSpread,py(0)); c.stroke();
+  c.setLineDash([]);
+  var pdW2=v["l9_pdr"]*2*sc;
+  c.fillStyle="#1a3a90"; c.fillRect(pdPx-pdW2/2,pdPy-6,pdW2,12);
+  c.strokeStyle="#0020a0"; c.lineWidth=1.5; c.strokeRect(pdPx-pdW2/2,pdPy-6,pdW2,12);
+  c.fillStyle="#aaccff"; c.font="bold 8px sans-serif"; c.textAlign="center"; c.fillText("PD",pdPx,pdPy+3);
+  c.fillStyle="#0030b0"; c.font="10px sans-serif"; c.textAlign="right";
+  c.fillText("PD ("+v["l9_pdx"]+", "+v["l9_pdh"]+"mm, R="+v["l9_pdr"]+"mm)",pdPx-pdW2/2-5,pdPy-5);
+  if(v["l9_shh"]>0) {
+    c.fillStyle="rgba(70,75,100,0.55)";
+    c.fillRect(px(-20)-20,py(v["l9_shh"]),20,v["l9_shh"]*sc+2);
+    c.fillRect(px(20),py(v["l9_shh"]),20,v["l9_shh"]*sc+2);
+    c.fillStyle="#404460"; c.font="10px sans-serif"; c.textAlign="center";
+    c.fillText("차광벽 "+v["l9_shh"]+"mm",px(-20)-10,py(v["l9_shh"])-5);
+  }
+  c.strokeStyle="#cc6600"; c.lineWidth=2.5;
+  c.beginPath(); c.moveTo(px(f1x),py(0.4)); c.lineTo(px(f2x),py(0.4)); c.stroke();
+  c.fillStyle="#cc6600"; c.font="bold 10px sans-serif"; c.textAlign="center";
+  c.fillText("스팟 "+spotW.toFixed(1)+"mm",px((f1x+f2x)/2),py(0.4)-5);
+  c.strokeStyle="#c03030"; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(ledPx-22,ledPy); c.lineTo(ledPx-22,py(0)); c.stroke(); c.setLineDash([]);
+  c.fillStyle="#c03030"; c.font="10px sans-serif"; c.textAlign="right";
+  c.fillText(v["l9_ledh"]+"mm",ledPx-24,(ledPy+py(0))/2+3);
+  c.fillStyle="#1e2540"; c.font="bold 13px sans-serif"; c.textAlign="center";
+  c.fillText("TRF LFA 광학계 단면도 (측면, mm)",W/2,14);
+}
+function calcLayout9(v) {
+  var d=v["l9_pdh"], r=v["l9_pdr"];
+  var eta=(1-d/Math.sqrt(r*r+d*d))/2;
+  var ledA=v["l9_leda"]*Math.PI/180;
+  var cosA=Math.cos(ledA), sinA=Math.sin(ledA);
+  var tFoot=cosA>0.01?v["l9_ledh"]/cosA:999;
+  var footX=v["l9_ledx"]+tFoot*sinA;
+  var beamHa_deg=v["l9_beama"]||15; var beamHa=beamHa_deg*Math.PI/180; var cosA1=Math.cos(ledA-beamHa),sinA1=Math.sin(ledA-beamHa);
+  var cosA2=Math.cos(ledA+beamHa),sinA2=Math.sin(ledA+beamHa);
+  var t1=cosA1>0.01?v["l9_ledh"]/cosA1:999, t2=cosA2>0.01?v["l9_ledh"]/cosA2:999;
+  var f1x=v["l9_ledx"]+t1*sinA1, f2x=v["l9_ledx"]+t2*sinA2;
+  var spotW=Math.abs(f2x-f1x);
+  var pdSpX=v["l9_pdh"]*Math.tan((v["l9_pdang"]||30)*Math.PI/180);
+  var pdL=v["l9_pdx"]-pdSpX, pdR2=v["l9_pdx"]+pdSpX;
+  // T밴드: 중심 X=0, 폭 1mm => [-0.5,0.5]
+  var tbL=-0.5, tbR=0.5, tbW=1.0;
+  var spotL=Math.min(f1x,f2x), spotR=Math.max(f1x,f2x);
+  // 조사 점수(0~40): T밴드 덮임 비율 x 조도효율(스팟 작을수록↑, 이상 2mm)
+  var illumOv=Math.max(0,Math.min(spotR,tbR)-Math.max(spotL,tbL));
+  var coverFrac=illumOv/tbW;
+  var spotEff=spotW>0?Math.min(1,2.0/spotW):0;
+  var illumScore=40*coverFrac*(0.5+0.5*spotEff);
+  // 수광 점수(0~40): PD 수광창-T밴드 겹침 x 집광효율(η/0.10 정규화)
+  var capOv=Math.max(0,Math.min(pdR2,tbR)-Math.max(pdL,tbL));
+  var capFrac=capOv/tbW;
+  var etaNorm=Math.min(1,eta/0.10);
+  var capScore=40*capFrac*(0.4+0.6*etaNorm);
+  // 차광 점수(0~20): LED-PD 직접 시선 차단(최소 컴포넌트 높이의 60% 기준)
+  var refH=Math.min(v["l9_ledh"],v["l9_pdh"]);
+  var shieldFrac=refH>0?Math.min(1,v["l9_shh"]/(refH*0.6)):0;
+  var shieldScore=20*shieldFrac;
+  var score=Math.round(illumScore+capScore+shieldScore);
+  // 피드백용 플래그(연속값에서 도출)
+  var tIllum=coverFrac>0.5, tCapture=capFrac>0.5, shieldOK=shieldFrac>=0.8;
+  var grade=score>=80?"A OK":score>=60?"B 주의":"C 개선필요";
+  var gColor=score>=80?"#1a8040":score>=60?"#c07818":"#c03030";
+  var gBg=score>=80?"#e6f4ea":score>=60?"#fff8e1":"#fde8e8";
+  var p=document.getElementById("l9_result"); if(!p) return;
+  p.innerHTML=
+    "<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px\">"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">빛 스팟 크기</div>"+
+    "<div style=\"font-size:20px;font-weight:bold;color:#1e2540\">"+spotW.toFixed(1)+"<span style=\"font-size:11px\">mm</span></div>"+
+    "<div style=\"font-size:10px;color:"+(spotW<4?"#1a8040":"#c03030")+"\">T밴드 "+(spotW<4?"OK":"큼")+"</div></div>"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">집광 효율</div>"+
+    "<div style=\"font-size:20px;font-weight:bold;color:#1e2540\">"+(eta*100).toFixed(1)+"<span style=\"font-size:11px\">%</span></div>"+
+    "<div style=\"font-size:10px;color:"+(eta>0.05?"#1a8040":"#c03030")+"\">"+(eta>0.10?"우수":eta>0.05?"보통":"낮음")+"</div></div>"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">T밴드 조사</div>"+
+    "<div style=\"font-size:18px;font-weight:bold;color:"+(tIllum?"#1a8040":"#c03030")+"\">"+(tIllum?"OK":"NG")+"</div>"+
+    "<div style=\"font-size:10px;color:#6878a8\">중심 "+footX.toFixed(1)+"mm</div></div>"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">차광</div>"+
+    "<div style=\"font-size:18px;font-weight:bold;color:"+(shieldOK?"#1a8040":"#c03030")+"\">"+(shieldOK?"OK":"NG")+"</div>"+
+    "<div style=\"font-size:10px;color:#6878a8\">"+v["l9_shh"]+"mm</div></div>"+
+    "</div>"+
+    "<div style=\"display:flex;gap:12px\">"+
+    "<div style=\"background:"+gBg+";border-radius:10px;padding:14px 18px;text-align:center\">"+
+    "<div style=\"font-size:11px;color:#6878a8;margin-bottom:2px\">종합 등급</div>"+
+    "<div style=\"font-size:26px;font-weight:bold;color:"+gColor+"\">"+grade+"</div>"+
+    "<div style=\"font-size:13px;font-weight:bold;color:"+gColor+"\">"+score+"점</div></div>"+
+    "<div style=\"background:#f4f6fc;border-radius:8px;padding:12px;flex:1\">"+
+    "<div style=\"font-size:12px;font-weight:bold;color:#1e2540;margin-bottom:6px\">기구 도면 치수 요약</div>"+
+    "<table style=\"font-size:11px;width:100%;border-collapse:collapse\">"+
+    "<tr><td style=\"color:#6878a8;padding:2px 8px 2px 0\">UV LED</td><td style=\"font-weight:bold\">X="+v["l9_ledx"]+"mm, H="+v["l9_ledh"]+"mm, 각도="+v["l9_leda"]+"deg</td></tr>"+
+    "<tr><td style=\"color:#6878a8;padding:2px 8px 2px 0\">PD 센서</td><td style=\"font-weight:bold\">X="+v["l9_pdx"]+"mm, H="+v["l9_pdh"]+"mm, R="+v["l9_pdr"]+"mm</td></tr>"+
+    "<tr><td style=\"color:#6878a8;padding:2px 8px 2px 0\">차광벽</td><td style=\"font-weight:bold\">H="+v["l9_shh"]+"mm</td></tr>"+
+    "<tr><td style=\"color:#6878a8;padding:2px 8px 2px 0\">스팟</td><td style=\"font-weight:bold\">중심 X="+footX.toFixed(1)+"mm, 폭="+spotW.toFixed(1)+"mm</td></tr>"+
+    "</table></div></div>";
+
+  // 피드백 배너
+  var fb=document.getElementById("l9_feedback");
+  if(fb) {
+    if(_prev9!==null) {
+      var diff=score-_prev9.score;
+      var dEta=(eta-_prev9.eta)*100;
+      var dSpot=spotW-_prev9.spotW;
+      var msgs=[];
+      if(Math.abs(dEta)>0.05) msgs.push("집광효율 "+(dEta>0?"↑+":"↓")+dEta.toFixed(1)+"%");
+      if(Math.abs(dSpot)>0.05) msgs.push("스팟 "+(dSpot<0?"↓작아짐 ✓":"↑커짐 ⚠️"));
+      if(tIllum!==_prev9.tIllum) msgs.push(tIllum?"T밴드 조사 ✓":"T밴드 놓침 ✗");
+      if(tCapture!==_prev9.tCapture) msgs.push(tCapture?"PD 수광 ✓":"PD 수광 놓침 ✗");
+      var detail=msgs.length?msgs.join(" · "):"";
+      if(diff>0) {
+        fb.style.cssText="display:flex;align-items:center;gap:12px;background:#e6f4ea;border:2px solid #70c080;border-radius:12px;padding:12px 16px;margin-top:12px;animation:fbPop 0.35s ease";
+        fb.innerHTML="<span style=\"font-size:28px\">🎉</span><div style=\"flex:1\"><div style=\"font-weight:bold;color:#1a6030;font-size:14px\">신호 좋아졌어요!</div><div style=\"font-size:11px;color:#2a8040;margin-top:2px\">"+detail+"</div></div><div style=\"font-size:22px;font-weight:bold;color:#1a8040;background:#c8ecd0;padding:4px 12px;border-radius:8px\">+"+diff+"점 ▲</div>";
+      } else if(diff<0) {
+        fb.style.cssText="display:flex;align-items:center;gap:12px;background:#fde8e8;border:2px solid #f08080;border-radius:12px;padding:12px 16px;margin-top:12px;animation:fbPop 0.35s ease";
+        fb.innerHTML="<span style=\"font-size:28px\">😰</span><div style=\"flex:1\"><div style=\"font-weight:bold;color:#901818;font-size:14px\">신호 나빠졌어요!</div><div style=\"font-size:11px;color:#c03030;margin-top:2px\">"+detail+"</div></div><div style=\"font-size:22px;font-weight:bold;color:#c03030;background:#fcc0c0;padding:4px 12px;border-radius:8px\">"+diff+"점 ▼</div>";
+      } else {
+        if(score>=80) {
+          fb.style.cssText="display:flex;align-items:center;gap:12px;background:#e8f0ff;border:2px solid #90b8f0;border-radius:12px;padding:12px 16px;margin-top:12px";
+          fb.innerHTML="<span style=\"font-size:28px\">✅</span><div style=\"font-weight:bold;color:#2050a0;font-size:14px\">현재 설계 좋아요!</div>";
+        } else {
+          fb.style.cssText="display:flex;align-items:center;gap:12px;background:#fff8e1;border:2px solid #e0c040;border-radius:12px;padding:12px 16px;margin-top:12px";
+          fb.innerHTML="<span style=\"font-size:28px\">🔧</span><div style=\"font-weight:bold;color:#a06000;font-size:14px\">아직 조정이 필요해요</div>";
+        }
+      }
+    } else {
+      fb.style.display="none";
+    }
+  }
+  _prev9={score:score,eta:eta,spotW:spotW,tIllum:tIllum,tCapture:tCapture};
+}
+
+// ── TAB10: 다채널 격리 ────────────────────────────────────────
+var _s10={op:true,sp:false};
+function upd10(){
+  // 초기 버튼 활성화
+  var initBtn=document.getElementById("s10_"+(parseInt(_s10.op?1:0)+"")+(parseInt(_s10.sp?1:0)+""));
+  if(initBtn&&initBtn.style.background!="#2060c0"){
+    document.querySelectorAll(".s10btn").forEach(function(b){b.style.background="#f0f4ff";b.style.color="#6878a8";b.style.borderColor="#dde2f0";});
+    initBtn.style.background="#2060c0";initBtn.style.color="#fff";initBtn.style.borderColor="#2060c0";
+  }
+  draw10();calc10();
+}
+function setS10(op,sp){
+  _s10={op:op,sp:sp};
+  document.querySelectorAll(".s10btn").forEach(function(b){
+    b.style.background="#f0f4ff";b.style.color="#6878a8";b.style.borderColor="#dde2f0";
+  });
+  var aid="s10_"+(op?"1":"0")+(sp?"1":"0");
+  var ab=document.getElementById(aid);
+  if(ab){ab.style.background="#2060c0";ab.style.color="#fff";ab.style.borderColor="#2060c0";}
+  draw10();calc10();
+}
+function draw10(){
+  var cv=document.getElementById("c10_main");if(!cv)return;
+  var c=cv.getContext("2d"),W=700,H=300,sc=16,oy=H-42,ox=W/2;
+  function px(m){return ox+m*sc;}function py(m){return oy-m*sc;}
+  c.fillStyle="#fff";c.fillRect(0,0,W,H);
+  // 그리드
+  c.strokeStyle="#e8eef8";c.lineWidth=0.5;
+  for(var gx=-12;gx<=12;gx+=2.5){c.beginPath();c.moveTo(px(gx),18);c.lineTo(px(gx),H);c.stroke();}
+  for(var gy=0;gy<=20;gy+=5){c.beginPath();c.moveTo(20,py(gy));c.lineTo(W-20,py(gy));c.stroke();}
+  // 축 레이블
+  c.fillStyle="#c0c8e0";c.font="9px sans-serif";c.textAlign="center";
+  for(var gx=-10;gx<=10;gx+=5)c.fillText(gx+"mm",px(gx),H-3);
+  // LFA 스트립
+  c.fillStyle="#f8f9ff";c.strokeStyle="#7080b0";c.lineWidth=2;
+  c.fillRect(px(-8.75),py(1.5),17.5*sc,1.5*sc);
+  c.strokeRect(px(-8.75),py(1.5),17.5*sc,1.5*sc);
+  c.fillStyle="#9098c0";c.font="10px sans-serif";c.textAlign="center";
+  c.fillText("LFA 스트립 (니트로셀룰로스 멤브레인)",px(0),oy+15);
+  // 채널 위치 (7채널, 2.5mm 간격, 중앙 CH4)
+  var nCh=7,sp=2.5,ledH=12,pdH=10,ledA=5*Math.PI/180,beamHa=15*Math.PI/180;
+  var chPos=[];for(var i=0;i<nCh;i++)chPos.push((i-3)*sp);
+  var actCh=3; // CH4 (center)
+  // 각 채널 존 색상
+  chPos.forEach(function(cx,i){
+    var isAct=(i===actCh);
+    c.fillStyle=isAct?"rgba(80,160,100,0.18)":"rgba(200,210,240,0.25)";
+    c.fillRect(px(cx-sp/2),py(1.5),sp*sc,1.5*sc);
+  });
+  // 광학부 칸막이 (두꺼운 벽)
+  if(_s10.op){
+    for(var i=0;i<=nCh;i++){
+      var wx=chPos[0]-sp/2+i*sp;
+      var wallX=px(wx), wallTop=py(ledH+2), wallBot=py(0);
+      var wallW=6;
+      // 벽 그림자
+      c.fillStyle="rgba(60,65,90,0.15)";
+      c.fillRect(wallX-wallW/2+3,wallTop+3,wallW,wallBot-wallTop);
+      // 벽 본체
+      c.fillStyle="#5a5f7a";
+      c.fillRect(wallX-wallW/2,wallTop,wallW,wallBot-wallTop);
+      // 벽 하이라이트
+      c.fillStyle="rgba(255,255,255,0.25)";
+      c.fillRect(wallX-wallW/2,wallTop,2,wallBot-wallTop);
+    }
+    // 칸막이 라벨 (화살표)
+    var labelX=px(chPos[0]-sp/2+sp*0.5), labelY=py(ledH+2)-10;
+    c.fillStyle="#3a3f60";c.font="bold 10px sans-serif";c.textAlign="center";
+    c.fillText("▼ 광학부 칸막이",labelX, labelY);
+    // 칸막이 높이 치수선
+    var dimX=px(chPos[nCh-1]+sp/2)+15;
+    c.strokeStyle="#5a5f7a";c.lineWidth=1;c.setLineDash([3,2]);
+    c.beginPath();c.moveTo(dimX,py(ledH+2));c.lineTo(dimX,py(0));c.stroke();c.setLineDash([]);
+    c.fillStyle="#5a5f7a";c.font="9px sans-serif";c.textAlign="left";
+    c.fillText((ledH+2)+"mm",dimX+3,(py(ledH+2)+py(0))/2+3);
+  }
+  // 스틱 칸막이
+  if(_s10.sp){
+    for(var i=0;i<=nCh;i++){
+      var wx=chPos[0]-sp/2+i*sp;
+      var wallX=px(wx), wallW=5;
+      // 스틱 벽
+      c.fillStyle="#2a8050";
+      c.fillRect(wallX-wallW/2,py(1.5),wallW,1.5*sc);
+      c.fillStyle="rgba(255,255,255,0.3)";
+      c.fillRect(wallX-wallW/2,py(1.5),2,1.5*sc);
+    }
+    c.fillStyle="#1a6038";c.font="bold 10px sans-serif";c.textAlign="center";
+    c.fillText("▲ 스틱 칸막이",px(chPos[0]-sp/2+sp*0.5),py(0)+26);
+  }
+  // 중심 채널(CH4) 빔 계산
+  var cCh=chPos[actCh];
+  var cosA=Math.cos(ledA),sinA=Math.sin(ledA);
+  var tFoot=ledH/cosA,footX=cCh+tFoot*sinA;
+  var t1=ledH/Math.cos(ledA-beamHa),t2=ledH/Math.cos(ledA+beamHa);
+  var f1x=cCh+t1*Math.sin(ledA-beamHa),f2x=cCh+t2*Math.sin(ledA+beamHa);
+  var ownL=cCh-sp/2,ownR=cCh+sp/2;
+  var cLPx=px(cCh),cLPy=py(ledH);
+  // 누화 빔 (칸막이 없을 때)
+  if(!_s10.op){
+    // 왼쪽 넘침
+    if(f1x<ownL){
+      c.fillStyle="rgba(220,50,50,0.15)";
+      c.beginPath();c.moveTo(cLPx,cLPy);c.lineTo(px(f1x),py(0));c.lineTo(px(ownL),py(0));c.closePath();c.fill();
+      c.strokeStyle="rgba(200,40,40,0.6)";c.lineWidth=1.5;
+      c.beginPath();c.moveTo(cLPx,cLPy);c.lineTo(px(f1x),py(0));c.stroke();
+    }
+    // 오른쪽 넘침
+    if(f2x>ownR){
+      c.fillStyle="rgba(220,50,50,0.15)";
+      c.beginPath();c.moveTo(cLPx,cLPy);c.lineTo(px(ownR),py(0));c.lineTo(px(f2x),py(0));c.closePath();c.fill();
+      c.strokeStyle="rgba(200,40,40,0.6)";c.lineWidth=1.5;
+      c.beginPath();c.moveTo(cLPx,cLPy);c.lineTo(px(f2x),py(0));c.stroke();
+    }
+    // 누화 라벨
+    c.fillStyle="#c03030";c.font="bold 10px sans-serif";c.textAlign="center";
+    if(f1x<ownL)c.fillText("⚠️ 누화",px((f1x+ownL)/2),py(0)+16);
+    if(f2x>ownR)c.fillText("⚠️ 누화",px((f2x+ownR)/2),py(0)+16);
+  }
+  // 정상 빔 (초록)
+  var bL=_s10.op?f1x:Math.max(f1x,ownL),bR=_s10.op?f2x:Math.min(f2x,ownR);
+  if(bR>bL){
+    c.fillStyle="rgba(40,160,80,0.18)";
+    c.beginPath();c.moveTo(cLPx,cLPy);c.lineTo(px(bL),py(0));c.lineTo(px(bR),py(0));c.closePath();c.fill();
+  }
+  // 중심선
+  c.strokeStyle="rgba(100,0,200,0.5)";c.lineWidth=1.5;c.setLineDash([4,3]);
+  c.beginPath();c.moveTo(cLPx,cLPy);c.lineTo(px(footX),py(0));c.stroke();c.setLineDash([]);
+  // 각 채널 LED/PD 그리기
+  chPos.forEach(function(cx,i){
+    var isAct=(i===actCh),lx=px(cx),ly=py(ledH),pdy=py(pdH);
+    var pdW2=16;
+    // LED
+    c.fillStyle=isAct?"#8020e0":"#c090ff";
+    c.beginPath();c.arc(lx,ly,isAct?7:5,0,2*Math.PI);c.fill();
+    c.fillStyle="#fff";c.font=(isAct?"bold ":"")+"7px sans-serif";c.textAlign="center";
+    c.fillText("UV",lx,ly+2.5);
+    // PD
+    c.fillStyle=isAct?"#1a3a90":"#7090c0";
+    c.fillRect(lx-pdW2/2,pdy-4,pdW2,8);
+    c.fillStyle="#fff";c.font="7px sans-serif";c.textAlign="center";
+    c.fillText("PD",lx,pdy+2.5);
+    // 채널 번호
+    c.fillStyle=isAct?"#2060c0":"#a0aac8";
+    c.font=(isAct?"bold ":"")+"9px sans-serif";c.textAlign="center";
+    c.fillText("CH"+(i+1),lx,H-5);
+  });
+  // 제목
+  c.fillStyle="#1e2540";c.font="bold 12px sans-serif";c.textAlign="center";
+  c.fillText("7채널 배열 단면도 (2.5mm 간격) — CH4 기준 빔 표시",W/2,13);
+  // 범례
+  c.fillStyle="#1a8040";c.fillRect(20,18,12,8);
+  c.fillStyle="#1a8040";c.font="9px sans-serif";c.textAlign="left";c.fillText("정상 경로",35,26);
+  c.fillStyle="#c03030";c.fillRect(20,30,12,8);
+  c.fillStyle="#c03030";c.fillText("누화(크로스톡)",35,38);
+}
+function calc10(){
+  var sp=2.5,ledH=12,pdH=10,ledA=5*Math.PI/180,beamHa=15*Math.PI/180;
+  // 중심 채널 빔 발자국
+  var cosA=Math.cos(ledA),sinA=Math.sin(ledA);
+  var tFoot=ledH/cosA,footX=tFoot*sinA;
+  var t1=ledH/Math.cos(ledA-beamHa),t2=ledH/Math.cos(ledA+beamHa);
+  var f1x=t1*Math.sin(ledA-beamHa),f2x=t2*Math.sin(ledA+beamHa);
+  var beamW=f2x-f1x;
+  // 인접 채널(±1) 누화 (광학 기하)
+  var adj1L=sp/2,adj1R=sp*3/2;
+  var ov1=Math.max(0,Math.min(f2x,adj1R)-Math.max(f1x,adj1L))/beamW;
+  var adj2L=sp*3/2,adj2R=sp*5/2;
+  var ov2=Math.max(0,Math.min(f2x,adj2R)-Math.max(f1x,adj2L))/beamW;
+  // 멤브레인 측면 산란 (지수감쇠) — 아래 상수는 보수적 추정값
+  var S0=0.025;  // 인접거리 0서 측면 산란율(NC멤브레인, UV 365nm, HF120급 기준)
+  var Latt=1.0;  // 산란 감쇠길이 mm (멤브레인 종류/두께 의존)
+  var mem1=S0*Math.exp(-sp/Latt);    // ~0.21% @2.5mm
+  var mem2=S0*Math.exp(-2*sp/Latt);  // ~0.017% @5mm
+  // 시나리오별 누화
+  var xt1,xt2;
+  if(!_s10.op&&!_s10.sp){xt1=ov1;xt2=ov2;}
+  else if(_s10.op&&!_s10.sp){xt1=mem1;xt2=mem2;}
+  else if(!_s10.op&&_s10.sp){xt1=ov1*0.92+mem1*0.08;xt2=ov2*0.92+mem2*0.08;}
+  else{xt1=mem1*0.08;xt2=mem2*0.08;}
+  // 바 차트
+  drawBar10(xt1,xt2);
+  // 결과 패널
+  var p=document.getElementById("d10_result");if(!p)return;
+  var scenes=[
+    {id:"s10_00",label:"칸막이 없음",color:"#fde8e8",tColor:"#c03030",verdict:"❌ 측정 불가",desc:"광학 누화 "+(xt1*100).toFixed(0)+"%로 인접 채널 신호가 완전히 섞임. 7채널 독립 측정 불가"},
+    {id:"s10_10",label:"광학부 칸막이 ✓",color:"#e6f4ea",tColor:"#1a8040",verdict:"✅ 권장",desc:"멤브레인 산란만 남아 누화 "+(xt1*100).toFixed(2)+"%로 무시 가능. 테스트 스틱 변경 불필요"},
+    {id:"s10_01",label:"스틱 칸막이만 ✓",color:"#fff8e1",tColor:"#c07818",verdict:"⚠️ 불충분",desc:"직접 광학 경로 "+(xt1*100).toFixed(0)+"%가 여전히 존재. 광학부 칸막이가 핵심"},
+    {id:"s10_11",label:"둘 다 칸막이 ✓",color:"#e8f0ff",tColor:"#2060c0",verdict:"✅ 최적",desc:"누화 "+(xt1*100).toFixed(3)+"%로 완벽 격리. 단, 스틱 제조 복잡도 ↑"}
+  ];
+  var cur=_s10.op?(_s10.sp?3:1):(_s10.sp?2:0);
+  var sc=scenes[cur];
+  var snrRel=(1/(1+xt1*10)*100).toFixed(0);
+  p.innerHTML=
+    "<div style=\"background:"+sc.color+";border-radius:10px;padding:14px;margin-bottom:12px\">"+
+    "<div style=\"font-size:15px;font-weight:bold;color:"+sc.tColor+"\">"+sc.verdict+" — "+sc.label+"</div>"+
+    "<div style=\"font-size:12px;color:#2a3050;margin-top:4px\">"+sc.desc+"</div></div>"+
+    "<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:12px\">"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">인접(±1) 누화</div>"+
+    "<div style=\"font-size:22px;font-weight:bold;color:"+(xt1<0.01?"#1a8040":xt1<0.05?"#c07818":"#c03030")+"\">"+(xt1*100).toFixed(2)+"%</div>"+
+    "<div style=\"font-size:10px;color:"+(xt1<0.01?"#1a8040":"#c03030")+"\">"+(xt1<0.01?"무시 가능":"문제 수준")+"</div></div>"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">차차인접(±2) 누화</div>"+
+    "<div style=\"font-size:22px;font-weight:bold;color:"+(xt2<0.01?"#1a8040":"#c07818")+"\">"+(xt2*100).toFixed(3)+"%</div>"+
+    "<div style=\"font-size:10px;color:#7080a8\">"+sp*2+"mm 거리</div></div>"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">신호 품질</div>"+
+    "<div style=\"font-size:22px;font-weight:bold;color:"+(snrRel>90?"#1a8040":snrRel>70?"#c07818":"#c03030")+"\">"+snrRel+"%</div>"+
+    "<div style=\"font-size:10px;color:#7080a8\">누화 없을 때 대비</div></div>"+
+    "<div style=\"background:#f0f4ff;border-radius:8px;padding:10px;text-align:center\">"+
+    "<div style=\"font-size:10px;color:#6878a8\">멤브레인 산란</div>"+
+    "<div style=\"font-size:22px;font-weight:bold;color:#1a8040\">"+(mem1*100).toFixed(2)+"%</div>"+
+    "<div style=\"font-size:10px;color:#1a8040\">2.5mm에서 무시</div></div></div>"+
+    "<div style=\"background:#eff4ff;border-left:4px solid #2060c0;border-radius:0 8px 8px 0;padding:12px\">"+
+    "<div style=\"font-weight:bold;color:#2060c0;margin-bottom:6px\">💡 결론: 칸막이 설계 가이드</div>"+
+    "<div style=\"font-size:12px;color:#2a3050;line-height:1.8\">"+
+    "📌 <b>광학부 칸막이</b> → <b style=\"color:#c03030\">반드시 필요</b>. 칸막이 없으면 인접 채널 누화 "+(ov1*100).toFixed(0)+"%로 신호 구별 불가<br>"+
+    "📌 <b>테스트 스틱 칸막이</b> → <b style=\"color:#1a8040\">없어도 됨</b>. 멤브레인 측면 산란은 2.5mm에서 "+(mem1*100).toFixed(2)+"%로 무시 가능<br>"+
+    "📌 기존 테스트 스틱(칸막이 없음)을 그대로 사용하면서 광학 하우징에만 칸막이를 설계하면 됩니다<br>"+
+    "<span style=\"font-size:10px;color:#8090b0\">※ 멤브레인 산란값은 NC(HF120급)·UV365nm 보수적 추정. 칸막이 벽면은 흑색 무광 처리 시 반사 재유입 무시 가능. 실측 권장.</span>"+
+    "</div></div>";
+}
+function drawBar10(xt1,xt2){
+  var cv=document.getElementById("c10_bar");if(!cv)return;
+  var c=cv.getContext("2d"),W=700,H=110;
+  c.fillStyle="#fff";c.fillRect(0,0,W,H);
+  var chLabels=["CH1","CH2","CH3","CH4\n(기준)","CH5","CH6","CH7"];
+  var dist=[3,2,1,0,1,2,3];
+  var vals=dist.map(function(d){return d===0?1:d===1?xt1:xt2;});
+  var colors=vals.map(function(v,i){return i===3?"#2060c0":v>0.05?"#c03030":v>0.01?"#c07818":"#1a8040";});
+  var bW=70,gap=10,xS=20,maxH=H-35;
+  vals.forEach(function(v,i){
+    var x=xS+i*(bW+gap);
+    var h=Math.max(2,v*maxH);
+    c.fillStyle=colors[i]+"33";c.strokeStyle=colors[i];c.lineWidth=1.5;
+    c.fillRect(x,H-25-h,bW,h);c.strokeRect(x,H-25-h,bW,h);
+    c.fillStyle=colors[i];c.font="bold 9px sans-serif";c.textAlign="center";
+    c.fillText(i===3?"기준":(v*100).toFixed(v<0.01?2:1)+"%",x+bW/2,H-25-h-4);
+    c.fillStyle="#7080a8";c.font="9px sans-serif";
+    c.fillText(chLabels[i].split("\n")[0],x+bW/2,H-12);
+    if(chLabels[i].includes("\n"))c.fillText(chLabels[i].split("\n")[1],x+bW/2,H-2);
+  });
+  c.fillStyle="#1e2540";c.font="bold 11px sans-serif";c.textAlign="center";
+  c.fillText("채널별 누화 비율 (CH4 기준)",W/2,12);
+}
+</script>
+<div id="cl-tooltip"></div></body>
+</html>
