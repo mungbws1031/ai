@@ -1334,6 +1334,7 @@ buildMeal();
 /* ── 냉장고 재료 관리 ── */
 const FRIDGE_KEY="et_fridge";
 const FR_PRESETS=[["잎채소·상추",4],["채소·뿌리채소",14],["과일",7],["소·돼지고기",3],["닭고기",2],["생선·해산물",2],["다진고기",1],["계란",21],["우유·유제품",7],["두부(개봉)",3],["김치",30],["소스·장류(개봉)",30],["밥·반찬",3],["냉동식품",90]];
+function esc(s){ const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
 function loadFridge(){ try{ return JSON.parse(localStorage.getItem(FRIDGE_KEY)||"[]"); }catch(e){ return []; } }
 function saveFridge(a){ try{ localStorage.setItem(FRIDGE_KEY, JSON.stringify(a)); }catch(e){} }
 function frPad(n){ return String(n).padStart(2,"0"); }
@@ -1366,7 +1367,7 @@ function renderFridge(){
   el.innerHTML=banner+arr.map(x=>{
     const cls=x.dd<0?"exp":x.dd<=2?"soon":"";
     const dt=x.dd<0?`만료 +${-x.dd}일`:x.dd===0?"오늘까지":`D-${x.dd}`;
-    return `<div class="fritem ${cls}"><div class="fl"><div class="fn">${x.name}</div><div class="fmeta">${x.bought} 구입 · ~${x.ub}까지</div></div><div class="frr"><span class="fdday">${dt}</span><button class="frdel" data-i="${x.i}" aria-label="삭제">×</button></div></div>`;
+    return `<div class="fritem ${cls}"><div class="fl"><div class="fn">${esc(x.name)}</div><div class="fmeta">${esc(x.bought)} 구입 · ~${esc(x.ub)}까지</div></div><div class="frr"><span class="fdday">${dt}</span><button class="frdel" data-i="${x.i}" aria-label="삭제">×</button></div></div>`;
   }).join("");
   el.querySelectorAll(".frdel").forEach(b=>b.onclick=()=>{ const a=loadFridge(); a.splice(+b.dataset.i,1); saveFridge(a); renderFridge(); });
 }
