@@ -87,7 +87,7 @@ interface StoreValue {
   setTodoReminder: (id: string, remindAt?: string) => void;
 
   // 마감 알림(카운트다운)
-  addDeadline: (text: string, time: string, leadMins?: number[]) => void;
+  addDeadline: (text: string, time: string, leadMins?: number[], date?: string) => void;
   toggleDeadline: (id: string) => void;
   removeDeadline: (id: string) => void;
 
@@ -518,10 +518,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── 마감 알림(카운트다운) ──
-  const addDeadline = useCallback<StoreValue['addDeadline']>((text, time, leadMins) => {
+  const addDeadline = useCallback<StoreValue['addDeadline']>((text, time, leadMins, date) => {
     const t = text.trim();
     if (!t || !time) return;
-    const day = dateKey(new Date());
+    const day = date || dateKey(new Date());
     const leads = Array.from(new Set([...(leadMins ?? [10, 5]), 0])).sort((a, b) => b - a);
     setState((s) => ({
       ...s,
