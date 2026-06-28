@@ -234,6 +234,41 @@
   .frpaste textarea{display:block;width:100%;box-sizing:border-box;min-height:96px;border:none;background:transparent;color:var(--text);font-family:var(--body);font-size:13px;line-height:1.5;padding:11px 13px;resize:vertical;outline:none}
   .frpaste #frPasteBtn{margin:0 13px 12px;font-weight:700;font-size:13px;color:#1a130c;background:var(--accent);border:none;border-radius:10px;padding:9px 18px;cursor:pointer}
 
+  /* 감성 맛표현 */
+  .sense-cats{padding:4px 16px 8px}
+  .sense-cat-title{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;color:var(--faint);text-transform:uppercase;margin:12px 0 8px}
+  .sense-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .scard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 14px;cursor:pointer;transition:.15s}
+  .scard:active{transform:scale(.97)}
+  .scard.on{border-color:var(--accent);background:rgba(242,114,43,.07)}
+  .scard .sc-em{font-size:20px;margin-bottom:4px}
+  .scard .sc-nm{font-weight:900;font-size:14px;line-height:1.2;margin-bottom:2px}
+  .scard .sc-sub{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:.3px}
+  .scard .sc-bars{display:flex;height:4px;border-radius:99px;overflow:hidden;margin-top:8px}
+  .scard .sc-bar{min-width:2px}
+  .sense-detail{margin:4px 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;animation:pop .2s ease}
+  .sd-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .sd-head .sd-em{font-size:32px;flex-shrink:0;line-height:1}
+  .sd-head .sd-left{flex:1;min-width:0}
+  .sd-head .sd-nm{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.2}
+  .sd-head .sd-eng{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.5px;margin-top:3px}
+  .sd-body{padding:14px 16px}
+  .sd-desc{font-size:13px;line-height:1.7;color:#5A5345;margin-bottom:12px}
+  .sd-taste-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .sd-taste-item{display:flex;align-items:center;gap:8px}
+  .sd-taste-label{font-size:11px;font-weight:700;min-width:40px}
+  .sd-taste-bar-wrap{flex:1;height:6px;background:var(--track);border-radius:99px;overflow:hidden}
+  .sd-taste-bar{height:100%;border-radius:99px;transition:.35s}
+  .sd-taste-val{font-family:var(--mono);font-size:11px;font-weight:700;min-width:22px;text-align:right;color:var(--muted)}
+  .sd-dishes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .sd-dish-chip{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 9px}
+  .sd-apply-btn{display:block;width:100%;font-family:var(--body);font-weight:900;font-size:14px;color:#1a130c;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;border-radius:13px;padding:13px;cursor:pointer;box-shadow:0 6px 18px -8px rgba(255,138,76,.7)}
+  .sd-apply-btn:active{transform:translateY(1px)}
+  /* 탐색 → 요리 연결 */
+  .dish-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .dish-chip{font-family:var(--display);font-size:13.5px;font-weight:700;color:var(--chef-brown);background:rgba(199,123,60,.1);border:1px solid rgba(199,123,60,.3);border-radius:9px;padding:5px 11px;cursor:pointer;transition:.12s;line-height:1.3}
+  .dish-chip:active{transform:scale(.95);background:rgba(199,123,60,.22)}
+
   /* ── 탐색(시뮬레이터) ── */
   .radar-wrap{position:relative;padding:6px 8px 0}
   .glow{position:absolute;inset:6px 8px 0;border-radius:20px;pointer-events:none;
@@ -508,6 +543,19 @@
     <div class="saved" id="savedList"></div>
   </section>
 
+  <!-- ════════ 감성 맛표현 ════════ -->
+  <section class="view" id="view-sense">
+    <div class="hd">
+      <div class="kicker">Taste Language · 맛 감성어</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">感</div>
+        <div><div class="name">감성 맛표현</div><div class="sub">고향의맛, 뭉근하게 끓인맛… 맛 언어로 바로 튜닝</div></div>
+      </div>
+    </div>
+    <div id="senseGrid"></div>
+    <div id="senseDetail"></div>
+  </section>
+
   <!-- 하단 네비 -->
   <nav class="nav" id="nav">
     <button data-view="explore" class="on"><span class="ic">🎚️</span><span class="tx">탐색</span></button>
@@ -518,6 +566,7 @@
     <button data-view="fridge"><span class="ic">🧊</span><span class="tx">냉장</span></button>
     <button data-view="fix"><span class="ic">🩹</span><span class="tx">보정</span></button>
     <button data-view="saved"><span class="ic">★</span><span class="tx">저장</span></button>
+    <button data-view="sense"><span class="ic">言</span><span class="tx">감성</span></button>
   </nav>
   <div class="bubble" id="styleBubble"></div>
 </div>
@@ -888,6 +937,79 @@ const PRODUCT_COMBOS=[
 const EXPLORE_PRESETS=[{label:"단짠하게",target:{salt:6,sweet:5,sour:1,umami:6,spicy:0}},{label:"칼칼하게",target:{salt:6,sweet:3,sour:2,umami:6,spicy:6}},
  {label:"깊은맛",target:{salt:6,sweet:3,sour:1,umami:8,spicy:1}},{label:"새콤하게",target:{salt:5,sweet:5,sour:5,umami:4,spicy:1}}];
 
+/* ════════ 감성 맛표현 데이터 ════════ */
+const TASTE_WORDS=[
+{cat:"감성·기억",em:"🏡",nm:"고향의맛",eng:"Hometown Taste",
+ desc:"오래 끓인 찌개처럼 자극 없이 스며드는 맛. 된장·간장이 베이스로 깔리고 감칠맛이 살살 차오른다. 짜지 않고 따뜻하게 간이 된 상태.",
+ v:{salt:5,sweet:3,sour:1,umami:7,spicy:2},dishes:["된장찌개","제육볶음","순두부찌개"]},
+{cat:"감성·기억",em:"👵",nm:"할머니 손맛",eng:"Grandma's Touch",
+ desc:"간을 '딱 맞게' 한다는 그것. 오래 볶은 양파의 단맛과 충분한 감칠맛, 적절한 짠맛이 삼박자를 이룬다. 과하지 않고 정확하다.",
+ v:{salt:6,sweet:4,sour:1,umami:8,spicy:1},dishes:["잡채","갈비찜","볶음김치"]},
+{cat:"감성·기억",em:"🌫️",nm:"아련한맛",eng:"Nostalgic Taste",
+ desc:"바싹 다가오지 않고 살짝 물러선 자리에 있는 맛. 자극은 적지만 기억에 남는다. 가볍게 떠있는 감칠맛.",
+ v:{salt:4,sweet:3,sour:2,umami:6,spicy:1},dishes:["미역국","나박김치","식혜"]},
+{cat:"조리법·농도",em:"⏰",nm:"푹 익은맛",eng:"Long-Cooked",
+ desc:"시간이 만든 맛. 재료의 경계가 허물어지고 국물과 속이 하나가 된 상태. 짠맛보다 감칠맛이 먼저 올라온다.",
+ v:{salt:6,sweet:4,sour:0,umami:8,spicy:1},dishes:["갈비찜","삼계탕","오래 끓인 된장찌개"]},
+{cat:"조리법·농도",em:"🫧",nm:"뭉근하게 끓인맛",eng:"Slowly Simmered",
+ desc:"팔팔 끓이지 않고 약한 불로 오래 두어 맛이 우러나온 상태. 국물이 묵직하고 깊다. 자극이 전혀 없다.",
+ v:{salt:5,sweet:2,sour:0,umami:9,spicy:0},dishes:["사골국","곰탕","설렁탕"]},
+{cat:"조리법·농도",em:"🧪",nm:"졸인맛",eng:"Reduced Glaze",
+ desc:"수분을 날려 맛을 압축한 상태. 한 숟가락이 여러 숟가락 값을 한다. 짜고 달고 감칠맛이 동시에 진하게 몰려온다.",
+ v:{salt:8,sweet:6,sour:0,umami:8,spicy:1},dishes:["장조림","데리야끼","조림류"]},
+{cat:"조리법·농도",em:"🦠",nm:"숙성된맛",eng:"Aged / Matured",
+ desc:"미생물이 시간과 함께 만든 깊이. 날 것의 자극이 사라지고 부드럽고 복잡한 향미가 남는다.",
+ v:{salt:6,sweet:2,sour:4,umami:9,spicy:1},dishes:["간장게장","묵은지","오래된 된장"]},
+{cat:"향미·풍미",em:"🍵",nm:"구수한맛",eng:"Earthy / Roasted",
+ desc:"볶거나 발효한 재료에서 나는 따뜻하고 구수한 향. 된장·누룽지·볶은 참깨가 대표. 쓰거나 날카롭지 않다.",
+ v:{salt:5,sweet:2,sour:2,umami:7,spicy:0},dishes:["된장국","누룽지","청국장"]},
+{cat:"향미·풍미",em:"🌰",nm:"고소한맛",eng:"Nutty / Sesame",
+ desc:"견과류·참기름·깨에서 나는 고소하고 따뜻한 풍미. 단독으로 맛을 완성하기보다 마무리 한 방울로 쓰인다.",
+ v:{salt:4,sweet:1,sour:0,umami:5,spicy:0},dishes:["나물 무침","비빔밥","참기름밥"]},
+{cat:"향미·풍미",em:"🔥",nm:"훈연향 있는맛",eng:"Smoky",
+ desc:"불과 연기가 재료 표면에 스민 맛. 숯불구이·훈제 특유의 향이 식욕을 자극하고 쓴맛이 뒤를 받친다.",
+ v:{salt:6,sweet:3,sour:1,umami:6,spicy:1},dishes:["숯불삼겹살","훈제오리","바베큐"]},
+{cat:"향미·풍미",em:"🫙",nm:"발효된맛",eng:"Fermented",
+ desc:"미생물이 재료를 바꿔놓은 맛. 자극적이지만 중독성이 있고 뒷맛이 깨끗하다. 신맛과 감칠맛이 공존한다.",
+ v:{salt:7,sweet:1,sour:5,umami:8,spicy:3},dishes:["잘 익은 김치","된장찌개","젓갈"]},
+{cat:"강도·균형",em:"☁️",nm:"담백한맛",eng:"Clean / Light",
+ desc:"자극 없이 재료 본연의 맛이 드러나는 상태. 기름기가 없고 뒷맛이 깨끗하다.",
+ v:{salt:4,sweet:1,sour:1,umami:4,spicy:0},dishes:["두부국","맑은 조개탕","흰 생선찜"]},
+{cat:"강도·균형",em:"🌊",nm:"진한맛",eng:"Rich / Deep",
+ desc:"맛의 밀도가 높은 상태. 한 수저에 여러 층의 맛이 담겨 있고 여운이 오래 간다.",
+ v:{salt:7,sweet:5,sour:1,umami:8,spicy:2},dishes:["갈비찜","김치찜","짬뽕"]},
+{cat:"강도·균형",em:"⚡",nm:"칼칼한맛",eng:"Sharp Spicy",
+ desc:"따뜻하게 매운 것이 아니라 혀 끝을 날카롭게 찌르는 매움. 고추의 캡사이신이 직접적으로 올라온다.",
+ v:{salt:5,sweet:2,sour:2,umami:6,spicy:8},dishes:["순대국밥","칼국수","닭개장"]},
+{cat:"강도·균형",em:"💫",nm:"알싸한맛",eng:"Pungent / Tingling",
+ desc:"캡사이신이 아닌 다른 종류의 자극. 마늘·생강·겨자·와사비처럼 코를 찌르고 빠르게 사라진다.",
+ v:{salt:3,sweet:1,sour:1,umami:3,spicy:6},dishes:["와사비 간장회","생강 드레싱","마늘쫑볶음"]},
+{cat:"강도·균형",em:"💨",nm:"시원한맛",eng:"Refreshing",
+ desc:"한국에서 '시원하다'는 건 차갑다는 뜻이 아니다. 속이 뚫리는 느낌. 동치미 국물 같은 개운한 자극.",
+ v:{salt:5,sweet:1,sour:3,umami:5,spicy:4},dishes:["동치미","물냉면","콩나물국밥"]},
+{cat:"강도·균형",em:"🪨",nm:"묵직한맛",eng:"Weighty / Full-Bodied",
+ desc:"국물의 무게가 느껴지는 맛. 콜라겐이 녹아든 사골처럼 입 안을 꽉 채운다. 여운이 매우 길다.",
+ v:{salt:7,sweet:4,sour:1,umami:9,spicy:2},dishes:["사골곰탕","꼬리곰탕","삼계탕"]},
+{cat:"강도·균형",em:"✨",nm:"깔끔한맛",eng:"Clean-Cut",
+ desc:"맛의 시작과 끝이 명확한 상태. 오버되지 않고 딱 필요한 만큼만 간 되어 있다. 깨끗하게 끊긴다.",
+ v:{salt:5,sweet:3,sour:2,umami:6,spicy:0},dishes:["맑은 된장국","쇠고기뭇국","계란국"]},
+{cat:"강도·균형",em:"🌿",nm:"쌉싸름한맛",eng:"Bitter-Fresh",
+ desc:"채소·허브의 쓴맛이 기분 좋은 강도로 들어와 깔끔하게 끝나는 맛. 봄나물이 이 맛을 대표한다.",
+ v:{salt:3,sweet:3,sour:1,umami:4,spicy:0},dishes:["봄나물 무침","쑥국","취나물비빔"]},
+{cat:"대비·복합",em:"🍬",nm:"달큰한맛",eng:"Warmly Sweet",
+ desc:"설탕의 직접적인 단맛이 아니라 양파·당근이 오래 볶아지면서 나는 자연스러운 단맛. 짠맛과 어울린다.",
+ v:{salt:5,sweet:5,sour:1,umami:6,spicy:1},dishes:["잡채","갈비찜","소불고기"]},
+{cat:"대비·복합",em:"🍋",nm:"새콤달콤한맛",eng:"Sweet & Sour",
+ desc:"산미와 당이 팽팽하게 맞선 상태. 어느 쪽도 압도하지 않아 식욕을 계속 자극한다.",
+ v:{salt:4,sweet:7,sour:6,umami:3,spicy:1},dishes:["탕수육소스","오징어초무침","파인애플닭"]},
+{cat:"대비·복합",em:"🧂",nm:"짭짤한맛",eng:"Pleasantly Salty",
+ desc:"짜지만 거슬리지 않는 상태. 감칠맛이 뒤에서 받쳐주어 소금 자체가 아니라 풍미로 느껴진다.",
+ v:{salt:7,sweet:2,sour:1,umami:6,spicy:0},dishes:["볶음밥","구이","국물 요리"]},
+{cat:"대비·복합",em:"🌶️",nm:"달달한 매운맛",eng:"Sweet Heat",
+ desc:"단맛이 먼저 올라와 매운 충격을 부드럽게 만든다. 불닭·양념치킨처럼 단맛이 매운 자극을 이끈다.",
+ v:{salt:6,sweet:7,sour:1,umami:5,spicy:7},dishes:["양념치킨","불닭볶음","닭강정"]}
+];
+
 /* ════════════════════════════════════════════════════════════════════
    PART D. UI
    ════════════════════════════════════════════════════════════════════ */
@@ -1159,6 +1281,24 @@ function buildRecipes(){ const el=$("recipeList"); if(!el) return;
   el.innerHTML=html; wireRecipeCards(el);
 }
 buildRecipes();
+
+function goRecipe(dishName){
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view==="recipe"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-recipe").classList.add("active");
+  window.scrollTo(0,0);
+  const el=$("recipeList"); if(!el) return;
+  // 정확히 일치하거나 요리명 키워드 포함 레시피 카드 찾기
+  let card=el.querySelector(`.rc[data-name="${dishName}"]`);
+  if(!card){
+    const kw=dishName.replace(/[\(\)\[\]]/g,"").trim();
+    card=[...el.querySelectorAll(".rc")].find(c=>{
+      const n=c.dataset.name||"";
+      return n.includes(kw)||kw.includes(n)||kw.split(/[·\s]+/).some(w=>w.length>1&&n.includes(w));
+    });
+  }
+  if(card){ card.classList.add("open"); setTimeout(()=>card.scrollIntoView({behavior:"smooth",block:"start"}),120); }
+}
 
 /* ── 소스 배합소 ── */
 const SAUCE_DENS={"간장":1.15,"설탕":0.85,"고추장":1.2,"고춧가루":0.5,"올리고당":1.35,"물엿":1.35,"꿀":1.4,"케첩":1.1,"마요네즈":0.95,"식초":1.0,"다진마늘":1.0,"버터":0.96,"우유/생크림":1.0,"다시다":0.65,"두반장":1.2,"마라소스":1.0,"청양고추":1.0,"후추":0.5,"화자오":0.5,"카레가루":0.5,"참기름":0.92,"통깨":0.6,"물":1.0,"된장":1.15,"생강":1.0,"미림":1.0,"춘장":1.2,"굴소스":1.2,"식용유":0.92,"양파":1.0,"머스터드":1.0,"레몬즙":1.0,"우스터소스":1.1,"피클":1.0,"파마산치즈":1.0,"소금":1.2,"사과즙":1.0,"적포도주":1.0,"와사비":1.0};
@@ -1433,6 +1573,57 @@ function frImportOrder(){
 }
 initFridge();
 
+/* ── 감성 맛표현 ── */
+const SW_COLORS=["var(--t-salt)","var(--t-sweet)","var(--t-sour)","var(--t-umami)","var(--t-spicy)"];
+const SW_KEYS=["salt","sweet","sour","umami","spicy"];
+const SW_LABELS=["짠맛","단맛","신맛","감칠맛","매운맛"];
+let selectedSenseIdx=null;
+function buildSense(){
+  const grid=$("senseGrid"); if(!grid) return;
+  const cats=[...new Set(TASTE_WORDS.map(w=>w.cat))];
+  let html="";
+  cats.forEach(cat=>{
+    html+=`<div class="sense-cats"><div class="sense-cat-title">${cat}</div><div class="sense-grid">`;
+    TASTE_WORDS.forEach((w,i)=>{
+      if(w.cat!==cat) return;
+      const bars=SW_KEYS.map((k,ki)=>`<div class="sc-bar" style="flex:${w.v[k]||0.5};background:${SW_COLORS[ki]}"></div>`).join("");
+      html+=`<div class="scard" data-idx="${i}" id="sc-${i}"><div class="sc-em">${w.em}</div><div class="sc-nm">${w.nm}</div><div class="sc-sub">${w.eng}</div><div class="sc-bars">${bars}</div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  grid.innerHTML=html;
+  grid.querySelectorAll(".scard").forEach(card=>{
+    card.addEventListener("click",()=>selectSense(+card.dataset.idx));
+  });
+}
+function selectSense(idx){
+  if(selectedSenseIdx===idx){
+    selectedSenseIdx=null;
+    document.querySelectorAll(".scard").forEach(x=>x.classList.remove("on"));
+    $("senseDetail").innerHTML=""; return;
+  }
+  selectedSenseIdx=idx;
+  document.querySelectorAll(".scard").forEach(x=>x.classList.remove("on"));
+  const sc=document.getElementById("sc-"+idx); if(sc) sc.classList.add("on");
+  renderSenseDetail(idx);
+  setTimeout(()=>{ const d=$("senseDetail"); if(d) d.scrollIntoView({behavior:"smooth",block:"nearest"}); },80);
+}
+function renderSenseDetail(idx){
+  const w=TASTE_WORDS[idx];
+  const bars=SW_KEYS.map((k,ki)=>`<div class="sd-taste-item"><div class="sd-taste-label" style="color:${SW_COLORS[ki]}">${SW_LABELS[ki]}</div><div class="sd-taste-bar-wrap"><div class="sd-taste-bar" style="width:${(w.v[k]||0)*10}%;background:${SW_COLORS[ki]}"></div></div><div class="sd-taste-val">${(w.v[k]||0).toFixed(1)}</div></div>`).join("");
+  const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="goRecipe('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
+  $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div><div class="sd-eng">${w.eng}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 시뮬레이터 열기</button></div></div>`;
+}
+function applySenseToExplore(idx){
+  const w=TASTE_WORDS[idx];
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view==="explore"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-explore").classList.add("active");
+  window.scrollTo(0,0);
+  animateTo(w.v);
+}
+buildSense();
+
 /* ── 탐색 (시뮬레이터) ── */
 let t={salt:6,sweet:4,sour:2,umami:7,spicy:1}, synergy=0, isGold=false, displayVec={...t};
 const slidersEl=$("sliders"), sliderInputs={}, sliderVals={};
@@ -1518,7 +1709,7 @@ function renderExplore(){
   $("synVal").textContent=synergy.toFixed(1); $("synRange").value=synergy;
   const v=chefVerdict(t,score); $("chefTitle").textContent="“"+v.title+"”"; $("chefBody").textContent=v.body;
   $("chef").classList.toggle("goldc",v.mood==="gold"); $("chefTitle").style.color=v.mood==="gold"?"var(--gold)":"var(--text)";
-  $("dish").textContent=nearestDishes(t,3).join(" · ");
+  $("dish").innerHTML=`<div class="dish-chips">${nearestDishes(t,3).map(nm=>`<button class="dish-chip" onclick="goRecipe(this.textContent.trim())">${nm}</button>`).join("")}</div>`;
   const combos=nearestCombos(t,PRODUCT_COMBOS,2);
   $("combos").innerHTML=combos.map((c,i)=>`<div class="combo ${i===0?'first':''}"><div><div class="cn">${c.name}</div><div class="cd">${c.dish}</div></div><div class="cr">${c.ratio}</div></div>`).join("");
   // 조건 만족 시(가까운 맛 스타일) 말풍선 잠깐 표시
