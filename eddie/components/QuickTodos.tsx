@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useStore } from '@/lib/store-context';
 import { parseWhen } from '@/lib/parse-when';
+import FocusMode from './FocusMode';
+import { Todo } from '@/lib/types';
 
 /**
  * 할 일 빠른 담기(브레인 덤프).
@@ -14,6 +16,7 @@ export default function QuickTodos() {
     useStore();
   const [text, setText] = useState('');
   const [remindAt, setRemindAt] = useState('');
+  const [focus, setFocus] = useState<Todo | null>(null);
 
   function submit() {
     const v = text.trim();
@@ -90,6 +93,16 @@ export default function QuickTodos() {
                 {t.done ? '✓' : ''}
               </button>
               <span className={`flex-1 break-words ${t.done ? 'text-eddie-muted line-through' : ''}`}>{t.text}</span>
+              {!t.done && (
+                <button
+                  onClick={() => setFocus(t)}
+                  className="btn-ghost px-2 text-eddie-primary"
+                  aria-label={`${t.text} 집중 모드`}
+                  title="집중 모드"
+                >
+                  🎯
+                </button>
+              )}
               {t.remindAt && (
                 <button
                   onClick={() => setTodoReminder(t.id, undefined)}
@@ -122,6 +135,17 @@ export default function QuickTodos() {
         <button onClick={clearDoneTodos} className="mt-3 text-sm text-eddie-muted underline">
           끝낸 {doneCount}개 정리하기
         </button>
+      )}
+
+      {focus && (
+        <FocusMode
+          task={focus.text}
+          onClose={() => setFocus(null)}
+          onComplete={() => {
+            toggleTodo(focus.id);
+            setFocus(null);
+          }}
+        />
       )}
     </section>
   );
