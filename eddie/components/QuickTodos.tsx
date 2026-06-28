@@ -1,10 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore } from '@/lib/store-context';
 import { parseWhen } from '@/lib/parse-when';
 import FocusMode from './FocusMode';
 import { Todo } from '@/lib/types';
+
+// '에디~ 메모해줘' 같은 호출/명령어를 떼어내고 내용만 남긴다.
+function stripWakeWords(s: string): string {
+  return s
+    .replace(/에디\s*(야|아|~)?/g, ' ')
+    .replace(/메모\s*(해줘|해|좀|할게)?/g, ' ')
+    .replace(/(적어|담아|기록해)\s*(줘|놔|둬)?/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 /**
  * 할 일 빠른 담기(브레인 덤프).
@@ -17,9 +27,11 @@ export default function QuickTodos() {
   const [text, setText] = useState('');
   const [remindAt, setRemindAt] = useState('');
   const [focus, setFocus] = useState<Todo | null>(null);
+  const [listening, setListening] = useState(false);
+  const recRef = useRef<unknown>(null);
 
-  function submit() {
-    const v = text.trim();
+  function submit(override?: string) {
+    const v = (override ?? text).trim();
     if (!v) return;
     const parsed = parseWhen(v, new Date());
     if (parsed.date) {
@@ -32,6 +44,61 @@ export default function QuickTodos() {
     }
     setText('');
     setRemindAt('');
+  }
+
+  function toggleVoice() {
+    // 듣는 중이면 중지
+    if (listening) {
+      try {
+        (recRef.current as { stop?: () => void } | null)?.stop?.();
+      } catch {
+        /* noop */
+      }
+      return;
+    }
+    const SR =
+      (typeof window !== 'undefined' &&
+        ((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition ||
+          (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)) ||
+      null;
+    if (!SR) {
+      pushToast('이 브라우저는 음성 입력을 지원하지 않아. 크롬에서 써줘 🙏');
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec: any = new (SR as any)();
+    recRef.current = rec;
+    rec.lang = 'ko-KR';
+    rec.interimResults = true;
+    rec.continuous = false;
+    let finalText = '';
+    rec.onresult = (e: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => {
+      let interim = '';
+      finalText = '';
+      for (let i = 0; i < e.results.length; i++) {
+        const r = e.results[i];
+        if (r.isFinal) finalText += r[0].transcript;
+        else interim += r[0].transcript;
+      }
+      setText(stripWakeWords(finalText || interim));
+    };
+    rec.onerror = (e: { error?: string }) => {
+      if (e.error === 'not-allowed') pushToast('마이크 권한이 필요해. 브라우저 설정에서 허용해줘.');
+      else if (e.error === 'no-speech') pushToast('소리가 안 들렸어. 다시 한 번!');
+    };
+    rec.onend = () => {
+      setListening(false);
+      recRef.current = null;
+      const cleaned = stripWakeWords(finalText);
+      if (cleaned) submit(cleaned);
+    };
+    try {
+      rec.start();
+      setListening(true);
+      pushToast('듣고 있어… 말해줘 🎙️');
+    } catch {
+      setListening(false);
+    }
   }
 
   const todos = state.todos;
@@ -61,11 +128,24 @@ export default function QuickTodos() {
             aria-label="할 일 입력"
             enterKeyHint="done"
           />
+          <button
+            type="button"
+            onClick={toggleVoice}
+            className={`min-h-tap shrink-0 rounded-xl2 px-3 text-lg ${
+              listening ? 'animate-pulse bg-eddie-accent text-white' : 'bg-eddie-primary-soft text-eddie-primary'
+            }`}
+            aria-label={listening ? '음성 입력 중지' : '음성으로 담기'}
+            title="음성으로 담기"
+          >
+            🎙️
+          </button>
           <button type="submit" className="btn-primary shrink-0 text-sm" disabled={!text.trim()}>
             담기
           </button>
         </div>
-        <p className="text-xs text-eddie-muted">‘내일’, ‘다음주 화요일’, ‘6/27 3시’처럼 날짜를 적으면 달력에 들어가.</p>
+        <p className="text-xs text-eddie-muted">
+          🎙️ 누르고 “에디~ 메모해줘, 내일 3시 치과”처럼 말해도 돼. ‘내일’·‘다음주 화요일’ 같은 날짜는 달력에 들어가.
+        </p>
         <label className="flex items-center gap-2 text-xs text-eddie-muted">
           🔔 알림 시각(선택)
           <input
