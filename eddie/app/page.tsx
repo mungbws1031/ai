@@ -10,6 +10,8 @@ import RoutineCheckList from '@/components/RoutineCheckList';
 import EddieBubble from '@/components/EddieBubble';
 import QuickTodos from '@/components/QuickTodos';
 import DeadlineList from '@/components/DeadlineList';
+import NextOne from '@/components/NextOne';
+import EveningReview from '@/components/EveningReview';
 
 // 오늘 화면 (IA §7.2): 에디 시계, 출발 카운트다운, 약, 다음 할 일
 export default function TodayPage() {
@@ -33,6 +35,7 @@ export default function TodayPage() {
       </header>
 
       <EddieClock />
+      <NextOne />
       <QuickTodos />
       <DeadlineList />
       <DepartureCard />
@@ -88,6 +91,8 @@ export default function TodayPage() {
           <span className="btn-soft">루틴 만들기</span>
         </Link>
       )}
+
+      <EveningReview />
     </div>
   );
 }

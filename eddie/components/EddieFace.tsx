@@ -14,10 +14,12 @@ const CHEEK = '#ff9d8a';
 export default function EddieFace({
   mood = 'calm',
   size = 'md',
+  grown = false,
   className = '',
 }: {
   mood?: EddieMood;
   size?: keyof typeof SIZES;
+  grown?: boolean; // 성장 단계가 높으면 볏을 그린다
   className?: string;
 }) {
   const px = SIZES[size];
@@ -32,6 +34,8 @@ export default function EddieFace({
       aria-hidden
       className={`shrink-0 ${className}`}
     >
+      {/* 볏 (성장 단계) */}
+      {grown && <path d="M26 12 q3 -7 6 0 q3 -7 6 0 l0 6 l-12 0 z" fill="#ff6b6b" />}
       {/* 머리 위 솜털 */}
       <g fill={BODY}>
         <circle cx="27" cy="13" r="3.4" />
