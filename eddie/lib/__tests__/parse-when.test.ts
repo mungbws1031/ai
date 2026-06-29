@@ -55,4 +55,18 @@ describe('parseWhen', () => {
   it('다음달 D일', () => {
     expect(parseWhen('다음달 5일 정기검진', NOW).date).toBe('2026-07-05');
   });
+
+  it('잘못된 날짜는 무시한다', () => {
+    expect(parseWhen('2월 30일 약속', NOW).date).toBeUndefined();
+    expect(parseWhen('13/40 모임', NOW).date).toBeUndefined();
+    expect(parseWhen('이번달 31일 정산', NOW).date).toBeUndefined(); // 6월은 30일까지
+  });
+
+  it("'시간'은 시각으로 잡지 않는다", () => {
+    expect(parseWhen('2시간 공부', NOW).time).toBeUndefined();
+  });
+
+  it('매칭된 위치만 잘라내 제목을 보존한다', () => {
+    expect(parseWhen('다음주 화요일 점심 약속', NOW).cleanedText).toBe('점심 약속');
+  });
 });

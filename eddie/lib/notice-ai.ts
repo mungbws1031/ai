@@ -115,7 +115,7 @@ export async function extractNotice(opts: {
     const parsed = JSON.parse(textOut) as NoticeExtract;
     return {
       summary: parsed.summary ?? '',
-      events: (parsed.events ?? []).filter((e) => e.title?.trim() && e.date?.trim()),
+      events: (parsed.events ?? []).filter((e) => e.title?.trim() && /^\d{4}-\d{2}-\d{2}$/.test(e.date ?? '')),
       todos: (parsed.todos ?? []).filter((t) => t.text?.trim()),
     };
   } catch {
