@@ -12,6 +12,25 @@
 import { AppState, Streak } from './types';
 import { dateKey } from './clock';
 
+/** 에디 성장 단계 — 누적 '잘 보낸 하루'(streak.total)에 따라 부드럽게 자란다. */
+export interface EddieStage {
+  level: number; // 0~3
+  name: string;
+  emoji: string;
+  next: number | null; // 다음 단계까지 필요한 total (없으면 null)
+}
+const STAGE_THRESHOLDS = [0, 3, 10, 30];
+const STAGE_NAMES = ['알', '아기 병아리', '병아리', '늠름한 병아리'];
+const STAGE_EMOJI = ['🥚', '🐣', '🐥', '🐔'];
+export function eddieStage(total: number): EddieStage {
+  let level = 0;
+  for (let i = 0; i < STAGE_THRESHOLDS.length; i++) {
+    if (total >= STAGE_THRESHOLDS[i]) level = i;
+  }
+  const next = level < STAGE_THRESHOLDS.length - 1 ? STAGE_THRESHOLDS[level + 1] : null;
+  return { level, name: STAGE_NAMES[level], emoji: STAGE_EMOJI[level], next };
+}
+
 /** 해당 날짜가 '잘 보낸 하루'인지 판정 */
 export function isGoodDay(state: AppState, date: string): boolean {
   const ci = state.checkIns.find((c) => c.date === date);

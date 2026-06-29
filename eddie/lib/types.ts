@@ -160,6 +160,15 @@ export interface Todo {
   doneAt?: string; // ISO
   remindAt?: string; // 'HH:mm' — 선택. 이 시각에 알림
   remindDate?: string; // 'YYYY-MM-DD' — 알림 대상 날짜(보통 담은 날)
+  priority?: boolean; // 오늘 꼭 (우선순위)
+}
+
+/** 저녁 1탭 회고 */
+export interface DailyReview {
+  date: string; // YYYY-MM-DD
+  did: string; // 오늘 한 것 하나
+  tomorrow: string; // 내일의 한 가지
+  savedAt: string; // ISO
 }
 
 export interface AppState {
@@ -175,6 +184,9 @@ export interface AppState {
 
   // 마감 알림(카운트다운)
   deadlines: Deadline[];
+
+  // 저녁 회고
+  reviews: DailyReview[];
 
   medications: Medication[];
   medLogs: MedicationLog[];

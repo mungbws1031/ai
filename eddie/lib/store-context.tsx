@@ -24,6 +24,7 @@ import {
   Streak,
   Todo,
   Deadline,
+  DailyReview,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
 import { dateKey, formatRealClock } from './clock';
@@ -85,6 +86,10 @@ interface StoreValue {
   removeTodo: (id: string) => void;
   clearDoneTodos: () => void;
   setTodoReminder: (id: string, remindAt?: string) => void;
+  toggleTodoPriority: (id: string) => void;
+
+  // 저녁 회고
+  saveReview: (did: string, tomorrow: string) => void;
 
   // 마감 알림(카운트다운)
   addDeadline: (text: string, time: string, leadMins?: number[], date?: string) => void;
@@ -513,6 +518,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const removeTodo = useCallback<StoreValue['removeTodo']>((id) => {
     setState((s) => ({ ...s, todos: s.todos.filter((t) => t.id !== id) }));
   }, []);
+  const toggleTodoPriority = useCallback<StoreValue['toggleTodoPriority']>((id) => {
+    setState((s) => ({
+      ...s,
+      todos: s.todos.map((t) => (t.id === id ? { ...t, priority: !t.priority } : t)),
+    }));
+  }, []);
+  const saveReview = useCallback<StoreValue['saveReview']>((did, tomorrow) => {
+    const date = dateKey(new Date());
+    setState((s) => {
+      const others = s.reviews.filter((r) => r.date !== date);
+      return { ...s, reviews: [...others, { date, did, tomorrow, savedAt: new Date().toISOString() }] };
+    });
+  }, []);
   const clearDoneTodos = useCallback<StoreValue['clearDoneTodos']>(() => {
     setState((s) => ({ ...s, todos: s.todos.filter((t) => !t.done) }));
   }, []);
@@ -602,6 +620,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     removeTodo,
     clearDoneTodos,
     setTodoReminder,
+    toggleTodoPriority,
+    saveReview,
     addDeadline,
     toggleDeadline,
     removeDeadline,

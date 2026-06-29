@@ -1,7 +1,7 @@
 'use client';
 
 import { useStore } from '@/lib/store-context';
-import { isGoodDay } from '@/lib/streak';
+import { isGoodDay, eddieStage } from '@/lib/streak';
 import { eddieLine } from '@/lib/eddie';
 import PageHeader from '@/components/PageHeader';
 import EddieBubble from '@/components/EddieBubble';
@@ -11,13 +11,20 @@ import EddieFace from '@/components/EddieFace';
 export default function EddiePage() {
   const { state, streak, today } = useStore();
   const goodToday = isGoodDay(state, today);
+  const stage = eddieStage(streak.total);
 
   return (
     <div className="px-4">
       <PageHeader title="에디" subtitle="실패해도 리셋되지 않아. 같이 이어가자." />
 
       <section className="card mb-4 flex flex-col items-center gap-3 text-center">
-        <EddieFace mood={goodToday ? 'happy' : 'recover'} size="lg" />
+        <EddieFace mood={goodToday ? 'happy' : 'recover'} size="lg" grown={stage.level >= 3} />
+        <p className="text-sm font-semibold text-eddie-primary">
+          {stage.emoji} {stage.name}
+          {stage.next !== null && (
+            <span className="ml-1 font-normal text-eddie-muted">· 다음 단계까지 {stage.next - streak.total}일</span>
+          )}
+        </p>
         <EddieBubble line={goodToday ? eddieLine('happy') : eddieLine('recover')} />
       </section>
 
