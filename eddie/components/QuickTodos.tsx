@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/lib/store-context';
 import { parseWhen } from '@/lib/parse-when';
 import FocusMode from './FocusMode';
@@ -29,6 +29,25 @@ export default function QuickTodos() {
   const [focus, setFocus] = useState<Todo | null>(null);
   const [listening, setListening] = useState(false);
   const recRef = useRef<unknown>(null);
+  // 핸즈프리("에디야" 호출)
+  const [handsFree, setHandsFree] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('');
+  const handsFreeRef = useRef(false);
+  const armedRef = useRef(false);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function getSR(): any {
+    if (typeof window === 'undefined') return null;
+    const w = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+  }
+  function stopRec() {
+    try {
+      (recRef.current as { stop?: () => void } | null)?.stop?.();
+    } catch {
+      /* noop */
+    }
+  }
 
   function submit(override?: string) {
     const v = (override ?? text).trim();
@@ -56,11 +75,8 @@ export default function QuickTodos() {
       }
       return;
     }
-    const SR =
-      (typeof window !== 'undefined' &&
-        ((window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition ||
-          (window as unknown as { webkitSpeechRecognition?: unknown }).webkitSpeechRecognition)) ||
-      null;
+    if (handsFreeRef.current) stopHandsFree();
+    const SR = getSR();
     if (!SR) {
       pushToast('이 브라우저는 음성 입력을 지원하지 않아. 크롬에서 써줘 🙏');
       return;
@@ -100,6 +116,87 @@ export default function QuickTodos() {
       setListening(false);
     }
   }
+
+  function stopHandsFree() {
+    handsFreeRef.current = false;
+    armedRef.current = false;
+    setHandsFree(false);
+    setVoiceStatus('');
+    stopRec();
+    recRef.current = null;
+  }
+
+  function startHandsFree() {
+    if (listening) stopRec();
+    const SR = getSR();
+    if (!SR) {
+      pushToast('이 브라우저는 음성 입력을 지원하지 않아. 크롬에서 써줘 🙏');
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec: any = new SR();
+    recRef.current = rec;
+    rec.lang = 'ko-KR';
+    rec.interimResults = true;
+    rec.continuous = true;
+    rec.onresult = (e: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> & { length: number } }) => {
+      const last = e.results[e.results.length - 1];
+      if (!last || !last.isFinal) return;
+      const raw = last[0].transcript.trim();
+      if (armedRef.current) {
+        const memo = stripWakeWords(raw);
+        if (memo) submit(memo);
+        armedRef.current = false;
+        setVoiceStatus(memo ? '담았어! 또 “에디야” 하고 불러줘' : '‘에디야’ 하고 불러줘');
+        return;
+      }
+      if (/에디/.test(raw)) {
+        const after = stripWakeWords(raw);
+        if (after) {
+          submit(after);
+          setVoiceStatus('담았어! 또 “에디야” 하고 불러줘');
+        } else {
+          armedRef.current = true;
+          setVoiceStatus('응, 말해! 🎙️');
+          try {
+            navigator.vibrate?.(80);
+          } catch {
+            /* noop */
+          }
+        }
+      }
+    };
+    rec.onerror = (e: { error?: string }) => {
+      if (e.error === 'not-allowed') {
+        pushToast('마이크 권한이 필요해. 브라우저 설정에서 허용해줘.');
+        stopHandsFree();
+      }
+    };
+    rec.onend = () => {
+      // 침묵/시간초과로 멈추면, 핸즈프리 유지 중일 땐 자동 재시작
+      if (handsFreeRef.current) {
+        try {
+          rec.start();
+        } catch {
+          /* 곧 다시 onend → 재시도 */
+        }
+      } else {
+        recRef.current = null;
+      }
+    };
+    try {
+      rec.start();
+      handsFreeRef.current = true;
+      setHandsFree(true);
+      setVoiceStatus('‘에디야’ 하고 불러줘');
+      pushToast('이제 “에디야” 하고 부르면 메모할게 🎧');
+    } catch {
+      stopHandsFree();
+    }
+  }
+
+  // 언마운트 시 인식 정리
+  useEffect(() => () => stopRec(), []);
 
   const todos = state.todos;
   const openCount = todos.filter((t) => !t.done).length;
@@ -146,6 +243,19 @@ export default function QuickTodos() {
         <p className="text-xs text-eddie-muted">
           🎙️ 누르고 “에디~ 메모해줘, 내일 3시 치과”처럼 말해도 돼. ‘내일’·‘다음주 화요일’ 같은 날짜는 달력에 들어가.
         </p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => (handsFree ? stopHandsFree() : startHandsFree())}
+            aria-pressed={handsFree}
+            className={`min-h-tap rounded-xl border px-3 text-sm font-medium ${
+              handsFree ? 'border-eddie-accent bg-eddie-accent/10 text-eddie-accent' : 'border-eddie-line text-eddie-muted'
+            }`}
+          >
+            🎧 {handsFree ? '듣는 중 — 끄기' : '“에디야” 핸즈프리'}
+          </button>
+          {handsFree && <span className="animate-pulse text-sm text-eddie-accent">{voiceStatus}</span>}
+        </div>
         <label className="flex items-center gap-2 text-xs text-eddie-muted">
           🔔 알림 시각(선택)
           <input
