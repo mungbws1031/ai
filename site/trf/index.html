@@ -563,7 +563,7 @@ function updateProgress() {
 
 <!-- TAB10: 다채널 격리 분析 -->
 <div id="t10" class="tabcontent">
-<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>LED·PD가 2.5mm 간격으로 7개 늘어서 있을 때, 옆 채널 빛이 얼마나 새어 들어오는지(누화) 계산하고, 광학부 칸막이·테스트스틱 칸막이가 각각 어떤 역할을 하는지 비교해요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 채널을 2.5mm 간격으로 붙이면 옆 채널 빛이 새어 누화가 생깁니다. 광학부 칸막이는 필수, 테스트스틱 칸막이는 불필요하다는 판단으로 하우징·소모품 구조를 정하는 근거를 줍니다.</div>
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>LED·PD가 2.5mm 간격으로 5개(LH·FSH·E3G·PdG·대조) 늘어서 있을 때, 옆 채널 빛이 얼마나 새어 들어오는지(누화) 계산하고, 광학부 칸막이·테스트스틱 칸막이가 각각 어떤 역할을 하는지 비교해요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 채널을 2.5mm 간격으로 붙이면 옆 채널 빛이 새어 누화가 생깁니다. 광학부 칸막이는 필수, 테스트스틱 칸막이는 불필요하다는 판단으로 하우징·소모품 구조를 정하는 근거를 줍니다.</div>
 <div class="row" style="align-items:flex-start;gap:16px">
 
   <!-- 시나리오 선택 -->
@@ -593,7 +593,7 @@ function updateProgress() {
     </div>
     <div style="margin-top:14px;background:#f4f6fc;border-radius:8px;padding:10px;font-size:11px">
       <div style="font-weight:bold;color:#1e2540;margin-bottom:6px">설계 파라미터</div>
-      <div style="color:#6878a8">채널 수: <b style="color:#1e2540">7채널</b></div>
+      <div style="color:#6878a8">채널 수: <b style="color:#1e2540">5채널 (LH·FSH·E3G·PdG·대조)</b></div>
       <div style="color:#6878a8">채널 간격: <b style="color:#1e2540">2.5 mm</b></div>
       <div style="color:#6878a8">LED 높이: <b style="color:#1e2540">12 mm</b></div>
       <div style="color:#6878a8">PD 높이: <b style="color:#1e2540">10 mm</b></div>
@@ -613,7 +613,7 @@ function updateProgress() {
     </div>
     <div class="card" style="margin-top:10px;padding:12px">
       <canvas id="c10_bar" width="700" height="110" style="max-width:100%;display:block"></canvas>
-      <div class="chart-desc">💡 중심 채널(CH4) 대비 각 채널의 누화 신호량. 칸막이가 없으면 옆 채널이 중심 신호를 오염시켜요.</div>
+      <div class="chart-desc">💡 중심 채널(E3G) 대비 각 채널의 누화 신호량. 칸막이가 없으면 옆 채널이 중심 신호를 오염시켜요.</div>
     </div>
     <div class="card" style="margin-top:10px;padding:14px" id="d10_result">
       슬라이더를 선택하면 결과가 나와요.
@@ -2004,14 +2004,14 @@ function draw10(){
   for(var gx=-10;gx<=10;gx+=5)c.fillText(gx+"mm",px(gx),H-3);
   // LFA 스트립
   c.fillStyle="#f8f9ff";c.strokeStyle="#7080b0";c.lineWidth=2;
-  c.fillRect(px(-8.75),py(1.5),17.5*sc,1.5*sc);
-  c.strokeRect(px(-8.75),py(1.5),17.5*sc,1.5*sc);
+  c.fillRect(px(-6.25),py(1.5),12.5*sc,1.5*sc);
+  c.strokeRect(px(-6.25),py(1.5),12.5*sc,1.5*sc);
   c.fillStyle="#9098c0";c.font="10px sans-serif";c.textAlign="center";
   c.fillText("LFA 스트립 (니트로셀룰로스 멤브레인)",px(0),oy+15);
-  // 채널 위치 (7채널, 2.5mm 간격, 중앙 CH4)
-  var nCh=7,sp=2.5,ledH=12,pdH=10,ledA=5*Math.PI/180,beamHa=15*Math.PI/180;
-  var chPos=[];for(var i=0;i<nCh;i++)chPos.push((i-3)*sp);
-  var actCh=3; // CH4 (center)
+  // 채널 위치 (5채널, 2.5mm 간격, 중앙 E3G)
+  var nCh=5,sp=2.5,ledH=12,pdH=10,ledA=5*Math.PI/180,beamHa=15*Math.PI/180;
+  var chPos=[];for(var i=0;i<nCh;i++)chPos.push((i-2)*sp);
+  var actCh=2; var chN=["LH","FSH","E3G","PdG","대조"]; // 5채널 (중앙 E3G 기준)
   // 각 채널 존 색상
   chPos.forEach(function(cx,i){
     var isAct=(i===actCh);
@@ -2114,11 +2114,11 @@ function draw10(){
     // 채널 번호
     c.fillStyle=isAct?"#2060c0":"#a0aac8";
     c.font=(isAct?"bold ":"")+"9px sans-serif";c.textAlign="center";
-    c.fillText("CH"+(i+1),lx,H-5);
+    c.fillText(chN[i],lx,H-5);
   });
   // 제목
   c.fillStyle="#1e2540";c.font="bold 12px sans-serif";c.textAlign="center";
-  c.fillText("7채널 배열 단면도 (2.5mm 간격) — CH4 기준 빔 표시",W/2,13);
+  c.fillText("5채널 배열 단면도 (2.5mm 간격, LH·FSH·E3G·PdG·대조) — 중앙 기준 빔",W/2,13);
   // 범례
   c.fillStyle="#1a8040";c.fillRect(20,18,12,8);
   c.fillStyle="#1a8040";c.font="9px sans-serif";c.textAlign="left";c.fillText("정상 경로",35,26);
@@ -2154,7 +2154,7 @@ function calc10(){
   // 결과 패널
   var p=document.getElementById("d10_result");if(!p)return;
   var scenes=[
-    {id:"s10_00",label:"칸막이 없음",color:"#fde8e8",tColor:"#c03030",verdict:"❌ 측정 불가",desc:"광학 누화 "+(xt1*100).toFixed(0)+"%로 인접 채널 신호가 완전히 섞임. 7채널 독립 측정 불가"},
+    {id:"s10_00",label:"칸막이 없음",color:"#fde8e8",tColor:"#c03030",verdict:"❌ 측정 불가",desc:"광학 누화 "+(xt1*100).toFixed(0)+"%로 인접 채널 신호가 완전히 섞임. 5채널 독립 측정 불가"},
     {id:"s10_10",label:"광학부 칸막이 ✓",color:"#e6f4ea",tColor:"#1a8040",verdict:"✅ 권장",desc:"멤브레인 산란만 남아 누화 "+(xt1*100).toFixed(2)+"%로 무시 가능. 테스트 스틱 변경 불필요"},
     {id:"s10_01",label:"스틱 칸막이만 ✓",color:"#fff8e1",tColor:"#c07818",verdict:"⚠️ 불충분",desc:"직접 광학 경로 "+(xt1*100).toFixed(0)+"%가 여전히 존재. 광학부 칸막이가 핵심"},
     {id:"s10_11",label:"둘 다 칸막이 ✓",color:"#e8f0ff",tColor:"#2060c0",verdict:"✅ 최적",desc:"누화 "+(xt1*100).toFixed(3)+"%로 완벽 격리. 단, 스틱 제조 복잡도 ↑"}
@@ -2196,18 +2196,18 @@ function drawBar10(xt1,xt2){
   var cv=document.getElementById("c10_bar");if(!cv)return;
   var c=cv.getContext("2d"),W=700,H=110;
   c.fillStyle="#fff";c.fillRect(0,0,W,H);
-  var chLabels=["CH1","CH2","CH3","CH4\n(기준)","CH5","CH6","CH7"];
-  var dist=[3,2,1,0,1,2,3];
+  var chLabels=["LH","FSH","E3G\n(기준)","PdG","대조"];
+  var dist=[2,1,0,1,2];
   var vals=dist.map(function(d){return d===0?1:d===1?xt1:xt2;});
-  var colors=vals.map(function(v,i){return i===3?"#2060c0":v>0.05?"#c03030":v>0.01?"#c07818":"#1a8040";});
-  var bW=70,gap=10,xS=20,maxH=H-35;
+  var colors=vals.map(function(v,i){return i===2?"#2060c0":v>0.05?"#c03030":v>0.01?"#c07818":"#1a8040";});
+  var bW=112,gap=15,xS=18,maxH=H-35;
   vals.forEach(function(v,i){
     var x=xS+i*(bW+gap);
     var h=Math.max(2,v*maxH);
     c.fillStyle=colors[i]+"33";c.strokeStyle=colors[i];c.lineWidth=1.5;
     c.fillRect(x,H-25-h,bW,h);c.strokeRect(x,H-25-h,bW,h);
     c.fillStyle=colors[i];c.font="bold 9px sans-serif";c.textAlign="center";
-    c.fillText(i===3?"기준":(v*100).toFixed(v<0.01?2:1)+"%",x+bW/2,H-25-h-4);
+    c.fillText(i===2?"기준":(v*100).toFixed(v<0.01?2:1)+"%",x+bW/2,H-25-h-4);
     c.fillStyle="#7080a8";c.font="9px sans-serif";
     c.fillText(chLabels[i].split("\n")[0],x+bW/2,H-12);
     if(chLabels[i].includes("\n"))c.fillText(chLabels[i].split("\n")[1],x+bW/2,H-2);
