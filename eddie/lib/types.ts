@@ -109,6 +109,17 @@ export interface SleepLog {
   recordedAt: string; // ISO
 }
 
+/** 마감 알림 — 복잡한 곳(공항·놀이동산 등)에서 '몇 시까지' 할 일에 분 단위 카운트다운 알림 */
+export interface Deadline {
+  id: string;
+  date: string; // YYYY-MM-DD (보통 오늘)
+  time: string; // 'HH:mm' 마감 시각
+  text: string;
+  leadMins: number[]; // 몇 분 전에 알릴지 (0=정시 포함)
+  done: boolean;
+  doneAt?: string;
+}
+
 /** 스케줄 달력의 일정 */
 export interface ScheduleEvent {
   id: string;
@@ -161,6 +172,9 @@ export interface AppState {
 
   // 빠른 할 일 캡처
   todos: Todo[];
+
+  // 마감 알림(카운트다운)
+  deadlines: Deadline[];
 
   medications: Medication[];
   medLogs: MedicationLog[];

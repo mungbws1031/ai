@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>전자혀 · 요똥을 위한 맛 튜닝</title>
+<meta name="theme-color" content="#F2722B" />
+<meta name="description" content="요리 초보(요똥)를 위한 맛·소스 배합 계산기" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="전자혀" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<link rel="icon" href="./icon-192.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Noto+Sans+KR:wght@400;500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg-base:#F4EEE3; --bg-frame:#FFFCF6; --surface:#FBF5EC; --surface2:#F1E9DB; --border:#E6DCCB;
+    --text:#2B2620; --muted:#7C7060; --faint:#A39684;
+    --gold:#D99A00; --chef-brown:#B06A22; --accent:#F2722B; --accent-soft:rgba(242,114,43,.12);
+    --t-salt:#3F6FD8; --t-sweet:#D96BA0; --t-sour:#C2941A; --t-umami:#B06A22; --t-fat:#BE8E2C; --t-spicy:#D6002F;
+    --g-gold:#D99A00; --g-good:#5FA236; --g-mid:#C2941A; --g-low:#C85B49;
+    --warn:#C98A1E; --danger:#D6483C; --track:#ECE3D4; --shadow:rgba(90,70,35,.18);
+    --display:'Fraunces',serif; --body:'Noto Sans KR',sans-serif; --mono:'Space Mono',monospace;
+    --navh:64px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{-webkit-text-size-adjust:100%}
+  html,body{margin:0;background:var(--bg-base);font-family:var(--body);color:var(--text)}
+  body{min-height:100dvh;overflow-x:hidden}
+  @keyframes goldpulse{0%,100%{opacity:.5}50%{opacity:1}}
+  @keyframes pop{0%{transform:scale(.96);opacity:0}100%{transform:scale(1);opacity:1}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  .frame{
+    width:100%;background:var(--bg-frame);min-height:100dvh;overflow:hidden;
+    padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));
+  }
+  @media (min-width:480px){
+    body{display:flex;justify-content:center;align-items:flex-start;padding:20px 12px}
+    .frame{max-width:400px;min-height:0;border-radius:28px;border:1px solid var(--border);
+      box-shadow:0 24px 60px -24px var(--shadow);position:relative}
+  }
+
+  /* 공용 헤더 */
+  .hd{padding:calc(env(safe-area-inset-top) + 18px) 20px 14px;border-bottom:1px solid var(--border);position:relative}
+  .hd .kicker{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--faint);text-transform:uppercase}
+  .hd .row{display:flex;align-items:center;gap:11px;margin-top:9px}
+  .avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#C77B3C,#7A4A22);
+    display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:18px;color:#FFF3E4}
+  .hd .name{font-family:var(--display);font-size:19px;font-weight:600;line-height:1.1}
+  .hd .name small{font-size:12px;color:var(--muted);font-weight:500}
+  .hd .sub{font-size:11px;color:var(--muted)}
+
+  .view{display:none;animation:pop .22s ease}
+  .view.active{display:block}
+
+  /* 폼 공통 */
+  .sec{padding:16px 18px 4px}
+  .sec .lab{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;color:var(--faint);text-transform:uppercase;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .sec .lab b{color:var(--accent);font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:7px}
+  .chip{font-size:12.5px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--border);
+    border-radius:999px;padding:9px 13px;cursor:pointer;transition:.15s;min-height:38px;display:inline-flex;align-items:center}
+  .chip:active{transform:scale(.95)}
+  .chip.on{color:#1a130c;background:var(--accent);border-color:var(--accent)}
+  .chip.on.cool{background:var(--gold);border-color:var(--gold)}
+  .saucecat{flex-basis:100%;width:100%;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--faint);margin:11px 0 1px;text-transform:uppercase}
+  .saucecat:first-child{margin-top:2px}
+
+  .wrow{display:flex;gap:8px;align-items:stretch;margin-bottom:9px}
+  .wrow input[type=number]{flex:1;min-width:0;font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:11px 14px;text-align:right}
+  .wrow .unit{display:flex;align-items:center;font-family:var(--mono);font-size:15px;color:var(--muted);padding:0 4px}
+  .qbtns{display:flex;flex-wrap:wrap;gap:6px}
+  .qbtns button{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--muted);background:var(--surface);
+    border:1px solid var(--border);border-radius:9px;padding:7px 10px;cursor:pointer}
+  .qbtns button:active{transform:scale(.95)}
+
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;font-size:13px;font-weight:700;color:var(--muted);background:var(--surface);border:1px solid var(--border);
+    border-radius:11px;padding:11px 4px;cursor:pointer;min-height:44px;transition:.15s}
+  .seg button.on{color:#1a130c;background:var(--accent);border-color:var(--accent)}
+
+  .presetdesc{font-size:12px;line-height:1.5;color:#5A5345;background:var(--accent-soft);border:1px solid rgba(255,138,76,.25);
+    border-radius:12px;padding:10px 12px;margin-top:10px}
+
+  .gobtn{display:block;width:calc(100% - 36px);margin:16px 18px 6px;padding:15px;border:none;border-radius:15px;cursor:pointer;
+    font-family:var(--body);font-weight:900;font-size:16px;color:#1a130c;background:linear-gradient(135deg,#FFB36B,#FF8A4C);
+    box-shadow:0 8px 22px -10px rgba(255,138,76,.7)}
+  .gobtn:active{transform:translateY(1px)}
+  .gobtn.ghost{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:none;font-weight:700}
+
+  /* 결과 */
+  .result{padding:4px 16px 8px}
+  .rcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 15px;margin-bottom:12px}
+  .rcard h3{margin:0 0 4px;font-family:var(--display);font-size:15px;font-weight:600}
+  .rsummary{font-size:12.5px;color:var(--muted);line-height:1.5}
+  .rsummary b{color:var(--text)}
+
+  .ing{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px dashed var(--border)}
+  .ing:last-child{border-bottom:none}
+  .ing .l .nm{font-size:14.5px;font-weight:700}
+  .ing .l .tm{font-size:10.5px;color:var(--faint);font-family:var(--mono);margin-top:2px}
+  .ing .l .tm.early{color:#3F6FD8}.ing .l .tm.middle{color:var(--chef-brown)}.ing .l .tm.finish{color:#9C5BB0}
+  .ing .r{text-align:right;white-space:nowrap}
+  .ing .r .g{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--accent)}
+  .ing .r .sp{font-family:var(--mono);font-size:12px;color:var(--chef-brown);font-weight:700;margin-top:2px;white-space:nowrap}
+
+  .bars{display:flex;flex-direction:column;gap:7px}
+  .bar{display:flex;align-items:center;gap:9px}
+  .bar .bn{width:44px;font-size:11.5px;color:var(--muted);flex-shrink:0}
+  .bar .bt{flex:1;height:8px;background:var(--track);border-radius:99px;overflow:hidden}
+  .bar .bt i{display:block;height:100%;border-radius:99px}
+  .bar .bv{width:16px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--faint)}
+
+  ol.steps{margin:2px 0 0;padding-left:18px}
+  ol.steps li{font-size:12.5px;line-height:1.6;color:#5A5345;margin-bottom:5px}
+
+  .warns{display:flex;flex-direction:column;gap:7px}
+  .warn{display:flex;gap:8px;font-size:12px;line-height:1.45;color:#6B5A2E;background:rgba(224,162,60,.1);
+    border:1px solid rgba(224,162,60,.3);border-radius:11px;padding:9px 11px}
+  .warn.stop{color:#B23B2E;background:rgba(224,88,78,.12);border-color:rgba(224,88,78,.35)}
+  .warn .i{flex-shrink:0}
+
+  .saverow{display:flex;gap:8px;margin:2px 0 4px}
+  .saverow input{flex:1;min-width:0;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px 12px}
+  .saverow button{flex-shrink:0;font-weight:700;font-size:13px;color:#1a130c;background:var(--gold);border:none;border-radius:11px;padding:0 16px;cursor:pointer}
+
+  /* 조미료 배합 = 메인(히어로) */
+  .rcard.hero{border-color:rgba(255,138,76,.45);background:linear-gradient(180deg,rgba(255,138,76,.09),var(--surface))}
+  .rcard.hero h3{font-size:17px}
+  .heronote{font-family:var(--body);font-size:11px;font-weight:700;color:var(--accent)}
+  .blendbar{display:flex;height:15px;border-radius:99px;overflow:hidden;margin:9px 0 4px;background:var(--track)}
+  .blendbar span{display:block;height:100%}
+  .cdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-right:10px}
+  .ing .l{display:flex;align-items:center}
+  .ing.sub{opacity:.55}
+  .ing .r .g small{font-size:13px;font-weight:700;color:var(--muted);margin-left:1px}
+
+  /* 존맛 지수 그래프 */
+  .zon{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 15px;margin-bottom:12px;animation:pop .25s ease}
+  .zon.gold{border-color:rgba(255,210,63,.5);background:rgba(255,210,63,.07);box-shadow:0 0 0 1px rgba(255,210,63,.25)}
+  .zhead{display:flex;align-items:baseline;gap:6px;margin-bottom:10px}
+  .znum{font-family:var(--mono);font-size:34px;font-weight:700;line-height:1}
+  .zden{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .zbadge{margin-left:auto;font-size:11px;font-weight:700;color:#1a130c;background:var(--gold);border-radius:99px;padding:4px 10px;align-self:center;animation:goldpulse 2s ease-in-out infinite}
+  .ztrack{position:relative;height:16px;background:var(--track);border-radius:99px;overflow:hidden}
+  .zzone{position:absolute;top:0;bottom:0;left:78%;right:0;background:repeating-linear-gradient(45deg,rgba(255,210,63,.30),rgba(255,210,63,.30) 5px,rgba(255,210,63,.15) 5px,rgba(255,210,63,.15) 10px)}
+  .zfill{position:absolute;top:0;bottom:0;left:0;border-radius:99px;transition:width .45s ease}
+  .zmark{position:absolute;top:-3px;bottom:-3px;width:3px;background:var(--text);border-radius:2px;transform:translateX(-1px);box-shadow:0 0 0 2px var(--surface);transition:left .45s ease}
+  .zticks{position:relative;height:13px;margin-top:5px;font-family:var(--mono);font-size:9px;color:var(--faint)}
+  .zticks span{position:absolute}.zticks span.z0{left:0}.zticks span.z100{right:0}
+  .zticks .zz{left:78%;transform:translateX(-50%);color:var(--gold)}
+  .zmsg{font-size:12px;line-height:1.5;color:#5A5345;margin-top:9px}
+  .zon.gold .zmsg{color:var(--gold)}
+
+  /* 보정 */
+  .fixcard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 15px;margin:4px 16px 12px}
+  .fixcard .ft{font-family:var(--display);font-size:16px;font-weight:600;color:var(--accent);margin-bottom:8px}
+  .fixstep{display:flex;gap:9px;padding:9px 0;border-bottom:1px dashed var(--border)}
+  .fixstep:last-child{border-bottom:none}
+  .fixstep .tag{flex-shrink:0;font-family:var(--mono);font-size:10px;font-weight:700;color:#1a130c;background:var(--gold);border-radius:6px;padding:3px 6px;height:fit-content}
+  .fixstep .tag.s2{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+  .fixstep .tx{font-size:13px;line-height:1.5}
+  .fixstep .tx b{color:var(--accent)}
+  .fixdesc{font-size:12.5px;line-height:1.6;color:#5A5345;margin-top:10px;background:var(--accent-soft);border-radius:11px;padding:10px 12px}
+
+  /* 저장 */
+  .saved{padding:6px 16px}
+  .srow{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .srow .st{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .srow .stt{font-weight:700;font-size:14px}
+  .srow .sd{font-size:11px;color:var(--faint);font-family:var(--mono)}
+  .srow .sm{font-size:11.5px;color:var(--muted);margin-top:3px}
+  .srow .stars{font-size:14px;letter-spacing:1px;margin-top:6px;cursor:pointer;color:var(--faint)}
+  .srow .stars .on{color:var(--gold)}
+  .srow .sing{margin-top:8px;font-size:12px;color:#5A5345;line-height:1.7;display:none}
+  .srow.open .sing{display:block}
+  .srow .act{display:flex;gap:8px;margin-top:9px}
+  .srow .act button{font-size:11.5px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+  .srow .act button.del{color:#C0483C;border-color:rgba(217,138,130,.4)}
+  .empty{text-align:center;color:var(--faint);font-size:13px;padding:50px 20px;line-height:1.7}
+  .savedhdr{font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--faint);text-transform:uppercase;padding:6px 18px 8px;display:flex;align-items:center;gap:6px}
+  .savedhdr span{background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:1px 8px;color:var(--muted);font-size:10px}
+  .favbtn{background:none;border:none;font-size:18px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0}
+
+  /* 일주일 식단표 */
+  .mealtools{display:flex;gap:8px;padding:10px 16px 2px}
+  .mealtools button{flex:1;font-family:var(--body);font-weight:700;font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:11px;cursor:pointer}
+  .mealtools button:active{transform:scale(.97)}
+  .mcap{font-size:11px;color:var(--muted);padding:2px 18px 6px}
+  .mlist{margin:0 16px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+  .mrow{position:relative;display:flex;align-items:center;gap:10px;padding:12px 14px}
+  .mrow.dayfirst{border-top:1px solid var(--border)}
+  .mlist .mrow:first-child{border-top:none}
+  .mrow.wknd{background:rgba(95,162,54,.05)}
+  .mr-day{width:22px;font-family:var(--display);font-weight:700;font-size:14px;flex-shrink:0}
+  .mrow.sat .mr-day{color:#3F6FD8}.mrow.sun .mr-day{color:#D6483C}
+  .mr-slot{width:32px;font-size:11px;color:var(--muted);flex-shrink:0}
+  .mr-dish{flex:1;min-width:0;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mr-dish.empty{color:var(--faint)}
+  .mrow .mealsel{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;cursor:pointer}
+  .shopwrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 16px 18px}
+  .shopwrap span{font-size:12px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+
+  /* 냉장고 */
+  .frbar{padding:10px 16px 4px;display:flex;flex-direction:column;gap:8px}
+  .frbar input,.frbar select{font-family:var(--body);font-size:13px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .frbar #frName{width:100%}
+  .frbar .frrow{display:flex;gap:7px}
+  .frbar #frDate{flex-shrink:0;min-width:0}
+  .frbar #frDays{flex:1;min-width:0}
+  .frbar #frAdd{flex-shrink:0;font-weight:700;font-size:13px;color:#1a130c;background:var(--accent);border:none;border-radius:10px;padding:0 16px;cursor:pointer}
+  .frnotif{display:block;margin:2px 16px 6px;font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer}
+  .fralert{margin:4px 16px 10px;padding:10px 12px;background:rgba(224,162,60,.12);border:1px solid rgba(224,162,60,.35);border-radius:11px;font-size:12.5px;color:#6B5A2E}
+  .fritem{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 16px 8px;padding:11px 13px;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+  .fritem.soon{border-color:rgba(224,162,60,.5);background:rgba(224,162,60,.06)}
+  .fritem.exp{border-color:rgba(214,72,60,.5);background:rgba(214,72,60,.07)}
+  .fritem .fn{font-size:14.5px;font-weight:700}
+  .fritem .fmeta{font-size:11px;color:var(--muted);margin-top:2px}
+  .fritem .frr{display:flex;align-items:center;gap:9px;flex-shrink:0}
+  .fritem .fdday{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+  .fritem.soon .fdday{color:var(--warn)}
+  .fritem.exp .fdday{color:var(--danger)}
+  .fritem .frdel{background:none;border:none;color:var(--faint);font-size:18px;cursor:pointer;line-height:1;padding:0 2px}
+  .frpaste{margin:2px 16px 6px;border:1px solid var(--border);border-radius:11px;background:var(--surface);overflow:hidden}
+  .frpaste summary{padding:11px 13px;font-size:12.5px;font-weight:700;color:var(--text);cursor:pointer;list-style:none}
+  .frpaste summary::-webkit-details-marker{display:none}
+  .frpaste[open] summary{border-bottom:1px solid var(--border)}
+  .frpaste textarea{display:block;width:100%;box-sizing:border-box;min-height:96px;border:none;background:transparent;color:var(--text);font-family:var(--body);font-size:13px;line-height:1.5;padding:11px 13px;resize:vertical;outline:none}
+  .frpaste #frPasteBtn{margin:0 13px 12px;font-weight:700;font-size:13px;color:#1a130c;background:var(--accent);border:none;border-radius:10px;padding:9px 18px;cursor:pointer}
+
+  /* 감성 맛표현 */
+  .sense-cats{padding:4px 16px 8px}
+  .sense-cat-title{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;color:var(--faint);text-transform:uppercase;margin:12px 0 8px}
+  .sense-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+  .scard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:13px 14px;cursor:pointer;transition:.15s}
+  .scard:active{transform:scale(.97)}
+  .scard.on{border-color:var(--accent);background:rgba(242,114,43,.07)}
+  .scard .sc-em{font-size:20px;margin-bottom:4px}
+  .scard .sc-nm{font-weight:900;font-size:14px;line-height:1.2;margin-bottom:2px}
+  .scard .sc-sub{font-size:10px;color:var(--faint);font-family:var(--mono);letter-spacing:.3px}
+  .scard .sc-bars{display:flex;height:4px;border-radius:99px;overflow:hidden;margin-top:8px}
+  .scard .sc-bar{min-width:2px}
+  .sense-detail{margin:4px 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:18px;overflow:hidden;animation:pop .2s ease}
+  .sd-head{padding:16px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+  .sd-head .sd-em{font-size:32px;flex-shrink:0;line-height:1}
+  .sd-head .sd-left{flex:1;min-width:0}
+  .sd-head .sd-nm{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.2}
+  .sd-head .sd-eng{font-family:var(--mono);font-size:10px;color:var(--faint);letter-spacing:.5px;margin-top:3px}
+  .sd-body{padding:14px 16px}
+  .sd-desc{font-size:13px;line-height:1.7;color:#5A5345;margin-bottom:12px}
+  .sd-taste-row{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .sd-taste-item{display:flex;align-items:center;gap:8px}
+  .sd-taste-label{font-size:11px;font-weight:700;min-width:40px}
+  .sd-taste-bar-wrap{flex:1;height:6px;background:var(--track);border-radius:99px;overflow:hidden}
+  .sd-taste-bar{height:100%;border-radius:99px;transition:.35s}
+  .sd-taste-val{font-family:var(--mono);font-size:11px;font-weight:700;min-width:22px;text-align:right;color:var(--muted)}
+  .sd-dishes{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .sd-dish-chip{font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:4px 9px}
+  .sd-apply-btn{display:block;width:100%;font-family:var(--body);font-weight:900;font-size:14px;color:#1a130c;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;border-radius:13px;padding:13px;cursor:pointer;box-shadow:0 6px 18px -8px rgba(255,138,76,.7)}
+  .sd-apply-btn:active{transform:translateY(1px)}
+  /* 탐색 → 요리 연결 */
+  .dish-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+  .dish-chip{font-family:var(--display);font-size:13.5px;font-weight:700;color:var(--chef-brown);background:rgba(199,123,60,.1);border:1px solid rgba(199,123,60,.3);border-radius:9px;padding:5px 11px;cursor:pointer;transition:.12s;line-height:1.3}
+  .dish-chip:active{transform:scale(.95);background:rgba(199,123,60,.22)}
+
+  /* ── 탐색(시뮬레이터) ── */
+  .radar-wrap{position:relative;padding:6px 8px 0}
+  .glow{position:absolute;inset:6px 8px 0;border-radius:20px;pointer-events:none;
+    background:radial-gradient(circle at 50% 42%,rgba(255,210,63,.18),transparent 62%);animation:goldpulse 2.4s ease-in-out infinite;opacity:0;transition:opacity .4s}
+  .frame.gold .radar-wrap .glow{opacity:1}
+  svg.radar{display:block;width:100%;height:218px}
+  .axis-label{font-size:12px;font-weight:700;font-family:var(--body)}
+  .score{text-align:center;margin-top:-6px;margin-bottom:4px}
+  .score .num{font-family:var(--mono);font-size:42px;font-weight:700;line-height:1}
+  .score .den{font-family:var(--mono);font-size:14px;color:var(--faint)}
+  .score .tag{font-size:11px;letter-spacing:1px;color:var(--muted);margin-top:2px}
+  .gaugebar{height:6px;background:var(--track);border-radius:99px;margin:0 14px 12px;overflow:hidden}
+  .gaugebar>i{display:block;height:100%;border-radius:99px;transition:width .3s,background .3s}
+  .card{margin:0 16px 14px;padding:13px 15px;border-radius:14px;background:var(--surface);border:1px solid var(--border)}
+  .chef.goldc{background:rgba(255,210,63,.09);border-color:rgba(255,210,63,.4)}
+  .chef .title{font-family:var(--display);font-size:16px;font-weight:600;margin-bottom:4px}
+  .chef .body{font-size:13px;line-height:1.6;color:#5A5345}
+  .preset-row{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:0 16px 4px}
+  .preset-row button{font-weight:700;font-size:12px;color:var(--text);background:var(--surface);border:1px solid var(--border);
+    border-radius:11px;min-height:44px;padding:9px 4px;cursor:pointer}
+  .preset-row button:active{transform:scale(.95)}
+  .sliders{padding:6px 18px 6px}.sliders .lab{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;color:var(--faint);margin-bottom:10px;text-transform:uppercase}
+  .sl{margin-bottom:13px}.sl .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px}
+  .sl .left{display:flex;align-items:center;gap:7px}.sl .dot{width:9px;height:9px;border-radius:50%}
+  .sl .nm{font-weight:700;font-size:14px}.sl .sci{font-family:var(--mono);font-size:9px;color:var(--faint)}
+  .sl .val{font-family:var(--mono);font-size:13px;font-weight:700;min-width:26px;text-align:right}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;background:var(--track);border-radius:99px;cursor:pointer;touch-action:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--text);box-shadow:0 1px 5px rgba(90,70,35,.3)}
+  input[type=range]::-moz-range-thumb{width:26px;height:26px;border:none;border-radius:50%;background:var(--text);box-shadow:0 1px 5px rgba(90,70,35,.3)}
+  .syn{margin:2px 16px 8px;padding:11px 14px;border-radius:14px;background:var(--surface);border:1px solid var(--border)}
+  .syn .top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px}
+  .syn .nm{font-weight:700;font-size:13px}.syn .val{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--chef-brown)}
+  .syn .hint{font-size:10.5px;color:var(--muted);margin-top:6px;line-height:1.4}
+  .combos{padding:8px 16px 16px}.combos .lab{font-family:var(--mono);font-size:10px;letter-spacing:1.4px;color:var(--faint);margin-bottom:9px;text-transform:uppercase}
+  .combo{display:flex;align-items:center;justify-content:space-between;padding:11px 13px;margin-bottom:8px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+  .combo.first{background:rgba(199,123,60,.13);border-color:rgba(199,123,60,.4)}
+  .combo .cn{font-size:13px;font-weight:700}.combo .cd{font-size:11px;color:var(--muted);margin-top:1px}
+  .combo .cr{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--chef-brown);white-space:nowrap;margin-left:10px}
+
+  /* 하단 네비 */
+  .nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(255,252,246,.92);backdrop-filter:blur(10px);
+    border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);z-index:20}
+  @media (min-width:480px){.nav{position:absolute;border-radius:0 0 28px 28px}}
+  .nav button{flex:1;background:none;border:none;color:var(--faint);padding:9px 2px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;height:var(--navh)}
+  .nav button{padding:9px 1px 8px}
+  .nav button .ic{font-size:18px;line-height:1}
+  .nav button .tx{font-size:9.5px;font-weight:700}
+  .nav button.on{color:var(--accent)}
+  .nav button.on .ic{transform:translateY(-1px)}
+
+  /* 맛 스타일 말풍선(토스트) */
+  .bubble{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 16px);
+    transform:translateX(-50%) translateY(8px);background:var(--accent);color:#fff;border-radius:16px;
+    padding:10px 15px;max-width:84%;box-shadow:0 12px 26px -8px var(--shadow);
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:40;text-align:center}
+  .bubble.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;cursor:pointer}
+  .bubble.gold{background:var(--gold);color:#2B2620}
+  .bubble::after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+    border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid var(--accent)}
+  .bubble.gold::after{border-top-color:var(--gold)}
+  .bubble .bbl-t{font-size:13.5px;font-weight:700}
+  .bubble .bbl-s{font-size:11px;opacity:.92;margin-top:2px}
+
+  /* 쉬운 요리(레시피) */
+  .recipes{padding:8px 16px 4px}
+  .rc{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:10px;overflow:hidden}
+  .rc .rch{display:flex;align-items:center;gap:11px;padding:13px 14px;cursor:pointer}
+  .rc .rem{font-size:24px;line-height:1}
+  .rc .rnm{font-family:var(--display);font-size:16px;font-weight:600;flex:1}
+  .rc .rmeta{font-family:var(--mono);font-size:10px;color:var(--faint);text-align:right;white-space:nowrap;line-height:1.5}
+  .rc .rmeta .rd{color:var(--gold)}
+  .rc .rchev{color:var(--faint);transition:transform .2s;flex-shrink:0}
+  .rc.open .rchev{transform:rotate(180deg)}
+  .rc .rbody{display:none;padding:2px 14px 14px}
+  .rc.open .rbody{display:block}
+  .rc .rsec{margin-top:11px}
+  .rc .rsec h4{margin:0 0 7px;font-family:var(--mono);font-size:10px;letter-spacing:1px;color:var(--faint);text-transform:uppercase}
+  .rc .rings{display:flex;flex-wrap:wrap;gap:6px}
+  .rc .rings span{font-size:12px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:5px 9px}
+  .rc ol.rsteps{margin:0;padding-left:19px}
+  .rc ol.rsteps li{font-size:13px;line-height:1.65;color:#5A5345;margin-bottom:6px}
+  .rc .rtip{font-size:12px;line-height:1.55;color:#6B5A2E;background:rgba(224,162,60,.12);border:1px solid rgba(224,162,60,.28);border-radius:10px;padding:9px 11px;margin-top:11px}
+</style>
+</head>
+<body>
+<div class="frame" id="frame">
+
+  <!-- ════════ 계산 ════════ -->
+  <section class="view" id="view-calc">
+    <div class="hd">
+      <div class="kicker">Electronic Tongue · 맛 튜닝 계산기</div>
+      <div class="row">
+        <div class="avatar">味</div>
+        <div>
+          <div class="name">전자혀 <small>요똥 맞춤</small></div>
+          <div class="sub">음식 무게만 알려줘. 존맛 배합은 계산해줄게.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <div class="lab"><b>1</b> 무슨 음식이에요?</div>
+      <div class="chips" id="catChips"></div>
+    </div>
+
+    <div class="sec">
+      <div class="lab"><b>2</b> 완성될 음식 무게</div>
+      <div class="wrow">
+        <input type="number" id="weight" inputmode="numeric" placeholder="300" value="300" min="1" />
+        <span class="unit">g</span>
+      </div>
+      <div class="qbtns" id="weightQuick"></div>
+    </div>
+
+    <div class="sec">
+      <div class="lab"><b>3</b> 어떤 맛 스타일로?</div>
+      <div class="chips" id="styleChips"></div>
+      <div class="presetdesc" id="styleDesc"></div>
+    </div>
+
+    <div class="sec">
+      <div class="lab"><b>4</b> 맛 강도</div>
+      <div class="seg" id="intensitySeg">
+        <button data-v="mild">순한맛</button>
+        <button data-v="normal" class="on">기본맛</button>
+        <button data-v="strong">진한맛</button>
+      </div>
+    </div>
+
+    <button class="gobtn" id="calcBtn">맛 계산하기</button>
+    <div class="result" id="calcResult"></div>
+  </section>
+
+  <!-- ════════ 보정 ════════ -->
+  <section class="view" id="view-fix">
+    <div class="hd">
+      <div class="kicker">Taste Rescue · 망한 음식 살리기</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#E0584E,#7A2A24)">救</div>
+        <div>
+          <div class="name">맛 보정</div>
+          <div class="sub">맛봤는데 이상해요? 증상만 고르면 처방해드려요.</div>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="lab"><b>1</b> 음식 무게</div>
+      <div class="wrow">
+        <input type="number" id="fixWeight" inputmode="numeric" placeholder="300" value="300" min="1" />
+        <span class="unit">g</span>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="lab"><b>2</b> 지금 어떤 상태예요?</div>
+      <div class="chips" id="fixChips"></div>
+    </div>
+    <div id="fixResult"></div>
+  </section>
+
+  <!-- ════════ 탐색 ════════ -->
+  <section class="view active" id="view-explore">
+    <div class="hd">
+      <div class="kicker">Taste Engine · 배합 시뮬레이터</div>
+      <div class="row">
+        <div class="avatar">味</div>
+        <div>
+          <div class="name">셰프 미강 <small>味江</small></div>
+          <div class="sub">5축 맛을 직접 빚어 존맛 지수를 봐요</div>
+        </div>
+      </div>
+    </div>
+    <div class="radar-wrap">
+      <div class="glow"></div>
+      <svg class="radar" id="radar" viewBox="0 0 320 218" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
+      <div class="score">
+        <span class="num" id="scoreNum">0</span><span class="den"> / 100</span>
+        <div class="tag" id="scoreTag">존맛 지수</div>
+      </div>
+      <div class="gaugebar"><i id="gauge"></i></div>
+    </div>
+    <div class="card chef" id="chef" role="status" aria-live="polite">
+      <div class="title" id="chefTitle"></div>
+      <div class="body" id="chefBody"></div>
+    </div>
+    <div class="sliders">
+      <div class="lab">조절좌 — 맛을 직접 빚어보세요</div>
+      <div id="sliders"></div>
+    </div>
+    <div class="syn">
+      <div class="top"><span class="nm">감칠맛 시너지</span><span class="val" id="synVal">0.0</span></div>
+      <input type="range" id="synRange" min="0" max="1" step="0.1" value="0" aria-label="감칠맛 시너지" />
+      <div class="hint">두 감칠맛원을 함께 쓰면(간장+멸치/고기 등) 글루탐산×이노신산 시너지로 감칠맛이 최대 1.5배 [R1]</div>
+    </div>
+    <div class="preset-row" id="presets"></div>
+    <div class="card" style="margin-top:6px"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">이 맛으로 만들 수 있는 요리 →</div>
+      <div style="font-family:var(--display);font-size:16px;font-weight:600;color:var(--g-mid)" id="dish"></div></div>
+    <div class="combos"><div class="lab">이 맛 내려면 — 기성품 조합</div><div id="combos"></div></div>
+  </section>
+
+  <!-- ════════ 쉬운 요리 ════════ -->
+  <section class="view" id="view-recipe">
+    <div class="hd">
+      <div class="kicker">Easy Recipes · 요똥도 성공</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#5FA236,#2f6a1c)">🍙</div>
+        <div><div class="name">쉬운 요리</div><div class="sub">계량·머리 안 써도 되는 초간단 레시피</div></div>
+      </div>
+    </div>
+    <div class="recipes" id="recipeList"></div>
+  </section>
+
+  <!-- ════════ 소스 배합소 ════════ -->
+  <section class="view" id="view-sauce">
+    <div class="hd">
+      <div class="kicker">Sauce Lab · 유명한 그 맛</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#E0584E,#7a2a24)">🥫</div>
+        <div><div class="name">소스 배합소</div><div class="sub">유명한 소스를 골라 조절좌로 내 입맛에</div></div>
+      </div>
+    </div>
+    <div class="sec"><div class="lab">유명한 맛 고르기</div><div class="chips" id="sauceChips"></div></div>
+    <div class="presetdesc" id="sauceDesc" style="margin:8px 18px 0"></div>
+    <div class="sliders"><div class="lab">조절좌 — 맵기·단맛 등을 입맛대로</div><div id="sauceSliders"></div></div>
+    <div class="result" id="sauceRecipe"></div>
+  </section>
+
+  <!-- ════════ 일주일 식단표 ════════ -->
+  <section class="view" id="view-meal">
+    <div class="hd">
+      <div class="kicker">Weekly Plan · 일주일 식단</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#5FA236,#2f6a1c)">📅</div>
+        <div><div class="name">일주일 식단표</div><div class="sub">요일·끼니에 요리를 배치하면 장보기까지</div></div>
+      </div>
+    </div>
+    <div class="mealtools"><button id="mealFill">🎲 자동 채우기</button><button id="mealClear">전체 비우기</button></div>
+    <div id="mealPlan"></div>
+    <div id="mealShop"></div>
+  </section>
+
+  <!-- ════════ 냉장고 ════════ -->
+  <section class="view" id="view-fridge">
+    <div class="hd">
+      <div class="kicker">My Fridge · 재료 관리</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#3F6FD8,#274a9a)">🧊</div>
+        <div><div class="name">냉장고</div><div class="sub">산 날짜 넣으면 언제까지 쓸지 알려줘요</div></div>
+      </div>
+    </div>
+    <div class="frbar">
+      <input type="text" id="frName" placeholder="재료명 (예: 삼겹살, 우유, 상추)" />
+      <div class="frrow"><input type="date" id="frDate" /><select id="frDays"></select><button id="frAdd">추가</button></div>
+    </div>
+    <details class="frpaste" id="frPasteDetails">
+      <summary>📋 쿠팡·마트 주문내역 붙여넣기 (자동 입력)</summary>
+      <textarea id="frPaste" placeholder="주문한 상품 목록을 복사해 붙여넣으세요. 한 줄에 한 상품씩이면 더 정확해요.&#10;예) 곰곰 신선한 우유 900ml&#10;    동물복지 대란 30구&#10;    국내산 삼겹살 500g"></textarea>
+      <button id="frPasteBtn">자동 입력</button>
+    </details>
+    <button class="frnotif" id="frNotif">🔔 만료 알림 켜기</button>
+    <div id="frList"></div>
+  </section>
+
+  <!-- ════════ 저장 ════════ -->
+  <section class="view" id="view-saved">
+    <div class="hd">
+      <div class="kicker">My Recipes · 나만의 배합</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#FFD23F,#B98A12);color:#3a2c05">★</div>
+        <div><div class="name">저장한 레시피</div><div class="sub">계산한 배합을 모아두고 다시 꺼내봐요</div></div>
+      </div>
+    </div>
+    <div class="saved" id="savedList"></div>
+  </section>
+
+  <!-- ════════ 감성 맛표현 ════════ -->
+  <section class="view" id="view-sense">
+    <div class="hd">
+      <div class="kicker">Taste Language · 맛 감성어</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">感</div>
+        <div><div class="name">감성 맛표현</div><div class="sub">고향의맛, 뭉근하게 끓인맛… 맛 언어로 바로 튜닝</div></div>
+      </div>
+    </div>
+    <div id="senseGrid"></div>
+    <div id="senseDetail"></div>
+  </section>
+
+  <!-- 하단 네비 -->
+  <nav class="nav" id="nav">
+    <button data-view="explore" class="on"><span class="ic">🎚️</span><span class="tx">탐색</span></button>
+    <button data-view="calc"><span class="ic">🧮</span><span class="tx">계산</span></button>
+    <button data-view="recipe"><span class="ic">🍙</span><span class="tx">요리</span></button>
+    <button data-view="sauce"><span class="ic">🥫</span><span class="tx">소스</span></button>
+    <button data-view="meal"><span class="ic">📅</span><span class="tx">식단</span></button>
+    <button data-view="fridge"><span class="ic">🧊</span><span class="tx">냉장</span></button>
+    <button data-view="fix"><span class="ic">🩹</span><span class="tx">보정</span></button>
+    <button data-view="saved"><span class="ic">★</span><span class="tx">저장</span></button>
+    <button data-view="sense"><span class="ic">言</span><span class="tx">감성</span></button>
+  </nav>
+  <div class="bubble" id="styleBubble"></div>
+</div>
+
+<script>
+"use strict";
+/* ════════════════════════════════════════════════════════════════════
+   PART A. 데이터 (PRD 7장)
+   ════════════════════════════════════════════════════════════════════ */
+const COND = {
+  salt:{name:"소금",saltEq:1.0,density:1.2},
+  soy_sauce:{name:"간장",saltEq:0.16,sweetEq:0.01,umami:3,density:1.15},
+  low_sodium_soy_sauce:{name:"저염간장",saltEq:0.10,sweetEq:0.01,umami:2,density:1.15},
+  sugar:{name:"설탕",sweetEq:1.0,density:0.85},
+  oligosaccharide:{name:"올리고당/물엿",sweetEq:0.7,density:1.35},
+  honey:{name:"꿀",sweetEq:0.8,density:1.4},
+  mirin:{name:"미림",sweetEq:0.4,umami:1,density:1.1},
+  vinegar:{name:"식초",acidEq:1.0,density:1.0},
+  lemon_juice:{name:"레몬즙",acidEq:0.8,sweetEq:0.02,density:1.0},
+  lime_juice:{name:"라임즙",acidEq:0.8,density:1.0},
+  yuzu_syrup:{name:"유자청",sweetEq:0.5,acidEq:0.3,density:1.3},
+  ketchup:{name:"케첩",saltEq:0.02,sweetEq:0.23,acidEq:0.15,umami:2,density:1.1},
+  gochujang:{name:"고추장",saltEq:0.06,sweetEq:0.18,acidEq:0.02,umami:3,spice:4,density:1.2},
+  doenjang:{name:"된장",saltEq:0.14,sweetEq:0.02,fatEq:0.02,umami:5,density:1.15},
+  oyster_sauce:{name:"굴소스",saltEq:0.09,sweetEq:0.12,umami:5,density:1.2},
+  fish_sauce:{name:"액젓",saltEq:0.20,umami:5,density:1.15},
+  mayo:{name:"마요네즈",saltEq:0.01,sweetEq:0.02,acidEq:0.03,fatEq:0.70,umami:1,density:0.95},
+  sesame_oil:{name:"참기름",fatEq:1.0,umami:1,aroma:5,density:0.92},
+  oil:{name:"식용유",fatEq:1.0,density:0.92},
+  olive_oil:{name:"올리브오일",fatEq:1.0,aroma:2,density:0.92},
+  butter:{name:"버터",saltEq:0.01,fatEq:0.8,umami:2,aroma:4,density:0.96},
+  garlic:{name:"다진마늘",aroma:3,umami:1,density:1.0},
+  ginger:{name:"생강",aroma:3,density:1.0},
+  green_onion:{name:"대파",aroma:2,density:1.0},
+  chili_powder:{name:"고춧가루",spice:5,density:0.5},
+  chili_sauce:{name:"칠리소스",saltEq:0.03,sweetEq:0.2,acidEq:0.1,spice:4,density:1.1},
+  pepper:{name:"후추",aroma:2,spice:1,density:0.5},
+  herbs:{name:"허브",aroma:4,density:0.3},
+  fried_garlic:{name:"튀긴마늘",aroma:4,fatEq:0.2,density:0.6},
+  fried_onion:{name:"튀긴양파",aroma:3,fatEq:0.2,density:0.5},
+  sesame:{name:"통깨",aroma:3,fatEq:0.3,density:0.6},
+  starch_water:{name:"전분물",density:1.05},
+  dashi:{name:"다시육수",umami:4,density:1.0},
+  water:{name:"물",density:1.0},
+  milk_or_cream:{name:"우유/크림",fatEq:0.2,sweetEq:0.05,density:1.0},
+  cheese:{name:"치즈",saltEq:0.05,fatEq:0.3,umami:3,density:1.05},
+  gochujang_or_ketchup:{name:"고추장/케첩",saltEq:0.04,sweetEq:0.2,acidEq:0.08,umami:2,spice:2,density:1.15},
+  // ── 유명 기성 감칠맛 조미료 ──
+  dasida:{name:"다시다",saltEq:0.40,sweetEq:0.05,umami:6,density:0.65},
+  yeondu:{name:"연두",saltEq:0.12,umami:5,density:1.1},
+  miwon:{name:"미원·미풍(MSG)",saltEq:0.08,umami:6,density:0.8},
+  matsogeum:{name:"맛소금",saltEq:0.9,umami:2,density:1.05},
+  tsuyu:{name:"쯔유(멘쯔유)",saltEq:0.10,sweetEq:0.08,umami:4,density:1.1},
+  chicken_stock:{name:"치킨스톡",saltEq:0.35,umami:5,density:0.6}
+};
+const C = id => COND[id] || {name:id,density:1.0};
+
+const CATEGORIES = [
+  {id:"soup",name:"국/탕",saltPct:[0.6,0.8],sweetPct:[0,0.3],acidPct:[0,0.2],fatPct:[0,3],umami:4},
+  {id:"stew",name:"찌개",saltPct:[0.8,1.0],sweetPct:[0,0.5],acidPct:[0,0.3],fatPct:[1,5],umami:5},
+  {id:"stir_fry",name:"볶음",saltPct:[0.9,1.3],sweetPct:[1,4],acidPct:[0,0.4],fatPct:[3,8],umami:4},
+  {id:"muchim",name:"무침",saltPct:[0.9,1.2],sweetPct:[1,3],acidPct:[0,3],fatPct:[1,3],umami:3},
+  {id:"braise",name:"조림",saltPct:[1.0,1.5],sweetPct:[3,8],acidPct:[0,0.3],fatPct:[1,5],umami:5},
+  {id:"grill",name:"구이",saltPct:[0.8,1.2],sweetPct:[0,2],acidPct:[0,0.5],fatPct:[5,15],umami:3},
+  {id:"rice_bowl",name:"덮밥/밥",saltPct:[0.8,1.2],sweetPct:[1,4],acidPct:[0,0.4],fatPct:[3,8],umami:4},
+  {id:"noodle_pasta",name:"면/파스타",saltPct:[0.8,1.2],sweetPct:[0,3],acidPct:[0,1.2],fatPct:[5,15],umami:4},
+  {id:"dressing",name:"드레싱/샐러드",saltPct:[0.6,1.2],sweetPct:[2,8],acidPct:[5,25],fatPct:[20,60],umami:2},
+  {id:"dipping_sauce",name:"소스/디핑",saltPct:[1.5,3.5],sweetPct:[3,15],acidPct:[0,10],fatPct:[0,70],umami:5},
+  {id:"kids_side",name:"아이 반찬",saltPct:[0.7,1.0],sweetPct:[2,5],acidPct:[0,0.5],fatPct:[3,7],umami:4}
+];
+
+const STYLES = [
+  {id:"basic_home",name:"기본 집밥",desc:"실패 확률 낮은 기본 단짠 감칠맛",rec:["soy_sauce","sugar","garlic","sesame_oil"]},
+  {id:"kids_sweet_savory",name:"아이용 달달짭짤",desc:"아이들이 좋아하는 둥근 맛. 신맛·매운맛은 낮추고 단맛·고소함으로 부드럽게.",over:{saltPct:[0.7,1.0],sweetPct:[2,5],acidPct:[0,0.5],fatPct:[3,7],umami:4},rec:["soy_sauce","oligosaccharide","butter","ketchup","garlic"]},
+  {id:"trendy_rose",name:"요즘 로제/크리미 매콤",desc:"크리미함에 매콤달콤을 얹은 요즘식. 우유·치즈·고추장·케첩이 잘 맞아요.",over:{saltPct:[1.0,1.3],sweetPct:[3,7],acidPct:[0.3,1.0],fatPct:[8,15],umami:5},rec:["gochujang","ketchup","soy_sauce","sugar","butter","milk_or_cream","cheese"]},
+  {id:"hot_honey_chicken",name:"핫허니/양념치킨",desc:"달콤함이 먼저, 뒤에 매콤함이 오는 분식/치킨집 스타일.",over:{saltPct:[1.0,1.3],sweetPct:[6,12],acidPct:[1,3],fatPct:[2,6],umami:4},rec:["gochujang","ketchup","soy_sauce","honey","vinegar","garlic"]},
+  {id:"chili_crisp",name:"칠리크리스프/바삭매콤",desc:"매운맛보다 바삭한 기름향이 핵심. 튀긴 마늘·양파·깨를 더하면 완성도 ↑.",over:{saltPct:[1.0,1.3],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[10,20],umami:4},rec:["chili_powder","oil","fried_garlic","fried_onion","soy_sauce","sesame"]},
+  {id:"yuzu_lime_spicy",name:"유자라임 새콤매콤",desc:"산미와 단맛이 살아있는 상큼한 매콤함.",over:{saltPct:[0.9,1.2],sweetPct:[3,7],acidPct:[3,8],fatPct:[1,5],umami:3},rec:["soy_sauce","yuzu_syrup","lime_juice","vinegar","chili_sauce"]},
+  {id:"gochujang_mayo",name:"고추장마요/김치마요",desc:"고소한 마요 중심의 매콤새콤.",over:{saltPct:[1.0,1.5],sweetPct:[2,6],acidPct:[1,5],fatPct:[35,70],umami:4},rec:["mayo","gochujang","sugar","vinegar","soy_sauce"]},
+  {id:"baek_jongwon",name:"백종원식 대중 한식",desc:"단짠·마늘·파기름으로 밥이랑 잘 맞는 진한 한식.",over:{saltPct:[1.1,1.4],sweetPct:[2,6],acidPct:[0,0.5],fatPct:[4,8],umami:5},rec:["soy_sauce","sugar","garlic","green_onion","oil","sesame_oil"]},
+  {id:"ryu_sooyoung",name:"류수영식 원팬 집밥",desc:"진하고 눅진한 원팬 밥반찬 스타일.",over:{saltPct:[1.0,1.3],sweetPct:[2,5],acidPct:[0,0.5],fatPct:[5,10],umami:5},rec:["soy_sauce","oyster_sauce","sugar","garlic","oil","gochujang"]},
+  {id:"lee_yeonbok",name:"이연복식 중식풍",desc:"파마늘생강 기름향, 굴소스, 전분 농도 중심.",over:{saltPct:[1.0,1.3],sweetPct:[1,4],acidPct:[0.5,3],fatPct:[8,15],umami:5},rec:["soy_sauce","oyster_sauce","sugar","vinegar","oil","starch_water","garlic","ginger"]},
+  {id:"choi_kangrok",name:"최강록식 섬세한 감칠맛",desc:"다시·간장·미림으로 조용하게 깊은 맛.",over:{saltPct:[0.8,1.1],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[2,6],umami:5},rec:["soy_sauce","mirin","dashi","sugar"]},
+  {id:"gordon_ramsay",name:"고든 램지식 서양식",desc:"정확한 소금 간, 버터·허브, 마지막 산미 마무리.",over:{saltPct:[0.9,1.2],sweetPct:[0,1],acidPct:[0.5,2],fatPct:[8,20],umami:3},rec:["salt","butter","olive_oil","lemon_juice","herbs","garlic","pepper"]},
+  {id:"fine_dining",name:"파인다이닝풍",desc:"절제된 간·산미·향, 식감 포인트.",over:{saltPct:[0.8,1.1],sweetPct:[0,2],acidPct:[1,3],fatPct:[5,15],umami:4},rec:["salt","lemon_juice","olive_oil","herbs","butter"]}
+];
+const STYLE = id => STYLES.find(s=>s.id===id);
+
+/* 전용 템플릿 (PRD 7.7) — 300g 기준 */
+const TEMPLATES = {
+  kids_sweet_savory:{base:300,ings:[
+    {id:"soy_sauce",g:15,t:"middle"},{id:"oligosaccharide",g:10,t:"middle"},
+    {id:"butter",g:10,t:"finish"},{id:"garlic",g:2,t:"early"},{id:"water",g:40,t:"middle"}],
+    steps:["팬을 약한 불로 데우고 버터를 녹입니다.","간장·올리고당·물을 붓고 끓어오르면 다진 마늘을 넣습니다.","재료를 넣어 양념이 고루 배도록 조립니다. 간은 80%만 먼저, 맛보고 조절하세요."]},
+  hot_honey_chicken:{base:300,ings:[
+    {id:"gochujang",g:20,t:"middle"},{id:"ketchup",g:20,t:"middle"},{id:"soy_sauce",g:8,t:"middle"},
+    {id:"honey",g:25,t:"middle"},{id:"vinegar",g:5,t:"finish"},{id:"garlic",g:4,t:"early"}],
+    steps:["고추장·케첩·간장·꿀·다진마늘을 섞어 양념장을 만듭니다.","팬에 재료를 넣고 양념을 더해 중불에 조립니다.","마지막에 식초로 새콤함을 살립니다. 매운맛·산미는 조금씩 조절하세요."]},
+  lee_yeonbok:{base:300,ings:[
+    {id:"oyster_sauce",g:15,t:"middle"},{id:"soy_sauce",g:8,t:"middle"},{id:"sugar",g:5,t:"middle"},
+    {id:"oil",g:25,t:"early"},{id:"garlic",g:4,t:"early"},{id:"ginger",g:1,t:"early"},{id:"starch_water",g:20,t:"finish"}],
+    steps:["기름에 다진 마늘·생강을 약불로 볶아 향을 냅니다.","재료를 센 불에 볶다가 굴소스·간장·설탕으로 간합니다.","전분물을 둘러 윤기와 농도를 맞추고 빠르게 마무리합니다."]}
+};
+
+/* 단위 환산 (PRD 8장) */
+function spoonStr(g, density){
+  const ml = g / (density || 1.0);
+  if (ml < 2.5) return "약간";
+  if (ml >= 150) return fmtNum(round05(ml/200)) + "컵";   // 국물 등 큰 부피는 컵(200ml)으로
+  let tsp = round05(ml/5);              // 작은술(5ml) 단위로 반올림
+  let tbsp = Math.floor(tsp/3);         // 1큰술 = 3작은술(15ml)
+  let rem = round05(tsp - tbsp*3);
+  if (rem >= 3){ tbsp += 1; rem -= 3; }
+  const p = [];
+  if (tbsp > 0) p.push(tbsp + "큰술");
+  if (rem > 0) p.push(fmtNum(rem) + "작은술");
+  return p.length ? p.join(" ") : "약간";
+}
+function round05(v){ return Math.round(v*2)/2; }
+function fmtNum(v){ return Number.isInteger(v) ? String(v) : v.toFixed(1); }
+function fmtG(g){ const r = round05(g); return (Number.isInteger(r)?String(r):r.toFixed(1)); }
+
+/* 강도 (PRD 11.4) — 산미·매운맛은 1.1배까지만 */
+const INTENSITY = {mild:0.85, normal:1.0, strong:1.15};
+function intMul(axis, mode){ const m = INTENSITY[mode]; if((axis==="acid"||axis==="spice")) return Math.min(m,1.1); return m; }
+
+const mid = r => (r[0]+r[1])/2;
+const acidPoint = r => r[0] + 0.25*(r[1]-r[0]); // 산미는 마무리 액센트 — 범위 하한쪽(소량)
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* ════════════════════════════════════════════════════════════════════
+   PART B. 계산 엔진 (PRD 11장)
+   ════════════════════════════════════════════════════════════════════ */
+function calcRecipe(state){
+  const cat = CATEGORIES.find(c=>c.id===state.categoryId) || CATEGORIES[2];
+  const style = STYLE(state.stylePresetId) || STYLES[0];
+  const w = state.foodWeightG;
+  const mode = state.intensity || "normal";
+  let ings, steps;
+
+  if (TEMPLATES[style.id]){
+    const tpl = TEMPLATES[style.id];
+    const ratio = w / tpl.base;
+    ings = tpl.ings.map(it=>{
+      const c = C(it.id);
+      const ax = (c.acidEq?"acid":(c.spice?"spice":"other"));
+      const amt = it.g * ratio * (it.id==="water"||it.id==="starch_water" ? 1 : intMul(ax, mode));
+      return {id:it.id, name:c.name, amountG:amt, timing:it.t, density:c.density};
+    });
+    steps = tpl.steps.slice();
+  } else {
+    const prof = Object.assign({}, cat, style.over||{});
+    const rec = style.rec;
+    const targets = {
+      salt: w*mid(prof.saltPct)/100 * intMul("salt",mode) * (style.saltMultiplier||1),
+      sweet:w*mid(prof.sweetPct)/100* intMul("sweet",mode)* (style.sweetMultiplier||1),
+      acid: w*acidPoint(prof.acidPct)/100 * intMul("acid",mode) * (style.acidMultiplier||1),
+      fat:  w*mid(prof.fatPct)/100  * intMul("fat",mode)  * (style.fatMultiplier||1)
+    };
+    const FIELD={salt:"saltEq",sweet:"sweetEq",acid:"acidEq",fat:"fatEq"};
+    const AROMA=new Set(["garlic","ginger","green_onion","sesame","herbs","pepper","fried_garlic","fried_onion"]);
+    const primaryAxis=id=>{ const c=C(id); const a=[["salt",c.saltEq||0],["sweet",c.sweetEq||0],["acid",c.acidEq||0],["fat",c.fatEq||0]].sort((x,y)=>y[1]-x[1]); return a[0][1]>0?a[0][0]:null; };
+    const timingFor=(id,ax)=> ax==="fat" ? ((id==="butter"||id==="sesame_oil")?"finish":"early") : ax==="acid" ? "finish" : "middle";
+    ings = [];
+    const add=(id,g,t)=>{ if(g>0){ const c=C(id); ings.push({id,name:c.name,amountG:g,timing:t,density:c.density}); } };
+
+    // 1) 향채(기름향) — early
+    if(rec.includes("garlic")) add("garlic", w*0.013, "early");
+    if(rec.includes("ginger")) add("ginger", w*0.004, "early");
+    if(rec.includes("green_onion")) add("green_onion", w*0.02, "early");
+    if(rec.includes("fried_garlic")) add("fried_garlic", w*0.02, "early");
+    if(rec.includes("fried_onion")) add("fried_onion", w*0.02, "early");
+
+    // 2) 측정 가능한 맛 축 배분 (주재료 70% + 보조재료 30% 균등) — 추천 조합을 모두 노출
+    for(const ax of ["fat","salt","sweet","acid"]){
+      let prov = rec.filter(id=>!AROMA.has(id) && (C(id)[FIELD[ax]]||0)>0 && primaryAxis(id)===ax);
+      if(ax==="salt" && !prov.length) prov=["soy_sauce"]; // 간은 반드시
+      const tgt = targets[ax];
+      if(!prov.length || tgt<=0) continue;
+      prov.sort((a,b)=> (C(b)[FIELD[ax]]||0)-(C(a)[FIELD[ax]]||0));
+      const prim=prov[0], secs=prov.slice(1);
+      add(prim, (secs.length?0.7:1)*tgt / C(prim)[FIELD[ax]], timingFor(prim,ax));
+      secs.forEach(id=> add(id, (0.3*tgt/secs.length) / C(id)[FIELD[ax]], timingFor(id,ax)));
+    }
+
+    // 3) 측정축 없는 향/감칠/매콤 보조
+    if(rec.includes("dashi") && prof.umami>=4) add("dashi", w*0.05, "middle");
+    // 유명 기성 감칠맛 조미료 한 꼬집 (양식 제외) — 다시다/연두
+    if(prof.umami>=4 && !["gordon_ramsay","fine_dining"].includes(style.id) && !ings.some(i=>["dasida","yeondu","oyster_sauce","fish_sauce"].includes(i.id)))
+      add(style.id==="choi_kangrok"?"yeondu":"dasida", w*0.005, "middle");
+    if(rec.includes("chili_powder")) add("chili_powder", w*0.008*intMul("spice",mode), "middle");
+    if(rec.includes("sesame")) add("sesame", w*0.01, "finish");
+    if(rec.includes("herbs")) add("herbs", Math.max(0.3,w*0.004), "finish");
+    if(rec.includes("pepper")) add("pepper", Math.max(0.2,w*0.001), "finish");
+    if(rec.includes("starch_water")) add("starch_water", w*0.06, "finish");
+
+    const order={early:0, middle:1, finish:2};
+    ings.sort((a,b)=> order[a.timing]-order[b.timing]);
+    steps = buildSteps(ings);
+  }
+
+  // 국·찌개는 국물(물) 양도 함께 안내
+  if(state.categoryId==="soup" || state.categoryId==="stew"){
+    const wf = state.categoryId==="soup" ? 0.8 : 0.55;
+    ings.unshift({id:"water", name:"물(육수)", amountG: Math.round(w*wf/10)*10, timing:"early", density:1.0});
+  }
+  const eq = eqSums(ings);
+  const taste = tasteAxis(w, eq, cat, style);
+  const zon = scoreZon(w, eq, Object.assign({}, cat, style.over||{}), ings);
+  const warnings = buildWarnings(state, ings, cat, style);
+  return {foodWeightG:w, categoryName:cat.name, styleName:style.name, ingredients:ings, taste, zon, steps, warnings};
+}
+
+function eqSums(ings){
+  const e={salt:0,sweet:0,acid:0,fat:0,umami:0,spice:0,umamiCount:0};
+  ings.forEach(it=>{ const c=C(it.id); const g=it.amountG;
+    e.salt+=(c.saltEq||0)*g; e.sweet+=(c.sweetEq||0)*g; e.acid+=(c.acidEq||0)*g; e.fat+=(c.fatEq||0)*g;
+    e.umami=Math.max(e.umami,c.umami||0); e.spice=Math.max(e.spice,c.spice||0);
+    if((c.umami||0)>=3) e.umamiCount++;
+  });
+  return e;
+}
+function tasteAxis(w, eq, cat, style){
+  const prof = Object.assign({}, cat, style.over||{});
+  return {
+    salt: clamp(Math.round((eq.salt/w*100)/1.4*5),0,5),
+    sweet: clamp(Math.round((eq.sweet/w*100)/8*5),0,5),
+    acid: clamp(Math.round((eq.acid/w*100)/8*5),0,5),
+    fat: clamp(Math.round((eq.fat/w*100)/20*5),0,5),
+    umami: clamp(Math.round(prof.umami),0,5),
+    spice: clamp(eq.spice,0,5)
+  };
+}
+/* 존맛 지수: 카테고리 목표 적합도(fit) + 맛 균형 휴리스틱(delight) 블렌드 */
+function scoreZon(w, eq, prof, ings){
+  const saltD = clamp(eq.salt/w*100/0.2,0,10);   // 약 1% 염도 → 5
+  const sweetD= clamp(eq.sweet/w*100/1.0,0,10);
+  const sourD = clamp(eq.acid/w*100/1.0,0,10);
+  const umamiD= clamp(prof.umami*2,0,10);
+  const spiceD= clamp(eq.spice*2,0,10);
+  const syn = clamp((eq.umamiCount-1)*0.35,0,0.7);   // 두 감칠맛원↑ → 시너지 [R1]
+  const delight = deliciousness({salt:saltD,sweet:sweetD,sour:sourD,umami:umamiD,spicy:spiceD}, syn);
+  let pen=0;
+  [["salt","saltPct"],["sweet","sweetPct"],["acid","acidPct"],["fat","fatPct"]].forEach(([k,pk])=>{
+    const pct = eq[k]/w*100, lo=prof[pk][0], hi=prof[pk][1];
+    if(pct<lo) pen += Math.min(22,(lo-pct)/Math.max(lo,0.5)*22);
+    else if(pct>hi) pen += Math.min(22,(pct-hi)/Math.max(hi,1)*22);
+  });
+  const fit = Math.max(0, Math.round(100-pen));
+  const score = clamp(Math.round(0.45*fit + 0.55*delight),0,100);
+  return {score, fit, delight, gold:score>=GOLD_ENTER};
+}
+function buildSteps(ings){
+  const has = t => ings.some(i=>i.timing===t);
+  const s=[];
+  if(has("early")) s.push("기름을 두르고 향채(마늘·생강·파 등)를 약한 불에 볶아 향을 냅니다.");
+  s.push("재료를 넣고 주 양념(간장·설탕·소스류)을 더해 간이 배도록 볶거나 조립니다. 짠 양념은 80%만 먼저 넣으세요.");
+  if(has("finish")) s.push("마무리로 산미·향(식초·참기름·후추·전분물)을 더하고 맛을 보며 조절해 완성합니다.");
+  return s;
+}
+function buildWarnings(state, ings, cat, style){
+  const w=[]; const wt=state.foodWeightG;
+  if(wt>=2000) w.push({stop:false,t:"대량 조리예요. 간은 80%만 먼저 넣고 맛보며 추가하세요."});
+  if(state.categoryId==="soup"||state.categoryId==="stew") w.push({stop:false,t:"국물은 끓이면 졸아 짜져요. 물을 먼저 넉넉히 잡고, 간은 다 끓인 뒤 맞추세요."});
+  if(ings.some(i=>["soy_sauce","salt","fish_sauce","low_sodium_soy_sauce","oyster_sauce","doenjang"].includes(i.id)))
+    w.push({stop:false,t:"짠 양념(간장·소금·액젓)은 처음에 80%만 넣고 맛보며 조절하세요."});
+  if(ings.some(i=>["vinegar","lemon_juice","lime_juice"].includes(i.id)))
+    w.push({stop:false,t:"식초·레몬즙은 절반만 먼저 넣으세요. 산미는 되돌리기 어렵습니다."});
+  if(ings.some(i=>["chili_powder","gochujang","chili_sauce"].includes(i.id)))
+    w.push({stop:false,t:"매운 재료는 한 번에 넣지 말고 조금씩 추가하세요."});
+  if(state.categoryId==="kids_side" || style.id==="kids_sweet_savory")
+    w.push({stop:false,t:"아이용은 염도를 0.8% 이하로 낮추면 더 부드러워요. 매운 재료는 빼세요."});
+  w.push({stop:false,t:"제품마다 농도가 달라요 — 숟가락 환산은 대략값입니다. 정확히 하려면 저울을 쓰세요."});
+  return w;
+}
+
+/* 맛 보정 (PRD 6.3) */
+const FIX = [
+  {id:"bland",name:"밍밍해요",p1:{t:"간장 또는 소금 추가",id:"soy_sauce",pct:[0.1,0.2],axis:"salt"},p2:{t:"감칠맛 재료(굴소스·액젓) 한 스푼"},desc:"밍밍한 건 대부분 염도나 감칠맛이 부족한 상태예요. 먼저 간장을 아주 조금 넣고 섞은 뒤 다시 맛보세요."},
+  {id:"too_salty",name:"짜기만 해요",p1:{t:"물·무염 재료 추가로 희석",id:"water",pct:[3,6]},p2:{t:"설탕 약간 + 기름 약간으로 짠맛을 둥글게"},desc:"짠맛은 빼기 어렵습니다. 소금·간장은 절대 추가하지 마세요. 물이나 재료를 더해 농도를 낮추는 게 우선이에요.",noSalt:true},
+  {id:"too_sweet",name:"너무 달아요",p1:{t:"식초로 단맛 정리",id:"vinegar",pct:[0.3,0.8],axis:"acid"},p2:{t:"소금 아주 약간"},desc:"단맛은 산미와 짠맛으로 눌러요. 식초를 조금 넣어 균형을 잡으면 단맛이 가벼워집니다."},
+  {id:"too_sour",name:"너무 셔요",p1:{t:"설탕으로 산미 완화",id:"sugar",pct:[0.5,1.0],axis:"sweet"},p2:{t:"기름 약간으로 둥글게"},desc:"신맛은 단맛과 기름으로 둥글려요. 설탕을 조금씩 넣으며 맛보세요."},
+  {id:"greasy",name:"너무 느끼해요",p1:{t:"식초·레몬으로 지방감 끊기",id:"lemon_juice",pct:[0.3,1.0],axis:"acid"},p2:{t:"매운맛·향채(후추·파)로 포인트"},desc:"느끼함은 산미로 끊는 게 가장 빨라요. 레몬즙이나 식초를 살짝 더하세요."},
+  {id:"shallow",name:"감칠맛이 없어요",p1:{t:"간장·액젓·굴소스 추가",id:"oyster_sauce",pct:[0.2,0.5],axis:"salt"},p2:{t:"마늘·파기름으로 향 보강"},desc:"맛이 얕은 건 감칠맛 부족이에요. 굴소스나 액젓을 소량 더해 깊이를 한 겹 올리세요."},
+  {id:"disjoint",name:"맛이 따로 놀아요",p1:{t:"설탕 + 기름으로 맛 접착",id:"sugar",pct:[0.3,0.5],axis:"sweet"},p2:{t:"약불에 한 번 더 졸이기"},desc:"맛이 따로 놀면 단맛·기름으로 묶고, 살짝 졸여서 하나로 합쳐주세요."},
+  {id:"dull",name:"텁텁해요",p1:{t:"물 추가로 농도 조절",id:"water",pct:[2,5]},p2:{t:"산미 약간으로 산뜻하게"},desc:"텁텁함은 농도나 양념 과다예요. 물을 조금 더해 풀고, 산미를 아주 살짝 올리세요."},
+  {id:"only_spicy",name:"매운맛만 튀어요",p1:{t:"설탕 + 기름으로 매운맛 완화",id:"sugar",pct:[0.5,1.0],axis:"sweet"},p2:{t:"유제품·마요로 캡사이신 잡기"},desc:"캡사이신은 단맛·지방으로 눌러요. 설탕·기름이나 마요·우유를 더하면 매운맛이 둥글어집니다."},
+  {id:"kid_reject",name:"아이가 안 먹어요",p1:{t:"매운맛·산미부터 줄이기",id:null},p2:{t:"단맛 + 기름 + 감칠맛으로 둥글게"},desc:"아이는 날카로운 맛을 싫어해요. 매운맛·신맛을 줄이고 단맛·고소함·감칠맛으로 부드럽게 만드세요."}
+];
+function fixRecipe(weight, fixId){
+  const r = FIX.find(f=>f.id===fixId); if(!r) return null;
+  const gramRange = (rule)=>{ if(!rule.id || !rule.pct) return null; const c=C(rule.id);
+    let lo, hi;
+    if(rule.axis){ // %는 맛 등가 기준 → 조미료 g로 환산
+      const f = {salt:"saltEq",sweet:"sweetEq",acid:"acidEq"}[rule.axis];
+      const eqLo = weight*rule.pct[0]/100, eqHi = weight*rule.pct[1]/100;
+      lo = eqLo/(c[f]||1); hi = eqHi/(c[f]||1);
+    } else { lo = weight*rule.pct[0]/100; hi = weight*rule.pct[1]/100; }
+    return {lo,hi,name:c.name,density:c.density};
+  };
+  return {name:r.name, p1:Object.assign({}, r.p1, {range:gramRange(r.p1)}), p2:r.p2, desc:r.desc, noSalt:!!r.noSalt};
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   PART C. 탐색 엔진 (tasteEngine v2) — 기존 그대로
+   ════════════════════════════════════════════════════════════════════ */
+const TASTES=[{key:"salt",label:"짠맛",color:"#5B8DEF",sci:"Na⁺"},{key:"sweet",label:"단맛",color:"#F2A0C4",sci:"당류"},
+ {key:"sour",label:"신맛",color:"#E8C547",sci:"산도"},{key:"umami",label:"감칠맛",color:"#C77B3C",sci:"글루탐산"},{key:"spicy",label:"매운맛",color:"#E60044",sci:"캡사이신"}];
+const GOLD_ENTER=78, GOLD_EXIT=74;
+function effectiveUmami(u,s=0){return Math.min(10,u*(1+0.5*Math.max(0,Math.min(1,s))));}
+function deliciousness(t,synergy=0){
+  const{salt,sweet,sour,spicy}=t; const umami=effectiveUmami(t.umami,synergy);
+  let saltBase; if(salt<3)saltBase=salt*8; else if(salt<=7)saltBase=24; else saltBase=24-(salt-7)*6;
+  const sweetSalt=(salt>=3&&sweet>=2&&sweet<=6)?18:0;
+  const umamiBonus=Math.min(umami,8)*3.2; const synergyBonus=Math.max(0,Math.min(1,synergy))*9;
+  // [R4 보정] 산미는 '마무리 한 방울'이 정설 — 소량(≈2)에서만 살짝 둥글려주고, 그 이상은 빠르게 감점
+  let sourBalance; if(sour<=2)sourBalance=sour*2; else sourBalance=4-(sour-2)*2.5;
+  const spicyPenalty=spicy>7?-(spicy-7)*6:0; const sweetMask=sweet>7?-(sweet-7)*5:0;
+  const vals=[salt,sweet,sour,umami,spicy]; const mean=vals.reduce((a,b)=>a+b,0)/5;
+  const sd=Math.sqrt(vals.reduce((a,b)=>a+(b-mean)**2,0)/5);
+  const balancePenalty=sd>3.2?-(sd-3.2)*7:0; const flatPenalty=mean<1.5?-20:0;
+  return Math.max(0,Math.min(100,Math.round(saltBase+sweetSalt+umamiBonus+synergyBonus+sourBalance+spicyPenalty+sweetMask+balancePenalty+flatPenalty)));
+}
+function chefVerdict(t,score){const{salt,sweet,sour,umami,spicy}=t;
+  if(score>=GOLD_ENTER)return{mood:"gold",title:"완성입니다.",body:"짠맛이 중심을 잡고 그 위로 맛이 층층이 쌓였습니다. 무엇에 넣어도 실패하지 않습니다. 그대로 가세요."};
+  if(salt<2.5)return{mood:"fix",title:"간이 빠졌습니다.",body:"모든 맛의 토대는 짠맛입니다. 간장·소금 계열을 조금 더. 베이스가 서야 나머지가 살아납니다."};
+  if(salt>8)return{mood:"fix",title:"너무 짭니다.",body:"혀가 짠맛에 막혀 다른 맛을 못 느낍니다. 물이나 단맛으로 풀어주세요."};
+  if(sweet>8)return{mood:"fix",title:"단맛이 다 덮었습니다.",body:"단맛은 다른 맛을 가장 강하게 누릅니다. 한 단계만 내리면 짠맛·감칠맛이 살아납니다."};
+  if(spicy>8)return{mood:"fix",title:"매운맛이 다 덮었습니다.",body:"캡사이신이 강하면 감칠맛·단맛이 가려집니다. 매운맛을 한 단계만 내려보시죠."};
+  if(sour>7)return{mood:"fix",title:"신맛이 앞섭니다.",body:"산도가 높으면 날카로워집니다. 단맛을 조금 올려 균형을 잡으면 둥글어집니다."};
+  if(umami<2)return{mood:"fix",title:"맛이 얕습니다.",body:"감칠맛이 부족합니다. 간장·굴소스·발효장류로 깊이를 한 겹 더하세요."};
+  if(salt>=3&&sweet<1.5)return{mood:"tune",title:"조금 단조롭습니다.",body:"짠맛은 잡혔으나 단맛이 받쳐주지 않습니다. 단짠의 대비가 식욕을 만듭니다. 설탕·물엿을 살짝."};
+  return{mood:"tune",title:"거의 왔습니다.",body:"방향은 맞습니다. 한두 축만 미세하게 조정하면 황금 균형에 도달합니다."};
+}
+function matchDish(t){const{salt,sweet,sour,umami,spicy}=t;
+  if(spicy>=6&&salt>=4)return"제육·매운 볶음 양념"; if(sour>=5&&sweet>=4)return"새콤달콤 무침·초장";
+  if(umami>=6&&sweet>=4&&spicy<4)return"불고기·갈비 양념"; if(umami>=6&&salt>=5)return"감칠 볶음·볶음밥";
+  if(sweet>=5&&sour>=3)return"탕수·디핑 소스"; if(salt>=4&&umami>=4)return"기본 간장 베이스 조림"; return"범용 만능장 (간 맞추는 중)";}
+const DISHES=[
+ {n:"미역국",v:{salt:6,sweet:1,sour:0,umami:7,spicy:0}},{n:"된장찌개",v:{salt:7,sweet:1,sour:1,umami:8,spicy:2}},
+ {n:"김치찌개",v:{salt:7,sweet:2,sour:4,umami:7,spicy:6}},{n:"순두부찌개",v:{salt:7,sweet:1,sour:2,umami:7,spicy:7}},
+ {n:"콩나물국",v:{salt:5,sweet:0,sour:0,umami:4,spicy:1}},{n:"계란찜",v:{salt:5,sweet:1,sour:0,umami:6,spicy:0}},
+ {n:"어묵탕",v:{salt:6,sweet:2,sour:0,umami:7,spicy:1}},{n:"불고기",v:{salt:7,sweet:6,sour:1,umami:7,spicy:1}},
+ {n:"갈비찜",v:{salt:7,sweet:6,sour:1,umami:8,spicy:1}},{n:"잡채",v:{salt:6,sweet:6,sour:1,umami:6,spicy:1}},
+ {n:"제육볶음",v:{salt:7,sweet:5,sour:1,umami:6,spicy:8}},{n:"닭볶음탕",v:{salt:7,sweet:5,sour:1,umami:7,spicy:7}},
+ {n:"떡볶이",v:{salt:6,sweet:6,sour:1,umami:6,spicy:8}},{n:"비빔밥(고추장)",v:{salt:6,sweet:4,sour:2,umami:6,spicy:6}},
+ {n:"볶음밥",v:{salt:7,sweet:2,sour:0,umami:7,spicy:1}},{n:"간장계란밥",v:{salt:7,sweet:3,sour:0,umami:5,spicy:1}},
+ {n:"카레",v:{salt:5,sweet:4,sour:1,umami:6,spicy:3}},{n:"탕수육",v:{salt:4,sweet:7,sour:6,umami:4,spicy:1}},
+ {n:"오징어초무침",v:{salt:5,sweet:6,sour:7,umami:4,spicy:5}},{n:"장조림",v:{salt:7,sweet:4,sour:0,umami:7,spicy:0}}
+];
+function nearestDishes(t,n=3){ const d=v=>Math.sqrt(TASTES.reduce((a,{key})=>a+(t[key]-v[key])**2,0)); return [...DISHES].sort((a,b)=>d(a.v)-d(b.v)).slice(0,n).map(x=>x.n); }
+function nearestCombos(t,combos,n=2){const dist=v=>Math.sqrt(TASTES.reduce((a,{key})=>a+(t[key]-v[key])**2,0));return [...combos].sort((a,b)=>dist(a.v)-dist(b.v)).slice(0,n);}
+function suggestGolden(target){let best={...target},bestScore=deliciousness(best);
+  for(let i=0;i<60;i++)for(const{key}of TASTES)for(const d of[-0.5,0.5]){const cand={...best,[key]:Math.max(0,Math.min(10,best[key]+d))};const s=deliciousness(cand);if(s>bestScore){best=cand;bestScore=s;}}return{vector:best,score:bestScore};}
+const PRODUCT_COMBOS=[
+ {name:"쇠고기 다시다 + 국간장",ratio:"1 : 2",dish:"감칠 국·찌개",v:{salt:8,sweet:1,sour:0,umami:9,spicy:0}},
+ {name:"연두 + 들기름",ratio:"2 : 1",dish:"나물 무침·맑은국",v:{salt:6,sweet:2,sour:0,umami:8,spicy:0}},
+ {name:"미원·미풍 + 소금",ratio:"1 : 3",dish:"만능 감칠 소금간",v:{salt:8,sweet:0,sour:0,umami:8,spicy:0}},
+ {name:"굴소스 + 다시다",ratio:"2 : 1",dish:"감칠 볶음·볶음밥",v:{salt:8,sweet:3,sour:0,umami:10,spicy:0}},
+ {name:"쯔유(멘쯔유) 희석",ratio:"원액 : 물 1 : 3",dish:"장국·계란말이·덮밥",v:{salt:7,sweet:5,sour:1,umami:8,spicy:0}},
+ {name:"치킨스톡 큐브",ratio:"1알 : 물 2컵",dish:"수프·리조또·볶음밥",v:{salt:8,sweet:2,sour:0,umami:8,spicy:0}},
+ {name:"맛소금",ratio:"솔솔",dish:"구이·튀김 밑간",v:{salt:9,sweet:0,sour:0,umami:3,spicy:0}},
+ {name:"만능간장 + 굴소스",ratio:"2 : 1",dish:"만능 볶음장",v:{salt:8,sweet:4,sour:1,umami:9,spicy:0}},
+ {name:"고추장 + 물엿 + 식초",ratio:"2 : 1 : 1",dish:"초고추장",v:{salt:5,sweet:7,sour:6,umami:5,spicy:5}},
+ {name:"마요 + 스리라차 + 꿀",ratio:"3 : 1 : 0.5",dish:"마약 디핑소스",v:{salt:3,sweet:5,sour:3,umami:3,spicy:6}},
+ {name:"고추장+간장+설탕+고춧가루",ratio:"2:1:1:0.5",dish:"제육 양념",v:{salt:7,sweet:6,sour:1,umami:6,spicy:8}},
+ {name:"굴소스 + 간장 + 설탕",ratio:"2 : 1 : 1",dish:"감칠 볶음밥",v:{salt:8,sweet:5,sour:1,umami:9,spicy:0}}];
+const EXPLORE_PRESETS=[{label:"단짠하게",target:{salt:6,sweet:5,sour:1,umami:6,spicy:0}},{label:"칼칼하게",target:{salt:6,sweet:3,sour:2,umami:6,spicy:6}},
+ {label:"깊은맛",target:{salt:6,sweet:3,sour:1,umami:8,spicy:1}},{label:"새콤하게",target:{salt:5,sweet:5,sour:5,umami:4,spicy:1}}];
+
+/* ════════ 감성 맛표현 데이터 ════════ */
+const TASTE_WORDS=[
+{cat:"감성·기억",em:"🏡",nm:"고향의맛",eng:"Hometown Taste",
+ desc:"오래 끓인 찌개처럼 자극 없이 스며드는 맛. 된장·간장이 베이스로 깔리고 감칠맛이 살살 차오른다. 짜지 않고 따뜻하게 간이 된 상태.",
+ v:{salt:5,sweet:3,sour:1,umami:7,spicy:2},dishes:["된장찌개","제육볶음","순두부찌개"]},
+{cat:"감성·기억",em:"👵",nm:"할머니 손맛",eng:"Grandma's Touch",
+ desc:"간을 '딱 맞게' 한다는 그것. 오래 볶은 양파의 단맛과 충분한 감칠맛, 적절한 짠맛이 삼박자를 이룬다. 과하지 않고 정확하다.",
+ v:{salt:6,sweet:4,sour:1,umami:8,spicy:1},dishes:["잡채","갈비찜","볶음김치"]},
+{cat:"감성·기억",em:"🌫️",nm:"아련한맛",eng:"Nostalgic Taste",
+ desc:"바싹 다가오지 않고 살짝 물러선 자리에 있는 맛. 자극은 적지만 기억에 남는다. 가볍게 떠있는 감칠맛.",
+ v:{salt:4,sweet:3,sour:2,umami:6,spicy:1},dishes:["미역국","나박김치","식혜"]},
+{cat:"조리법·농도",em:"⏰",nm:"푹 익은맛",eng:"Long-Cooked",
+ desc:"시간이 만든 맛. 재료의 경계가 허물어지고 국물과 속이 하나가 된 상태. 짠맛보다 감칠맛이 먼저 올라온다.",
+ v:{salt:6,sweet:4,sour:0,umami:8,spicy:1},dishes:["갈비찜","삼계탕","오래 끓인 된장찌개"]},
+{cat:"조리법·농도",em:"🫧",nm:"뭉근하게 끓인맛",eng:"Slowly Simmered",
+ desc:"팔팔 끓이지 않고 약한 불로 오래 두어 맛이 우러나온 상태. 국물이 묵직하고 깊다. 자극이 전혀 없다.",
+ v:{salt:5,sweet:2,sour:0,umami:9,spicy:0},dishes:["사골국","곰탕","설렁탕"]},
+{cat:"조리법·농도",em:"🧪",nm:"졸인맛",eng:"Reduced Glaze",
+ desc:"수분을 날려 맛을 압축한 상태. 한 숟가락이 여러 숟가락 값을 한다. 짜고 달고 감칠맛이 동시에 진하게 몰려온다.",
+ v:{salt:8,sweet:6,sour:0,umami:8,spicy:1},dishes:["장조림","데리야끼","조림류"]},
+{cat:"조리법·농도",em:"🦠",nm:"숙성된맛",eng:"Aged / Matured",
+ desc:"미생물이 시간과 함께 만든 깊이. 날 것의 자극이 사라지고 부드럽고 복잡한 향미가 남는다.",
+ v:{salt:6,sweet:2,sour:4,umami:9,spicy:1},dishes:["간장게장","묵은지","오래된 된장"]},
+{cat:"향미·풍미",em:"🍵",nm:"구수한맛",eng:"Earthy / Roasted",
+ desc:"볶거나 발효한 재료에서 나는 따뜻하고 구수한 향. 된장·누룽지·볶은 참깨가 대표. 쓰거나 날카롭지 않다.",
+ v:{salt:5,sweet:2,sour:2,umami:7,spicy:0},dishes:["된장국","누룽지","청국장"]},
+{cat:"향미·풍미",em:"🌰",nm:"고소한맛",eng:"Nutty / Sesame",
+ desc:"견과류·참기름·깨에서 나는 고소하고 따뜻한 풍미. 단독으로 맛을 완성하기보다 마무리 한 방울로 쓰인다.",
+ v:{salt:4,sweet:1,sour:0,umami:5,spicy:0},dishes:["나물 무침","비빔밥","참기름밥"]},
+{cat:"향미·풍미",em:"🔥",nm:"훈연향 있는맛",eng:"Smoky",
+ desc:"불과 연기가 재료 표면에 스민 맛. 숯불구이·훈제 특유의 향이 식욕을 자극하고 쓴맛이 뒤를 받친다.",
+ v:{salt:6,sweet:3,sour:1,umami:6,spicy:1},dishes:["숯불삼겹살","훈제오리","바베큐"]},
+{cat:"향미·풍미",em:"🫙",nm:"발효된맛",eng:"Fermented",
+ desc:"미생물이 재료를 바꿔놓은 맛. 자극적이지만 중독성이 있고 뒷맛이 깨끗하다. 신맛과 감칠맛이 공존한다.",
+ v:{salt:7,sweet:1,sour:5,umami:8,spicy:3},dishes:["잘 익은 김치","된장찌개","젓갈"]},
+{cat:"강도·균형",em:"☁️",nm:"담백한맛",eng:"Clean / Light",
+ desc:"자극 없이 재료 본연의 맛이 드러나는 상태. 기름기가 없고 뒷맛이 깨끗하다.",
+ v:{salt:4,sweet:1,sour:1,umami:4,spicy:0},dishes:["두부국","맑은 조개탕","흰 생선찜"]},
+{cat:"강도·균형",em:"🌊",nm:"진한맛",eng:"Rich / Deep",
+ desc:"맛의 밀도가 높은 상태. 한 수저에 여러 층의 맛이 담겨 있고 여운이 오래 간다.",
+ v:{salt:7,sweet:5,sour:1,umami:8,spicy:2},dishes:["갈비찜","김치찜","짬뽕"]},
+{cat:"강도·균형",em:"⚡",nm:"칼칼한맛",eng:"Sharp Spicy",
+ desc:"따뜻하게 매운 것이 아니라 혀 끝을 날카롭게 찌르는 매움. 고추의 캡사이신이 직접적으로 올라온다.",
+ v:{salt:5,sweet:2,sour:2,umami:6,spicy:8},dishes:["순대국밥","칼국수","닭개장"]},
+{cat:"강도·균형",em:"💫",nm:"알싸한맛",eng:"Pungent / Tingling",
+ desc:"캡사이신이 아닌 다른 종류의 자극. 마늘·생강·겨자·와사비처럼 코를 찌르고 빠르게 사라진다.",
+ v:{salt:3,sweet:1,sour:1,umami:3,spicy:6},dishes:["와사비 간장회","생강 드레싱","마늘쫑볶음"]},
+{cat:"강도·균형",em:"💨",nm:"시원한맛",eng:"Refreshing",
+ desc:"한국에서 '시원하다'는 건 차갑다는 뜻이 아니다. 속이 뚫리는 느낌. 동치미 국물 같은 개운한 자극.",
+ v:{salt:5,sweet:1,sour:3,umami:5,spicy:4},dishes:["동치미","물냉면","콩나물국밥"]},
+{cat:"강도·균형",em:"🪨",nm:"묵직한맛",eng:"Weighty / Full-Bodied",
+ desc:"국물의 무게가 느껴지는 맛. 콜라겐이 녹아든 사골처럼 입 안을 꽉 채운다. 여운이 매우 길다.",
+ v:{salt:7,sweet:4,sour:1,umami:9,spicy:2},dishes:["사골곰탕","꼬리곰탕","삼계탕"]},
+{cat:"강도·균형",em:"✨",nm:"깔끔한맛",eng:"Clean-Cut",
+ desc:"맛의 시작과 끝이 명확한 상태. 오버되지 않고 딱 필요한 만큼만 간 되어 있다. 깨끗하게 끊긴다.",
+ v:{salt:5,sweet:3,sour:2,umami:6,spicy:0},dishes:["맑은 된장국","쇠고기뭇국","계란국"]},
+{cat:"강도·균형",em:"🌿",nm:"쌉싸름한맛",eng:"Bitter-Fresh",
+ desc:"채소·허브의 쓴맛이 기분 좋은 강도로 들어와 깔끔하게 끝나는 맛. 봄나물이 이 맛을 대표한다.",
+ v:{salt:3,sweet:3,sour:1,umami:4,spicy:0},dishes:["봄나물 무침","쑥국","취나물비빔"]},
+{cat:"대비·복합",em:"🍬",nm:"달큰한맛",eng:"Warmly Sweet",
+ desc:"설탕의 직접적인 단맛이 아니라 양파·당근이 오래 볶아지면서 나는 자연스러운 단맛. 짠맛과 어울린다.",
+ v:{salt:5,sweet:5,sour:1,umami:6,spicy:1},dishes:["잡채","갈비찜","소불고기"]},
+{cat:"대비·복합",em:"🍋",nm:"새콤달콤한맛",eng:"Sweet & Sour",
+ desc:"산미와 당이 팽팽하게 맞선 상태. 어느 쪽도 압도하지 않아 식욕을 계속 자극한다.",
+ v:{salt:4,sweet:7,sour:6,umami:3,spicy:1},dishes:["탕수육소스","오징어초무침","파인애플닭"]},
+{cat:"대비·복합",em:"🧂",nm:"짭짤한맛",eng:"Pleasantly Salty",
+ desc:"짜지만 거슬리지 않는 상태. 감칠맛이 뒤에서 받쳐주어 소금 자체가 아니라 풍미로 느껴진다.",
+ v:{salt:7,sweet:2,sour:1,umami:6,spicy:0},dishes:["볶음밥","구이","국물 요리"]},
+{cat:"대비·복합",em:"🌶️",nm:"달달한 매운맛",eng:"Sweet Heat",
+ desc:"단맛이 먼저 올라와 매운 충격을 부드럽게 만든다. 불닭·양념치킨처럼 단맛이 매운 자극을 이끈다.",
+ v:{salt:6,sweet:7,sour:1,umami:5,spicy:7},dishes:["양념치킨","불닭볶음","닭강정"]}
+];
+
+/* ════════════════════════════════════════════════════════════════════
+   PART D. UI
+   ════════════════════════════════════════════════════════════════════ */
+const $=id=>document.getElementById(id);
+const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const AXIS_LABEL={salt:"짠맛",sweet:"단맛",acid:"신맛",fat:"기름",umami:"감칠",spice:"매운"};
+const AXIS_COLOR={salt:"var(--t-salt)",sweet:"var(--t-sweet)",acid:"var(--t-sour)",fat:"var(--t-fat)",umami:"var(--t-umami)",spice:"var(--t-spicy)"};
+function condColor(id){ const c=C(id);
+  if((c.spice||0)>=4) return "var(--t-spicy)";
+  let best=null,bv=0;
+  [["saltEq","var(--t-salt)"],["sweetEq","var(--t-sweet)"],["acidEq","var(--t-sour)"],["fatEq","var(--t-fat)"]].forEach(([f,col])=>{ if((c[f]||0)>bv){bv=c[f]||0;best=col;} });
+  if(best) return best;
+  if((c.umami||0)>=3) return "var(--t-umami)";
+  if(c.aroma) return "#9CCB6A";
+  return "#6F7972";
+}
+const STORAGE_KEY="electronic_tongue_saved_recipes";
+
+/* ── 네비게이션 ── */
+$("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return;
+  const v=b.dataset.view;
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x===b));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-"+v).classList.add("active");
+  if(v==="saved") renderSaved();
+  if(v==="fridge") renderFridge();
+  window.scrollTo(0,0);
+});
+
+/* ── 계산: 폼 빌드 ── */
+const calcState={categoryId:"stir_fry", foodWeightG:300, stylePresetId:"basic_home", intensity:"normal"};
+const catChips=$("catChips");
+CATEGORIES.forEach(c=>{ const el=document.createElement("button"); el.className="chip"+(c.id===calcState.categoryId?" on":"");
+  el.textContent=c.name; el.onclick=()=>{ calcState.categoryId=c.id; [...catChips.children].forEach(x=>x.classList.remove("on")); el.classList.add("on"); };
+  catChips.appendChild(el); });
+const wq=$("weightQuick");
+[100,200,300,500,1000].forEach(g=>{ const b=document.createElement("button"); b.textContent=g>=1000?"1kg":g+"g";
+  b.onclick=()=>{ $("weight").value=g; }; wq.appendChild(b); });
+const styleChips=$("styleChips");
+STYLES.forEach(s=>{ const el=document.createElement("button"); el.className="chip"+(s.id===calcState.stylePresetId?" on":"");
+  el.textContent=s.name; el.onclick=()=>{ calcState.stylePresetId=s.id; [...styleChips.children].forEach(x=>x.classList.remove("on")); el.classList.add("on"); showStyleDesc(); };
+  styleChips.appendChild(el); });
+function showStyleDesc(){ const s=STYLE(calcState.stylePresetId); $("styleDesc").textContent=s.desc + (TEMPLATES[s.id]?" · (검증된 전용 레시피 적용)":""); }
+showStyleDesc();
+$("intensitySeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b)return;
+  calcState.intensity=b.dataset.v; [...$("intensitySeg").children].forEach(x=>x.classList.toggle("on",x===b)); });
+
+let lastResult=null;
+$("calcBtn").onclick=()=>{
+  const w=parseFloat($("weight").value);
+  if(!w || w<1){ $("calcResult").innerHTML=`<div class="rcard" style="border-color:rgba(224,88,78,.4)"><div class="rsummary" style="color:#B23B2E">음식 무게를 1g 이상 입력해야 계산할 수 있어요.</div></div>`; return; }
+  calcState.foodWeightG=w;
+  lastResult=calcRecipe(calcState);
+  renderCalcResult(lastResult);
+};
+function renderCalcResult(r){
+  // 배합 비율 막대 (물 제외) — 조미료가 메인
+  const seasonings=r.ingredients.filter(i=>i.id!=="water");
+  const total=seasonings.reduce((a,i)=>a+i.amountG,0)||1;
+  const blendBar=seasonings.map(i=>`<span style="width:${i.amountG/total*100}%;background:${condColor(i.id)}" title="${i.name} ${fmtG(i.amountG)}g"></span>`).join("");
+  const ingRows=r.ingredients.map(it=>{
+    const tlabel = it.id==="water" ? "국물 베이스" : ({early:"향내기·먼저",middle:"간하기·중간",finish:"마무리"}[it.timing]||"");
+    const sub=(it.id==="starch_water")?" sub":"";
+    return `<div class="ing${sub}"><div class="l"><span class="cdot" style="background:${condColor(it.id)}"></span><div><div class="nm">${it.name}</div><div class="tm ${it.timing}">${tlabel}</div></div></div>
+      <div class="r"><div class="g">${fmtG(it.amountG)}<small>g</small></div><div class="sp">🥄 ${spoonStr(it.amountG,it.density)}</div></div></div>`;
+  }).join("");
+
+  // 존맛 지수 그래프
+  const z=r.zon, zc=gaugeColor(z.score);
+  const zmsg=z.gold ? "★ 존맛 존 진입! 이 배합이면 거의 실패 없어요." : `존맛 존까지 <b>${Math.max(0,GOLD_ENTER-z.score)}점</b> — 감칠맛(굴소스·간장)이나 단짠을 살짝 더 올려보세요.`;
+  const zonGraph=`<div class="zon ${z.gold?'gold':''}">
+    <div class="zhead"><span class="znum" style="color:${zc}">${z.score}</span><span class="zden">/ 100 존맛 지수</span>${z.gold?'<span class="zbadge">★ 존맛 존</span>':''}</div>
+    <div class="ztrack"><div class="zzone"></div><div class="zfill" style="width:${z.score}%;background:${zc}"></div><div class="zmark" style="left:${z.score}%"></div></div>
+    <div class="zticks"><span class="z0">0</span><span class="zz">존맛존 ${GOLD_ENTER}↑</span><span class="z100">100</span></div>
+    <div class="zmsg">${zmsg}</div></div>`;
+
+  const barRows=Object.keys(AXIS_LABEL).map(k=>{
+    const v=r.taste[k]||0; return `<div class="bar"><span class="bn">${AXIS_LABEL[k]}</span><span class="bt"><i style="width:${v/5*100}%;background:${AXIS_COLOR[k]}"></i></span><span class="bv">${v}</span></div>`;
+  }).join("");
+  const warnRows=r.warnings.map(w=>`<div class="warn ${w.stop?'stop':''}"><span class="i">${w.stop?'⛔':'⚠️'}</span><span>${w.t}</span></div>`).join("");
+  const stepRows=r.steps.map(s=>`<li>${s}</li>`).join("");
+  $("calcResult").innerHTML=`
+    <div class="rcard"><div class="rsummary"><b>${r.foodWeightG}g ${r.categoryName}</b> · ${r.styleName}</div></div>
+    <div class="rcard hero"><h3>🧂 조미료 배합 <span class="heronote">— 이게 핵심이에요</span></h3>
+      <div class="blendbar">${blendBar}</div>${ingRows}</div>
+    ${zonGraph}
+    <div class="rcard"><h3>📊 맛 프로필</h3><div class="bars">${barRows}</div></div>
+    <div class="rcard"><h3>👨‍🍳 조리 순서</h3><ol class="steps">${stepRows}</ol></div>
+    <div class="rcard"><h3>⚠️ 안전 가이드</h3><div class="warns">${warnRows}</div></div>
+    <div class="rcard"><h3>💾 저장</h3>
+      <div class="saverow"><input id="saveTitle" placeholder="레시피 이름 (예: 아이 닭볶음)" value="${r.styleName} ${r.categoryName}"/><button id="saveBtn">저장</button></div></div>`;
+  $("saveBtn").onclick=()=>{ saveRecipe($("saveTitle").value||r.styleName, r); $("saveBtn").textContent="저장됨 ✓"; $("saveBtn").style.background="var(--g-good)"; };
+}
+
+/* ── 보정 ── */
+const fixChips=$("fixChips");
+FIX.forEach(f=>{ const el=document.createElement("button"); el.className="chip"; el.textContent=f.name;
+  el.onclick=()=>{ [...fixChips.children].forEach(x=>x.classList.remove("on")); el.classList.add("on"); renderFix(f.id); };
+  fixChips.appendChild(el); });
+function renderFix(fixId){
+  const w=parseFloat($("fixWeight").value)||300;
+  const r=fixRecipe(w, fixId);
+  const p1g = r.p1.range ? `<b>${fmtG(r.p1.range.lo)}~${fmtG(r.p1.range.hi)}g</b> (${r.p1.range.name}, ≈ ${spoonStr((r.p1.range.lo+r.p1.range.hi)/2, r.p1.range.density)})` : "";
+  $("fixResult").innerHTML=`
+    <div class="fixcard">
+      <div class="ft">“${r.name}” 처방</div>
+      <div class="fixstep"><span class="tag">1차</span><div class="tx">${r.p1.t} ${p1g}</div></div>
+      <div class="fixstep"><span class="tag s2">2차</span><div class="tx">${r.p2.t}</div></div>
+      ${r.noSalt?`<div class="fixstep"><span class="tag" style="background:var(--danger);color:#fff">금지</span><div class="tx">소금·간장을 더 넣지 마세요. 짠맛은 빼기 어렵습니다.</div></div>`:""}
+      <div class="fixdesc">${r.desc}</div>
+      <div class="fixdesc" style="background:rgba(224,162,60,.1)">한 번에 다 넣지 말고 <b>절반부터</b> 넣고 맛본 뒤 추가하세요. (${w}g 기준)</div>
+    </div>`;
+}
+$("fixWeight").addEventListener("input",()=>{ const on=fixChips.querySelector(".on"); if(on){ const idx=[...fixChips.children].indexOf(on); renderFix(FIX[idx].id);} });
+
+/* ── 저장 (localStorage) ── */
+function loadSaved(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]"); }catch(e){ return []; } }
+function writeSaved(arr){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(arr)); }catch(e){ alert("저장에 실패했어요. 다시 시도해 주세요."); } }
+function saveRecipe(title, r){
+  const arr=loadSaved();
+  arr.unshift({id:"r"+arr.length+"_"+title.length+"_"+r.foodWeightG+"_"+r.ingredients.length, title, createdAt:nowStr(),
+    categoryName:r.categoryName, styleName:r.styleName, foodWeightG:r.foodWeightG, zon:(r.zon?r.zon.score:null),
+    ingredients:r.ingredients.map(i=>({name:i.name, amountG:round05(i.amountG), spoon:spoonStr(i.amountG,i.density)})), rating:0, memo:""});
+  writeSaved(arr);
+}
+function nowStr(){ const d=new Date(); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())}`; }
+function renderSaved(){
+  const favs=loadFav().map(n=>RECIPES.find(r=>r.name===n)).filter(Boolean);
+  const calc=loadSaved();
+  let html=`<div class="savedhdr">❤️ 찜한 요리 <span>${favs.length}</span></div>`;
+  if(!favs.length) html+=`<div class="empty" style="padding:22px 20px">요리 탭에서 🤍를 눌러 찜해보세요.</div>`;
+  else html+=`<div id="favWrap">${favs.map(recipeCardHTML).join("")}</div>`;
+  const favSauces=loadFavSauce().map(n=>SAUCES.find(s=>s.name===n)).filter(Boolean);
+  html+=`<div class="savedhdr" style="margin-top:14px">🥫 찜한 소스 <span>${favSauces.length}</span></div>`;
+  if(!favSauces.length) html+=`<div class="empty" style="padding:22px 20px">소스 탭에서 🤍를 눌러 찜해보세요.</div>`;
+  else html+=`<div class="chips" style="padding:0 16px 2px">${favSauces.map(s=>`<button class="chip favsaucechip" data-name="${s.name}">${s.emoji} ${s.name}</button>`).join("")}</div>`;
+  html+=`<div class="savedhdr" style="margin-top:14px">🧂 저장한 배합 <span>${calc.length}</span></div>`;
+  if(!calc.length) html+=`<div class="empty" style="padding:22px 20px">계산 탭에서 배합을 만들고 💾 저장을 눌러보세요.</div>`;
+  else html+=calc.map((s,idx)=>{
+    const ing=s.ingredients.map(i=>`${i.name} ${fmtG(i.amountG)}g (≈${i.spoon})`).join(" · ");
+    const stars=[1,2,3,4,5].map(n=>`<span class="${n<=s.rating?'on':''}" data-r="${n}">★</span>`).join("");
+    return `<div class="srow" data-i="${idx}">
+      <div class="st"><span class="stt">${s.title}</span><span class="sd">${s.createdAt}</span></div>
+      <div class="sm">${s.foodWeightG}g · ${s.categoryName} · ${s.styleName}${s.zon!=null?` · <span style="color:${s.zon>=78?'var(--gold)':'var(--muted)'}">존맛 ${s.zon}${s.zon>=78?'★':''}</span>`:''}</div>
+      <div class="stars" data-i="${idx}">${stars}</div>
+      <div class="sing">${ing}</div>
+      <div class="act"><button class="toggle">재료 보기</button><button class="del" data-i="${idx}">삭제</button></div>
+    </div>`;
+  }).join("");
+  $("savedList").innerHTML=html;
+  const fw=$("favWrap"); if(fw) wireRecipeCards(fw);
+  $("savedList").querySelectorAll(".favsaucechip").forEach(c=>c.onclick=()=>goSauce(c.dataset.name));
+  $("savedList").querySelectorAll(".srow").forEach(row=>{
+    row.querySelector(".toggle").onclick=()=>row.classList.toggle("open");
+    row.querySelector(".del").onclick=()=>{ const arr2=loadSaved(); arr2.splice(+row.dataset.i,1); writeSaved(arr2); renderSaved(); };
+    row.querySelector(".stars").onclick=e=>{ const sp=e.target.closest("[data-r]"); if(!sp)return; const arr2=loadSaved(); arr2[+row.dataset.i].rating=+sp.dataset.r; writeSaved(arr2); renderSaved(); };
+  });
+}
+
+/* ── 쉬운 요리(레시피) ── */
+const RECIPES=[
+  {emoji:"🍙",name:"김밥",diff:"★★☆",time:"25분",
+   ing:["밥 1.5공기","김밥김 2장","단무지 2줄","맛살 2개","계란 2개","당근·시금치 약간","참기름 1작은술","소금·통깨"],
+   steps:["따뜻한 밥에 참기름 1작은술·소금 약간·깨를 살살 섞어 한 김 식힌다.","계란은 도톰하게 부쳐 길게 썰고, 당근채는 소금 간해 볶고, 시금치는 데쳐 참기름·소금에 무친다.","김 위에 밥을 2/3만 얇게 펴고 속재료를 가지런히 올린다.","끝에서부터 단단히 말고, 칼에 참기름을 발라 한입 크기로 썬다."],
+   tip:"김 끝 1/4은 밥을 비워야 안 터져요. 밥은 뜨거울 때 간하고 식혀야 안 질척여요."},
+  {emoji:"🥪",name:"샌드위치",diff:"★☆☆",time:"10분",
+   ing:["식빵 2장","햄 2장","슬라이스치즈 1장","계란 1개","양상추 2장","마요네즈","머스터드(선택)"],
+   steps:["식빵 안쪽 면에 마요네즈(+머스터드)를 얇게 바른다.","계란프라이를 반숙~완숙으로 부친다.","빵 → 양상추 → 치즈 → 햄 → 계란 순으로 쌓고 빵을 덮는다.","살짝 눌러 대각선으로 자른다."],
+   tip:"양상추 물기를 키친타월로 닦으세요. 빵에 마요를 바르면 방수막이 돼서 안 눅눅해요."},
+  {emoji:"🍲",name:"미소장국",diff:"★☆☆",time:"10분",
+   ing:["물 2컵(400ml)","미소된장 1큰술","두부 1/4모","건미역 약간","대파","다시팩(선택)"],
+   steps:["물을 끓인다. 다시팩이 있으면 넣고 5분 우린 뒤 건진다.","미역·두부를 넣고 끓인다.","불을 줄이고 미소된장을 국자에 풀어 넣는다.","대파를 넣고 한소끔만 데우면 완성."],
+   tip:"미소는 마지막에! 팔팔 끓이면 향이 날아가요. 물 400ml당 미소 1큰술이 적당한 간이에요."},
+  {emoji:"🍚",name:"김자반 비빔밥",diff:"★☆☆",time:"5분",
+   ing:["따뜻한 밥 1공기","김자반(조미김가루) 2~3큰술","계란 1개","참기름 1작은술","통깨","간장 약간(선택)"],
+   steps:["계란프라이를 반숙으로 부친다.","따뜻한 밥에 김자반·참기름·깨를 넣고 비빈다.","계란프라이를 얹고 노른자를 터뜨려 비벼 먹는다."],
+   tip:"김자반에 간·기름이 이미 있어 간장은 한 방울이면 충분. 싱거우면 김자반을 더 넣으세요."},
+  {emoji:"🌶️",name:"떡볶이",diff:"★★☆",time:"15분",
+   ing:["떡 300g","어묵 2장","물 2컵(400ml)","고추장 1.5큰술","고춧가루 1큰술","설탕 1.5큰술","간장 1큰술","다진마늘 0.5큰술","대파"],
+   steps:["떡이 딱딱하면 따뜻한 물에 5분 불린다.","냄비에 물과 양념(고추장·고춧가루·설탕·간장·마늘)을 풀고 끓인다.","끓으면 떡·어묵을 넣고 중불에서 저으며 졸인다.","국물이 걸쭉해지면 대파를 넣고 1분 더 끓여 마무리."],
+   tip:"단맛은 기호껏 설탕/물엿으로. 더 깊은맛은 다시다 약간. 너무 졸았으면 물을 조금 더 넣어요."},
+  {emoji:"🍳",name:"계란볶음밥",diff:"★☆☆",time:"10분",
+   ing:["찬밥 1공기","계란 2개","대파","식용유 1큰술","굴소스 1작은술(또는 간장)","소금·후추"],
+   steps:["팬에 기름을 두르고 대파를 볶아 파기름을 낸다.","계란을 풀어 넣고 스크램블한 뒤 밥을 넣어 센 불에 볶는다.","굴소스(또는 간장)·소금·후추로 간하고 고슬하게 볶는다."],
+   tip:"찬밥이 더 고슬해요. 간은 굴소스 1작은술이면 충분, 더 넣으면 짜져요."},
+  {emoji:"🐟",name:"참치마요덮밥",diff:"★☆☆",time:"7분",
+   ing:["밥 1공기","참치캔 1개","마요네즈 1.5큰술","간장 1작은술","설탕 약간","계란 1개","김가루"],
+   steps:["참치는 기름을 꾹 짜고 마요·간장·설탕 약간과 섞는다.","밥 위에 참치마요를 올린다.","계란프라이와 김가루를 얹어 비벼 먹는다."],
+   tip:"참치 기름을 꼭 빼야 안 느끼해요. 매콤하게 원하면 스리라차를 살짝."},
+  {emoji:"🍥",name:"날치알 비빔밥",diff:"★☆☆",time:"5분",
+   ing:["밥 2공기","날치알 50g","김자반 5스푼","단무지 3스푼","마요네즈 3스푼","참기름 1스푼","통깨 1스푼","후리가케 1스푼","맛소금 한 꼬집"],
+   steps:["단무지를 잘게 다진다.","큰 그릇에 따뜻한 밥을 담고 마요네즈·참기름·맛소금을 넣어 비빈다.","날치알·김자반·다진 단무지·통깨를 넣고 살살 섞는다.","후리가케를 솔솔 뿌려 마무리. (계란프라이를 얹으면 더 좋아요)"],
+   tip:"날치알은 톡톡 터지는 식감이 포인트라 맨 마지막에 살살 섞으세요. 김자반·맛소금에 간이 있으니 맛소금은 한 꼬집만. 차갑게·따뜻하게 둘 다 맛있어요."},
+  {emoji:"🧈",name:"장조림버터 비빔밥",diff:"★★☆",time:"25분",
+   ing:["따뜻한 밥 2공기","소고기 장조림 4~5스푼(또는 다진 소불고기)","애호박·당근·표고 다진 것","계란 2개","김가루 넉넉히","버터 10g","참기름·통깨","비빔간장: 진간장2 : 올리고당1 : 물1 + 참기름 1티스푼"],
+   steps:["당근·애호박·버섯을 아주 잘게 다져, 기름 약간과 소금 한 꼬집에 숨이 죽을 때까지 볶는다.","장조림은 잘게 찢어 쓴다. (없으면 다진 소고기 100g을 간장1·올리고당1·맛술1·물2스푼에 국물이 살짝 남게 촉촉하게 볶는다)","계란은 부드러운 스크램블로 익힌다. (정갈하게는 지단처럼 얇게 부쳐 채 썰기)","따뜻한 밥 2공기에 버터 10g·참기름 1스푼을 넣어 살살 섞는다.","밥 위에 야채·고기·계란·김가루를 올리고, 비빔간장을 1스푼씩 넣어가며 비빈다. (밥 1공기당 1~1.5스푼)"],
+   tip:"고추장 대신 달달한 간장소스가 애들 성공률 ↑. 핵심은 장조림+버터+김가루! 마늘 향 싫어하면 빼고, 야채는 잘게 다져 숨기면 '고기계란 비빔밥'처럼 잘 먹어요. 밥은 살짝 촉촉하게."},
+  {emoji:"🥬",name:"김치전",diff:"★☆☆",time:"15분",
+   ing:["신김치 1컵(잘게)","부침가루 1컵","물 1컵","김치국물 2스푼","청양고추(선택)","식용유 넉넉히"],
+   steps:["신김치를 잘게 썬다.","부침가루+물+김치국물을 주르륵 흐를 정도로 섞고 김치를 넣는다.","팬에 기름 넉넉히 두르고 반죽을 얇게 편다.","중불에 노릇해지면 뒤집어 양면을 바삭하게."],
+   tip:"기름 넉넉 + 얇게 펴야 바삭! 신김치일수록 맛있고, 설탕 약간 넣으면 신맛이 부드러워져요."},
+  {emoji:"🧅",name:"해물파전",diff:"★★☆",time:"20분",
+   ing:["쪽파 한 줌","해물(오징어·새우) 100g","부침가루 1컵","물 1컵","계란 1개","식용유 넉넉히"],
+   steps:["쪽파는 팬 길이로 자르고 해물은 잘게 썬다.","부침가루+물로 반죽을 만든다.","팬에 기름, 쪽파를 깔고 반죽을 살짝 부은 뒤 해물을 올린다.","반쯤 익으면 계란물을 위에 풀어 붓고 노릇하게 뒤집어 익힌다."],
+   tip:"파를 먼저 깔고 반죽은 적게! 센 불에 바삭하게 부쳐 가위로 잘라 초간장에 찍어요."},
+  {emoji:"🥔",name:"감자전",diff:"★★☆",time:"20분",
+   ing:["감자 3개","소금 약간","양파 약간(선택)","식용유 넉넉히"],
+   steps:["감자를 강판이나 믹서로 곱게 간다.","체에 받쳐 물을 짜고, 가라앉은 흰 전분은 다시 섞는다.","소금 약간 넣고, 기름 넉넉한 팬에 한 국자씩 동그랗게 편다.","바닥이 투명·노릇해지면 뒤집어 익힌다."],
+   tip:"가라앉은 전분을 꼭 다시 넣어야 쫀득! 부침가루 없이 감자만으로도 충분해요."},
+  {emoji:"🌿",name:"부추전",diff:"★☆☆",time:"15분",
+   ing:["부추 한 줌","부침가루 1컵","물 1컵","청양고추(선택)","식용유 넉넉히"],
+   steps:["부추를 5cm로 썬다.","부침가루+물 반죽에 부추를 살살 섞는다.","기름 넉넉한 팬에 얇게 펴서 중불에 양면을 노릇하게."],
+   tip:"부추는 살짝만 섞어야 풋내 없이 향긋. 오징어 조금 넣으면 더 맛있어요."},
+  {emoji:"🥩",name:"스테이크 (레드와인 소스)",diff:"★★★",time:"30분",
+   ing:["소고기 안심/등심 200g","소금·후추 넉넉히","버터 20g","마늘 2쪽","로즈마리·타임","레드와인 50ml","발사믹 1스푼","식용유"],
+   steps:["고기를 굽기 30분 전 실온에 꺼내두고, 굽기 직전 소금·후추를 넉넉히 한다.","팬을 연기 날 만큼 뜨겁게 달궈 기름을 두르고 한 면 1.5~2분씩 시어링(겉바속촉).","버터·마늘·허브를 넣고 녹은 버터를 고기에 끼얹어(바스팅) 향을 입힌다.","고기를 꺼내 5분 레스팅. 같은 팬에 레드와인·발사믹을 졸여 소스를 만든다."],
+   tip:"레스팅이 핵심 — 안 자르고 5분 쉬게 해야 육즙이 안 빠져요. 소금은 겁먹지 말고 넉넉히, 팬은 아주 뜨겁게."},
+  {emoji:"🍤",name:"감바스 알 아히요",diff:"★★☆",time:"15분",
+   ing:["새우 12마리","올리브오일 100ml","마늘 6쪽(편썰기)","마른고추(페페론치노)","소금","파슬리","바게트"],
+   steps:["작은 팬에 올리브오일·편마늘·마른고추를 넣고 약불로 마늘 향을 천천히 우린다.","마늘이 노릇해지면 손질한 새우를 넣어 분홍빛으로 익힌다.","소금 간하고 파슬리를 뿌려 마무리. 바게트를 기름에 찍어 먹는다."],
+   tip:"약불에서 기름에 마늘 향을 충분히 우리는 게 핵심. 새우는 오래 익히면 질겨지니 색 변하면 바로 꺼요."},
+  {emoji:"🫕",name:"버섯 리조또",diff:"★★★",time:"35분",
+   ing:["쌀(아르보리오) 1컵","양송이·표고 100g","양파 1/4개","화이트와인 50ml","따뜻한 닭육수 4컵","파마산 30g","버터 20g"],
+   steps:["버터에 다진 양파·버섯을 볶다가 쌀을 넣어 투명해질 때까지 볶는다.","화이트와인을 넣어 날리고, 따뜻한 육수를 한 국자씩 부으며 저어 흡수시킨다(약 20분).","쌀 심이 살짝 남는 알단테가 되면 불을 끄고 파마산·버터를 넣어 크리미하게 젓는다."],
+   tip:"육수는 반드시 따뜻하게 한 국자씩, 계속 저어야 전분이 나와 크리미해져요. 심이 살짝 씹히는 게 정석."},
+  {emoji:"🍣",name:"연어 스테이크",diff:"★★☆",time:"15분",
+   ing:["연어 1토막","소금·후추","올리브오일","버터 15g","레몬 1/2개","딜·케이퍼(선택)"],
+   steps:["연어 물기를 닦고 소금·후추 간을 한다.","껍질 면부터 팬에 눌러 바삭하게 굽는다(7할 익히기).","뒤집어 살짝만 익히고 버터·레몬즙을 둘러 끼얹는다.","딜·케이퍼를 올려 마무리."],
+   tip:"껍질 면을 오래(7할) 구워야 바삭. 속은 살짝 덜 익혀 촉촉하게 — 미디엄이 제일 맛있어요."},
+  {emoji:"🍝",name:"트러플 크림 파스타",diff:"★★☆",time:"20분",
+   ing:["파스타 100g","생크림 150ml","파마산 30g","버터 15g","마늘 1쪽","트러플오일 약간","소금·후추"],
+   steps:["파스타를 소금물에 알단테로 삶는다(면수 한 컵 남겨두기).","버터에 다진 마늘을 볶고 생크림을 넣어 살짝 졸인다.","파마산을 녹이고 면을 넣어 버무린다. 되면 면수로 농도를 푼다.","불을 끄고 트러플오일 몇 방울·후추로 마무리."],
+   tip:"트러플오일은 꼭 불 끄고 마지막에(가열하면 향이 날아가요). 면수가 소스를 부드럽게 이어줘요."}
+];
+const FAV_KEY="et_fav_recipes";
+function loadFav(){ try{ return JSON.parse(localStorage.getItem(FAV_KEY)||"[]"); }catch(e){ return []; } }
+function saveFav(a){ try{ localStorage.setItem(FAV_KEY, JSON.stringify(a)); }catch(e){} }
+function isFav(name){ return loadFav().includes(name); }
+function toggleFav(name){
+  let a=loadFav(); a = a.includes(name) ? a.filter(x=>x!==name) : [name, ...a]; saveFav(a);
+  const on=a.includes(name);
+  document.querySelectorAll(".favbtn").forEach(b=>{ if(b.dataset.name===name) b.textContent=on?"❤️":"🤍"; });
+  renderSaved();
+}
+function recipeCardHTML(r){
+  return `<div class="rc" data-name="${r.name}">
+    <div class="rch"><span class="rem">${r.emoji}</span><span class="rnm">${r.name}</span>
+      <span class="rmeta"><span class="rd">${r.diff}</span><br>${r.time}</span>
+      <button class="favbtn" data-name="${r.name}" aria-label="찜">${isFav(r.name)?"❤️":"🤍"}</button><span class="rchev">▾</span></div>
+    <div class="rbody">
+      <div class="rsec"><h4>재료</h4><div class="rings">${r.ing.map(x=>`<span>${x}</span>`).join("")}</div></div>
+      <div class="rsec"><h4>만드는 법</h4><ol class="rsteps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol></div>
+      <div class="rtip">💡 ${r.tip}</div>
+    </div></div>`;
+}
+function wireRecipeCards(container){
+  container.querySelectorAll(".rc").forEach(c=>{
+    c.querySelector(".rch").addEventListener("click", e=>{ if(e.target.closest(".favbtn")) return; c.classList.toggle("open"); });
+    const fb=c.querySelector(".favbtn");
+    if(fb) fb.addEventListener("click", e=>{ e.stopPropagation(); toggleFav(fb.dataset.name); });
+  });
+}
+const RECIPE_CAT={"스테이크 (레드와인 소스)":"fine","감바스 알 아히요":"fine","버섯 리조또":"fine","연어 스테이크":"fine","트러플 크림 파스타":"fine"};
+const REC_CATS=[["easy","🍳 쉬운 요리"],["fine","🍷 파인다이닝"]];
+function recipeCatOf(r){ return RECIPE_CAT[r.name]||"easy"; }
+function buildRecipes(){ const el=$("recipeList"); if(!el) return;
+  let html=""; REC_CATS.forEach(([k,label])=>{ const list=RECIPES.filter(r=>recipeCatOf(r)===k); if(!list.length) return;
+    html+=`<div class="savedhdr">${label} <span>${list.length}</span></div>`+list.map(recipeCardHTML).join(""); });
+  el.innerHTML=html; wireRecipeCards(el);
+}
+buildRecipes();
+
+function goRecipe(dishName){
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view==="recipe"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-recipe").classList.add("active");
+  window.scrollTo(0,0);
+  const el=$("recipeList"); if(!el) return;
+  // 정확히 일치하거나 요리명 키워드 포함 레시피 카드 찾기
+  let card=el.querySelector(`.rc[data-name="${dishName}"]`);
+  if(!card){
+    const kw=dishName.replace(/[\(\)\[\]]/g,"").trim();
+    card=[...el.querySelectorAll(".rc")].find(c=>{
+      const n=c.dataset.name||"";
+      return n.includes(kw)||kw.includes(n)||kw.split(/[·\s]+/).some(w=>w.length>1&&n.includes(w));
+    });
+  }
+  if(card){ card.classList.add("open"); setTimeout(()=>card.scrollIntoView({behavior:"smooth",block:"start"}),120); }
+}
+
+/* ── 소스 배합소 ── */
+const SAUCE_DENS={"간장":1.15,"설탕":0.85,"고추장":1.2,"고춧가루":0.5,"올리고당":1.35,"물엿":1.35,"꿀":1.4,"케첩":1.1,"마요네즈":0.95,"식초":1.0,"다진마늘":1.0,"버터":0.96,"우유/생크림":1.0,"다시다":0.65,"두반장":1.2,"마라소스":1.0,"청양고추":1.0,"후추":0.5,"화자오":0.5,"카레가루":0.5,"참기름":0.92,"통깨":0.6,"물":1.0,"된장":1.15,"생강":1.0,"미림":1.0,"춘장":1.2,"굴소스":1.2,"식용유":0.92,"양파":1.0,"머스터드":1.0,"레몬즙":1.0,"우스터소스":1.1,"피클":1.0,"파마산치즈":1.0,"소금":1.2,"사과즙":1.0,"적포도주":1.0,"와사비":1.0};
+const SAUCES=[
+  {emoji:"🍗",name:"허니콤보",desc:"바삭한 위에 달콤짭짤 간장+꿀. 안 매운 단짠의 정석.",base:{salt:6,sweet:8,sour:1,umami:5,spicy:1},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"꿀",g:30,ax:"sweet"},{n:"올리고당",g:15,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"버터",g:10,ax:null},{n:"후추",g:1,ax:null}]},
+  {emoji:"🔥",name:"불닭볶음",desc:"혀가 얼얼한 극강 매움 위에 단짠. 캡사이신 폭탄.",base:{salt:6,sweet:6,sour:1,umami:6,spicy:10},
+   ing:[{n:"고추장",g:25,ax:"spicy"},{n:"고춧가루",g:15,ax:"spicy"},{n:"청양고추",g:15,ax:"spicy"},{n:"간장",g:15,ax:"salt"},{n:"설탕",g:20,ax:"sweet"},{n:"물엿",g:15,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"다시다",g:3,ax:"umami"}]},
+  {emoji:"😈",name:"엽기떡볶이",desc:"매운데 자꾸 먹게 되는 중독 매콤 단짠 감칠.",base:{salt:6,sweet:6,sour:1,umami:7,spicy:9},
+   ing:[{n:"고추장",g:30,ax:"spicy"},{n:"고춧가루",g:15,ax:"spicy"},{n:"청양고추",g:20,ax:"spicy"},{n:"설탕",g:25,ax:"sweet"},{n:"간장",g:10,ax:"salt"},{n:"다시다",g:5,ax:"umami"},{n:"다진마늘",g:10,ax:"umami"},{n:"카레가루",g:2,ax:null}]},
+  {emoji:"🏫",name:"국민학교 떡볶이",desc:"덜 맵고 달달한 추억의 분식집 맛.",base:{salt:5,sweet:7,sour:1,umami:5,spicy:4},
+   ing:[{n:"고추장",g:20,ax:"spicy"},{n:"고춧가루",g:5,ax:"spicy"},{n:"설탕",g:20,ax:"sweet"},{n:"물엿",g:20,ax:"sweet"},{n:"간장",g:10,ax:"salt"},{n:"다진마늘",g:6,ax:"umami"}]},
+  {emoji:"🍗",name:"양념치킨",desc:"새콤달콤 매콤, 치킨집 빨간 양념.",base:{salt:6,sweet:7,sour:3,umami:5,spicy:5},
+   ing:[{n:"고추장",g:25,ax:"spicy"},{n:"케첩",g:25,ax:"sweet"},{n:"물엿",g:20,ax:"sweet"},{n:"간장",g:10,ax:"salt"},{n:"다진마늘",g:10,ax:"umami"},{n:"식초",g:5,ax:"sour"}]},
+  {emoji:"🌸",name:"로제",desc:"우유·크림에 매콤달콤. 요즘 그 분홍 소스.",base:{salt:6,sweet:5,sour:1,umami:6,spicy:4},
+   ing:[{n:"우유/생크림",g:100,ax:null},{n:"고추장",g:15,ax:"spicy"},{n:"케첩",g:15,ax:"sweet"},{n:"버터",g:15,ax:null},{n:"설탕",g:10,ax:"sweet"},{n:"간장",g:5,ax:"salt"},{n:"다진마늘",g:8,ax:"umami"}]},
+  {emoji:"🌶️",name:"마라(마라장)",desc:"화자오의 얼얼함(마)+매움(라). 중독성 끝판.",base:{salt:6,sweet:3,sour:1,umami:7,spicy:9},
+   ing:[{n:"마라소스",g:30,ax:"spicy"},{n:"두반장",g:15,ax:"umami"},{n:"고춧가루",g:10,ax:"spicy"},{n:"간장",g:10,ax:"salt"},{n:"설탕",g:8,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"화자오",g:2,ax:null}]},
+  {emoji:"🥢",name:"간장치킨",desc:"마늘 향 단짠 간장. 안 매운 사람용 인기.",base:{salt:7,sweet:6,sour:1,umami:5,spicy:2},
+   ing:[{n:"간장",g:35,ax:"salt"},{n:"물엿",g:25,ax:"sweet"},{n:"설탕",g:10,ax:"sweet"},{n:"다진마늘",g:12,ax:"umami"},{n:"청양고추",g:8,ax:"spicy"},{n:"후추",g:1,ax:null}]},
+  {emoji:"🥚",name:"간장계란밥",desc:"따뜻한 밥에 슥슥 비비는 버터간장. 계란 하나면 완성.",base:{salt:7,sweet:3,sour:1,umami:5,spicy:1},
+   ing:[{n:"간장",g:20,ax:"salt"},{n:"버터",g:10,ax:null},{n:"참기름",g:5,ax:null},{n:"설탕",g:5,ax:"sweet"},{n:"다진마늘",g:5,ax:"umami"},{n:"통깨",g:2,ax:null}]},
+  {emoji:"🍱",name:"치킨마요",desc:"고소한 마요 + 단짠 데리야끼 간장. 밥에 올리는 치킨마요덮밥 소스.",base:{salt:6,sweet:6,sour:1,umami:5,spicy:1},
+   ing:[{n:"마요네즈",g:30,ax:null},{n:"간장",g:20,ax:"salt"},{n:"설탕",g:10,ax:"sweet"},{n:"물엿",g:12,ax:"sweet"},{n:"다진마늘",g:4,ax:"umami"},{n:"후추",g:1,ax:null}]},
+  {emoji:"🥣",name:"본죽st 비빔장",desc:"안 매운 달달 간장 비빔장. 본죽st 정갈한 비빔밥에 — 애들 성공률 최고.",base:{salt:7,sweet:5,sour:1,umami:4,spicy:1},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"올리고당",g:15,ax:"sweet"},{n:"물",g:15,ax:null},{n:"참기름",g:5,ax:null},{n:"다진마늘",g:3,ax:"umami"},{n:"통깨",g:2,ax:null}]},
+  {emoji:"🥬",name:"쌈장",desc:"고기 쌈에 필수. 된장·고추장에 마늘·참기름.",base:{salt:7,sweet:3,sour:1,umami:7,spicy:3},
+   ing:[{n:"된장",g:30,ax:"salt"},{n:"고추장",g:15,ax:"spicy"},{n:"다진마늘",g:10,ax:"umami"},{n:"물엿",g:8,ax:"sweet"},{n:"참기름",g:10,ax:null},{n:"통깨",g:3,ax:null},{n:"대파",g:10,ax:null}]},
+  {emoji:"🌶️",name:"초고추장",desc:"새콤달콤매콤. 회·물회·비빔국수에.",base:{salt:4,sweet:7,sour:7,umami:4,spicy:5},
+   ing:[{n:"고추장",g:30,ax:"spicy"},{n:"식초",g:20,ax:"sour"},{n:"설탕",g:20,ax:"sweet"},{n:"물엿",g:10,ax:"sweet"},{n:"다진마늘",g:5,ax:"umami"},{n:"통깨",g:3,ax:null}]},
+  {emoji:"🥟",name:"간장초장",desc:"만두·회·전 찍어먹는 새콤 간장.",base:{salt:7,sweet:2,sour:6,umami:3,spicy:2},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"식초",g:20,ax:"sour"},{n:"고춧가루",g:3,ax:"spicy"},{n:"설탕",g:5,ax:"sweet"},{n:"대파",g:8,ax:null},{n:"통깨",g:2,ax:null}]},
+  {emoji:"🥓",name:"제육볶음 양념",desc:"집밥 매콤단짠 대표. 돼지고기 볶음에.",base:{salt:6,sweet:6,sour:1,umami:6,spicy:8},
+   ing:[{n:"고추장",g:30,ax:"spicy"},{n:"고춧가루",g:12,ax:"spicy"},{n:"간장",g:15,ax:"salt"},{n:"설탕",g:18,ax:"sweet"},{n:"물엿",g:10,ax:"sweet"},{n:"다진마늘",g:12,ax:"umami"},{n:"생강",g:3,ax:null},{n:"후추",g:1,ax:null}]},
+  {emoji:"🍢",name:"데리야끼",desc:"닭·연어·덮밥에 윤기나는 단짠 간장.",base:{salt:6,sweet:7,sour:1,umami:4,spicy:1},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"미림",g:20,ax:"sweet"},{n:"설탕",g:15,ax:"sweet"},{n:"물엿",g:10,ax:"sweet"},{n:"다진마늘",g:4,ax:"umami"},{n:"생강",g:3,ax:null}]},
+  {emoji:"🐔",name:"닭갈비 양념",desc:"매콤달콤, 카레 향 살짝. 닭갈비·볶음에.",base:{salt:6,sweet:6,sour:1,umami:6,spicy:7},
+   ing:[{n:"고추장",g:28,ax:"spicy"},{n:"고춧가루",g:10,ax:"spicy"},{n:"간장",g:15,ax:"salt"},{n:"설탕",g:18,ax:"sweet"},{n:"물엿",g:8,ax:"sweet"},{n:"다진마늘",g:12,ax:"umami"},{n:"카레가루",g:3,ax:null},{n:"생강",g:3,ax:null}]},
+  {emoji:"🍜",name:"짜장(춘장)",desc:"춘장 볶아 만든 감칠 단짠. 짜장밥·면에.",base:{salt:6,sweet:5,sour:1,umami:7,spicy:1},
+   ing:[{n:"춘장",g:35,ax:"salt"},{n:"설탕",g:15,ax:"sweet"},{n:"굴소스",g:10,ax:"umami"},{n:"다진마늘",g:8,ax:"umami"},{n:"식용유",g:15,ax:null},{n:"양파",g:30,ax:null}]},
+  {emoji:"🍯",name:"허니머스타드",desc:"치킨·샐러드 디핑. 새콤달콤 고소.",base:{salt:3,sweet:7,sour:3,umami:2,spicy:1},
+   ing:[{n:"마요네즈",g:40,ax:null},{n:"머스터드",g:20,ax:null},{n:"꿀",g:25,ax:"sweet"},{n:"레몬즙",g:5,ax:"sour"},{n:"설탕",g:5,ax:"sweet"}]},
+  {emoji:"🍤",name:"돈가스소스",desc:"분식집 갈색 소스. 돈가스·고로케에.",base:{salt:5,sweet:7,sour:4,umami:4,spicy:1},
+   ing:[{n:"우스터소스",g:25,ax:"salt"},{n:"케첩",g:30,ax:"sweet"},{n:"설탕",g:12,ax:"sweet"},{n:"간장",g:8,ax:"salt"},{n:"물엿",g:8,ax:"sweet"}]},
+  {emoji:"🧨",name:"스윗칠리",desc:"튀김·만두 디핑. 달콤새콤 살짝 매콤.",base:{salt:3,sweet:8,sour:5,umami:2,spicy:4},
+   ing:[{n:"설탕",g:30,ax:"sweet"},{n:"식초",g:20,ax:"sour"},{n:"물",g:20,ax:null},{n:"고춧가루",g:5,ax:"spicy"},{n:"청양고추",g:8,ax:"spicy"},{n:"다진마늘",g:6,ax:"umami"}]},
+  {emoji:"🐟",name:"타르타르",desc:"생선까스·새우튀김에. 마요+피클 상큼.",base:{salt:3,sweet:4,sour:4,umami:2,spicy:1},
+   ing:[{n:"마요네즈",g:50,ax:null},{n:"피클",g:20,ax:"sour"},{n:"양파",g:15,ax:null},{n:"레몬즙",g:5,ax:"sour"},{n:"설탕",g:5,ax:"sweet"}]},
+  {emoji:"🧄",name:"갈릭버터간장",desc:"스테이크·감바스·새우에. 버터+마늘+간장.",base:{salt:6,sweet:3,sour:1,umami:6,spicy:1},
+   ing:[{n:"버터",g:30,ax:null},{n:"간장",g:20,ax:"salt"},{n:"다진마늘",g:15,ax:"umami"},{n:"꿀",g:8,ax:"sweet"},{n:"대파",g:5,ax:null},{n:"후추",g:1,ax:null}]},
+  {emoji:"🍝",name:"까르보나라",desc:"크림+치즈 진한 파스타 소스.",base:{salt:5,sweet:2,sour:1,umami:6,spicy:1},
+   ing:[{n:"우유/생크림",g:120,ax:null},{n:"파마산치즈",g:25,ax:"umami"},{n:"버터",g:15,ax:null},{n:"다진마늘",g:6,ax:"umami"},{n:"소금",g:2,ax:"salt"},{n:"후추",g:1,ax:null}]},
+  {emoji:"🍖",name:"BBQ소스",desc:"폭립·바베큐·구이에. 달콤새콤 훈연 단짠.",base:{salt:5,sweet:7,sour:3,umami:4,spicy:2},
+   ing:[{n:"케첩",g:40,ax:"sweet"},{n:"우스터소스",g:15,ax:"salt"},{n:"설탕",g:20,ax:"sweet"},{n:"간장",g:8,ax:"salt"},{n:"식초",g:8,ax:"sour"},{n:"다진마늘",g:6,ax:"umami"}]},
+  {emoji:"🍱",name:"경양식 돈까스",desc:"명동st 옛날 경양식. 묽고 부드러운 갈색 데미글라스풍.",base:{salt:5,sweet:6,sour:3,umami:4,spicy:1},
+   ing:[{n:"우스터소스",g:25,ax:"salt"},{n:"케첩",g:25,ax:"sweet"},{n:"설탕",g:12,ax:"sweet"},{n:"버터",g:12,ax:null},{n:"양파",g:30,ax:null},{n:"우유/생크림",g:30,ax:null},{n:"후추",g:1,ax:null}]},
+  {emoji:"🐗",name:"일본식 돈카츠",desc:"불독소스st. 과일·채소 걸쭉한 단짠새콤.",base:{salt:5,sweet:7,sour:4,umami:5,spicy:1},
+   ing:[{n:"우스터소스",g:25,ax:"salt"},{n:"케첩",g:25,ax:"sweet"},{n:"설탕",g:15,ax:"sweet"},{n:"간장",g:8,ax:"salt"},{n:"식초",g:6,ax:"sour"},{n:"사과즙",g:20,ax:null},{n:"다진마늘",g:4,ax:"umami"}]},
+  {emoji:"🥘",name:"수제 데미글라스",desc:"고급 돈까스집st. 적포도주·버터로 졸인 진한 갈색.",base:{salt:6,sweet:5,sour:3,umami:6,spicy:1},
+   ing:[{n:"우스터소스",g:25,ax:"salt"},{n:"케첩",g:20,ax:"sweet"},{n:"적포도주",g:25,ax:null},{n:"버터",g:15,ax:null},{n:"양파",g:30,ax:null},{n:"설탕",g:8,ax:"sweet"},{n:"다진마늘",g:5,ax:"umami"}]},
+  {emoji:"🧒",name:"애들 돈까스소스",desc:"안 시고 케첩처럼 달콤. 애들이 제일 잘 먹는 순한 돈까스소스.",base:{salt:4,sweet:8,sour:2,umami:3,spicy:1},
+   ing:[{n:"케첩",g:40,ax:"sweet"},{n:"올리고당",g:15,ax:"sweet"},{n:"우스터소스",g:10,ax:"salt"},{n:"설탕",g:8,ax:"sweet"},{n:"사과즙",g:15,ax:null},{n:"버터",g:8,ax:null}]},
+  {emoji:"🥞",name:"부침개 간장",desc:"전·부침개 찍먹 초간장. 새콤짭짤에 고춧가루·파.",base:{salt:7,sweet:1,sour:5,umami:3,spicy:2},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"식초",g:15,ax:"sour"},{n:"물",g:15,ax:null},{n:"고춧가루",g:3,ax:"spicy"},{n:"대파",g:10,ax:null},{n:"통깨",g:2,ax:null}]},
+  {emoji:"🍶",name:"두부 양념간장",desc:"두부·수육에 얹는 매콤 양념간장.",base:{salt:7,sweet:2,sour:1,umami:4,spicy:3},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"고춧가루",g:5,ax:"spicy"},{n:"대파",g:12,ax:null},{n:"다진마늘",g:6,ax:"umami"},{n:"참기름",g:8,ax:null},{n:"설탕",g:4,ax:"sweet"},{n:"통깨",g:3,ax:null}]},
+  {emoji:"🍣",name:"와사비 간장",desc:"회·초밥에 톡 쏘는 와사비 간장.",base:{salt:7,sweet:2,sour:1,umami:3,spicy:4},
+   ing:[{n:"간장",g:30,ax:"salt"},{n:"와사비",g:8,ax:"spicy"},{n:"미림",g:8,ax:"sweet"},{n:"물",g:5,ax:null}]},
+  {emoji:"🧂",name:"기름장",desc:"수육·고기 찍먹. 참기름+소금+후추 고소짭짤.",base:{salt:8,sweet:0,sour:0,umami:1,spicy:1},
+   ing:[{n:"참기름",g:25,ax:null},{n:"소금",g:5,ax:"salt"},{n:"후추",g:2,ax:null},{n:"통깨",g:3,ax:null}]}
+];
+const sauceColor=k=>{ const x=TASTES.find(t=>t.key===k); return x?x.color:"#9C9484"; };
+let sauceState={...SAUCES[0].base}, currentSauce=null;
+const sauceChips=$("sauceChips");
+const SAUCE_CAT={
+  "허니콤보":"chicken","양념치킨":"chicken","간장치킨":"chicken",
+  "불닭볶음":"tteok","엽기떡볶이":"tteok","국민학교 떡볶이":"tteok","제육볶음 양념":"tteok","닭갈비 양념":"tteok",
+  "간장계란밥":"rice","치킨마요":"rice","본죽st 비빔장":"rice","데리야끼":"rice",
+  "쌈장":"korean","초고추장":"korean","간장초장":"korean","부침개 간장":"korean","두부 양념간장":"korean","와사비 간장":"korean","기름장":"korean",
+  "허니머스타드":"fry","돈가스소스":"fry","스윗칠리":"fry","타르타르":"fry","경양식 돈까스":"fry","일본식 돈카츠":"fry","수제 데미글라스":"fry","애들 돈까스소스":"fry",
+  "로제":"western","갈릭버터간장":"western","까르보나라":"western","BBQ소스":"western",
+  "마라(마라장)":"chinese","짜장(춘장)":"chinese"
+};
+const SAUCE_CATS=[["chicken","🍗 치킨·양념"],["tteok","🌶️ 떡볶이·매콤볶음"],["rice","🍚 밥·비빔·덮밥"],["korean","🥬 한식 디핑·찍먹"],["fry","🍤 튀김·돈까스"],["western","🍝 양식·크림"],["chinese","🥡 중식"],["기타","✨ 기타"]];
+const sauceCatOf=s=>SAUCE_CAT[s.name]||"기타";
+const SAUCE_PROD={
+  "허니콤보":"시판 허니갈릭·간장마늘 소스","불닭볶음":"삼양 불닭소스","엽기떡볶이":"엽떡 밀키트 소스","국민학교 떡볶이":"오뚜기 옛날 떡볶이 소스",
+  "양념치킨":"오뚜기 양념치킨 소스","로제":"시판 로제 떡볶이 소스","마라(마라장)":"하이디라오 마라장·두반장","간장치킨":"시판 간장치킨 소스",
+  "간장계란밥":"진간장 + 버터","치킨마요":"기꼬만 데리야끼 + 큐피 마요","본죽st 비빔장":"청정원 양조간장 + 올리고당",
+  "쌈장":"해찬들 쌈장","초고추장":"오뚜기 초고추장","간장초장":"시판 초간장","제육볶음 양념":"청정원 제육볶음 양념",
+  "데리야끼":"기꼬만 데리야끼 소스","닭갈비 양념":"시판 춘천닭갈비 양념","짜장(춘장)":"사자표 춘장 · 오뚜기 짜장",
+  "허니머스타드":"하인즈 허니머스타드","돈가스소스":"오뚜기 돈까스소스","스윗칠리":"팬타이 스윗칠리소스","타르타르":"오뚜기·큐피 타르타르소스",
+  "갈릭버터간장":"버터 + 진간장 + 다진마늘","까르보나라":"오뚜기 까르보나라 소스","BBQ소스":"스위트베이비레이스 · 하인즈 BBQ",
+  "경양식 돈까스":"오뚜기 돈까스소스","일본식 돈카츠":"불독(Bull-Dog) 돈카츠소스","수제 데미글라스":"하인즈 데미글라스",
+  "애들 돈까스소스":"오뚜기 돈까스소스 + 케첩","부침개 간장":"시판 초간장·맛간장","두부 양념간장":"청정원 맛간장 + 고춧가루",
+  "와사비 간장":"S&B 와사비 + 기꼬만 간장","기름장":"참기름 + 맛소금"
+};
+const FAV_SAUCE_KEY="et_fav_sauces";
+function loadFavSauce(){ try{ return JSON.parse(localStorage.getItem(FAV_SAUCE_KEY)||"[]"); }catch(e){ return []; } }
+function saveFavSauce(a){ try{ localStorage.setItem(FAV_SAUCE_KEY, JSON.stringify(a)); }catch(e){} }
+function isFavSauce(n){ return loadFavSauce().includes(n); }
+function toggleFavSauce(name){ let a=loadFavSauce(); a=a.includes(name)?a.filter(x=>x!==name):[name,...a]; saveFavSauce(a); renderSauceRecipe(); renderSaved(); }
+function goSauce(name){ const s=SAUCES.find(x=>x.name===name); if(!s) return; selectSauce(s);
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on", x.dataset.view==="sauce"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active")); $("view-sauce").classList.add("active"); window.scrollTo(0,0); }
+SAUCE_CATS.forEach(([key,label])=>{
+  const list=SAUCES.filter(s=>sauceCatOf(s)===key); if(!list.length) return;
+  const h=document.createElement("div"); h.className="saucecat"; h.textContent=label; sauceChips.appendChild(h);
+  list.forEach(s=>{ const el=document.createElement("button"); el.className="chip"; el.textContent=s.emoji+" "+s.name; el.onclick=()=>selectSauce(s); sauceChips.appendChild(el); });
+});
+const sauceSlidersEl=$("sauceSliders"), sauceInputs={}, sauceVals={};
+TASTES.forEach(x=>{ const wrap=document.createElement("div"); wrap.className="sl";
+  wrap.innerHTML=`<div class="top"><span class="left"><span class="dot" style="background:${x.color};box-shadow:0 0 8px ${x.color}"></span><span class="nm">${x.label}</span></span><span class="val" style="color:${x.color}" id="sv-${x.key}">0</span></div>`;
+  const inp=document.createElement("input"); inp.type="range"; inp.min=0; inp.max=10; inp.step=0.5; inp.value=0; inp.style.accentColor=x.color;
+  inp.setAttribute("role","slider"); inp.setAttribute("aria-label",x.label);
+  inp.addEventListener("input",e=>{ const v=parseFloat(e.target.value); sauceState={...sauceState,[x.key]:v}; sauceVals[x.key].textContent=v.toFixed(1); renderSauceRecipe(); });
+  wrap.appendChild(inp); sauceSlidersEl.appendChild(wrap); sauceInputs[x.key]=inp; sauceVals[x.key]=$(`sv-${x.key}`); });
+function selectSauce(s){ currentSauce=s; sauceState={...s.base};
+  TASTES.forEach(x=>{ sauceInputs[x.key].value=s.base[x.key]; sauceVals[x.key].textContent=s.base[x.key].toFixed(1); });
+  [...sauceChips.children].forEach(c=>c.classList.toggle("on", c.textContent===s.emoji+" "+s.name));
+  $("sauceDesc").textContent=s.desc; renderSauceRecipe();
+}
+function renderSauceRecipe(){ const s=currentSauce; if(!s) return;
+  const rows=s.ing.map(it=>{
+    let g=(it.ax && s.base[it.ax]>0) ? it.g*(sauceState[it.ax]/s.base[it.ax]) : it.g; g=Math.max(0,g);
+    const dim=g<0.5; const spoon=dim?"":spoonStr(g, SAUCE_DENS[it.n]||1.1);
+    return `<div class="ing${dim?' sub':''}"><div class="l"><span class="cdot" style="background:${it.ax?sauceColor(it.ax):'#9C9484'}"></span><div><div class="nm">${it.n}</div></div></div>
+      <div class="r">${dim?'<div class="sp">빼기</div>':`<div class="g">${fmtG(g)}<small>g</small></div><div class="sp">🥄 ${spoon}</div>`}</div></div>`;
+  }).join("");
+  $("sauceRecipe").innerHTML=`<div class="rcard hero"><h3 style="display:flex;align-items:center;gap:6px">🥫 ${s.name} 소스 <span class="heronote">— 2인분 기준</span><button class="favbtn" id="sauceFav" style="margin-left:auto" aria-label="찜">${isFavSauce(s.name)?"❤️":"🤍"}</button></h3>${rows}</div>
+    ${SAUCE_PROD[s.name]?`<div class="rcard"><div class="rsummary">🛒 <b>이 맛 시판 제품</b> — ${SAUCE_PROD[s.name]}</div></div>`:""}
+    <div class="rcard"><div class="rsummary">위 조절좌(맵기·단맛 등)를 움직이면 재료 양이 <b>실시간</b>으로 바뀌어요. 맵기 0으로 내리면 매운 재료는 '빼기'!</div></div>`;
+  const sf=$("sauceFav"); if(sf) sf.onclick=()=>toggleFavSauce(s.name);
+}
+selectSauce(SAUCES[0]);
+
+/* ── 일주일 식단표 ── */
+const MEAL_KEY="et_meal_plan";
+const MEAL_DAYS=[["mon","월"],["tue","화"],["wed","수"],["thu","목"],["fri","금"],["sat","토"],["sun","일"]];
+const MEAL_SLOTS=[["b","아침"],["l","점심"],["d","저녁"]];
+function loadMeal(){ try{ return JSON.parse(localStorage.getItem(MEAL_KEY)||"{}"); }catch(e){ return {}; } }
+function saveMeal(m){ try{ localStorage.setItem(MEAL_KEY, JSON.stringify(m)); }catch(e){} }
+function slotsFor(dk){ return (dk==="sat"||dk==="sun") ? MEAL_SLOTS : [["d","저녁"]]; } // 평일=저녁만, 주말=3끼
+function buildMeal(){
+  const el=$("mealPlan"); if(!el) return;
+  const m=loadMeal();
+  const opt=cur=>`<option value="">— 없음 —</option>`+RECIPES.map(r=>`<option value="${r.name}"${r.name===cur?" selected":""}>${r.emoji} ${r.name}</option>`).join("");
+  let rows="";
+  MEAL_DAYS.forEach(([dk,dl])=>{ const wknd=dk==="sat"||dk==="sun"; const day=m[dk]||{};
+    slotsFor(dk).forEach(([sk,sl],i)=>{ const cur=day[sk]||""; const r=cur?RECIPES.find(x=>x.name===cur):null;
+      rows+=`<div class="mrow ${dk}${i===0?" dayfirst":""}${wknd?" wknd":""}"><span class="mr-day">${i===0?dl:""}</span><span class="mr-slot">${sl}</span><span class="mr-dish${cur?"":" empty"}">${r?(r.emoji+" "+r.name):"＋ 추가"}</span><select class="mealsel" data-d="${dk}" data-s="${sk}">${opt(cur)}</select></div>`;
+    });
+  });
+  el.innerHTML=`<div class="mcap">평일은 저녁만 · 주말은 아침·점심·저녁</div><div class="mlist">${rows}</div>`;
+  el.querySelectorAll(".mealsel").forEach(s=>s.onchange=()=>{ const mm=loadMeal(); (mm[s.dataset.d]=mm[s.dataset.d]||{})[s.dataset.s]=s.value; saveMeal(mm); buildMeal(); renderShop(); });
+  renderShop();
+}
+function renderShop(){
+  const el=$("mealShop"); if(!el) return;
+  const m=loadMeal(); const names=[];
+  MEAL_DAYS.forEach(([dk])=>slotsFor(dk).forEach(([sk])=>{ const n=(m[dk]||{})[sk]; if(n&&!names.includes(n)) names.push(n); }));
+  if(!names.length){ el.innerHTML=`<div class="empty" style="padding:24px 20px">끼니를 채우면 장보기 리스트가 자동으로 만들어져요 🛒</div>`; return; }
+  const SKIP=["따뜻한","찬","다진","생","구운","삶은","불린","잘게"];
+  const items=[]; names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) r.ing.forEach(i=>{ const p=i.split(" "); let nm=(SKIP.includes(p[0])&&p[1])?p[1]:p[0]; nm=nm.replace(/[:：]$/,""); if(nm && !items.includes(nm)) items.push(nm); }); });
+  el.innerHTML=`<div class="savedhdr" style="margin-top:8px">🛒 이번 주 장보기 <span>${items.length}</span></div><div class="shopwrap">${items.map(x=>`<span>${x}</span>`).join("")}</div>`;
+}
+function mealFill(){ const mm={}; MEAL_DAYS.forEach(([dk])=>{ mm[dk]={}; slotsFor(dk).forEach(([sk])=>{ mm[dk][sk]=RECIPES[Math.floor(Math.random()*RECIPES.length)].name; }); }); saveMeal(mm); buildMeal(); }
+function mealClear(){ saveMeal({}); buildMeal(); }
+if($("mealFill")) $("mealFill").onclick=mealFill;
+if($("mealClear")) $("mealClear").onclick=mealClear;
+buildMeal();
+
+/* ── 냉장고 재료 관리 ── */
+const FRIDGE_KEY="et_fridge";
+const FR_PRESETS=[["잎채소·상추",4],["채소·뿌리채소",14],["과일",7],["소·돼지고기",3],["닭고기",2],["생선·해산물",2],["다진고기",1],["계란",21],["우유·유제품",7],["두부(개봉)",3],["김치",30],["소스·장류(개봉)",30],["밥·반찬",3],["냉동식품",90]];
+function esc(s){ const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
+function loadFridge(){ try{ return JSON.parse(localStorage.getItem(FRIDGE_KEY)||"[]"); }catch(e){ return []; } }
+function saveFridge(a){ try{ localStorage.setItem(FRIDGE_KEY, JSON.stringify(a)); }catch(e){} }
+function frPad(n){ return String(n).padStart(2,"0"); }
+function frToday(){ const d=new Date(); return d.getFullYear()+"-"+frPad(d.getMonth()+1)+"-"+frPad(d.getDate()); }
+function frAddDays(ds,n){ const d=new Date(ds+"T00:00:00"); d.setDate(d.getDate()+(n|0)); return d.getFullYear()+"-"+frPad(d.getMonth()+1)+"-"+frPad(d.getDate()); }
+function frDday(useby){ return Math.round((new Date(useby+"T00:00:00") - new Date(frToday()+"T00:00:00"))/86400000); }
+function frUseby(x){ return frAddDays(x.bought, x.days); }
+let _frNotified=false;
+function initFridge(){
+  const dt=$("frDate"); if(dt&&!dt.value) dt.value=frToday();
+  const ds=$("frDays"); if(ds&&!ds.options.length){ ds.innerHTML=FR_PRESETS.map(([n,d])=>`<option value="${d}">${n} · ${d}일</option>`).join(""); ds.value="14"; }
+  if($("frAdd")) $("frAdd").onclick=frAddItem;
+  if($("frNotif")) $("frNotif").onclick=enableFridgeNotif;
+  if($("frPasteBtn")) $("frPasteBtn").onclick=frImportOrder;
+  renderFridge();
+  if(!_frNotified && "Notification" in window && Notification.permission==="granted"){ _frNotified=true; fridgeNotify(false); }
+}
+function frAddItem(){
+  const name=($("frName").value||"").trim(); if(!name){ $("frName").focus(); return; }
+  const arr=loadFridge(); arr.push({name, bought:($("frDate").value||frToday()), days:parseInt($("frDays").value)||7}); saveFridge(arr);
+  $("frName").value=""; renderFridge();
+}
+function renderFridge(){
+  const el=$("frList"); if(!el) return;
+  const arr=loadFridge().map((x,i)=>{ const ub=frUseby(x); return {...x,i,ub,dd:frDday(ub)}; }).sort((a,b)=>a.dd-b.dd);
+  if(!arr.length){ el.innerHTML=`<div class="empty" style="padding:30px 20px">냉장고에 산 재료를 추가해보세요.<br>산 날짜로 '언제까지 써야 하는지' 자동 계산돼요 🧊</div>`; return; }
+  const exp=arr.filter(x=>x.dd<0).length, soon=arr.filter(x=>x.dd>=0&&x.dd<=2).length;
+  let banner="";
+  if(exp||soon) banner=`<div class="fralert">🔔 ${exp?`<b style="color:var(--danger)">만료 ${exp}개</b>`:""}${exp&&soon?" · ":""}${soon?`<b style="color:var(--warn)">임박 ${soon}개</b>`:""} — 빨리 쓰세요!</div>`;
+  el.innerHTML=banner+arr.map(x=>{
+    const cls=x.dd<0?"exp":x.dd<=2?"soon":"";
+    const dt=x.dd<0?`만료 +${-x.dd}일`:x.dd===0?"오늘까지":`D-${x.dd}`;
+    return `<div class="fritem ${cls}"><div class="fl"><div class="fn">${esc(x.name)}</div><div class="fmeta">${esc(x.bought)} 구입 · ~${esc(x.ub)}까지</div></div><div class="frr"><span class="fdday">${dt}</span><button class="frdel" data-i="${x.i}" aria-label="삭제">×</button></div></div>`;
+  }).join("");
+  el.querySelectorAll(".frdel").forEach(b=>b.onclick=()=>{ const a=loadFridge(); a.splice(+b.dataset.i,1); saveFridge(a); renderFridge(); });
+}
+function fridgeNotify(force){
+  const arr=loadFridge().filter(x=>frDday(frUseby(x))<=2);
+  if(!arr.length){ if(force) alert("곧 만료될 재료가 없어요 👍"); return; }
+  const msg=arr.map(x=>{ const d=frDday(frUseby(x)); return x.name+" ("+(d<0?"만료":d===0?"오늘":"D-"+d)+")"; }).join(", ");
+  if("Notification" in window && Notification.permission==="granted") new Notification("🧊 냉장고 — 곧 써야 해요", {body:msg, icon:"./icon-192.png"});
+  else if(force) alert("⚠️ 곧 써야 할 재료\n\n"+msg);
+}
+function enableFridgeNotif(){
+  if(!("Notification" in window)){ alert("이 브라우저는 알림을 지원하지 않아요. 대신 냉장 탭 상단에 경고가 떠요."); return; }
+  Notification.requestPermission().then(p=>{ if(p==="granted") fridgeNotify(true); else alert("알림이 꺼져 있어요. 냉장 탭을 열면 상단에 임박/만료 경고가 표시됩니다."); });
+}
+/* 주문내역 붙여넣기 → 식품 자동 추출 (키워드별 보관기간 추정) */
+const FOOD_KW=[
+  {re:/(다진고기|다짐육|민찌|간고기)/, days:1, name:"다진고기"},
+  {re:/(삼겹|목살|항정|앞다리|돼지|소고기|한우|차돌|등심|안심|불고기|스테이크|베이컨|소시지|소세지|햄|갈비|족발|보쌈|스팸|런천미트|캔햄)/, days:3, name:"고기"},
+  {re:/(닭|계육|닭가슴|닭다리|닭안심)/, days:2, name:"닭고기"},
+  {re:/(연어|광어|고등어|갈치|꽁치|생선|새우|오징어|문어|조개|전복|낙지|주꾸미|멸치|명태|동태|해산물|초밥|훈제연어)/, days:2, name:"해산물"},
+  {re:/(계란|달걀|대란|특란|왕란|메추리알)/, days:21, name:"계란"},
+  {re:/(우유|멸균우유|두유|초코우유|바나나우유)/, days:7, name:"우유"},
+  {re:/(요거트|요구르트|치즈|버터|생크림|휘핑|크림)/, days:14, name:"유제품"},
+  {re:/(두부|순두부|연두부)/, days:3, name:"두부"},
+  {re:/(상추|깻잎|시금치|쌈채|샐러드|부추|미나리|루꼴라|청경채|치커리|로메인|쑥갓)/, days:4, name:"잎채소"},
+  {re:/(양파|당근|감자|고구마|마늘|대파|쪽파|애호박|오이|파프리카|피망|버섯|양배추|브로콜리|가지|토마토|콩나물|숙주|고추)/, days:14, name:"채소"},
+  {re:/(사과|바나나|딸기|포도|오렌지|복숭아|수박|참외|블루베리|키위|망고|체리|자두|멜론|파인애플|샤인머스캣|귤)/, days:7, name:"과일"},
+  {re:/(김치|깍두기|총각김치|열무김치)/, days:30, name:"김치"},
+  {re:/(간장|고추장|된장|쌈장|소스|케첩|마요|굴소스|액젓|식초|드레싱|스리라차|춘장|다시다|연두|미림|올리고당|물엿|꿀)/, days:60, name:"소스·장류"},
+  {re:/(식빵|베이글|크로와상|모닝빵|바게트|단팥빵|빵)/, days:5, name:"빵"},
+  {re:/(가래떡|떡볶이떡|절편|떡국떡|인절미)/, days:5, name:"떡"},
+  {re:/(어묵|맛살|만두|냉동|튀김|돈가스|핫도그|너겟)/, days:30, name:"냉동·가공"},
+  {re:/(즉석밥|밀키트|컵밥|국밥|라면|즉석국|레토르트)/, days:5, name:"간편식"}
+];
+function frMatch(line){ for(const k of FOOD_KW){ if(k.re.test(line)) return k; } return null; }
+function frParseOrder(text){
+  const out=[];
+  (text||"").split(/[\n\r]+/).forEach(raw=>{
+    let line=raw.trim(); if(!line) return;
+    if(/^[\d,.\s₩원\-x×*•·]+$/i.test(line)) return;        // 가격·수량만
+    const k=frMatch(line); if(!k) return;
+    let name=line.replace(/₩/g,"")
+      .replace(/\d+(\.\d+)?\s*(개입|인분|ml|kg|g|l|개|입|구|매|포|팩|봉|병|호|미|t)/gi,"")  // 수량+단위
+      .replace(/\d[\d,]*\s*원/g,"")                                                        // 가격
+      .replace(/[xX×]\s*\d+/g,"").replace(/\d[\d,]*/g,"")                                   // 배수·잔여 숫자
+      .replace(/(로켓프레시|로켓배송|새벽배송|무료배송|판매자|브랜드|옵션\s*:?|수량|택1)/g,"")
+      .replace(/^[•·\-✔✓\s]+/,"").replace(/[\[\]\(\)]/g," ").replace(/\s{2,}/g," ").trim();
+    if(name.length<2) name=k.name;
+    out.push({name:name.slice(0,22), days:k.days});
+  });
+  return out;
+}
+function frImportOrder(){
+  const items=frParseOrder($("frPaste")&&$("frPaste").value);
+  if(!items.length){ alert("식품을 못 찾았어요 😅\n상품명이 한 줄에 하나씩 들어가게 복사해 붙여넣어 보세요."); return; }
+  const arr=loadFridge(), t=frToday();
+  items.forEach(it=>arr.push({name:it.name, bought:t, days:it.days}));
+  saveFridge(arr);
+  if($("frPaste")) $("frPaste").value="";
+  const d=$("frPasteDetails"); if(d) d.open=false;
+  renderFridge();
+  alert(items.length+"개 재료를 냉장고에 추가했어요 🧊\n(날짜·보관기간이 다르면 삭제 후 다시 넣어 조절하세요)");
+}
+initFridge();
+
+/* ── 감성 맛표현 ── */
+const SW_COLORS=["var(--t-salt)","var(--t-sweet)","var(--t-sour)","var(--t-umami)","var(--t-spicy)"];
+const SW_KEYS=["salt","sweet","sour","umami","spicy"];
+const SW_LABELS=["짠맛","단맛","신맛","감칠맛","매운맛"];
+let selectedSenseIdx=null;
+function buildSense(){
+  const grid=$("senseGrid"); if(!grid) return;
+  const cats=[...new Set(TASTE_WORDS.map(w=>w.cat))];
+  let html="";
+  cats.forEach(cat=>{
+    html+=`<div class="sense-cats"><div class="sense-cat-title">${cat}</div><div class="sense-grid">`;
+    TASTE_WORDS.forEach((w,i)=>{
+      if(w.cat!==cat) return;
+      const bars=SW_KEYS.map((k,ki)=>`<div class="sc-bar" style="flex:${w.v[k]||0.5};background:${SW_COLORS[ki]}"></div>`).join("");
+      html+=`<div class="scard" data-idx="${i}" id="sc-${i}"><div class="sc-em">${w.em}</div><div class="sc-nm">${w.nm}</div><div class="sc-sub">${w.eng}</div><div class="sc-bars">${bars}</div></div>`;
+    });
+    html+=`</div></div>`;
+  });
+  grid.innerHTML=html;
+  grid.querySelectorAll(".scard").forEach(card=>{
+    card.addEventListener("click",()=>selectSense(+card.dataset.idx));
+  });
+}
+function selectSense(idx){
+  if(selectedSenseIdx===idx){
+    selectedSenseIdx=null;
+    document.querySelectorAll(".scard").forEach(x=>x.classList.remove("on"));
+    $("senseDetail").innerHTML=""; return;
+  }
+  selectedSenseIdx=idx;
+  document.querySelectorAll(".scard").forEach(x=>x.classList.remove("on"));
+  const sc=document.getElementById("sc-"+idx); if(sc) sc.classList.add("on");
+  renderSenseDetail(idx);
+  setTimeout(()=>{ const d=$("senseDetail"); if(d) d.scrollIntoView({behavior:"smooth",block:"nearest"}); },80);
+}
+function renderSenseDetail(idx){
+  const w=TASTE_WORDS[idx];
+  const bars=SW_KEYS.map((k,ki)=>`<div class="sd-taste-item"><div class="sd-taste-label" style="color:${SW_COLORS[ki]}">${SW_LABELS[ki]}</div><div class="sd-taste-bar-wrap"><div class="sd-taste-bar" style="width:${(w.v[k]||0)*10}%;background:${SW_COLORS[ki]}"></div></div><div class="sd-taste-val">${(w.v[k]||0).toFixed(1)}</div></div>`).join("");
+  const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="goRecipe('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
+  $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div><div class="sd-eng">${w.eng}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 시뮬레이터 열기</button></div></div>`;
+}
+function applySenseToExplore(idx){
+  const w=TASTE_WORDS[idx];
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view==="explore"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-explore").classList.add("active");
+  window.scrollTo(0,0);
+  animateTo(w.v);
+}
+buildSense();
+
+/* ── 탐색 (시뮬레이터) ── */
+let t={salt:6,sweet:4,sour:2,umami:7,spicy:1}, synergy=0, isGold=false, displayVec={...t};
+const slidersEl=$("sliders"), sliderInputs={}, sliderVals={};
+TASTES.forEach(x=>{ const wrap=document.createElement("div"); wrap.className="sl";
+  wrap.innerHTML=`<div class="top"><span class="left"><span class="dot" style="background:${x.color};box-shadow:0 0 8px ${x.color}"></span><span class="nm">${x.label}</span><span class="sci">${x.sci}</span></span><span class="val" style="color:${x.color}" id="val-${x.key}">${t[x.key].toFixed(1)}</span></div>`;
+  const inp=document.createElement("input"); inp.type="range"; inp.min=0; inp.max=10; inp.step=0.5; inp.value=t[x.key]; inp.style.accentColor=x.color;
+  inp.setAttribute("role","slider"); inp.setAttribute("aria-label",x.label);
+  inp.addEventListener("input",e=>{ t={...t,[x.key]:parseFloat(e.target.value)}; renderExplore(); });
+  wrap.appendChild(inp); slidersEl.appendChild(wrap); sliderInputs[x.key]=inp; sliderVals[x.key]=$(`val-${x.key}`); });
+$("synRange").addEventListener("input",e=>{ synergy=parseFloat(e.target.value); renderExplore(); });
+const presetsEl=$("presets");
+EXPLORE_PRESETS.forEach(p=>{ const b=document.createElement("button"); b.textContent=p.label; b.onclick=()=>{ const{vector}=suggestGolden(p.target); animateTo(vector); }; presetsEl.appendChild(b); });
+
+const RADAR={cx:160,cy:108,R:80};
+function axisPoint(i,value){const ang=-Math.PI/2+i*(2*Math.PI/5);const r=RADAR.R*(value/10);return[RADAR.cx+r*Math.cos(ang),RADAR.cy+r*Math.sin(ang)];}
+(function buildRadar(){const svg=$("radar");let g="";
+  [0.25,0.5,0.75,1].forEach(f=>{const pts=TASTES.map((_,i)=>axisPoint(i,10*f).join(",")).join(" ");g+=`<polygon points="${pts}" fill="none" stroke="#E0D6C4" stroke-width="1"/>`;});
+  TASTES.forEach((_,i)=>{const[x,y]=axisPoint(i,10);g+=`<line x1="${RADAR.cx}" y1="${RADAR.cy}" x2="${x}" y2="${y}" stroke="#E0D6C4" stroke-width="1"/>`;});
+  g+=`<polygon points="${TASTES.map((_,i)=>axisPoint(i,10).join(",")).join(" ")}" fill="#F0E8D9" fill-opacity="0.5" stroke="none"/>`;
+  g+=`<polygon id="r-val" points="" stroke="#C77B3C" stroke-width="2" fill="#C77B3C" fill-opacity="0.28"/>`;
+  TASTES.forEach((x,i)=>{const[lx,ly]=axisPoint(i,11.9);const anchor=Math.abs(lx-RADAR.cx)<6?"middle":(lx<RADAR.cx?"end":"start");
+    g+=`<circle cx="${lx+(anchor==="end"?-6:anchor==="start"?6:0)}" cy="${ly-4}" r="3.2" fill="${x.color}"/>`;
+    g+=`<text class="axis-label" x="${lx}" y="${ly}" fill="#5A5345" text-anchor="${anchor}" dy="${i===0?-6:4}">${x.label}</text>`;});
+  svg.innerHTML=g;})();
+function drawRadarValue(vec,gold){const pts=TASTES.map((x,i)=>axisPoint(i,vec[x.key]).join(",")).join(" ");const poly=$("r-val");
+  poly.setAttribute("points",pts);poly.setAttribute("stroke",gold?"#FFD23F":"#C77B3C");poly.setAttribute("fill",gold?"#FFD23F":"#C77B3C");poly.setAttribute("fill-opacity",gold?"0.4":"0.28");}
+let morphRAF=null;
+function morphRadar(){ if(reduceMotion){displayVec={...t};drawRadarValue(displayVec,isGold);return;}
+  cancelAnimationFrame(morphRAF); const from={...displayVec}; const start=performance.now();
+  const tick=now=>{const k=Math.min(1,(now-start)/300);const e=1-Math.pow(1-k,3);
+    TASTES.forEach(x=>{displayVec[x.key]=from[x.key]+(t[x.key]-from[x.key])*e;});drawRadarValue(displayVec,isGold);if(k<1)morphRAF=requestAnimationFrame(tick);};
+  morphRAF=requestAnimationFrame(tick);}
+function animateTo(vector){ if(reduceMotion){t={...t,...vector};syncSliders();renderExplore();return;}
+  const from={...t};const start=performance.now();
+  const step=now=>{const k=Math.min(1,(now-start)/450);const e=1-Math.pow(1-k,3);
+    TASTES.forEach(x=>{t[x.key]=+(from[x.key]+(vector[x.key]-from[x.key])*e).toFixed(2);});syncSliders();renderExplore();
+    if(k<1)requestAnimationFrame(step);else{TASTES.forEach(x=>{t[x.key]=vector[x.key];});syncSliders();renderExplore();}};
+  requestAnimationFrame(step);}
+function syncSliders(){TASTES.forEach(x=>{sliderInputs[x.key].value=t[x.key];});}
+function gaugeColor(s){return s>=78?"var(--g-gold)":s>=55?"var(--g-good)":s>=30?"var(--g-mid)":"var(--g-low)";}
+
+/* 탐색 슬라이더 → 계산 페이지의 '맛 스타일' 매칭 (대표 5축 벡터) */
+const STYLE_VECTORS={
+  basic_home:{salt:6,sweet:4,sour:1,umami:6,spicy:1}, kids_sweet_savory:{salt:5,sweet:6,sour:0,umami:5,spicy:0},
+  trendy_rose:{salt:6,sweet:6,sour:1,umami:6,spicy:5}, hot_honey_chicken:{salt:6,sweet:8,sour:3,umami:5,spicy:6},
+  chili_crisp:{salt:6,sweet:2,sour:0,umami:5,spicy:8}, yuzu_lime_spicy:{salt:5,sweet:6,sour:7,umami:4,spicy:5},
+  gochujang_mayo:{salt:6,sweet:4,sour:4,umami:5,spicy:5}, baek_jongwon:{salt:7,sweet:5,sour:1,umami:7,spicy:2},
+  ryu_sooyoung:{salt:6,sweet:4,sour:1,umami:8,spicy:2}, lee_yeonbok:{salt:6,sweet:3,sour:2,umami:8,spicy:1},
+  choi_kangrok:{salt:5,sweet:3,sour:1,umami:8,spicy:0}, gordon_ramsay:{salt:6,sweet:1,sour:3,umami:4,spicy:1},
+  fine_dining:{salt:5,sweet:2,sour:4,umami:5,spicy:1}
+};
+function nearestStyle(tv){ let best=null,bd=1e9;
+  for(const st of STYLES){ const v=STYLE_VECTORS[st.id]; if(!v)continue;
+    const d=Math.sqrt(["salt","sweet","sour","umami","spicy"].reduce((a,k)=>a+(tv[k]-v[k])**2,0));
+    if(d<bd){bd=d;best=st;} }
+  return best?{style:best,dist:bd}:null;
+}
+function goCalcWithStyle(id){
+  calcState.stylePresetId=id;
+  [...styleChips.children].forEach((el,i)=>el.classList.toggle("on", STYLES[i].id===id));
+  showStyleDesc();
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on", x.dataset.view==="calc"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-calc").classList.add("active");
+  window.scrollTo(0,0);
+}
+let _bubbleTO=null, _lastMatchId=null, _bubbleArmed=false;
+function showBubble(style, gold){ const b=$("styleBubble"); if(!b)return;
+  b.className="bubble show"+(gold?" gold":"");
+  b.innerHTML=`<div class="bbl-t">${gold?"★ 존맛존 · ":""}이 맛 ≈ ${style.name}</div><div class="bbl-s">탭하면 이 맛으로 계산하기 →</div>`;
+  b.onclick=()=>{ goCalcWithStyle(style.id); hideBubble(); };
+  clearTimeout(_bubbleTO); _bubbleTO=setTimeout(hideBubble, 2800);
+}
+function hideBubble(){ const b=$("styleBubble"); if(b)b.classList.remove("show"); }
+function renderExplore(){
+  const score=deliciousness(t,synergy);
+  if(!isGold&&score>=GOLD_ENTER)isGold=true; else if(isGold&&score<GOLD_EXIT)isGold=false;
+  $("scoreNum").textContent=score; $("scoreNum").style.color=gaugeColor(score);
+  $("scoreTag").textContent=isGold?"★ 존맛 존 GOLDEN ZONE ★":"존맛 지수";
+  $("gauge").style.width=score+"%"; $("gauge").style.background=gaugeColor(score);
+  $("frame").classList.toggle("gold",isGold);
+  TASTES.forEach(x=>{sliderVals[x.key].textContent=t[x.key].toFixed(1);});
+  $("synVal").textContent=synergy.toFixed(1); $("synRange").value=synergy;
+  const v=chefVerdict(t,score); $("chefTitle").textContent="“"+v.title+"”"; $("chefBody").textContent=v.body;
+  $("chef").classList.toggle("goldc",v.mood==="gold"); $("chefTitle").style.color=v.mood==="gold"?"var(--gold)":"var(--text)";
+  $("dish").innerHTML=`<div class="dish-chips">${nearestDishes(t,3).map(nm=>`<button class="dish-chip" onclick="goRecipe(this.textContent.trim())">${nm}</button>`).join("")}</div>`;
+  const combos=nearestCombos(t,PRODUCT_COMBOS,2);
+  $("combos").innerHTML=combos.map((c,i)=>`<div class="combo ${i===0?'first':''}"><div><div class="cn">${c.name}</div><div class="cd">${c.dish}</div></div><div class="cr">${c.ratio}</div></div>`).join("");
+  // 조건 만족 시(가까운 맛 스타일) 말풍선 잠깐 표시
+  if(_bubbleArmed && $("view-explore").classList.contains("active")){
+    const ns=nearestStyle(t);
+    if(ns && ns.dist<=3.0){ if(ns.style.id!==_lastMatchId){ _lastMatchId=ns.style.id; showBubble(ns.style, isGold); } }
+    else _lastMatchId=null;
+  }
+  morphRadar();
+}
+renderExplore(); drawRadarValue(displayVec,isGold); _bubbleArmed=true;
+</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
+</body>
+</html>

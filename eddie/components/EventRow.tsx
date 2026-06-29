@@ -7,6 +7,8 @@ import { ScheduleEvent } from '@/lib/types';
 import { copyText, formatEvent, nativeShare } from '@/lib/share';
 import { planEvent, PlanStyle, PlanTask } from '@/lib/plan-ai';
 import { buildEventICS, downloadICS, googleCalUrl } from '@/lib/ics';
+import { detectTemplate } from '@/lib/prep-templates';
+import { buildFlightPlan, isFlightEvent } from '@/lib/flight-plan';
 
 const LEADS = [7, 2, 1];
 const WD = ['일', '월', '화', '수', '목', '금', '토'];
@@ -21,10 +23,19 @@ function todayLabel(): string {
   const iso = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
   return `${iso} (${WD[n.getDay()]})`;
 }
+function fmtDate(dt: Date): string {
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+function fmtTime(dt: Date): string {
+  return `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
+}
 
 export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }) {
-  const { state, toggleEvent, removeEvent, updateEvent, addTodo, pushToast } = useStore();
+  const { state, toggleEvent, removeEvent, updateEvent, addTodo, addDeadline, pushToast } = useStore();
   const [open, setOpen] = useState(false);
+  const [flightOpen, setFlightOpen] = useState(false);
+  const [intl, setIntl] = useState(false);
+  const [travel, setTravel] = useState(60);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [place, setPlace] = useState('');
@@ -33,6 +44,36 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
 
   const leads = e.leadDays ?? [];
   const hasKey = !!state.settings.apiKey;
+  const [tplOpen, setTplOpen] = useState(false);
+  const tpl = detectTemplate(e.title);
+
+  const isFlight = isFlightEvent(e.title);
+
+  function addFlightPlan() {
+    if (!e.time) return;
+    const plan = buildFlightPlan(intl, travel);
+    // 전날 준비물 → 할 일(전날 20시 알림)
+    plan.dayBefore.forEach((text) => addTodo(text, '20:00', shiftDate(date, 1)));
+    // 당일 타임라인 → 마감 알림(출발 기준 분 차감, 자정 넘어가면 전날로 자동 처리)
+    const [y, m, d] = date.split('-').map((x) => parseInt(x, 10));
+    const [hh, mm] = e.time.split(':').map((x) => parseInt(x, 10));
+    const base = new Date(y, m - 1, d, hh, mm);
+    plan.dayOf.forEach((step) => {
+      const dt = new Date(base.getTime() - step.minutesBefore * 60000);
+      addDeadline(step.text, fmtTime(dt), [10, 5], fmtDate(dt));
+    });
+    pushToast(`비행 워크플로우 ${plan.dayBefore.length + plan.dayOf.length}개를 담았어 ✈️`);
+    setFlightOpen(false);
+    setOpen(false);
+  }
+
+  function addTemplate() {
+    if (!tpl) return;
+    tpl.tasks.forEach((t) => addTodo(t.text, '09:00', shiftDate(date, t.daysBefore)));
+    pushToast(`${tpl.name} 준비 ${tpl.tasks.length}개를 담았어 🐣`);
+    setTplOpen(false);
+    setOpen(false);
+  }
 
   function toggleLead(n: number) {
     const next = leads.includes(n) ? leads.filter((x) => x !== n) : [...leads, n].sort((a, b) => b - a);
@@ -135,6 +176,61 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
             </div>
           </div>
 
+          {/* 유형별 준비 체크리스트 템플릿 (예: 출장) */}
+          {tpl && (
+            <div className="rounded-xl border border-eddie-line p-2 dark:border-neutral-700">
+              <button
+                onClick={() => setTplOpen((o) => !o)}
+                className="flex w-full items-center justify-between text-sm font-semibold"
+              >
+                <span>📋 {tpl.name} 준비 체크리스트</span>
+                <span className="text-eddie-muted">{tplOpen ? '▾' : '›'}</span>
+              </button>
+              {tplOpen && (
+                <div className="mt-2 flex flex-col gap-1">
+                  <ul className="flex flex-col gap-1 text-sm">
+                    {tpl.tasks.map((t, i) => (
+                      <li key={i}>
+                        · {t.text}{' '}
+                        <span className="text-eddie-muted">{t.daysBefore > 0 ? `(${t.daysBefore}일 전)` : '(당일)'}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button onClick={addTemplate} className="btn-primary mt-1 text-sm">
+                    {tpl.tasks.length}개 할 일로 담기 (날짜별 알림)
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 비행기 워크플로우 (출발 시각 기준 당일 타임라인) */}
+          {isFlight && (
+            <div className="rounded-xl border border-eddie-line p-2 dark:border-neutral-700">
+              <button
+                onClick={() => setFlightOpen((o) => !o)}
+                className="flex w-full items-center justify-between text-sm font-semibold"
+              >
+                <span>✈️ 비행 워크플로우 짜기</span>
+                <span className="text-eddie-muted">{flightOpen ? '▾' : '›'}</span>
+              </button>
+              {flightOpen &&
+                (!e.time ? (
+                  <p className="mt-2 text-sm text-eddie-muted">출발 시각을 정한 일정이어야 해. (일정에 시각 추가)</p>
+                ) : (
+                  <FlightPanel
+                    intl={intl}
+                    setIntl={setIntl}
+                    travel={travel}
+                    setTravel={setTravel}
+                    date={date}
+                    time={e.time}
+                    onCreate={addFlightPlan}
+                  />
+                ))}
+            </div>
+          )}
+
           {/* 준비 계획: 장소/자리 입력(선택) */}
           {hasKey && (
             <input
@@ -236,5 +332,83 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
         </div>
       )}
     </li>
+  );
+}
+
+function FlightPanel({
+  intl,
+  setIntl,
+  travel,
+  setTravel,
+  date,
+  time,
+  onCreate,
+}: {
+  intl: boolean;
+  setIntl: (v: boolean) => void;
+  travel: number;
+  setTravel: (v: number) => void;
+  date: string;
+  time: string;
+  onCreate: () => void;
+}) {
+  const plan = buildFlightPlan(intl, travel);
+  const [y, m, d] = date.split('-').map((x) => parseInt(x, 10));
+  const [hh, mm] = time.split(':').map((x) => parseInt(x, 10));
+  const base = new Date(y, m - 1, d, hh, mm);
+  const steps = plan.dayOf.map((s) => ({ text: s.text, dt: new Date(base.getTime() - s.minutesBefore * 60000) }));
+
+  return (
+    <div className="mt-2 flex flex-col gap-2">
+      <div className="flex gap-2">
+        <button
+          onClick={() => setIntl(false)}
+          aria-pressed={!intl}
+          className={`min-h-tap flex-1 rounded-xl border text-sm font-medium ${
+            !intl ? 'border-eddie-primary bg-eddie-primary-soft text-eddie-primary' : 'border-eddie-line text-eddie-muted'
+          }`}
+        >
+          국내선
+        </button>
+        <button
+          onClick={() => setIntl(true)}
+          aria-pressed={intl}
+          className={`min-h-tap flex-1 rounded-xl border text-sm font-medium ${
+            intl ? 'border-eddie-primary bg-eddie-primary-soft text-eddie-primary' : 'border-eddie-line text-eddie-muted'
+          }`}
+        >
+          국제선
+        </button>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-eddie-muted">
+        집→공항 이동
+        <input
+          type="number"
+          min={0}
+          max={300}
+          value={travel}
+          onChange={(e) => setTravel(Math.max(0, parseInt(e.target.value || '0', 10)))}
+          className="field !w-20 py-1 text-center text-sm"
+          aria-label="집에서 공항까지 이동 시간(분)"
+        />
+        분
+      </label>
+
+      <div className="rounded-xl bg-eddie-primary-soft/50 p-2 text-sm">
+        <p className="mb-1 font-semibold">✈️ {time} 출발 기준</p>
+        <p className="text-eddie-muted">전날: {plan.dayBefore.join(' · ')}</p>
+        <ul className="mt-1 flex flex-col gap-0.5">
+          {steps.map((s, i) => (
+            <li key={i}>
+              <span className="font-mono text-eddie-primary">{fmtTime(s.dt)}</span> · {s.text}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button onClick={onCreate} className="btn-primary text-sm">
+        워크플로우 담기 (알림 포함)
+      </button>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ name: Deploy apps to GitHub Pages
 #   scent-mixer/   -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
 #   tina/          -> https://<user>.github.io/<repo>/tina/        (티나 정리 임팩트 PWA)
 #   miri/          -> https://<user>.github.io/<repo>/miri/        (미리 스케줄 PWA)
+#   cook/          -> https://<user>.github.io/<repo>/cook/        (셰프 미강 TASTE ENGINE)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
@@ -17,6 +18,7 @@ on:
       - "scent-mixer/**"
       - "tina/**"
       - "miri/**"
+      - "cook/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
@@ -74,6 +76,8 @@ jobs:
           rm -f _site/tina/gen_icons.py
           mkdir -p _site/miri
           cp -r miri/dist/. _site/miri/
+          mkdir -p _site/cook
+          cp -r cook/. _site/cook/
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

@@ -23,6 +23,7 @@ import {
   SleepSettings,
   Streak,
   Todo,
+  Deadline,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
 import { dateKey, formatRealClock } from './clock';
@@ -84,6 +85,11 @@ interface StoreValue {
   removeTodo: (id: string) => void;
   clearDoneTodos: () => void;
   setTodoReminder: (id: string, remindAt?: string) => void;
+
+  // 마감 알림(카운트다운)
+  addDeadline: (text: string, time: string, leadMins?: number[], date?: string) => void;
+  toggleDeadline: (id: string) => void;
+  removeDeadline: (id: string) => void;
 
   // 스케줄 달력
   addEvent: (date: string, title: string, time?: string, leadDays?: number[]) => void;
@@ -250,6 +256,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           });
         }
       }
+
+      // 마감 알림(카운트다운) — 오늘 마감, 10분·5분 전·정시 등
+      s.deadlines.forEach((dl) => {
+        if (dl.done || dl.date !== d) return;
+        const [hh, mm] = dl.time.split(':').map((x) => parseInt(x, 10));
+        dl.leadMins.forEach((lead) => {
+          const t = new Date(now);
+          t.setHours(hh, mm - lead, 0, 0);
+          if (formatRealClock(t) !== nowHM) return;
+          notif.fire({
+            title: lead > 0 ? `${lead}분 뒤 마감` : '지금 마감이야',
+            body: `${dl.time}까지 · ${dl.text}`,
+            tone,
+            key: `deadline:${dl.id}:${lead}`,
+            date: d,
+            cap,
+            fallback: pushToast,
+          });
+        });
+      });
 
       // 할 일 알림 (시각 지정된 할 일)
       s.todos.forEach((t) => {
@@ -491,6 +517,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, todos: s.todos.filter((t) => !t.done) }));
   }, []);
 
+  // ── 마감 알림(카운트다운) ──
+  const addDeadline = useCallback<StoreValue['addDeadline']>((text, time, leadMins, date) => {
+    const t = text.trim();
+    if (!t || !time) return;
+    const day = date || dateKey(new Date());
+    const leads = Array.from(new Set([...(leadMins ?? [10, 5]), 0])).sort((a, b) => b - a);
+    setState((s) => ({
+      ...s,
+      deadlines: [{ id: uid('dl'), date: day, time, text: t, leadMins: leads, done: false }, ...s.deadlines],
+    }));
+  }, []);
+  const toggleDeadline = useCallback<StoreValue['toggleDeadline']>((id) => {
+    setState((s) => ({
+      ...s,
+      deadlines: s.deadlines.map((dl) =>
+        dl.id === id ? { ...dl, done: !dl.done, doneAt: !dl.done ? new Date().toISOString() : undefined } : dl,
+      ),
+    }));
+  }, []);
+  const removeDeadline = useCallback<StoreValue['removeDeadline']>((id) => {
+    setState((s) => ({ ...s, deadlines: s.deadlines.filter((dl) => dl.id !== id) }));
+  }, []);
+
   // ── 스케줄 달력 ──
   const addEvent = useCallback<StoreValue['addEvent']>((date, title, time, leadDays) => {
     setState((s) => ({
@@ -553,6 +602,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     removeTodo,
     clearDoneTodos,
     setTodoReminder,
+    addDeadline,
+    toggleDeadline,
+    removeDeadline,
     addEvent,
     updateEvent,
     removeEvent,
