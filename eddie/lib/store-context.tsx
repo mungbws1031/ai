@@ -25,6 +25,7 @@ import {
   Todo,
   Deadline,
   DailyReview,
+  Recurring,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
 import { dateKey, formatRealClock } from './clock';
@@ -90,6 +91,11 @@ interface StoreValue {
 
   // 저녁 회고
   saveReview: (did: string, tomorrow: string) => void;
+
+  // 반복 알림
+  addRecurring: (r: Omit<Recurring, 'id'>) => void;
+  updateRecurring: (id: string, patch: Partial<Omit<Recurring, 'id'>>) => void;
+  removeRecurring: (id: string) => void;
 
   // 마감 알림(카운트다운)
   addDeadline: (text: string, time: string, leadMins?: number[], date?: string) => void;
@@ -280,6 +286,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             fallback: pushToast,
           });
         });
+      });
+
+      // 반복 알림 (매일/매주 시각, 또는 N분 간격)
+      s.recurring.forEach((r) => {
+        if (!r.enabled) return;
+        if (r.mode === 'time') {
+          const onDay = !r.weekdays || r.weekdays.length === 0 || r.weekdays.includes(now.getDay());
+          if (onDay && r.time && nowHM === r.time) {
+            notif.fire({ title: '반복 알림', body: r.text, tone, key: `rec:${r.id}`, date: d, cap, fallback: pushToast });
+          }
+        } else if (r.mode === 'interval' && r.everyMin && r.everyMin > 0) {
+          const toMin = (hm: string) => {
+            const [h, m] = hm.split(':').map((x) => parseInt(x, 10));
+            return h * 60 + m;
+          };
+          const cur = now.getHours() * 60 + now.getMinutes();
+          const from = toMin(r.fromHM || '09:00');
+          const to = toMin(r.toHM || '21:00');
+          if (cur >= from && cur <= to && (cur - from) % r.everyMin === 0 && cur !== from) {
+            notif.fire({ title: '잠깐!', body: r.text, tone, key: `rec:${r.id}:${nowHM}`, date: d, cap, fallback: pushToast });
+          }
+        }
       });
 
       // 할 일 알림 (시각 지정된 할 일)
@@ -524,6 +552,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       todos: s.todos.map((t) => (t.id === id ? { ...t, priority: !t.priority } : t)),
     }));
   }, []);
+  const addRecurring = useCallback<StoreValue['addRecurring']>((r) => {
+    setState((s) => ({ ...s, recurring: [...s.recurring, { ...r, id: uid('rec') }] }));
+  }, []);
+  const updateRecurring = useCallback<StoreValue['updateRecurring']>((id, patch) => {
+    setState((s) => ({ ...s, recurring: s.recurring.map((r) => (r.id === id ? { ...r, ...patch } : r)) }));
+  }, []);
+  const removeRecurring = useCallback<StoreValue['removeRecurring']>((id) => {
+    setState((s) => ({ ...s, recurring: s.recurring.filter((r) => r.id !== id) }));
+  }, []);
   const saveReview = useCallback<StoreValue['saveReview']>((did, tomorrow) => {
     const date = dateKey(new Date());
     setState((s) => {
@@ -622,6 +659,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTodoReminder,
     toggleTodoPriority,
     saveReview,
+    addRecurring,
+    updateRecurring,
+    removeRecurring,
     addDeadline,
     toggleDeadline,
     removeDeadline,

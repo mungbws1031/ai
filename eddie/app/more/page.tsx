@@ -6,6 +6,7 @@ import InstallCard from '@/components/InstallCard';
 
 const links = [
   { href: '/more/medications', label: '복약 관리', desc: '약·시간·요일 설정', icon: '💊' },
+  { href: '/more/recurring', label: '반복 알림', desc: '매일·매주 · 물·움직임 넛지', icon: '🔁' },
   { href: '/more/departure', label: '출발 알림', desc: '도착시각으로 출발 역산', icon: '🚪' },
   { href: '/more/place', label: '제자리', desc: '물건 자리 등록 · 외출 체크', icon: '🔑' },
   { href: '/more/sleep', label: '취침', desc: '와인드다운 · 취침 기록', icon: '🌙' },

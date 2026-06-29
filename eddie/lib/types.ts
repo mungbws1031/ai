@@ -163,6 +163,21 @@ export interface Todo {
   priority?: boolean; // 오늘 꼭 (우선순위)
 }
 
+/** 반복 알림 — 매일/매주 정해진 시각, 또는 N시간마다(물·움직임 넛지) */
+export interface Recurring {
+  id: string;
+  text: string;
+  mode: 'time' | 'interval';
+  // time 모드
+  time?: string; // 'HH:mm'
+  weekdays?: number[]; // 0=일~6=토, 빈 배열=매일
+  // interval 모드
+  everyMin?: number; // N분마다
+  fromHM?: string; // 활성 시작 'HH:mm'
+  toHM?: string; // 활성 끝 'HH:mm'
+  enabled: boolean;
+}
+
 /** 저녁 1탭 회고 */
 export interface DailyReview {
   date: string; // YYYY-MM-DD
@@ -187,6 +202,9 @@ export interface AppState {
 
   // 저녁 회고
   reviews: DailyReview[];
+
+  // 반복 알림
+  recurring: Recurring[];
 
   medications: Medication[];
   medLogs: MedicationLog[];
