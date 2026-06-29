@@ -34,6 +34,7 @@ export default function QuickTodos() {
   const [voiceStatus, setVoiceStatus] = useState('');
   const handsFreeRef = useRef(false);
   const armedRef = useRef(false);
+  const mountedRef = useRef(true);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function getSR(): any {
@@ -65,14 +66,12 @@ export default function QuickTodos() {
     setRemindAt('');
   }
 
+  // 마이크 권한/하드웨어 문제 등 회복 불가 오류 → 핸즈프리 중단
+  const FATAL = new Set(['not-allowed', 'service-not-allowed', 'audio-capture']);
+
   function toggleVoice() {
-    // 듣는 중이면 중지
     if (listening) {
-      try {
-        (recRef.current as { stop?: () => void } | null)?.stop?.();
-      } catch {
-        /* noop */
-      }
+      stopRec();
       return;
     }
     if (handsFreeRef.current) stopHandsFree();
@@ -82,13 +81,14 @@ export default function QuickTodos() {
       return;
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rec: any = new (SR as any)();
+    const rec: any = new SR();
     recRef.current = rec;
     rec.lang = 'ko-KR';
     rec.interimResults = true;
     rec.continuous = false;
     let finalText = '';
     rec.onresult = (e: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> }) => {
+      if (recRef.current !== rec) return; // 다른 인식 인스턴스로 교체됨
       let interim = '';
       finalText = '';
       for (let i = 0; i < e.results.length; i++) {
@@ -103,8 +103,9 @@ export default function QuickTodos() {
       else if (e.error === 'no-speech') pushToast('소리가 안 들렸어. 다시 한 번!');
     };
     rec.onend = () => {
+      if (recRef.current === rec) recRef.current = null;
       setListening(false);
-      recRef.current = null;
+      if (!mountedRef.current) return;
       const cleaned = stripWakeWords(finalText);
       if (cleaned) submit(cleaned);
     };
@@ -123,7 +124,6 @@ export default function QuickTodos() {
     setHandsFree(false);
     setVoiceStatus('');
     stopRec();
-    recRef.current = null;
   }
 
   function startHandsFree() {
@@ -139,9 +139,12 @@ export default function QuickTodos() {
     rec.lang = 'ko-KR';
     rec.interimResults = true;
     rec.continuous = true;
+    let restarts = 0; // 결과 없이 즉시 재시작 반복(폭주) 방지
     rec.onresult = (e: { results: ArrayLike<{ 0: { transcript: string }; isFinal: boolean }> & { length: number } }) => {
+      if (recRef.current !== rec) return;
       const last = e.results[e.results.length - 1];
       if (!last || !last.isFinal) return;
+      restarts = 0;
       const raw = last[0].transcript.trim();
       if (armedRef.current) {
         const memo = stripWakeWords(raw);
@@ -167,21 +170,24 @@ export default function QuickTodos() {
       }
     };
     rec.onerror = (e: { error?: string }) => {
-      if (e.error === 'not-allowed') {
-        pushToast('마이크 권한이 필요해. 브라우저 설정에서 허용해줘.');
+      if (e.error && FATAL.has(e.error)) {
+        if (e.error === 'not-allowed') pushToast('마이크 권한이 필요해. 브라우저 설정에서 허용해줘.');
+        else pushToast('마이크를 쓸 수 없어. 핸즈프리를 껐어.');
         stopHandsFree();
       }
     };
     rec.onend = () => {
-      // 침묵/시간초과로 멈추면, 핸즈프리 유지 중일 땐 자동 재시작
-      if (handsFreeRef.current) {
+      // 마운트 중 + 핸즈프리 유지 + 여전히 이 인스턴스일 때만 자동 재시작
+      if (mountedRef.current && handsFreeRef.current && recRef.current === rec && restarts < 8) {
+        restarts += 1;
         try {
           rec.start();
         } catch {
           /* 곧 다시 onend → 재시도 */
         }
       } else {
-        recRef.current = null;
+        if (recRef.current === rec) recRef.current = null;
+        if (restarts >= 8 && handsFreeRef.current) stopHandsFree();
       }
     };
     try {
@@ -195,8 +201,16 @@ export default function QuickTodos() {
     }
   }
 
-  // 언마운트 시 인식 정리
-  useEffect(() => () => stopRec(), []);
+  // 언마운트 시 인식 완전 정리(자동 재시작 방지)
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      handsFreeRef.current = false;
+      armedRef.current = false;
+      stopRec();
+    };
+  }, []);
 
   const todos = state.todos;
   const openCount = todos.filter((t) => !t.done).length;

@@ -27,35 +27,54 @@ export default function FocusMode({
   const [mins, setMins] = useState(15);
   const [left, setLeft] = useState(15 * 60);
   const [running, setRunning] = useState(false);
+  const [started, setStarted] = useState(false);
   const [done, setDone] = useState(false);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endRef = useRef(0); // 목표 종료 시각(ms) — 백그라운드 스로틀에도 정확
 
+  // 벽시계 기준으로 남은 시간 계산(setInterval 드리프트/스로틀 방지)
   useEffect(() => {
     if (!running) return;
-    timer.current = setInterval(() => {
-      setLeft((v) => {
-        if (v <= 1) {
-          setRunning(false);
-          setDone(true);
-          try {
-            navigator.vibrate?.([200, 100, 200]);
-          } catch {
-            /* noop */
-          }
-          return 0;
+    const tick = () => {
+      const remain = Math.round((endRef.current - Date.now()) / 1000);
+      if (remain <= 0) {
+        setLeft(0);
+        setRunning(false);
+        setDone(true);
+        try {
+          navigator.vibrate?.([200, 100, 200]);
+        } catch {
+          /* noop */
         }
-        return v - 1;
-      });
-    }, 1000);
+      } else {
+        setLeft(remain);
+      }
+    };
+    const iv = setInterval(tick, 500);
+    const onVis = () => tick();
+    document.addEventListener('visibilitychange', onVis);
     return () => {
-      if (timer.current) clearInterval(timer.current);
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [running]);
 
+  function start() {
+    endRef.current = Date.now() + left * 1000;
+    setStarted(true);
+    setRunning(true);
+  }
+  function pause() {
+    setRunning(false);
+  }
+  function addFive() {
+    setLeft((v) => v + 300);
+    if (running) endRef.current += 300 * 1000;
+  }
   function setPreset(m: number) {
     setMins(m);
     setLeft(m * 60);
     setRunning(false);
+    setStarted(false);
     setDone(false);
   }
 
@@ -102,13 +121,13 @@ export default function FocusMode({
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setRunning((r) => !r)} className="btn-primary px-8">
-              {running ? '일시정지' : left === mins * 60 ? '시작' : '계속'}
+            <button onClick={() => (running ? pause() : start())} className="btn-primary px-8">
+              {running ? '일시정지' : started ? '계속' : '시작'}
             </button>
             <button onClick={() => setPreset(mins)} className="btn-soft" aria-label="리셋">
               리셋
             </button>
-            <button onClick={() => setLeft((v) => v + 300)} className="btn-soft" aria-label="5분 추가">
+            <button onClick={addFive} className="btn-soft" aria-label="5분 추가">
               +5분
             </button>
           </div>
