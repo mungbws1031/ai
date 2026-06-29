@@ -14,6 +14,7 @@ export function defaultState(): AppState {
     deadlines: [],
     reviews: [],
     recurring: [],
+    moods: [],
     medications: [],
     medLogs: [],
     departure: {

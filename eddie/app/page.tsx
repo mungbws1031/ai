@@ -12,6 +12,7 @@ import QuickTodos from '@/components/QuickTodos';
 import DeadlineList from '@/components/DeadlineList';
 import NextOne from '@/components/NextOne';
 import EveningReview from '@/components/EveningReview';
+import BreakdownCard from '@/components/BreakdownCard';
 
 // 오늘 화면 (IA §7.2): 에디 시계, 출발 카운트다운, 약, 다음 할 일
 export default function TodayPage() {
@@ -37,6 +38,7 @@ export default function TodayPage() {
       <EddieClock />
       <NextOne />
       <QuickTodos />
+      <BreakdownCard />
       <DeadlineList />
       <DepartureCard />
       <MedicationToday />

@@ -26,6 +26,7 @@ import {
   Deadline,
   DailyReview,
   Recurring,
+  Mood,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
 import { dateKey, formatRealClock } from './clock';
@@ -89,8 +90,9 @@ interface StoreValue {
   setTodoReminder: (id: string, remindAt?: string) => void;
   toggleTodoPriority: (id: string) => void;
 
-  // 저녁 회고
+  // 저녁 회고 + 기분
   saveReview: (did: string, tomorrow: string) => void;
+  setMood: (mood: Mood) => void;
 
   // 반복 알림
   addRecurring: (r: Omit<Recurring, 'id'>) => void;
@@ -111,6 +113,7 @@ interface StoreValue {
   // 설정 (FR-205 화면 외 / NFR-A-003 / 톤)
   updateSettings: (patch: Partial<Settings>) => void;
   resetAll: () => void;
+  importState: (raw: string) => boolean;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -568,6 +571,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { ...s, reviews: [...others, { date, did, tomorrow, savedAt: new Date().toISOString() }] };
     });
   }, []);
+  const setMood = useCallback<StoreValue['setMood']>((mood) => {
+    const date = dateKey(new Date());
+    setState((s) => ({ ...s, moods: [...s.moods.filter((m) => m.date !== date), { date, mood }] }));
+  }, []);
   const clearDoneTodos = useCallback<StoreValue['clearDoneTodos']>(() => {
     setState((s) => ({ ...s, todos: s.todos.filter((t) => !t.done) }));
   }, []);
@@ -624,6 +631,28 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState(defaultState());
   }, []);
 
+  const importState = useCallback<StoreValue['importState']>((raw) => {
+    let parsed: Partial<AppState>;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      return false;
+    }
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as AppState).routines)) return false;
+    const base = defaultState();
+    setState((s) => ({
+      ...base,
+      ...parsed,
+      // 중첩 객체는 기본값으로 보강, API 키는 현재 기기 값 유지
+      settings: { ...base.settings, ...(parsed.settings ?? {}), apiKey: parsed.settings?.apiKey || s.settings.apiKey },
+      departure: { ...base.departure, ...(parsed.departure ?? {}) },
+      sleep: { ...base.sleep, ...(parsed.sleep ?? {}) },
+      streak: { ...base.streak, ...(parsed.streak ?? {}) },
+      schemaVersion: base.schemaVersion,
+    }));
+    return true;
+  }, []);
+
   const streak = useMemo(() => computeStreak(state, today), [state, today]);
 
   const value: StoreValue = {
@@ -659,6 +688,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setTodoReminder,
     toggleTodoPriority,
     saveReview,
+    setMood,
     addRecurring,
     updateRecurring,
     removeRecurring,
@@ -671,6 +701,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleEvent,
     updateSettings,
     resetAll,
+    importState,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

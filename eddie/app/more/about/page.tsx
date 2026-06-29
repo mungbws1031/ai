@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useStore } from '@/lib/store-context';
 import { exportState } from '@/lib/storage';
 import PageHeader from '@/components/PageHeader';
@@ -8,7 +9,17 @@ import BackLink from '@/components/BackLink';
 
 // 면책(FR-205) · 개인정보(NFR-PR-001/002) · 다크모드(NFR-A-002)
 export default function AboutPage() {
-  const { state, updateSettings, resetAll } = useStore();
+  const { state, updateSettings, resetAll, importState, pushToast } = useStore();
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function doImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!confirm('백업 파일로 현재 데이터를 덮어쓸까? (현재 기기 데이터는 사라져)')) return;
+    const text = await file.text();
+    pushToast(importState(text) ? '백업을 복원했어 🐣' : '파일을 읽지 못했어. 올바른 백업인지 확인해줘.');
+  }
 
   function doExport() {
     const blob = new Blob([exportState(state)], { type: 'application/json' });
@@ -46,12 +57,17 @@ export default function AboutPage() {
         </p>
         <div className="mt-3 flex gap-2">
           <button onClick={doExport} className="btn-soft flex-1 text-sm">
-            데이터 내보내기
+            백업 내보내기
           </button>
-          <button onClick={doReset} className="btn-ghost flex-1 text-sm text-red-500">
-            데이터 삭제
+          <button onClick={() => fileRef.current?.click()} className="btn-soft flex-1 text-sm">
+            백업 복원
           </button>
         </div>
+        <button onClick={doReset} className="btn-ghost mt-2 w-full text-sm text-red-500">
+          데이터 삭제
+        </button>
+        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={doImport} />
+        <p className="mt-2 text-xs text-eddie-muted">기기를 옮길 때: 한쪽에서 내보내고 다른 쪽에서 복원하면 돼. (API 키는 보안상 빠지고 기기에 그대로 남아)</p>
       </section>
 
       <section className="card">
