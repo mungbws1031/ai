@@ -239,6 +239,11 @@
   .bigmood:hover{ border-color:var(--accent); }
   .bigmood.on{ background:var(--accent); color:#1a1024; border-color:var(--accent); }
   .bigmood small{ display:block; font-size:10px; font-weight:400; opacity:0.65; margin-top:3px; }
+  .sim-line{ font-size:12.5px; color:var(--muted); margin-top:10px; line-height:1.7; }
+  .simtag{ display:inline-block; background:var(--card2); border:1px solid var(--line);
+           border-radius:20px; padding:2px 9px; margin:2px 3px 2px 0; font-size:12px; cursor:default; }
+  .simtag b{ color:var(--accent); }
+  .easy-sim{ font-size:12px; color:var(--muted); margin-top:6px; }
   .seg{ display:flex; gap:8px; }
   .seg button{ flex:1; background:var(--card2); border:1px solid var(--line); color:var(--fg);
                border-radius:10px; padding:10px 4px; font-weight:600; display:flex; flex-direction:column; gap:2px; }
@@ -587,6 +592,7 @@
         <div class="score"><span class="big" id="scoreVal">–</span><span class="muted" id="scoreLbl"></span></div>
         <div id="scorePills"></div>
         <div class="balance-note" id="balanceNote">조합을 추가하면 분석이 표시됩니다.</div>
+        <div id="presetSim"></div>
       </div>
 
       <div class="card">
@@ -1002,6 +1008,25 @@ function renderRecs(a){
   });
   if(!list.length) wrap.innerHTML='<div class="muted" style="font-size:12.5px;">균형이 좋아요! 한 계열을 강조해 개성을 더해보세요.</div>';
 }
+// 현재 조합과 기성 향수 유사도 비교
+function blendSimPresets(a){
+  if(!a.items.length) return [];
+  const bv={};
+  for(const [f,w] of Object.entries(a.fam)) bv[f]=w/(a.totalW||1);
+  return PRESETS.map((p,i)=>({i,p,s:pSim(bv,pFamVec(p))}))
+    .filter(x=>x.s>=0.70)
+    .sort((a,b)=>b.s-a.s)
+    .slice(0,3);
+}
+function renderPresetSim(a){
+  const wrap=$("#presetSim"); if(!wrap) return;
+  const matches=blendSimPresets(a);
+  if(!matches.length){ wrap.innerHTML=""; return; }
+  const tags=matches.map(({p,s})=>
+    `<span class="simtag" title="${p.brand} · ${p.desc}">${p.name} <b>${Math.round(s*100)}%</b></span>`
+  ).join("");
+  wrap.innerHTML=`<div class="sim-line">🔍 비슷한 기성향: ${tags}</div>`;
+}
 
 function render(){
   // blend table
@@ -1090,7 +1115,7 @@ function render(){
   }
 
   // recommendations + longevity + simulator + goal + quantities
-  renderRecs(a);
+  renderRecs(a); renderPresetSim(a);
   renderLongevity(a);
   renderSim(a);
   renderGoal(a);
@@ -1458,7 +1483,8 @@ function renderEasy(a){
         <span class="es"><b>${sc}</b><small>밸런스</small></span>
         <span class="es"><b>${fmtH(L.hours)}</b><small>지속</small></span>
         <span class="es"><b>${a.items.length}</b><small>향료</small></span></div>
-      <div class="easy-say">${bword}. 처음엔 <b>${open.n}</b>의 느낌이 퍼지고, 시간이 지나면 <b>${late?late.n:open.n}</b> 잔향이 남아요.</div>`;
+      <div class="easy-say">${bword}. 처음엔 <b>${open.n}</b>의 느낌이 퍼지고, 시간이 지나면 <b>${late?late.n:open.n}</b> 잔향이 남아요.</div>
+      ${(()=>{const m=blendSimPresets(a);return m.length?`<div class="easy-sim">🔍 비슷한 기성향: ${m.map(({p,s})=>`<b>${p.name}</b> ${Math.round(s*100)}%`).join(" · ")}</div>`:"";})()}`;
     $("#easyBlend").innerHTML=a.items.map(i=>`<div class="easy-row">
       <span class="nm"><span class="dot" style="background:${famColor(i.fam)}"></span>${i.n} <small>${VOL_LABEL[i.vol]}</small></span>
       <span class="drops"><button data-m="${i.n}">−</button><b>${i.drops}</b><button data-p="${i.n}">+</button></span></div>`).join("");
