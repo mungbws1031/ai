@@ -22,7 +22,7 @@ function stripWakeWords(s: string): string {
  * '내일 3시 치과'처럼 날짜 표현이 있으면 달력 일정으로 넣는다.
  */
 export default function QuickTodos() {
-  const { state, today, addTodo, addEvent, pushToast, toggleTodo, removeTodo, clearDoneTodos, setTodoReminder } =
+  const { state, today, addTodo, addEvent, pushToast, toggleTodo, removeTodo, clearDoneTodos, setTodoReminder, toggleTodoPriority } =
     useStore();
   const [text, setText] = useState('');
   const [remindAt, setRemindAt] = useState('');
@@ -212,9 +212,11 @@ export default function QuickTodos() {
     };
   }, []);
 
-  const todos = state.todos;
-  const openCount = todos.filter((t) => !t.done).length;
-  const doneCount = todos.length - openCount;
+  // 정렬: 미완료(우선★ 먼저) → 완료. 같은 묶음 안에선 기존 순서(최신순) 유지.
+  const rank = (t: Todo) => (t.done ? 2 : t.priority ? 0 : 1);
+  const todos = [...state.todos].sort((a, b) => rank(a) - rank(b));
+  const openCount = state.todos.filter((t) => !t.done).length;
+  const doneCount = state.todos.length - openCount;
 
   return (
     <section className="card">
@@ -296,7 +298,20 @@ export default function QuickTodos() {
               >
                 {t.done ? '✓' : ''}
               </button>
-              <span className={`flex-1 break-words ${t.done ? 'text-eddie-muted line-through' : ''}`}>{t.text}</span>
+              <span className={`flex-1 break-words ${t.done ? 'text-eddie-muted line-through' : ''}`}>
+                {t.priority && !t.done && <span className="mr-1 text-eddie-accent">★</span>}
+                {t.text}
+              </span>
+              {!t.done && (
+                <button
+                  onClick={() => toggleTodoPriority(t.id)}
+                  className={`btn-ghost px-2 ${t.priority ? 'text-eddie-accent' : 'text-eddie-muted'}`}
+                  aria-label={t.priority ? '우선순위 해제' : '오늘 꼭 (우선순위)'}
+                  title="오늘 꼭"
+                >
+                  {t.priority ? '★' : '☆'}
+                </button>
+              )}
               {!t.done && (
                 <button
                   onClick={() => setFocus(t)}

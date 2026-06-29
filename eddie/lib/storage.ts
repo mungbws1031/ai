@@ -13,6 +13,7 @@ export function defaultState(): AppState {
     todos: [],
     deadlines: [],
     reviews: [],
+    recurring: [],
     medications: [],
     medLogs: [],
     departure: {
