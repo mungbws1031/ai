@@ -186,6 +186,13 @@ export interface DailyReview {
   savedAt: string; // ISO
 }
 
+export type Mood = 'good' | 'ok' | 'low';
+/** 하루 기분 1탭 기록 */
+export interface MoodLog {
+  date: string; // YYYY-MM-DD
+  mood: Mood;
+}
+
 export interface AppState {
   // 온보딩 완료 여부 + 선택한 어려움
   onboarded: boolean;
@@ -205,6 +212,9 @@ export interface AppState {
 
   // 반복 알림
   recurring: Recurring[];
+
+  // 기분 기록
+  moods: MoodLog[];
 
   medications: Medication[];
   medLogs: MedicationLog[];

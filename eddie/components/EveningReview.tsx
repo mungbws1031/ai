@@ -4,9 +4,16 @@ import { useState } from 'react';
 import { useStore } from '@/lib/store-context';
 
 /** 저녁 1탭 회고 — 오늘 한 것 하나 + 내일의 한 가지. 자책 없는 마무리. */
+const MOODS: { key: 'good' | 'ok' | 'low'; emoji: string; label: string }[] = [
+  { key: 'good', emoji: '😀', label: '좋아' },
+  { key: 'ok', emoji: '🙂', label: '그냥' },
+  { key: 'low', emoji: '😔', label: '힘듦' },
+];
+
 export default function EveningReview() {
-  const { state, today, saveReview } = useStore();
+  const { state, today, saveReview, setMood } = useStore();
   const existing = state.reviews.find((r) => r.date === today);
+  const mood = state.moods.find((m) => m.date === today)?.mood;
   const [editing, setEditing] = useState(!existing);
   const [did, setDid] = useState(existing?.did ?? '');
   const [tomorrow, setTomorrow] = useState(existing?.tomorrow ?? '');
@@ -14,6 +21,26 @@ export default function EveningReview() {
   return (
     <section className="card">
       <p className="mb-1 font-semibold">🌙 하루 마무리</p>
+
+      <div className="mb-3">
+        <p className="mb-1 text-xs text-eddie-muted">오늘 기분</p>
+        <div className="flex gap-2">
+          {MOODS.map((m) => (
+            <button
+              key={m.key}
+              onClick={() => setMood(m.key)}
+              aria-pressed={mood === m.key}
+              className={`min-h-tap flex-1 rounded-xl border text-sm ${
+                mood === m.key
+                  ? 'border-eddie-primary bg-eddie-primary-soft text-eddie-primary'
+                  : 'border-eddie-line text-eddie-muted'
+              }`}
+            >
+              {m.emoji} {m.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {existing && !editing ? (
         <div className="text-sm">
           <p>
