@@ -38,6 +38,15 @@ function uid(prefix = 'id'): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 9)}${Date.now().toString(36).slice(-4)}`;
 }
 
+/** 완료 등 긍정 피드백용 가벼운 햅틱(미지원/거부는 무시) */
+function buzz(ms = 30): void {
+  try {
+    if (typeof navigator !== 'undefined') navigator.vibrate?.(ms);
+  } catch {
+    /* noop */
+  }
+}
+
 export interface Toast {
   id: string;
   message: string;
@@ -539,12 +548,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
   const toggleTodo = useCallback<StoreValue['toggleTodo']>((id) => {
-    setState((s) => ({
-      ...s,
-      todos: s.todos.map((t) =>
-        t.id === id ? { ...t, done: !t.done, doneAt: !t.done ? new Date().toISOString() : undefined } : t,
-      ),
-    }));
+    setState((s) => {
+      const before = s.todos.find((t) => t.id === id);
+      if (before && !before.done) buzz();
+      return {
+        ...s,
+        todos: s.todos.map((t) =>
+          t.id === id ? { ...t, done: !t.done, doneAt: !t.done ? new Date().toISOString() : undefined } : t,
+        ),
+      };
+    });
   }, []);
   const removeTodo = useCallback<StoreValue['removeTodo']>((id) => {
     setState((s) => ({ ...s, todos: s.todos.filter((t) => t.id !== id) }));
@@ -591,12 +604,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
   const toggleDeadline = useCallback<StoreValue['toggleDeadline']>((id) => {
-    setState((s) => ({
+    setState((s) => {
+      const before = s.deadlines.find((dl) => dl.id === id);
+      if (before && !before.done) buzz();
+      return {
       ...s,
       deadlines: s.deadlines.map((dl) =>
         dl.id === id ? { ...dl, done: !dl.done, doneAt: !dl.done ? new Date().toISOString() : undefined } : dl,
       ),
-    }));
+    };
+    });
   }, []);
   const removeDeadline = useCallback<StoreValue['removeDeadline']>((id) => {
     setState((s) => ({ ...s, deadlines: s.deadlines.filter((dl) => dl.id !== id) }));
@@ -619,7 +636,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, schedule: s.schedule.filter((e) => e.id !== id) }));
   }, []);
   const toggleEvent = useCallback<StoreValue['toggleEvent']>((id) => {
-    setState((s) => ({ ...s, schedule: s.schedule.map((e) => (e.id === id ? { ...e, done: !e.done } : e)) }));
+    setState((s) => {
+      const before = s.schedule.find((e) => e.id === id);
+      if (before && !before.done) buzz();
+      return { ...s, schedule: s.schedule.map((e) => (e.id === id ? { ...e, done: !e.done } : e)) };
+    });
   }, []);
 
   const updateSettings = useCallback<StoreValue['updateSettings']>((patch) => {

@@ -28,10 +28,22 @@ body {
   color: #ececec;
 }
 
+/* 접근성: 모션 최소화 선호 시 애니메이션/전환을 거의 끈다 (NFR-A) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer components {
   /* 큰 탭 타겟 (NFR-A-001/002) */
   .tap-btn {
-    @apply min-h-tap inline-flex items-center justify-center gap-2 rounded-xl2 px-5 text-base font-semibold transition-colors;
+    @apply min-h-tap inline-flex items-center justify-center gap-2 rounded-xl2 px-5 text-base font-semibold transition-transform active:scale-95;
   }
   .btn-primary {
     @apply tap-btn bg-eddie-primary text-white active:opacity-90;

@@ -28,6 +28,12 @@ export default function TodayPage() {
   const WD = ['일', '월', '화', '수', '목', '금', '토'];
   const dateLabel = `${now.getMonth() + 1}월 ${now.getDate()}일 (${WD[now.getDay()]})`;
 
+  // 과부하 줄이기: 비활성/빈 카드는 숨기고, 저녁 회고는 저녁(또는 이미 기록 있을 때)에만.
+  const showDeparture = state.departure.enabled;
+  const showMeds = state.medications.length > 0;
+  const hasReviewData = state.reviews.some((r) => r.date === today) || state.moods.some((m) => m.date === today);
+  const showEvening = greetingHour >= 18 || hasReviewData;
+
   return (
     <div className="flex flex-col gap-4 px-4">
       <header className="flex items-center justify-between px-1 pt-6">
@@ -40,8 +46,8 @@ export default function TodayPage() {
       <QuickTodos />
       <BreakdownCard />
       <DeadlineList />
-      <DepartureCard />
-      <MedicationToday />
+      {showDeparture && <DepartureCard />}
+      {showMeds && <MedicationToday />}
 
       {todayEvents.length > 0 && (
         <section className="card">
@@ -94,7 +100,7 @@ export default function TodayPage() {
         </Link>
       )}
 
-      <EveningReview />
+      {showEvening && <EveningReview />}
     </div>
   );
 }
