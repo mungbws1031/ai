@@ -51,6 +51,7 @@ select{background:#f4f7ff;color:#1e2540;border:1px solid #c8d0e8;border-radius:4
   <div class="tab" onclick="switchTab(8)">⑧ 신호 검출 & 캘리브레이션</div>
   <div class="tab" onclick="switchTab(9)">⑨ 기구 레이아웃</div>
   <div class="tab" onclick="switchTab(10)">⑩ 다채널 격리</div>
+  <div class="tab" onclick="switchTab(11)">⑪ 하우징 재질</div>
 </div>
 
 <!-- TAB1: TRF 원리 -->
@@ -622,6 +623,38 @@ function updateProgress() {
 </div>
 </div>
 
+<!-- TAB11: 하우징 재질 -->
+<div id="t11" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>광학부 하우징(빛이 지나는 통로) 안쪽 벽이 검은색·무광이 아니라 반사되는 재질일 때 어떤 일이 벌어지는지 보여줘요. 빛이 벽에서 계속 튕기면 미광(stray light)이 챔버 안에 쌓여 배경이 폭증하고, 결국 센서가 포화돼 측정이 안 돼요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 반사 내벽은 챔버를 적분구(integrating sphere)처럼 만들어 미광을 비선형으로 누적시킵니다(A=1/(1−R·k)). 무광 흑색 흡광 코팅은 선택이 아니라 TRF가 작동하기 위한 전제조건이에요. 하우징 재질·표면처리 사양을 확정하는 근거를 줍니다.</div>
+  <div class="row">
+    <div class="card" style="width:240px">
+      <h3>파라미터</h3>
+      <div class="ctrl"><label>내벽 재질: <select id="r11_mat" onchange="pick11(this.value)"></select></label></div>
+      <div class="ctrl"><label>반사율 R: <span class="val" id="v11_r">4</span> %</label><input type="range" id="r11_rng" min="2" max="95" value="4" oninput="setR11(this.value)"></div>
+      <div style="margin-top:10px;padding:8px;background:#f0f4ff;border-radius:6px;border:1px solid #dde2f0">
+        <div class="kv"><span>미광 누적배수 A</span><span id="o11_a">-</span></div>
+        <div class="kv"><span>PD 배경 (신호=100)</span><span id="o11_b">-</span></div>
+        <div class="kv"><span>신호 / 배경</span><span id="o11_sb">-</span></div>
+        <div class="kv"><span>SNR (TRF 게이팅)</span><span id="o11_snr">-</span></div>
+      </div>
+      <div id="o11_verdict" style="margin-top:10px;padding:10px 12px;border-radius:8px;font-size:12px;font-weight:700;line-height:1.5"></div>
+      <div style="margin-top:10px;background:#fff8e1;border-radius:8px;padding:10px;font-size:11px;border:1px solid #e0c040;color:#6a5010;line-height:1.6"><b style="color:#c07818">💡 핵심</b><br>무광 흑색: <b>필수</b><br>백색·금속 노출: <b>측정 불가</b></div>
+    </div>
+    <div style="flex:1;min-width:320px">
+      <div class="card">
+        <h3>광학 챔버 단면 — 미광 광선 추적</h3>
+        <canvas id="c11" width="640" height="300" style="max-width:100%;display:block"></canvas>
+        <div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px;font-size:11px;color:#6878a8">
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:3px;background:#7F77DD;display:inline-block;border-radius:2px"></span>여기광 미광(UV 산란)</span>
+          <span style="display:inline-flex;align-items:center;gap:6px"><span style="width:14px;height:3px;background:#1D9E75;display:inline-block;border-radius:2px"></span>정상 형광 신호</span>
+          <span style="display:inline-flex;align-items:center;gap:6px">벽 회색농도 = 반사율</span>
+        </div>
+        <div class="chart-desc">💡 검은 벽이면 광선이 한두 번 튕기고 사라져요. 반사 벽이면 챔버를 가득 채우며 PD(수광부)로 새 들어가 배경을 끌어올려요. 재질을 바꿔 직접 비교해 보세요.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── 탭 전환 ─────────────────────────────────────────────────
 function switchTab(n) {
@@ -631,8 +664,74 @@ function switchTab(n) {
   for (var i = 0; i < contents.length; i++) { contents[i].classList.remove('active'); }
   tabs[n-1].classList.add('active');
   document.getElementById('t'+n).classList.add('active');
-  var fn = [null, drawTab1, upd2, upd3, drawTab4, upd5, null, null, upd8, upd9, upd10]; // tab6,7은 iframe → null
+  var fn = [null, drawTab1, upd2, upd3, drawTab4, upd5, null, null, upd8, upd9, upd10, upd11]; // tab6,7은 iframe → null
   if (fn[n]) setTimeout(fn[n], 60);
+}
+
+// ── TAB11: 하우징 재질 (미광 시뮬레이션) ──
+var _mats11=[{n:"무광 흑색 (권장)",r:4},{n:"유광 흑색",r:10},{n:"무광 회색 ABS",r:35},{n:"백색 플라스틱",r:80},{n:"알루미늄 광택",r:92}];
+var _R11=0.04, _anim11=false, _ph11=[];
+var _L11=46,_Rt11=594,_T11=46,_Bm11=250,_pdA=290,_pdB=350,_led11={x:110,y:54},_spot11={x:320,y:250};
+function _build11(){
+  var sel=document.getElementById("r11_mat"); if(!sel||sel.options.length) return;
+  _mats11.forEach(function(m,i){ var o=document.createElement("option"); o.value=i; o.textContent=m.n+" ("+m.r+"%)"; sel.appendChild(o); });
+  sel.selectedIndex=0;
+}
+function setR11(v){ _R11=(+v)/100; var s=document.getElementById("r11_mat"); if(s) s.value=""; recompute11(); }
+function pick11(i){ _R11=_mats11[i].r/100; document.getElementById("r11_rng").value=_mats11[i].r; recompute11(); }
+function recompute11(){
+  var K=0.82,B0=25,S=100,FS=140;
+  var rk=_R11*K, A=1/(1-rk), B=B0*_R11*A;
+  var SB=B>0?S/B:999, Bg=B*0.18, drift=0.03*B;
+  var snr=S/Math.sqrt(S+Bg+drift*drift), dc=S+B, sat=dc>FS;
+  var g=function(id){return document.getElementById(id);};
+  if(g("v11_r")) g("v11_r").textContent=Math.round(_R11*100);
+  if(g("o11_a")) g("o11_a").textContent=A.toFixed(2)+"×";
+  if(g("o11_b")) g("o11_b").textContent=B.toFixed(1);
+  if(g("o11_sb")) g("o11_sb").textContent=(SB>=100?Math.round(SB):SB.toFixed(1));
+  if(g("o11_snr")) g("o11_snr").textContent=snr.toFixed(1);
+  var v=g("o11_verdict"); if(!v) return;
+  if(sat){ v.style.background="#ffebeb"; v.style.color="#c02828"; v.innerHTML="❌ 측정 불가 — PD/TIA 포화 (총광량 "+Math.round(dc)+" &gt; 한계 "+FS+")"; }
+  else if(B>8){ v.style.background="#fff3e0"; v.style.color="#b06010"; v.innerHTML="⚠️ 경고 — 배경 과다 (S/B "+SB.toFixed(1)+"), 보정·드리프트 한계"; }
+  else { v.style.background="#e8f5ee"; v.style.color="#1a8040"; v.innerHTML="✅ 양호 — 미광 무시 가능, TRF 게이팅 효과 유지"; }
+}
+function _spawn11(p){
+  var base=Math.atan2(_spot11.y-_led11.y,_spot11.x-_led11.x);
+  var ang=base+(Math.random()-0.5)*0.95;
+  p.x=_led11.x; p.y=_led11.y; p.vx=Math.cos(ang); p.vy=Math.sin(ang); p.i=1; p.bn=0;
+}
+function _initPh11(){ _ph11=[]; for(var k=0;k<60;k++){ var p={}; _spawn11(p); p.x=_led11.x+Math.random()*40*p.vx; p.y=_led11.y+Math.random()*40*p.vy; _ph11.push(p); } }
+function _step11(p){
+  var sp=3.1; p.x+=p.vx*sp; p.y+=p.vy*sp;
+  if(p.x<_L11){ p.x=_L11; p.vx=-p.vx; p.i*=_R11; p.bn++; }
+  else if(p.x>_Rt11){ p.x=_Rt11; p.vx=-p.vx; p.i*=_R11; p.bn++; }
+  if(p.y>_Bm11){ p.y=_Bm11; p.vy=-p.vy; p.i*=0.15; p.bn++; }
+  else if(p.y<_T11){ if(p.x>_pdA&&p.x<_pdB){ _spawn11(p); return; } p.y=_T11; p.vy=-p.vy; p.i*=_R11; p.bn++; }
+  if(p.i<0.04||p.bn>40) _spawn11(p);
+}
+function _draw11(){
+  var cv=document.getElementById("c11"); if(!cv){ _anim11=false; return; }
+  if(!document.getElementById("t11").classList.contains("active")){ requestAnimationFrame(_draw11); return; }
+  var c=cv.getContext("2d");
+  c.fillStyle="rgba(244,247,255,0.28)"; c.fillRect(0,0,640,300);
+  var sh=Math.round(255*_R11); var wall="rgb("+sh+","+sh+","+sh+")";
+  c.fillStyle=wall;
+  c.fillRect(_L11-10,_T11-10,_Rt11-_L11+20,10); c.fillRect(_L11-10,_Bm11,_Rt11-_L11+20,12);
+  c.fillRect(_L11-10,_T11-10,10,_Bm11-_T11+20); c.fillRect(_Rt11,_T11-10,10,_Bm11-_T11+20);
+  c.strokeStyle="#9aa3bd"; c.lineWidth=1; c.strokeRect(_L11-10,_T11-10,_Rt11-_L11+20,_Bm11-_T11+22);
+  c.fillStyle="#1D9E75"; c.fillRect(_L11,_Bm11-3,_Rt11-_L11,3);
+  c.fillStyle="rgba(29,158,117,0.9)"; c.beginPath(); c.arc(_spot11.x,_Bm11-3,7,0,7); c.fill();
+  c.strokeStyle="rgba(29,158,117,0.55)"; c.lineWidth=2; c.beginPath(); c.moveTo(_spot11.x,_Bm11-6); c.lineTo((_pdA+_pdB)/2,_T11); c.stroke();
+  for(var j=0;j<_ph11.length;j++){ var p=_ph11[j]; _step11(p); c.fillStyle="rgba(127,119,221,"+Math.min(1,p.i)+")"; c.beginPath(); c.arc(p.x,p.y,2.2,0,7); c.fill(); }
+  c.fillStyle="#7F77DD"; c.beginPath(); c.arc(_led11.x,_led11.y,7,0,7); c.fill();
+  c.fillStyle="#0C447C"; c.fillRect(_pdA,_T11-4,_pdB-_pdA,8);
+  c.fillStyle="#5a6286"; c.font="11px sans-serif"; c.textAlign="center";
+  c.fillText("UV LED",_led11.x,_led11.y-11); c.fillText("PD (수광)",(_pdA+_pdB)/2,_T11-9); c.fillText("LFA 스트립",_spot11.x,_Bm11+16);
+  requestAnimationFrame(_draw11);
+}
+function upd11(){
+  _build11(); recompute11();
+  if(!_anim11){ _anim11=true; _initPh11(); requestAnimationFrame(_draw11); }
 }
 
 // ── TAB1: TRF 원리 ──────────────────────────────────────────
