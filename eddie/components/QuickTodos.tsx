@@ -212,6 +212,13 @@ export default function QuickTodos() {
     };
   }, []);
 
+  // 마지막 남은 할 일을 끝내면 축하 한마디
+  function complete(t: Todo) {
+    const openBefore = state.todos.filter((x) => !x.done).length;
+    toggleTodo(t.id);
+    if (!t.done && openBefore === 1) pushToast('오늘 할 일 다 했어! 대단해 🎉');
+  }
+
   // 정렬: 미완료(우선★ 먼저) → 완료. 같은 묶음 안에선 기존 순서(최신순) 유지.
   const rank = (t: Todo) => (t.done ? 2 : t.priority ? 0 : 1);
   const todos = [...state.todos].sort((a, b) => rank(a) - rank(b));
@@ -289,7 +296,7 @@ export default function QuickTodos() {
           {todos.map((t) => (
             <li key={t.id} className="flex items-center gap-3">
               <button
-                onClick={() => toggleTodo(t.id)}
+                onClick={() => complete(t)}
                 aria-pressed={t.done}
                 aria-label={`${t.text} 완료 토글`}
                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
