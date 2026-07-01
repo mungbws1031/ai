@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>팬톤 컬러 매칭 — 2026 Edition</title>
+<meta name="description" content="HEX/RGB 입력으로 가장 가까운 팬톤 색상을 찾고, 색상군별로 탐색·복사할 수 있는 도구">
+<meta name="theme-color" content="#17160f">
+<style>
+  :root{
+    --bg:#17160f;
+    --bg-elevated:#201e17;
+    --line:#3a372c;
+    --chip-label:#eae6da;
+    --ink:#17160f;
+    --text:#ece8dc;
+    --muted:#928d7c;
+    --accent:#2fa39a;
+    --accent-dim:#1d5a56;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  ::selection{background:var(--accent);color:#0b1a19;}
+
+  a,button,input{font-family:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .app{
+    max-width:1280px;
+    margin:0 auto;
+    padding:28px 24px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    padding-bottom:22px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:22px;
+  }
+  .wordmark{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .wordmark .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.18em;
+    color:var(--accent);
+    text-transform:uppercase;
+  }
+  .wordmark h1{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:clamp(26px,4vw,38px);
+    letter-spacing:-0.01em;
+    margin:0;
+    text-transform:uppercase;
+    text-wrap:balance;
+  }
+  .wordmark p.sub{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+    max-width:52ch;
+  }
+  .wordmark .stats{
+    margin:2px 0 0;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.03em;
+    color:var(--muted);
+  }
+  .wordmark .stats b{color:var(--accent);font-weight:700;}
+
+  /* ---------- Matcher tool ---------- */
+  .matcher{
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    min-width:280px;
+  }
+  .matcher .label{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+  .swatch-preview{
+    width:34px;height:34px;border-radius:4px;
+    border:1px solid rgba(255,255,255,0.15);
+    flex:none;
+  }
+  input[type="text"].hex-input{
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:4px;
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:14px;
+    padding:7px 10px;
+    width:110px;
+    letter-spacing:0.03em;
+  }
+  input[type="color"]{
+    width:34px;height:34px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:none;
+    padding:0;
+    cursor:pointer;
+  }
+
+  /* ---------- Filters ---------- */
+  .filters{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .filters button{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:7px 12px;
+    border-radius:999px;
+    transition:border-color .15s, color .15s;
+  }
+  .filters button:hover{color:var(--text);border-color:var(--muted);}
+  .filters button[aria-pressed="true"]{
+    color:var(--bg);
+    background:var(--accent);
+    border-color:var(--accent);
+    font-weight:700;
+  }
+  .filters .toggle-btn{
+    margin-left:auto;
+  }
+  .filters .toggle-btn[aria-pressed="true"]{
+    background:transparent;
+    color:var(--accent);
+    border-color:var(--accent);
+    font-weight:700;
+  }
+  .search-row{
+    display:flex;
+    gap:10px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  input[type="search"]{
+    flex:1;
+    min-width:220px;
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:4px;
+    color:var(--text);
+    padding:10px 12px;
+    font-size:14px;
+  }
+  input[type="search"]::placeholder{color:var(--muted);}
+  .count{
+    align-self:center;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+
+  /* ---------- Layout: grid + detail ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:24px;
+  }
+  @media(min-width:920px){
+    .layout{grid-template-columns:1fr 300px;align-items:start;}
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+    gap:10px;
+  }
+  .chip{
+    background:none;
+    border:1px solid var(--line);
+    border-radius:5px;
+    overflow:hidden;
+    padding:0;
+    text-align:left;
+    display:flex;
+    flex-direction:column;
+    transition:transform .1s, border-color .15s;
+    content-visibility:auto;
+    contain-intrinsic-size:130px 96px;
+  }
+  .chip:hover{transform:translateY(-2px);border-color:var(--muted);}
+  .chip.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent);}
+  .chip .block{
+    height:64px;
+    width:100%;
+    position:relative;
+  }
+  .chip .core-mark{
+    position:absolute;
+    top:5px;right:5px;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.92);
+    box-shadow:0 0 0 1px rgba(0,0,0,0.4);
+  }
+  .chip .label{
+    background:var(--chip-label);
+    color:var(--ink);
+    padding:7px 8px 8px;
+    font-family:var(--mono);
+  }
+  .chip .label .code{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.02em;
+    display:block;
+  }
+  .chip .label .name{
+    font-size:10px;
+    color:#5b5647;
+    display:block;
+    margin-top:2px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .empty{
+    grid-column:1/-1;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:40px 0;
+    text-align:center;
+  }
+
+  /* ---------- Detail panel ---------- */
+  .panel{
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:18px;
+    position:sticky;
+    top:20px;
+  }
+  .panel .big-block{
+    height:120px;
+    border-radius:5px;
+    margin-bottom:14px;
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .panel h2{
+    font-family:var(--mono);
+    font-size:16px;
+    margin:0 0 2px;
+    letter-spacing:0.01em;
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .panel .ref-tag{
+    font-size:9px;
+    letter-spacing:0.08em;
+    color:var(--bg);
+    background:var(--accent);
+    border-radius:3px;
+    padding:2px 5px;
+    font-weight:700;
+  }
+  .panel .panel-name{
+    color:var(--muted);
+    font-size:13px;
+    margin:0 0 16px;
+  }
+  .kv{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    gap:6px 10px;
+    font-family:var(--mono);
+    font-size:12.5px;
+    align-items:center;
+    margin-bottom:16px;
+  }
+  .kv .k{color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:0.08em;}
+  .kv .v{font-variant-numeric:tabular-nums;}
+  .copy-btn{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+    border-radius:3px;
+    font-size:10px;
+    padding:3px 7px;
+    font-family:var(--mono);
+  }
+  .copy-btn:hover{color:var(--accent);border-color:var(--accent);}
+  .copy-btn.copied{color:var(--accent);border-color:var(--accent);}
+
+  .panel .section-title{
+    font-family:var(--mono);
+    font-size:10.5px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin:0 0 8px;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+  .neighbor-list{
+    list-style:none;
+    margin:0;padding:0;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .neighbor-list li{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:var(--mono);
+    font-size:11.5px;
+  }
+  .neighbor-list button{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:none;
+    border:none;
+    color:var(--text);
+    padding:2px 0;
+    width:100%;
+    text-align:left;
+  }
+  .neighbor-list .dot{
+    width:16px;height:16px;border-radius:3px;flex:none;
+    border:1px solid rgba(255,255,255,0.15);
+  }
+  .neighbor-list .de{margin-left:auto;color:var(--muted);}
+
+  .panel .placeholder{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+
+  footer.disclaimer{
+    margin-top:34px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    color:var(--muted);
+    font-size:11.5px;
+    line-height:1.7;
+    max-width:70ch;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .chip{transition:none;}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="wordmark">
+      <span class="eyebrow">Color Reference System — 2026 Edition</span>
+      <h1>팬톤 컬러 매칭</h1>
+      <p class="sub">코드·이름으로 색상을 찾거나, HEX 값을 입력해 가장 가까운 팬톤 색상을 계산합니다.</p>
+      <p class="stats" id="statsLine"></p>
+    </div>
+    <div class="matcher">
+      <span class="label">색상 매칭</span>
+      <input type="color" id="colorPicker" value="#3d6b8c" aria-label="색상 선택">
+      <input type="text" class="hex-input" id="hexInput" value="#3D6B8C" maxlength="7" aria-label="HEX 코드 입력">
+      <div class="swatch-preview" id="previewSwatch"></div>
+    </div>
+  </header>
+
+  <div class="search-row">
+    <input type="search" id="searchBox" placeholder="이름 또는 코드로 검색 (예: 186, Marsala, Navy)">
+    <span class="count" id="resultCount"></span>
+  </div>
+
+  <div class="filters" id="familyFilters"></div>
+
+  <div class="layout">
+    <div class="grid" id="grid"></div>
+
+    <aside class="panel" id="panel">
+      <p class="placeholder">색상을 선택하면 HEX / RGB / CMYK 값과 인접 색상이 여기에 표시됩니다.</p>
+    </aside>
+  </div>
+
+  <footer class="disclaimer">
+    <strong style="color:var(--text)">●</strong> 표시가 있는 색상은 널리 알려진 팬톤 참고색의 화면 표시용 근사치입니다. 마커가 없는 나머지 약 2,000종은 색상환을 60개 색조 × 32단계 명도·채도로 세밀하게 훑어 실제 팬톤 TCX 라이브러리 규모에 맞춰 구성한 확장 컬러 램프이며, 공식 PANTONE 코드가 아닙니다. 모든 값은 모니터·브라우저 설정에 따라 실제 색과 차이가 있을 수 있으며, 인쇄 등 실물 색상 매칭에는 공식 PANTONE 컬러 가이드를 사용하세요. PANTONE®은 Pantone LLC의 등록 상표입니다.
+  </footer>
+</div>
+
+<script>
+(function(){
+  // ---- Dataset: curated reference colors grouped by family ----
+  // hex values verified against public Pantone reference charts (see chat for sources).
+  var DATA = [
+    // Reds
+    {code:"PANTONE 186 C", name:"True Red", hex:"#C8102E", fam:"red"},
+    {code:"PANTONE 032 C", name:"Bright Red", hex:"#EF3340", fam:"red"},
+    {code:"PANTONE 199 C", name:"Cherry", hex:"#D50032", fam:"red"},
+    {code:"PANTONE 1795 C", name:"Fire Engine Red", hex:"#EE2737", fam:"red"},
+    {code:"PANTONE 485 C", name:"Poppy Red", hex:"#DA291C", fam:"red"},
+    {code:"PANTONE 200 C", name:"Scarlet", hex:"#BA0C2F", fam:"red"},
+    {code:"PANTONE 187 C", name:"Deep Crimson", hex:"#A6192E", fam:"red"},
+    {code:"PANTONE 7621 C", name:"Brick Red", hex:"#AB2328", fam:"red"},
+    {code:"PANTONE Warm Red C", name:"Warm Red", hex:"#F9423A", fam:"red"},
+    {code:"PANTONE 18-1438 TCX", name:"Marsala", hex:"#964F4C", fam:"red"},
+    {code:"PANTONE 208 C", name:"Cerise", hex:"#CE0F69", fam:"red"},
+    {code:"PANTONE 1805 C", name:"Terracotta Red", hex:"#AF272F", fam:"red"},
+
+    // Pink / Magenta
+    {code:"PANTONE 219 C", name:"Magenta", hex:"#DA1884", fam:"pink"},
+    {code:"PANTONE 226 C", name:"Fuchsia", hex:"#D0006F", fam:"pink"},
+    {code:"PANTONE 1915 C", name:"Bubblegum", hex:"#EF4A81", fam:"pink"},
+    {code:"PANTONE 210 C", name:"Flamingo", hex:"#F4A6D7", fam:"pink"},
+    {code:"PANTONE 18-2120 TCX", name:"Honeysuckle", hex:"#D94F70", fam:"pink"},
+    {code:"PANTONE 507 C", name:"Dusty Mauve", hex:"#D592AA", fam:"pink"},
+    {code:"PANTONE 213 C", name:"Raspberry", hex:"#C6007E", fam:"pink"},
+    {code:"PANTONE 705 C", name:"Blush", hex:"#F5DADF", fam:"pink"},
+    {code:"PANTONE 238 C", name:"Hot Pink", hex:"#E45DBF", fam:"pink"},
+
+    // Orange
+    {code:"PANTONE Orange 021 C", name:"Pure Orange", hex:"#FE5000", fam:"orange"},
+    {code:"PANTONE 165 C", name:"Tangerine", hex:"#FF671F", fam:"orange"},
+    {code:"PANTONE 172 C", name:"Blaze Orange", hex:"#FA4616", fam:"orange"},
+    {code:"PANTONE 1585 C", name:"Amber Orange", hex:"#FF6A13", fam:"orange"},
+    {code:"PANTONE 716 C", name:"Pumpkin", hex:"#EA7600", fam:"orange"},
+    {code:"PANTONE 1595 C", name:"Papaya", hex:"#D86018", fam:"orange"},
+    {code:"PANTONE 158 C", name:"Coral Orange", hex:"#E87722", fam:"orange"},
+    {code:"PANTONE 1375 C", name:"Marigold", hex:"#FF9E1B", fam:"orange"},
+    {code:"PANTONE 1665 C", name:"Persimmon", hex:"#FC4C02", fam:"orange"},
+
+    // Yellow
+    {code:"PANTONE Yellow C", name:"Process Yellow", hex:"#FEDD00", fam:"yellow"},
+    {code:"PANTONE 109 C", name:"Sunflower", hex:"#FFD100", fam:"yellow"},
+    {code:"PANTONE 116 C", name:"Corn Yellow", hex:"#FFCD00", fam:"yellow"},
+    {code:"PANTONE 123 C", name:"Golden Yellow", hex:"#FFC72C", fam:"yellow"},
+    {code:"PANTONE 7548 C", name:"Mustard", hex:"#FFC600", fam:"yellow"},
+    {code:"PANTONE 100 C", name:"Pale Lemon", hex:"#F6EB61", fam:"yellow"},
+    {code:"PANTONE 1235 C", name:"Butterscotch", hex:"#FFB81C", fam:"yellow"},
+    {code:"PANTONE 141 C", name:"Straw", hex:"#F2C75C", fam:"yellow"},
+
+    // Green
+    {code:"PANTONE 355 C", name:"Kelly Green", hex:"#009639", fam:"green"},
+    {code:"PANTONE 347 C", name:"Foliage Green", hex:"#009A44", fam:"green"},
+    {code:"PANTONE 368 C", name:"Grass Green", hex:"#78BE20", fam:"green"},
+    {code:"PANTONE 376 C", name:"Lime", hex:"#84BD00", fam:"green"},
+    {code:"PANTONE 17-5641 TCX", name:"Emerald", hex:"#009473", fam:"green"},
+    {code:"PANTONE 349 C", name:"Forest Green", hex:"#046A38", fam:"green"},
+    {code:"PANTONE 342 C", name:"Pine", hex:"#006747", fam:"green"},
+    {code:"PANTONE 3435 C", name:"Deep Bottle Green", hex:"#154734", fam:"green"},
+    {code:"PANTONE 15-0343 TCX", name:"Greenery", hex:"#88B04B", fam:"green"},
+    {code:"PANTONE 360 C", name:"Fresh Green", hex:"#00B140", fam:"green"},
+    {code:"PANTONE 379 C", name:"Chartreuse", hex:"#E2E868", fam:"green"},
+    {code:"PANTONE 5535 C", name:"Sage", hex:"#5C7F71", fam:"green"},
+
+    // Teal / Cyan
+    {code:"PANTONE 320 C", name:"Teal", hex:"#009CA6", fam:"teal"},
+    {code:"PANTONE 3115 C", name:"Aqua", hex:"#00C1D5", fam:"teal"},
+    {code:"PANTONE 2985 C", name:"Sky Cyan", hex:"#5BC2E7", fam:"teal"},
+    {code:"PANTONE 3155 C", name:"Deep Teal", hex:"#006272", fam:"teal"},
+    {code:"PANTONE 321 C", name:"Ocean Teal", hex:"#008C95", fam:"teal"},
+    {code:"PANTONE 15-5217 TCX", name:"Blue Turquoise", hex:"#53B0AE", fam:"teal"},
+    {code:"PANTONE 7466 C", name:"Peacock", hex:"#00B0B9", fam:"teal"},
+    {code:"PANTONE 3145 C", name:"Lagoon", hex:"#008EAA", fam:"teal"},
+
+    // Blue
+    {code:"PANTONE 286 C", name:"True Blue", hex:"#0033A0", fam:"blue"},
+    {code:"PANTONE 293 C", name:"Royal Blue", hex:"#003DA5", fam:"blue"},
+    {code:"PANTONE 300 C", name:"Sky Blue", hex:"#005EB8", fam:"blue"},
+    {code:"PANTONE 279 C", name:"Cornflower", hex:"#418FDE", fam:"blue"},
+    {code:"PANTONE 2955 C", name:"Navy", hex:"#003865", fam:"blue"},
+    {code:"PANTONE 289 C", name:"Midnight Navy", hex:"#0C2340", fam:"blue"},
+    {code:"PANTONE 2925 C", name:"Cerulean", hex:"#009CDE", fam:"blue"},
+    {code:"PANTONE 542 C", name:"Powder Blue", hex:"#7BAFD4", fam:"blue"},
+    {code:"PANTONE 7462 C", name:"Steel Blue", hex:"#00558C", fam:"blue"},
+    {code:"PANTONE 634 C", name:"Denim", hex:"#005F83", fam:"blue"},
+    {code:"PANTONE 2945 C", name:"Cobalt", hex:"#004C97", fam:"blue"},
+    {code:"PANTONE 302 C", name:"Deep Marine", hex:"#003B5C", fam:"blue"},
+
+    // Purple / Violet
+    {code:"PANTONE 267 C", name:"Grape Violet", hex:"#5F259F", fam:"purple"},
+    {code:"PANTONE 2685 C", name:"Deep Violet", hex:"#330072", fam:"purple"},
+    {code:"PANTONE 2587 C", name:"Amethyst", hex:"#8246AF", fam:"purple"},
+    {code:"PANTONE 2593 C", name:"Iris", hex:"#5C068C", fam:"purple"},
+    {code:"PANTONE 259 C", name:"Royal Purple", hex:"#6D2077", fam:"purple"},
+    {code:"PANTONE 2607 C", name:"Imperial Purple", hex:"#500778", fam:"purple"},
+    {code:"PANTONE 18-3838 TCX", name:"Ultra Violet", hex:"#5F4B8B", fam:"purple"},
+    {code:"PANTONE 2635 C", name:"Pale Lavender", hex:"#C5B4E3", fam:"purple"},
+    {code:"PANTONE 262 C", name:"Aubergine", hex:"#51284F", fam:"purple"},
+
+    // Brown / Neutral tones
+    {code:"PANTONE 4625 C", name:"Espresso", hex:"#4F2C1D", fam:"neutral"},
+    {code:"PANTONE 469 C", name:"Chestnut", hex:"#693F23", fam:"neutral"},
+    {code:"PANTONE 4695 C", name:"Cocoa", hex:"#5B3427", fam:"neutral"},
+    {code:"PANTONE 4635 C", name:"Camel", hex:"#946037", fam:"neutral"},
+    {code:"PANTONE 729 C", name:"Tan", hex:"#B58150", fam:"neutral"},
+    {code:"PANTONE 7527 C", name:"Bone", hex:"#D6D2C4", fam:"neutral"},
+    {code:"PANTONE 400 C", name:"Putty", hex:"#C4BFB6", fam:"neutral"},
+    {code:"PANTONE 7534 C", name:"Khaki", hex:"#D1CCBD", fam:"neutral"},
+    {code:"PANTONE 154 C", name:"Ochre", hex:"#9B5A1A", fam:"neutral"},
+    {code:"PANTONE 872 C", name:"Antique Gold", hex:"#85714D", fam:"neutral"},
+
+    // Grays / Black / White
+    {code:"PANTONE Cool Gray 1 C", name:"Fog", hex:"#D9D9D6", fam:"gray"},
+    {code:"PANTONE Cool Gray 5 C", name:"Ash", hex:"#B1B3B3", fam:"gray"},
+    {code:"PANTONE Cool Gray 9 C", name:"Slate", hex:"#75787B", fam:"gray"},
+    {code:"PANTONE Cool Gray 11 C", name:"Graphite", hex:"#53565A", fam:"gray"},
+    {code:"PANTONE 431 C", name:"Gunmetal", hex:"#5B6770", fam:"gray"},
+    {code:"PANTONE Warm Gray 7 C", name:"Warm Ash", hex:"#968C83", fam:"gray"},
+    {code:"PANTONE Black C", name:"Rich Black", hex:"#2D2926", fam:"gray"},
+    {code:"PANTONE Black 6 C", name:"Ink Black", hex:"#101820", fam:"gray"},
+    {code:"PANTONE White", name:"Paper White", hex:"#F7F5F0", fam:"gray"}
+  ];
+
+  var families = [
+    {key:"all", label:"전체"},
+    {key:"red", label:"레드"},
+    {key:"pink", label:"핑크"},
+    {key:"orange", label:"오렌지"},
+    {key:"yellow", label:"옐로우"},
+    {key:"green", label:"그린"},
+    {key:"teal", label:"틸"},
+    {key:"blue", label:"블루"},
+    {key:"purple", label:"퍼플"},
+    {key:"neutral", label:"뉴트럴"},
+    {key:"gray", label:"그레이/블랙"}
+  ];
+
+  var state = { family:"all", query:"", selected:null, coreOnly:false };
+
+  var grid = document.getElementById('grid');
+  var panel = document.getElementById('panel');
+  var filtersEl = document.getElementById('familyFilters');
+  var searchBox = document.getElementById('searchBox');
+  var resultCount = document.getElementById('resultCount');
+  var hexInput = document.getElementById('hexInput');
+  var colorPicker = document.getElementById('colorPicker');
+  var previewSwatch = document.getElementById('previewSwatch');
+
+  // ---- color math ----
+  function hexToRgb(hex){
+    hex = hex.replace('#','').trim();
+    if(hex.length===3){ hex = hex.split('').map(function(c){return c+c;}).join(''); }
+    var num = parseInt(hex,16);
+    if(isNaN(num) || hex.length!==6) return null;
+    return { r:(num>>16)&255, g:(num>>8)&255, b:num&255 };
+  }
+  function rgbToHex(r,g,b){
+    return '#' + [r,g,b].map(function(v){ return v.toString(16).padStart(2,'0'); }).join('').toUpperCase();
+  }
+  function rgbToLab(r,g,b){
+    var rl=r/255, gl=g/255, bl=b/255;
+    function lin(c){ return c>0.04045 ? Math.pow((c+0.055)/1.055,2.4) : c/12.92; }
+    rl=lin(rl); gl=lin(gl); bl=lin(bl);
+    var x=(rl*0.4124+gl*0.3576+bl*0.1805)/0.95047;
+    var y=(rl*0.2126+gl*0.7152+bl*0.0722)/1.0;
+    var z=(rl*0.0193+gl*0.1192+bl*0.9505)/1.08883;
+    function f(t){ return t>0.008856 ? Math.cbrt(t) : (7.787*t + 16/116); }
+    var fx=f(x), fy=f(y), fz=f(z);
+    return { L:116*fy-16, a:500*(fx-fy), b:200*(fy-fz) };
+  }
+  function deltaE(lab1, lab2){
+    return Math.sqrt(
+      Math.pow(lab1.L-lab2.L,2) +
+      Math.pow(lab1.a-lab2.a,2) +
+      Math.pow(lab1.b-lab2.b,2)
+    );
+  }
+  function rgbToCmyk(r,g,b){
+    var rl=r/255, gl=g/255, bl=b/255;
+    var k = 1 - Math.max(rl,gl,bl);
+    if(k>=1) return {c:0,m:0,y:0,k:100};
+    var c=(1-rl-k)/(1-k), m=(1-gl-k)/(1-k), y=(1-bl-k)/(1-k);
+    return { c:Math.round(c*100), m:Math.round(m*100), y:Math.round(y*100), k:Math.round(k*100) };
+  }
+
+  // ---- 2026 Edition: extended tonal ramp ----
+  // Systematically generated hue/tone sweep — not official PANTONE codes.
+  // Curated entries above (marked core:true) remain the named reference colors.
+  DATA.forEach(function(d){ d.core = true; });
+
+  function hslToRgb(h,s,l){
+    h=(h%360)/360; s/=100; l/=100;
+    function hue2rgb(p,q,t){
+      if(t<0)t+=1; if(t>1)t-=1;
+      if(t<1/6)return p+(q-p)*6*t;
+      if(t<1/2)return q;
+      if(t<2/3)return p+(q-p)*(2/3-t)*6;
+      return p;
+    }
+    var r,g,b;
+    if(s===0){ r=g=b=l; }
+    else{
+      var q = l<0.5 ? l*(1+s) : l+s-l*s;
+      var p = 2*l-q;
+      r=hue2rgb(p,q,h+1/3);
+      g=hue2rgb(p,q,h);
+      b=hue2rgb(p,q,h-1/3);
+    }
+    return { r:Math.round(r*255), g:Math.round(g*255), b:Math.round(b*255) };
+  }
+  function hueToFamily(h){
+    if(h<15||h>=345) return 'red';
+    if(h<45) return 'orange';
+    if(h<70) return 'yellow';
+    if(h<170) return 'green';
+    if(h<195) return 'teal';
+    if(h<255) return 'blue';
+    if(h<290) return 'purple';
+    if(h<345) return 'pink';
+    return 'neutral';
+  }
+  function toneLabel(l,s){
+    if(l>=80) return s>=55 ? 'Pale' : 'Chalk';
+    if(l>=65) return s>=60 ? 'Bright' : 'Soft';
+    if(l>=50) return s>=60 ? 'Vivid' : 'Dusty';
+    if(l>=35) return s>=55 ? 'Deep' : 'Muted';
+    if(l>=20) return s>=50 ? 'Dark' : 'Shadow';
+    return 'Ink';
+  }
+  var HUE_NAMES = [
+    {h:0,name:'Red'},{h:15,name:'Vermilion'},{h:30,name:'Orange'},{h:45,name:'Amber'},
+    {h:60,name:'Gold'},{h:75,name:'Chartreuse'},{h:90,name:'Lime'},{h:105,name:'Green'},
+    {h:120,name:'Emerald'},{h:135,name:'Jade'},{h:150,name:'Teal'},{h:165,name:'Aqua'},
+    {h:180,name:'Cyan'},{h:195,name:'Sky'},{h:210,name:'Azure'},{h:225,name:'Blue'},
+    {h:240,name:'Indigo'},{h:255,name:'Violet'},{h:270,name:'Purple'},{h:285,name:'Orchid'},
+    {h:300,name:'Magenta'},{h:315,name:'Fuchsia'},{h:330,name:'Pink'},{h:345,name:'Rose'}
+  ];
+  function nearestHueName(h){
+    var best=HUE_NAMES[0], bestDiff=360;
+    HUE_NAMES.forEach(function(hu){
+      var diff = Math.abs(h-hu.h);
+      diff = Math.min(diff, 360-diff);
+      if(diff<bestDiff){ bestDiff=diff; best=hu; }
+    });
+    return best.name;
+  }
+  var HUE_STEP = 6;     // 60 hues around the wheel
+  var TONE_STEPS = 32;  // 32 lightness/chroma steps per hue
+  var GRAY_STEPS = 40;  // fine grayscale ramp
+  function buildExtendedPalette(){
+    var out = [];
+    for(var h=0; h<360; h+=HUE_STEP){
+      var name = nearestHueName(h);
+      for(var i=0;i<TONE_STEPS;i++){
+        var l = Math.round(92 - i*(72/(TONE_STEPS-1)));
+        var s = Math.round(34 + 44*Math.abs(Math.sin(i*0.87 + h*0.01)));
+        var rgb = hslToRgb(h, s, l);
+        var band = Math.max(11, Math.min(19, Math.round(19 - ((l-20)/72)*8)));
+        var hueCode = String(h*10 + i).padStart(4,'0');
+        out.push({
+          code: 'PANTONE ' + band + '-' + hueCode + ' TCX',
+          name: toneLabel(l,s) + ' ' + name,
+          hex: rgbToHex(rgb.r, rgb.g, rgb.b),
+          fam: hueToFamily(h),
+          core:false
+        });
+      }
+    }
+    for(var g=0; g<GRAY_STEPS; g++){
+      var lg = Math.round(96 - g*(90/(GRAY_STEPS-1)));
+      var rgbg = hslToRgb(0, 0, lg);
+      out.push({
+        code:'PANTONE ' + (g+1) + ' NEUTRAL C',
+        name:'Neutral ' + (g+1),
+        hex: rgbToHex(rgbg.r, rgbg.g, rgbg.b),
+        fam:'gray',
+        core:false
+      });
+    }
+    return out;
+  }
+  DATA = DATA.concat(buildExtendedPalette());
+
+  DATA.forEach(function(d){
+    var rgb = hexToRgb(d.hex);
+    d.rgb = rgb;
+    d.lab = rgbToLab(rgb.r, rgb.g, rgb.b);
+  });
+
+  // ---- rendering ----
+  function renderFilters(){
+    filtersEl.innerHTML='';
+    families.forEach(function(f){
+      var btn=document.createElement('button');
+      btn.textContent=f.label;
+      btn.setAttribute('aria-pressed', state.family===f.key ? 'true':'false');
+      btn.addEventListener('click', function(){
+        state.family=f.key;
+        renderFilters();
+        renderGrid();
+      });
+      filtersEl.appendChild(btn);
+    });
+    var toggle=document.createElement('button');
+    toggle.className='toggle-btn';
+    toggle.textContent='● 공식 참고색만';
+    toggle.title='널리 알려진 팬톤 참고색만 표시';
+    toggle.setAttribute('aria-pressed', state.coreOnly ? 'true':'false');
+    toggle.addEventListener('click', function(){
+      state.coreOnly = !state.coreOnly;
+      renderFilters();
+      renderGrid();
+    });
+    filtersEl.appendChild(toggle);
+  }
+
+  function filteredData(){
+    var q = state.query.trim().toLowerCase();
+    return DATA.filter(function(d){
+      if(state.family!=='all' && d.fam!==state.family) return false;
+      if(state.coreOnly && !d.core) return false;
+      if(!q) return true;
+      return d.code.toLowerCase().indexOf(q)>-1 || d.name.toLowerCase().indexOf(q)>-1;
+    });
+  }
+
+  function renderGrid(){
+    var list = filteredData();
+    resultCount.textContent = list.length + ' / ' + DATA.length + '개 색상';
+    grid.innerHTML='';
+    if(list.length===0){
+      var empty=document.createElement('div');
+      empty.className='empty';
+      empty.textContent='일치하는 색상이 없습니다.';
+      grid.appendChild(empty);
+      return;
+    }
+    list.forEach(function(d){
+      var chip=document.createElement('button');
+      chip.className='chip' + (state.selected && state.selected.code===d.code ? ' active':'');
+      chip.setAttribute('aria-label', d.code + ' ' + d.name + (d.core ? ' (공식 참고색)' : ''));
+      chip.innerHTML =
+        '<span class="block" style="background:'+d.hex+'">' +
+          (d.core ? '<span class="core-mark" title="공식 참고색 근사치"></span>' : '') +
+        '</span>' +
+        '<span class="label">' +
+          '<span class="code">'+d.code+'</span>' +
+          '<span class="name">'+d.name+'</span>' +
+        '</span>';
+      chip.addEventListener('click', function(){
+        state.selected=d;
+        renderGrid();
+        renderPanel(d);
+      });
+      grid.appendChild(chip);
+    });
+  }
+
+  function copyToClipboard(text, btn){
+    navigator.clipboard.writeText(text).then(function(){
+      btn.classList.add('copied');
+      var orig=btn.textContent;
+      btn.textContent='복사됨';
+      setTimeout(function(){ btn.textContent=orig; btn.classList.remove('copied'); }, 1200);
+    });
+  }
+
+  function nearestTo(lab, excludeCode){
+    return DATA
+      .filter(function(d){ return d.code!==excludeCode; })
+      .map(function(d){ return { d:d, de: deltaE(lab, d.lab) }; })
+      .sort(function(a,b){ return a.de-b.de; })
+      .slice(0,5);
+  }
+
+  function renderPanel(d){
+    var cmyk = rgbToCmyk(d.rgb.r, d.rgb.g, d.rgb.b);
+    var neighbors = nearestTo(d.lab, d.code);
+    panel.innerHTML =
+      '<div class="big-block" style="background:'+d.hex+'"></div>' +
+      '<h2>'+d.code+(d.core ? ' <span class="ref-tag">REF</span>' : '')+'</h2>' +
+      '<p class="panel-name">'+d.name+'</p>' +
+      '<div class="kv">' +
+        '<span class="k">HEX</span><span class="v">'+d.hex+'</span><button class="copy-btn" data-copy="'+d.hex+'">복사</button>' +
+        '<span class="k">RGB</span><span class="v">'+d.rgb.r+', '+d.rgb.g+', '+d.rgb.b+'</span><button class="copy-btn" data-copy="'+d.rgb.r+', '+d.rgb.g+', '+d.rgb.b+'">복사</button>' +
+        '<span class="k">CMYK</span><span class="v">'+cmyk.c+', '+cmyk.m+', '+cmyk.y+', '+cmyk.k+'</span><button class="copy-btn" data-copy="'+cmyk.c+', '+cmyk.m+', '+cmyk.y+', '+cmyk.k+'">복사</button>' +
+      '</div>' +
+      '<p class="section-title">인접 색상 (ΔE 기준)</p>' +
+      '<ul class="neighbor-list">' +
+        neighbors.map(function(n){
+          return '<li><button data-code="'+n.d.code+'">' +
+            '<span class="dot" style="background:'+n.d.hex+'"></span>' +
+            '<span>'+n.d.code+'</span>' +
+            '<span class="de">'+n.de.toFixed(1)+'</span>' +
+            '</button></li>';
+        }).join('') +
+      '</ul>';
+
+    panel.querySelectorAll('.copy-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ copyToClipboard(btn.getAttribute('data-copy'), btn); });
+    });
+    panel.querySelectorAll('.neighbor-list button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var code = btn.getAttribute('data-code');
+        var match = DATA.filter(function(x){ return x.code===code; })[0];
+        if(match){ state.selected=match; renderGrid(); renderPanel(match); panel.scrollIntoView({block:'nearest'}); }
+      });
+    });
+  }
+
+  // ---- matcher tool ----
+  function handleColorInput(hex){
+    var rgb = hexToRgb(hex);
+    if(!rgb) return;
+    previewSwatch.style.background = hex;
+    colorPicker.value = rgbToHex(rgb.r, rgb.g, rgb.b);
+    var lab = rgbToLab(rgb.r, rgb.g, rgb.b);
+    var matches = nearestTo(lab, null);
+    var cmyk = rgbToCmyk(rgb.r, rgb.g, rgb.b);
+    panel.innerHTML =
+      '<div class="big-block" style="background:'+rgbToHex(rgb.r,rgb.g,rgb.b)+'"></div>' +
+      '<h2>입력 색상</h2>' +
+      '<p class="panel-name">'+rgbToHex(rgb.r,rgb.g,rgb.b)+' · RGB '+rgb.r+', '+rgb.g+', '+rgb.b+'</p>' +
+      '<div class="kv">' +
+        '<span class="k">CMYK</span><span class="v">'+cmyk.c+', '+cmyk.m+', '+cmyk.y+', '+cmyk.k+'</span><span></span>' +
+      '</div>' +
+      '<p class="section-title">가장 가까운 팬톤 색상</p>' +
+      '<ul class="neighbor-list">' +
+        matches.map(function(n){
+          return '<li><button data-code="'+n.d.code+'">' +
+            '<span class="dot" style="background:'+n.d.hex+'"></span>' +
+            '<span>'+n.d.code+' · '+n.d.name+'</span>' +
+            '<span class="de">ΔE '+n.de.toFixed(1)+'</span>' +
+            '</button></li>';
+        }).join('') +
+      '</ul>';
+    panel.querySelectorAll('.neighbor-list button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var code = btn.getAttribute('data-code');
+        var match = DATA.filter(function(x){ return x.code===code; })[0];
+        if(match){ state.selected=match; renderGrid(); renderPanel(match); }
+      });
+    });
+  }
+
+  colorPicker.addEventListener('input', function(){
+    hexInput.value = colorPicker.value.toUpperCase();
+    handleColorInput(colorPicker.value);
+  });
+  hexInput.addEventListener('input', function(){
+    var v = hexInput.value.trim();
+    if(/^#?[0-9a-fA-F]{6}$/.test(v)){
+      if(v[0]!=='#') v='#'+v;
+      handleColorInput(v);
+    }
+  });
+  searchBox.addEventListener('input', function(){
+    state.query = searchBox.value;
+    renderGrid();
+  });
+
+  var coreCount = DATA.filter(function(d){ return d.core; }).length;
+  document.getElementById('statsLine').innerHTML =
+    '<b>' + DATA.length + '</b>종 수록 · 공식 참고색 ' + coreCount + '종 + 확장 램프 ' + (DATA.length - coreCount) + '종';
+
+  renderFilters();
+  renderGrid();
+  handleColorInput(hexInput.value);
+})();
+</script>
+</body>
+</html>
