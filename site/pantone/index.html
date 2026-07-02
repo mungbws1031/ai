@@ -415,6 +415,255 @@
   @media (prefers-reduced-motion: reduce){
     .chip{transition:none;}
   }
+
+  .hidden{display:none !important;}
+
+  /* ---------- View tabs ---------- */
+  .view-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:22px;
+    border-bottom:1px solid var(--line);
+  }
+  .view-tabs button{
+    background:none;
+    border:none;
+    color:var(--muted);
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    padding:10px 4px;
+    margin-right:22px;
+    border-bottom:2px solid transparent;
+    margin-bottom:-1px;
+  }
+  .view-tabs button:hover{color:var(--text);}
+  .view-tabs button[aria-pressed="true"]{
+    color:var(--text);
+    border-bottom-color:var(--accent);
+    font-weight:700;
+  }
+
+  /* ---------- Score view ---------- */
+  .score-setup{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:16px;
+    margin-bottom:22px;
+  }
+  @media(min-width:760px){
+    .score-setup{grid-template-columns:1fr 1fr;}
+  }
+  .setup-group{
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+  }
+  .setup-label{
+    display:block;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--muted);
+    margin-bottom:10px;
+  }
+  .chip-select{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .chip-select button{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:12.5px;
+    padding:6px 12px;
+    border-radius:999px;
+  }
+  .chip-select button:hover{color:var(--text);border-color:var(--muted);}
+  .chip-select button[aria-pressed="true"]{
+    color:var(--bg);
+    background:var(--accent);
+    border-color:var(--accent);
+    font-weight:700;
+  }
+
+  .combo-builder{
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+    margin-bottom:22px;
+  }
+  .combo-slots{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:14px;
+    min-height:64px;
+  }
+  .combo-slot{
+    width:64px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+  }
+  .combo-slot .swatch{
+    width:64px;
+    height:64px;
+    border-radius:8px;
+    border:1px solid rgba(255,255,255,0.12);
+    position:relative;
+  }
+  .combo-slot .swatch button{
+    position:absolute;
+    top:-7px;right:-7px;
+    width:20px;height:20px;
+    border-radius:50%;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:11px;
+    line-height:1;
+    padding:0;
+  }
+  .combo-slot .swatch button:hover{color:var(--text);border-color:var(--muted);}
+  .combo-slot .lbl{
+    font-family:var(--mono);
+    font-size:9.5px;
+    color:var(--muted);
+    text-align:center;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    max-width:64px;
+  }
+  .combo-empty-hint{
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  .combo-add{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding-top:12px;
+    border-top:1px solid var(--line);
+  }
+  .combo-add input[type="color"]{
+    width:32px;height:32px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:none;
+    padding:0;
+  }
+  .combo-add input[type="text"]{
+    background:transparent;
+    border:1px solid var(--line);
+    border-radius:4px;
+    color:var(--text);
+    font-family:var(--mono);
+    font-size:13px;
+    padding:6px 10px;
+    width:110px;
+  }
+  .combo-add .hint{
+    font-size:11.5px;
+    color:var(--muted);
+  }
+  .add-to-combo-btn{
+    background:transparent;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    border-radius:4px;
+    font-size:11px;
+    font-family:var(--mono);
+    padding:5px 10px;
+    letter-spacing:0.02em;
+  }
+  .add-to-combo-btn:hover{background:var(--accent);color:var(--bg);}
+  .add-to-combo-btn:disabled{opacity:0.35;cursor:not-allowed;}
+
+  .score-result{
+    background:var(--bg-elevated);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:22px;
+  }
+  .score-result .placeholder{color:var(--muted);font-size:13px;line-height:1.6;}
+  .score-top{
+    display:flex;
+    align-items:center;
+    gap:22px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .score-ring{
+    width:96px;height:96px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:none;
+    font-family:var(--mono);
+  }
+  .score-ring .num{font-size:28px;font-weight:700;line-height:1;}
+  .score-ring .unit{font-size:10px;color:var(--muted);margin-top:2px;}
+  .score-verdict{
+    font-size:15px;
+    font-weight:600;
+    margin:0 0 6px;
+  }
+  .score-preview{
+    display:flex;
+    gap:4px;
+    margin-top:8px;
+  }
+  .score-preview span{
+    width:28px;height:28px;
+    border-radius:5px;
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  .score-bars{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .score-bar-row{
+    display:grid;
+    grid-template-columns:100px 1fr 40px;
+    align-items:center;
+    gap:10px;
+    font-family:var(--mono);
+    font-size:11.5px;
+  }
+  .score-bar-row .bar-label{color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;font-size:10.5px;}
+  .score-bar-track{
+    height:8px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .score-bar-fill{
+    height:100%;
+    background:var(--accent);
+    border-radius:3px 0 0 3px;
+  }
+  .score-bar-row .bar-num{text-align:right;font-variant-numeric:tabular-nums;color:var(--text);}
+  .score-tip{
+    margin-top:18px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:12.5px;
+    color:var(--muted);
+    line-height:1.6;
+  }
 </style>
 </head>
 <body>
@@ -435,28 +684,63 @@
     </div>
   </header>
 
-  <div class="search-row">
-    <input type="search" id="searchBox" placeholder="이름 또는 코드로 검색 (예: 186, Marsala, Navy)">
-    <span class="count" id="resultCount"></span>
+  <div class="view-tabs" id="viewTabs">
+    <button data-view="browse" aria-pressed="true">컬러 탐색</button>
+    <button data-view="score">조합 스코어</button>
   </div>
 
-  <div class="filters" id="systemFilters"></div>
-  <div class="filters" id="familyFilters"></div>
+  <div id="browseView">
+    <div class="search-row">
+      <input type="search" id="searchBox" placeholder="이름 또는 코드로 검색 (예: 186, Marsala, Navy)">
+      <span class="count" id="resultCount"></span>
+    </div>
 
-  <div class="layout">
-    <div class="grid" id="grid"></div>
+    <div class="filters" id="systemFilters"></div>
+    <div class="filters" id="familyFilters"></div>
 
-    <aside class="panel" id="panel">
-      <p class="placeholder">색상을 선택하면 HEX / RGB / CMYK 값과 인접 색상이 여기에 표시됩니다.</p>
-    </aside>
-  </div>
+    <div class="layout">
+      <div class="grid" id="grid"></div>
+
+      <aside class="panel" id="panel">
+        <p class="placeholder">색상을 선택하면 HEX / RGB / CMYK 값과 인접 색상이 여기에 표시됩니다.</p>
+      </aside>
+    </div>
 
     <footer class="disclaimer">
-    <strong style="color:var(--text)">●</strong> 표시가 있는 색상은 팬톤·RAL이 실제로 고유 이름을 붙인 색입니다. 마커가 없는 색상도 <b>전부 실제 팬톤 코드와 색상값</b>이며, 다만 이름이 따로 없어 색조·명도로 자동 설명명을 붙였을 뿐입니다.<br><br>
-    PANTONE Solid Coated 3,219색은 Adobe가 라이선스해 배포하는 공식 컬러북의 Lab 색상값을 표준 변환식(Lab→XYZ(D50)→Bradford 색순응→XYZ(D65)→sRGB)으로 직접 계산해 넣었습니다 — 특정 색만 골라 웹에서 검색한 값이 아니라 전체 라이브러리를 동일한 파이프라인으로 일괄 변환했기 때문에 값끼리 서로 어긋나지 않습니다. 여기에 팬톤 컬러 오브 더 이어로 유명한 TCX 6종(Marsala·Ultra Violet 등, 개별 출처 대조 완료)을 더했습니다.<br><br>
-    <b style="color:var(--text)">제품 도색(플라스틱 사출·금속 도장) 용도라면</b> PANTONE보다 <b>RAL Classic</b>을 실제 발주 기준으로 사용하는 경우가 많습니다 — 상단에서 "RAL Classic (도색)" 컬렉션을 선택한 뒤 HEX를 입력하면 가장 가까운 RAL 코드를 찾아줍니다. 메탈릭 색상은 잉크의 금속 안료 특성상 화면(sRGB)으로는 실제 광택·반사를 재현할 수 없다는 점도 참고하세요.<br><br>
-    모든 값은 모니터·브라우저 설정 및 Lab→sRGB 변환 방식에 따라 실제 인쇄물과 차이가 있을 수 있으며, 실물 색상 승인에는 반드시 공식 PANTONE/RAL 컬러 가이드 실물 대조를 거치세요. PANTONE®은 Pantone LLC의, RAL®은 RAL gGmbH의 등록 상표입니다.
-  </footer>
+      <strong style="color:var(--text)">●</strong> 표시가 있는 색상은 팬톤·RAL이 실제로 고유 이름을 붙인 색입니다. 마커가 없는 색상도 <b>전부 실제 팬톤 코드와 색상값</b>이며, 다만 이름이 따로 없어 색조·명도로 자동 설명명을 붙였을 뿐입니다.<br><br>
+      PANTONE Solid Coated 3,219색은 Adobe가 라이선스해 배포하는 공식 컬러북의 Lab 색상값을 표준 변환식(Lab→XYZ(D50)→Bradford 색순응→XYZ(D65)→sRGB)으로 직접 계산해 넣었습니다 — 특정 색만 골라 웹에서 검색한 값이 아니라 전체 라이브러리를 동일한 파이프라인으로 일괄 변환했기 때문에 값끼리 서로 어긋나지 않습니다. 여기에 팬톤 컬러 오브 더 이어로 유명한 TCX 6종(Marsala·Ultra Violet 등, 개별 출처 대조 완료)을 더했습니다.<br><br>
+      <b style="color:var(--text)">제품 도색(플라스틱 사출·금속 도장) 용도라면</b> PANTONE보다 <b>RAL Classic</b>을 실제 발주 기준으로 사용하는 경우가 많습니다 — 상단에서 "RAL Classic (도색)" 컬렉션을 선택한 뒤 HEX를 입력하면 가장 가까운 RAL 코드를 찾아줍니다. 메탈릭 색상은 잉크의 금속 안료 특성상 화면(sRGB)으로는 실제 광택·반사를 재현할 수 없다는 점도 참고하세요.<br><br>
+      모든 값은 모니터·브라우저 설정 및 Lab→sRGB 변환 방식에 따라 실제 인쇄물과 차이가 있을 수 있으며, 실물 색상 승인에는 반드시 공식 PANTONE/RAL 컬러 가이드 실물 대조를 거치세요. PANTONE®은 Pantone LLC의, RAL®은 RAL gGmbH의 등록 상표입니다.
+    </footer>
+  </div>
+
+  <div id="scoreView" class="hidden">
+    <div class="score-setup">
+      <div class="setup-group">
+        <span class="setup-label">목적</span>
+        <div class="chip-select" id="purposeSelect"></div>
+      </div>
+      <div class="setup-group">
+        <span class="setup-label">느낌</span>
+        <div class="chip-select" id="moodSelect"></div>
+      </div>
+    </div>
+
+    <div class="combo-builder">
+      <span class="setup-label">내 색상 조합 (2~5개)</span>
+      <div class="combo-slots" id="comboSlots"></div>
+      <div class="combo-add">
+        <input type="color" id="comboColorPicker" value="#3d6b8c" aria-label="조합 색상 선택">
+        <input type="text" id="comboHexInput" placeholder="#RRGGBB 입력 후 Enter" maxlength="7">
+        <span class="hint">또는 "컬러 탐색" 탭에서 색을 고른 뒤 상세 패널의 "+ 조합에 추가"를 누르세요.</span>
+      </div>
+    </div>
+
+    <div class="score-result" id="scoreResult">
+      <p class="placeholder">목적·느낌을 고르고 색상을 2개 이상 추가하면 점수가 나옵니다.</p>
+    </div>
+  </div>
+
   <p class="credit">팬톤 컬러를 고르는 툴입니다 · 만든이: 노미희</p>
 </div>
 
@@ -3972,6 +4256,15 @@
   var hexInput = document.getElementById('hexInput');
   var colorPicker = document.getElementById('colorPicker');
   var previewSwatch = document.getElementById('previewSwatch');
+  var viewTabsEl = document.getElementById('viewTabs');
+  var browseViewEl = document.getElementById('browseView');
+  var scoreViewEl = document.getElementById('scoreView');
+  var purposeSelectEl = document.getElementById('purposeSelect');
+  var moodSelectEl = document.getElementById('moodSelect');
+  var comboSlotsEl = document.getElementById('comboSlots');
+  var comboHexInput = document.getElementById('comboHexInput');
+  var comboColorPicker = document.getElementById('comboColorPicker');
+  var scoreResultEl = document.getElementById('scoreResult');
 
   // ---- color math ----
   function hexToRgb(hex){
@@ -4225,6 +4518,7 @@
         '<span class="k">RGB</span><span class="v">'+d.rgb.r+', '+d.rgb.g+', '+d.rgb.b+'</span><button class="copy-btn" data-copy="'+d.rgb.r+', '+d.rgb.g+', '+d.rgb.b+'">복사</button>' +
         '<span class="k">CMYK</span><span class="v">'+cmyk.c+', '+cmyk.m+', '+cmyk.y+', '+cmyk.k+'</span><button class="copy-btn" data-copy="'+cmyk.c+', '+cmyk.m+', '+cmyk.y+', '+cmyk.k+'">복사</button>' +
       '</div>' +
+      '<button class="add-to-combo-btn" data-addhex="'+d.hex+'" style="margin-bottom:16px">+ 조합에 추가</button>' +
       '<p class="section-title">인접 색상 (ΔE 기준)</p>' +
       '<ul class="neighbor-list">' +
         neighbors.map(function(n){
@@ -4240,6 +4534,7 @@
     panel.querySelectorAll('.copy-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ copyToClipboard(btn.getAttribute('data-copy'), btn); });
     });
+    wireAddToCombo(panel);
     panel.querySelectorAll('.neighbor-list button').forEach(function(btn){
       btn.addEventListener('click', function(){
         var code = btn.getAttribute('data-code');
@@ -4267,6 +4562,7 @@
       '<div class="kv">' +
         '<span class="k">CMYK</span><span class="v">'+cmyk.c+', '+cmyk.m+', '+cmyk.y+', '+cmyk.k+'</span><span></span>' +
       '</div>' +
+      '<button class="add-to-combo-btn" data-addhex="'+rgbToHex(rgb.r,rgb.g,rgb.b)+'" style="margin-bottom:16px">+ 조합에 추가</button>' +
       '<p class="section-title">가장 가까운 색상 · '+scopeLabel+'</p>' +
       '<ul class="neighbor-list">' +
         matches.map(function(n){
@@ -4278,6 +4574,7 @@
             '</button></li>';
         }).join('') +
       '</ul>';
+    wireAddToCombo(panel);
     panel.querySelectorAll('.neighbor-list button').forEach(function(btn){
       btn.addEventListener('click', function(){
         var code = btn.getAttribute('data-code');
@@ -4303,6 +4600,214 @@
     renderGrid();
   });
 
+  // ---- View tabs ----
+  viewTabsEl.querySelectorAll('button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var view = btn.getAttribute('data-view');
+      viewTabsEl.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', b===btn ? 'true':'false'); });
+      browseViewEl.classList.toggle('hidden', view!=='browse');
+      scoreViewEl.classList.toggle('hidden', view!=='score');
+    });
+  });
+
+  // ---- Mood / Purpose color-combination scoring ----
+  // sat/light/contrast are 0-1 scale; warmth is -1(cool)..+1(warm), derived from hue.
+  var PURPOSES = [
+    {key:'logo', label:'로고·브랜딩', sat:0.65, light:0.45, contrast:0.40, idealCount:3},
+    {key:'package', label:'패키지 디자인', sat:0.60, light:0.55, contrast:0.35, idealCount:4},
+    {key:'interior', label:'인테리어·공간', sat:0.30, light:0.60, contrast:0.20, idealCount:4},
+    {key:'ui', label:'앱·웹 UI', sat:0.50, light:0.55, contrast:0.45, idealCount:4},
+    {key:'paint', label:'제품 도색', sat:0.35, light:0.50, contrast:0.25, idealCount:3},
+    {key:'fashion', label:'패션·텍스타일', sat:0.55, light:0.55, contrast:0.30, idealCount:5}
+  ];
+  var MOODS = [
+    {key:'calm', label:'차분한', sat:0.35, light:0.62, warmth:-0.1, contrast:0.18},
+    {key:'trust', label:'신뢰감있는', sat:0.55, light:0.42, warmth:-0.5, contrast:0.30},
+    {key:'playful', label:'발랄한', sat:0.80, light:0.60, warmth:0.4, contrast:0.45},
+    {key:'luxury', label:'럭셔리한', sat:0.65, light:0.28, warmth:0.1, contrast:0.35},
+    {key:'natural', label:'내추럴한', sat:0.40, light:0.50, warmth:0.3, contrast:0.25},
+    {key:'minimal', label:'미니멀한', sat:0.15, light:0.70, warmth:0, contrast:0.15},
+    {key:'warm', label:'따뜻한', sat:0.65, light:0.55, warmth:0.7, contrast:0.30},
+    {key:'cool', label:'시원한', sat:0.55, light:0.55, warmth:-0.7, contrast:0.30},
+    {key:'bold', label:'강렬한', sat:0.85, light:0.42, warmth:0.2, contrast:0.55},
+    {key:'romantic', label:'로맨틱한', sat:0.45, light:0.72, warmth:0.15, contrast:0.20}
+  ];
+
+  var scoreState = { purpose:PURPOSES[0].key, mood:MOODS[0].key, combo:[] };
+
+  function renderChipSelect(container, items, selectedKey, onPick){
+    container.innerHTML='';
+    items.forEach(function(item){
+      var btn=document.createElement('button');
+      btn.textContent=item.label;
+      btn.setAttribute('aria-pressed', item.key===selectedKey ? 'true':'false');
+      btn.addEventListener('click', function(){ onPick(item.key); });
+      container.appendChild(btn);
+    });
+  }
+  function renderPurposeMood(){
+    renderChipSelect(purposeSelectEl, PURPOSES, scoreState.purpose, function(key){ scoreState.purpose=key; renderPurposeMood(); renderScore(); });
+    renderChipSelect(moodSelectEl, MOODS, scoreState.mood, function(key){ scoreState.mood=key; renderPurposeMood(); renderScore(); });
+  }
+
+  function addColorToCombo(hex){
+    var rgb = hexToRgb(hex);
+    if(!rgb || scoreState.combo.length>=5) return;
+    scoreState.combo.push(rgbToHex(rgb.r,rgb.g,rgb.b));
+    renderCombo();
+    renderScore();
+  }
+  function removeFromCombo(idx){
+    scoreState.combo.splice(idx,1);
+    renderCombo();
+    renderScore();
+  }
+  function renderCombo(){
+    comboSlotsEl.innerHTML='';
+    if(scoreState.combo.length===0){
+      var hint=document.createElement('p');
+      hint.className='combo-empty-hint';
+      hint.textContent='아직 추가된 색상이 없습니다. 아래에서 HEX를 입력하거나 컬러 탐색 탭에서 색을 골라 추가하세요.';
+      comboSlotsEl.appendChild(hint);
+      return;
+    }
+    scoreState.combo.forEach(function(hex, idx){
+      var slot=document.createElement('div');
+      slot.className='combo-slot';
+      slot.innerHTML =
+        '<span class="swatch" style="background:'+hex+'"><button data-idx="'+idx+'" aria-label="제거">×</button></span>' +
+        '<span class="lbl">'+hex+'</span>';
+      slot.querySelector('button').addEventListener('click', function(){ removeFromCombo(idx); });
+      comboSlotsEl.appendChild(slot);
+    });
+  }
+  function wireAddToCombo(root){
+    root.querySelectorAll('.add-to-combo-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ addColorToCombo(btn.getAttribute('data-addhex')); });
+    });
+  }
+
+  comboColorPicker.addEventListener('input', function(){ addColorToCombo(comboColorPicker.value); });
+  comboHexInput.addEventListener('keydown', function(e){
+    if(e.key!=='Enter') return;
+    var v = comboHexInput.value.trim();
+    if(/^#?[0-9a-fA-F]{6}$/.test(v)){
+      if(v[0]!=='#') v='#'+v;
+      addColorToCombo(v);
+      comboHexInput.value='';
+    }
+  });
+
+  // ---- Scoring math ----
+  function hueWarmth(h){ return Math.cos((h-30)*Math.PI/180); } // +1 near orange(30°), -1 near cyan-blue(210°)
+  function circularHueDiff(h1,h2){ var d=Math.abs(h1-h2)%360; return d>180 ? 360-d : d; }
+
+  function paletteStats(hexes){
+    var hsls = hexes.map(function(hex){ var rgb=hexToRgb(hex); return rgbToHsl(rgb.r,rgb.g,rgb.b); });
+    var sats = hsls.map(function(c){return c.s;});
+    var lights = hsls.map(function(c){return c.l;});
+    var avgSat = sats.reduce(function(a,b){return a+b;},0)/sats.length;
+    var avgLight = lights.reduce(function(a,b){return a+b;},0)/lights.length;
+    var contrast = Math.max.apply(null,lights) - Math.min.apply(null,lights);
+    var wNum=0, wDen=0;
+    hsls.forEach(function(c){
+      var w = c.s<0.08 ? 0.05 : c.s; // near-neutral colors barely swing warm/cool perception
+      wNum += hueWarmth(c.h)*w; wDen += w;
+    });
+    var avgWarmth = wDen>0 ? wNum/wDen : 0;
+    var chromaticHues = hsls.filter(function(c){return c.s>=0.15;}).map(function(c){return c.h;});
+    return { avgSat:avgSat, avgLight:avgLight, contrast:contrast, avgWarmth:avgWarmth, chromaticHues:chromaticHues };
+  }
+
+  // Distance to the nearest classic hue-harmony angle (mono/analogous/triadic/
+  // split-complementary/complementary), averaged over every chromatic pair.
+  function harmonyScoreFor(stats){
+    var hues = stats.chromaticHues;
+    if(hues.length<2) return 90; // single hue or all-neutral palette: inherently harmonious
+    var templates=[0,30,60,120,150,180], sigma=16, total=0, count=0;
+    for(var i=0;i<hues.length;i++){
+      for(var j=i+1;j<hues.length;j++){
+        var d=circularHueDiff(hues[i],hues[j]);
+        var best=0;
+        templates.forEach(function(t){
+          var n=Math.exp(-((d-t)*(d-t))/(2*sigma*sigma));
+          if(n>best) best=n;
+        });
+        total+=best; count++;
+      }
+    }
+    return Math.round((count?total/count:1)*100);
+  }
+
+  function targetScore(stats, target, useWarmth){
+    var parts=[Math.abs(stats.avgSat-target.sat), Math.abs(stats.avgLight-target.light), Math.abs(stats.contrast-target.contrast)];
+    if(useWarmth) parts.push(Math.abs(stats.avgWarmth-target.warmth)/2);
+    var avgD = parts.reduce(function(a,b){return a+b;},0)/parts.length;
+    return Math.max(0, Math.min(100, Math.round(100 - avgD*130)));
+  }
+
+  function verdictFor(score){
+    if(score>=85) return '완벽한 조합이에요';
+    if(score>=70) return '잘 어울려요';
+    if(score>=55) return '무난해요 — 조금 더 다듬을 여지가 있어요';
+    return '느낌·목적과는 다소 안 맞아요';
+  }
+
+  function tipFor(stats, mood, purpose, subs){
+    var lowest = Object.keys(subs).reduce(function(a,b){ return subs[a]<=subs[b]?a:b; });
+    if(lowest==='harmony'){
+      return '색상 사이 색상환 각도를 조정해보세요 — 단색(모노톤), 유사색(30~60°), 보색(180°) 관계를 만들면 조화 점수가 올라갑니다.';
+    }
+    if(lowest==='mood'){
+      var satDir = stats.avgSat < mood.sat ? '채도를 높이면' : '채도를 낮추면';
+      var lightDir = stats.avgLight < mood.light ? '더 밝게' : '더 어둡게';
+      return '"'+mood.label+'" 느낌에 가까워지려면 '+satDir+' 좋고, 전체적으로 '+lightDir+' 조정해보세요.';
+    }
+    var satDir2 = stats.avgSat < purpose.sat ? '채도를 높이면' : '채도를 낮추면';
+    return '"'+purpose.label+'" 용도에 맞추려면 '+satDir2+' 더 어울립니다. 색상 수는 보통 '+purpose.idealCount+'개 안팎이 적당해요.';
+  }
+
+  function barRow(label, val){
+    return '<div class="score-bar-row">' +
+      '<span class="bar-label">'+label+'</span>' +
+      '<span class="score-bar-track"><span class="score-bar-fill" style="width:'+val+'%"></span></span>' +
+      '<span class="bar-num">'+val+'</span>' +
+    '</div>';
+  }
+
+  function renderScore(){
+    var mood = MOODS.filter(function(m){return m.key===scoreState.mood;})[0];
+    var purpose = PURPOSES.filter(function(p){return p.key===scoreState.purpose;})[0];
+    if(scoreState.combo.length<2){
+      scoreResultEl.innerHTML = '<p class="placeholder">목적·느낌을 고르고 색상을 2개 이상 추가하면 점수가 나옵니다. (현재 '+scoreState.combo.length+'개)</p>';
+      return;
+    }
+    var stats = paletteStats(scoreState.combo);
+    var harmony = harmonyScoreFor(stats);
+    var moodScore = targetScore(stats, mood, true);
+    var purposeScore = targetScore(stats, purpose, false);
+    var total = Math.round(harmony*0.4 + moodScore*0.3 + purposeScore*0.3);
+    var ringColor = total>=85 ? '#2fa39a' : total>=70 ? '#4a90d9' : total>=55 ? '#e0a82e' : '#c1121c';
+    var subs = { harmony:harmony, mood:moodScore, purpose:purposeScore };
+    scoreResultEl.innerHTML =
+      '<div class="score-top">' +
+        '<div class="score-ring" style="border:5px solid '+ringColor+'">' +
+          '<div><div class="num">'+total+'</div><div class="unit">/ 100</div></div>' +
+        '</div>' +
+        '<div>' +
+          '<p class="score-verdict">'+verdictFor(total)+'</p>' +
+          '<p class="panel-name" style="margin:0">목적: '+purpose.label+' · 느낌: '+mood.label+'</p>' +
+          '<div class="score-preview">'+scoreState.combo.map(function(h){return '<span style="background:'+h+'"></span>';}).join('')+'</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="score-bars">' +
+        barRow('색상 조화', harmony) +
+        barRow('느낌 적합도', moodScore) +
+        barRow('목적 적합도', purposeScore) +
+      '</div>' +
+      '<p class="score-tip"><b style="color:var(--text)">TIP · </b>'+tipFor(stats, mood, purpose, subs)+'</p>';
+  }
+
   var pantoneCount = DATA.filter(function(d){ return d.sys==='pantone'; }).length;
   var ralCount = DATA.filter(function(d){ return d.sys==='ral'; }).length;
   var metallicCount = DATA.filter(function(d){ return d.sys==='metallic'; }).length;
@@ -4314,6 +4819,9 @@
   renderFilters();
   renderGrid();
   handleColorInput(hexInput.value);
+  renderPurposeMood();
+  renderCombo();
+  renderScore();
 })();
 </script>
 </body>
