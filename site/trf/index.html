@@ -52,6 +52,7 @@ select{background:#f4f7ff;color:#1e2540;border:1px solid #c8d0e8;border-radius:4
   <div class="tab" onclick="switchTab(9)">⑨ 기구 레이아웃</div>
   <div class="tab" onclick="switchTab(10)">⑩ 다채널 격리</div>
   <div class="tab" onclick="switchTab(11)">⑪ 하우징 재질</div>
+  <div class="tab" onclick="switchTab(12)">⑫ 권장 배열</div>
 </div>
 
 <!-- TAB1: TRF 원리 -->
@@ -655,6 +656,83 @@ function updateProgress() {
   </div>
 </div>
 
+<!-- TAB12: 권장 배열 -->
+<div id="t12" class="tabcontent">
+<div class="tab-purpose"><b>📌 이 탭이 뭐 하는 곳이에요?</b>지금까지 확인한 모든 광학 원칙(무광 흑색 하우징·채널 격벽·스팟 뒤 국소 반사판·여기광 배플·근접 집광)을 하나로 종합한 5채널 소변 호르몬 리더의 권장 설계 배열도예요. 실제 기구 도면을 그릴 때 출발점으로 쓰세요.</div><div style="background:#fff8ee;border-left:4px solid #e0a040;border-radius:0 8px 8px 0;padding:10px 14px;margin:0 0 12px 0;font-size:13px;color:#5a4a2a;line-height:1.7"><b style="color:#c07818">🎯 왜 이걸 해야 하나요?</b> 부품 하나하나가 왜 그 위치에 오는지 근거를 담았습니다. ① 신호는 최대·배경은 최소, ② 여기광과 신호광 경로 분리, ③ 채널 독립성 — 세 원칙의 물리적 구현이에요.</div>
+  <div class="row">
+    <div class="card" style="flex:1;min-width:340px">
+      <h3>광학 배열도 — 단면 + 5채널 평면</h3>
+      <svg width="100%" viewBox="0 0 680 566" style="font-family:'Segoe UI',sans-serif;background:#fff;border-radius:6px" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="arr12" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1D9E75"/></marker></defs>
+      <text x="40" y="26" style="font-size:15px;fill:#2060c0;font-weight:700">5채널 소변 호르몬 TRF 리더 — 광학 배열도</text>
+      <text x="40" y="56" style="font-size:13px;fill:#2060c0;font-weight:600">① 단면도 — 한 채널 측면</text>
+      <g fill="#5f6788"><rect x="104" y="94" width="452" height="12" rx="2"/><rect x="104" y="94" width="12" height="166" rx="2"/><rect x="544" y="94" width="12" height="166" rx="2"/><rect x="302" y="106" width="9" height="78" rx="1"/></g>
+      <rect x="110" y="250" width="440" height="18" rx="2" fill="#e3e7f4" stroke="#a8b0cc" stroke-width="1"/>
+      <text x="120" y="88" style="font-size:11px;fill:#6878a8">무광 흑색 하우징 (내벽 흡광 코팅)</text>
+      <text x="316" y="180" style="font-size:11px;fill:#6878a8">배플</text>
+      <text x="116" y="245" style="font-size:11px;fill:#6878a8">LFA 스트립 (멤브레인)</text>
+      <polygon points="150,128 324,249 356,249" fill="#7a52d0" opacity="0.13"/>
+      <line x1="150" y1="128" x2="324" y2="249" stroke="#7a52d0" stroke-width="1.5"/>
+      <line x1="150" y1="128" x2="356" y2="249" stroke="#7a52d0" stroke-width="1.5"/>
+      <g fill="#7a52d0"><circle cx="150" cy="118" r="11"/><rect x="176" y="140" width="8" height="20" rx="1"/></g>
+      <text x="118" y="104" style="font-size:11px;fill:#6878a8">UV LED 340</text>
+      <text x="150" y="176" style="font-size:11px;fill:#6878a8">여기필터</text>
+      <text x="200" y="214" style="font-size:11px;fill:#6878a8">입사 30–45°</text>
+      <g fill="#2272cc"><rect x="322" y="150" width="36" height="18" rx="2"/><rect x="320" y="172" width="40" height="7" rx="1"/></g>
+      <text x="364" y="162" style="font-size:11px;fill:#6878a8">PD</text>
+      <text x="364" y="181" style="font-size:11px;fill:#6878a8">발광필터 615</text>
+      <line x1="340" y1="249" x2="340" y2="184" stroke="#1D9E75" stroke-width="2" marker-end="url(#arr12)"/>
+      <rect x="322" y="247" width="36" height="22" rx="3" fill="none" stroke="#0f6e56" stroke-width="2"/>
+      <rect x="330" y="268" width="20" height="9" rx="1" fill="#1a8060"/>
+      <text x="366" y="277" style="font-size:11px;fill:#6878a8">국소 후면 반사판</text>
+      <line x1="374" y1="184" x2="374" y2="249" stroke="#888780" stroke-width="1"/><line x1="371" y1="184" x2="377" y2="184" stroke="#888780" stroke-width="1"/><line x1="371" y1="249" x2="377" y2="249" stroke="#888780" stroke-width="1"/>
+      <text x="382" y="220" style="font-size:11px;fill:#6878a8">d 3–5mm</text>
+      <text x="40" y="330" style="font-size:13px;fill:#2060c0;font-weight:600">② 평면도 — 5채널 배열 (위에서)</text>
+      <g fill="#5f6788"><rect x="197" y="346" width="10" height="158" rx="1"/><rect x="293" y="346" width="10" height="158" rx="1"/><rect x="389" y="346" width="10" height="158" rx="1"/><rect x="485" y="346" width="10" height="158" rx="1"/></g>
+      <text x="299" y="342" style="font-size:11px;fill:#6878a8" text-anchor="middle">격벽</text>
+      <g fill="none" stroke="#888780" stroke-width="1"><rect x="128" y="350" width="44" height="150" rx="2"/><rect x="224" y="350" width="44" height="150" rx="2"/><rect x="320" y="350" width="44" height="150" rx="2"/><rect x="416" y="350" width="44" height="150" rx="2"/><rect x="512" y="350" width="44" height="150" rx="2"/></g>
+      <g fill="#2272cc"><circle cx="150" cy="410" r="12"/><circle cx="246" cy="410" r="12"/><circle cx="342" cy="410" r="12"/><circle cx="438" cy="410" r="12"/><circle cx="534" cy="410" r="12"/></g>
+      <g fill="#7a52d0"><circle cx="150" cy="466" r="6"/><circle cx="246" cy="466" r="6"/><circle cx="342" cy="466" r="6"/><circle cx="438" cy="466" r="6"/><circle cx="534" cy="466" r="6"/></g>
+      <text x="150" y="368" style="font-size:11px;fill:#1e2540" text-anchor="middle">LH</text><text x="246" y="368" style="font-size:11px;fill:#1e2540" text-anchor="middle">FSH</text><text x="342" y="368" style="font-size:11px;fill:#1e2540" text-anchor="middle">E3G</text><text x="438" y="368" style="font-size:11px;fill:#1e2540" text-anchor="middle">PdG</text><text x="534" y="368" style="font-size:11px;fill:#1e2540" text-anchor="middle">대조</text>
+      <text x="150" y="384" style="font-size:11px;fill:#6878a8" text-anchor="middle">샌드</text><text x="246" y="384" style="font-size:11px;fill:#6878a8" text-anchor="middle">샌드</text><text x="342" y="384" style="font-size:11px;fill:#6878a8" text-anchor="middle">경쟁</text><text x="438" y="384" style="font-size:11px;fill:#6878a8" text-anchor="middle">경쟁</text><text x="534" y="384" style="font-size:11px;fill:#6878a8" text-anchor="middle">ctrl</text>
+      <line x1="150" y1="506" x2="246" y2="506" stroke="#888780" stroke-width="1"/><line x1="150" y1="503" x2="150" y2="509" stroke="#888780" stroke-width="1"/><line x1="246" y1="503" x2="246" y2="509" stroke="#888780" stroke-width="1"/>
+      <text x="198" y="520" style="font-size:11px;fill:#6878a8" text-anchor="middle">피치 4.0mm</text>
+      <rect x="40" y="540" width="14" height="14" rx="2" fill="#5f6788"/><text x="60" y="551" style="font-size:11px;fill:#6878a8">하우징·격벽</text>
+      <circle cx="205" cy="547" r="7" fill="#7a52d0"/><text x="217" y="551" style="font-size:11px;fill:#6878a8">여기광 UV</text>
+      <circle cx="330" cy="547" r="7" fill="#2272cc"/><text x="342" y="551" style="font-size:11px;fill:#6878a8">신호·PD·필터</text>
+      <rect x="470" y="540" width="14" height="14" rx="2" fill="#1a8060"/><text x="490" y="551" style="font-size:11px;fill:#6878a8">후면 반사판</text>
+      </svg>
+    </div>
+  </div>
+  <div class="row">
+    <div class="card" style="flex:1;min-width:300px">
+      <h3>권장 설계 사양</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <tr style="background:#f0f4ff;color:#2060c0"><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #dde2f0">요소</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #dde2f0">권장값</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #dde2f0">근거</th></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">PD–스트립 거리 d</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">3–5 mm</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">가까울수록 집광 η↑ → 저농도 대응</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">PD 수광경 r</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">2–3 mm</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">입체각↑ = 형광만 더 모음</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">여기 LED 입사각</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">30–45°</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">정반사가 PD로 직접 안 들어가게</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">Ex / Em 필터</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">340 / 615±10 (OD≥5)</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">여기광 차단, 형광만 통과</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">배플(차광벽)</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">LED↔PD 시선 차단</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">스팟 조명은 통과, 직접광만 차단</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">하우징 내벽</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">무광 흑색 &lt;5%</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">적분구 미광 누적 방지(√B↓)</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">국소 후면 반사판</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">스팟 뒤 백색 백킹</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">신호 ~1.5–2×, 위치정보 보존</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">채널 피치</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">4.0 mm</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">레인폭 + 격벽 + 광학 여유</td></tr>
+        <tr><td style="padding:6px 8px;border-bottom:1px solid #edf0fa">광학 격벽</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#1a8040;font-weight:700">두께 0.8–1mm</td><td style="padding:6px 8px;border-bottom:1px solid #edf0fa;color:#6878a8">인접 채널 누화 차단 (Tab⑩)</td></tr>
+        <tr><td style="padding:6px 8px">분석 방식</td><td style="padding:6px 8px;color:#1a8040;font-weight:700">샌드위치 / 경쟁</td><td style="padding:6px 8px;color:#6878a8">LH·FSH 샌드 / E3G·PdG 경쟁 (Tab③⑧)</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="row">
+    <div class="card" style="flex:1">
+      <h3>핵심 배치 논리 3가지</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px;background:#f0fff4;border-left:3px solid #1a8040;border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px;color:#1a4030;line-height:1.6"><b>① 신호는 최대·배경은 최소</b><br>근접 PD + 국소 후면 반사판(신호↑) + 무광 흑색 하우징(배경↓). 반사는 스팟 뒤에만, 벽은 흡광.</div>
+        <div style="flex:1;min-width:200px;background:#f4f0ff;border-left:3px solid #6040c0;border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px;color:#3a2880;line-height:1.6"><b>② 여기광·신호광 경로 분리</b><br>LED는 비스듬히, PD는 수직, 그 사이 배플. 정반사·직접광이 PD에 안 닿게.</div>
+        <div style="flex:1;min-width:200px;background:#eef4ff;border-left:3px solid #2060c0;border-radius:0 6px 6px 0;padding:10px 12px;font-size:12px;color:#1e3a80;line-height:1.6"><b>③ 채널 독립성</b><br>레인마다 격벽 + 개별 LED/PD. 반사 벽이면 이 격리가 무너짐(누화 100%).</div>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 // ── 탭 전환 ─────────────────────────────────────────────────
 function switchTab(n) {
