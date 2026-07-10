@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore } from '@/lib/store-context';
 import { dateKey } from '@/lib/clock';
 import { isGoodDay } from '@/lib/streak';
@@ -57,6 +57,19 @@ export default function CalendarPage() {
   const selMeds = state.medLogs.filter((l) => l.date === selected && (l.state === 'taken' || l.state === 'recovered')).length;
   const selSleep = state.sleepLogs.find((l) => l.date === selected);
 
+  // 좌우 스와이프로 월 이동
+  const touchX = useRef<number | null>(null);
+  function onTouchStart(e: React.TouchEvent) {
+    touchX.current = e.changedTouches[0].clientX;
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    if (touchX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    touchX.current = null;
+    if (Math.abs(dx) < 50) return;
+    setCursor(new Date(year, month + (dx < 0 ? 1 : -1), 1)); // 왼쪽=다음달, 오른쪽=이전달
+  }
+
   return (
     <div className="px-4">
       <PageHeader title="달력" subtitle="하루하루의 흐름을 한눈에." />
@@ -79,6 +92,8 @@ export default function CalendarPage() {
         </button>
       </div>
 
+      {/* 스와이프 영역: 좌우로 밀면 월 이동 */}
+      <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} className="touch-pan-y select-none">
       {/* 요일 헤더 */}
       <div className="grid grid-cols-7 text-center text-xs text-eddie-muted">
         {WD.map((w, i) => (
@@ -114,6 +129,7 @@ export default function CalendarPage() {
           );
         })}
       </div>
+      </div>
 
       {/* 범례 */}
       <div className="mt-2 flex justify-center gap-3 text-[11px] text-eddie-muted">
@@ -147,11 +163,15 @@ function DayDetail({
   sleep?: string;
   events: ScheduleEvent[];
 }) {
-  const { addEvent } = useStore();
+  const { addEvent, pushToast } = useStore();
   const [title, setTitle] = useState('');
   const [time, setTime] = useState('');
   const [leads, setLeads] = useState<number[]>([]);
+  const [formDate, setFormDate] = useState(date);
   const [m, dd] = date.split('-').slice(1);
+
+  // 다른 날짜를 선택하면 입력 폼의 날짜도 그 날짜로 맞춘다.
+  useEffect(() => setFormDate(date), [date]);
 
   function toggleLead(n: number) {
     setLeads((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n].sort((a, b) => b - a)));
@@ -183,20 +203,32 @@ function DayDetail({
         onSubmit={(e) => {
           e.preventDefault();
           const v = title.trim();
-          if (!v) return;
-          addEvent(date, v, time || undefined, leads);
+          if (!v || !formDate) return;
+          addEvent(formDate, v, time || undefined, leads);
+          if (formDate !== date) {
+            const [, fm, fd] = formDate.split('-');
+            pushToast(`${parseInt(fm, 10)}월 ${parseInt(fd, 10)}일에 등록했어 🗓️`);
+          }
           setTitle('');
           setTime('');
           setLeads([]);
+          setFormDate(date);
         }}
       >
         <input className="field" placeholder="일정 추가 (예: 병원 예약)" value={title} onChange={(e) => setTitle(e.target.value)} />
         <div className="flex gap-2">
-          <input className="field" type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="시각(선택)" />
-          <button type="submit" className="btn-primary text-sm">
-            추가
-          </button>
+          <input
+            className="field flex-1"
+            type="date"
+            value={formDate}
+            onChange={(e) => setFormDate(e.target.value)}
+            aria-label="날짜"
+          />
+          <input className="field w-28" type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="시각(선택)" />
         </div>
+        <button type="submit" className="btn-primary text-sm">
+          추가
+        </button>
         <div>
           <p className="mb-1 text-xs text-eddie-muted">미리 알림 (며칠 전, 선택)</p>
           <div className="flex gap-2">
