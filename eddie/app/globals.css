@@ -55,18 +55,29 @@ body {
     @apply tap-btn bg-transparent text-eddie-muted hover:text-eddie-ink;
   }
   .card {
-    @apply rounded-xl2 border border-eddie-line bg-eddie-surface p-5 shadow-sm;
+    @apply rounded-xl2 border border-eddie-line/70 bg-eddie-surface p-5;
+    box-shadow:
+      0 1px 2px rgba(20, 30, 30, 0.04),
+      0 10px 30px -18px rgba(20, 40, 40, 0.18);
   }
   .dark .card {
     @apply border-neutral-700 bg-neutral-800;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   }
   .field {
-    @apply min-h-tap w-full rounded-xl border border-eddie-line bg-white px-4 text-base outline-none focus:border-eddie-primary;
+    @apply min-h-tap w-full rounded-xl border border-eddie-line bg-white px-4 text-base outline-none transition-shadow focus:border-eddie-primary focus:ring-4 focus:ring-eddie-primary/15;
   }
   .dark .field {
     @apply border-neutral-600 bg-neutral-900 text-white;
   }
   .chip {
     @apply min-h-tap inline-flex items-center justify-center rounded-full border px-4 text-sm font-medium;
+  }
+  /* 균일한 아이콘 버튼 (행 안의 보조 동작) */
+  .icon-btn {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base text-eddie-muted transition-transform active:scale-90;
+  }
+  .icon-btn:hover {
+    @apply bg-eddie-line/50;
   }
 }
