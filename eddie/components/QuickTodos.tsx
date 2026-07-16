@@ -27,6 +27,7 @@ export default function QuickTodos() {
   const [text, setText] = useState('');
   const [remindAt, setRemindAt] = useState('');
   const [focus, setFocus] = useState<Todo | null>(null);
+  const [showTime, setShowTime] = useState(false);
   const [listening, setListening] = useState(false);
   const recRef = useRef<unknown>(null);
   // 핸즈프리("에디야" 호출)
@@ -239,115 +240,114 @@ export default function QuickTodos() {
           submit();
         }}
       >
-        <div className="flex gap-2">
-          <input
-            className="field flex-1"
-            placeholder="떠오른 일 적어두기 (예: 다음주 화요일 치과)"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            aria-label="할 일 입력"
-            enterKeyHint="done"
-          />
-          <button
-            type="button"
-            onClick={toggleVoice}
-            className={`min-h-tap shrink-0 rounded-xl2 px-3 text-lg ${
-              listening ? 'animate-pulse bg-eddie-accent text-white' : 'bg-eddie-primary-soft text-eddie-primary'
-            }`}
-            aria-label={listening ? '음성 입력 중지' : '음성으로 담기'}
-            title="음성으로 담기"
-          >
-            🎙️
-          </button>
-          <button type="submit" className="btn-primary shrink-0 text-sm" disabled={!text.trim()}>
+        <div className="relative flex gap-2">
+          <div className="relative flex-1">
+            <input
+              className="field w-full pr-11"
+              placeholder="떠오른 일 적어두기 (예: 다음주 화요일 치과)"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              aria-label="할 일 입력"
+              enterKeyHint="done"
+            />
+            <button
+              type="button"
+              onClick={toggleVoice}
+              className={`absolute right-1.5 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-lg ${
+                listening ? 'animate-pulse bg-eddie-accent text-white' : 'text-eddie-primary'
+              }`}
+              aria-label={listening ? '음성 입력 중지' : '음성으로 담기'}
+              title="음성으로 담기"
+            >
+              🎙️
+            </button>
+          </div>
+          <button type="submit" className="btn-primary shrink-0 px-5 text-sm" disabled={!text.trim()}>
             담기
           </button>
         </div>
-        <p className="text-xs text-eddie-muted">
-          🎙️ 누르고 “에디~ 메모해줘, 내일 3시 치과”처럼 말해도 돼. ‘내일’·‘다음주 화요일’ 같은 날짜는 달력에 들어가.
-        </p>
-        <div className="flex items-center gap-2">
+
+        {/* 보조 옵션 (진행 표시 최소화) */}
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <button
+            type="button"
+            onClick={() => setShowTime((v) => !v)}
+            aria-pressed={showTime}
+            className={`rounded-full border px-3 py-1 text-xs ${
+              showTime || remindAt ? 'border-eddie-primary bg-eddie-primary-soft text-eddie-primary' : 'border-eddie-line text-eddie-muted'
+            }`}
+          >
+            🔔 알림 시각{remindAt ? ` ${remindAt}` : ''}
+          </button>
           <button
             type="button"
             onClick={() => (handsFree ? stopHandsFree() : startHandsFree())}
             aria-pressed={handsFree}
-            className={`min-h-tap rounded-xl border px-3 text-sm font-medium ${
+            className={`rounded-full border px-3 py-1 text-xs ${
               handsFree ? 'border-eddie-accent bg-eddie-accent/10 text-eddie-accent' : 'border-eddie-line text-eddie-muted'
             }`}
           >
-            🎧 {handsFree ? '듣는 중 — 끄기' : '“에디야” 핸즈프리'}
+            🎧 {handsFree ? '듣는 중' : '‘에디야’ 핸즈프리'}
           </button>
-          {handsFree && <span className="animate-pulse text-sm text-eddie-accent">{voiceStatus}</span>}
+          {handsFree && <span className="animate-pulse text-xs text-eddie-accent">{voiceStatus}</span>}
         </div>
-        <label className="flex items-center gap-2 text-xs text-eddie-muted">
-          🔔 알림 시각(선택)
+        {showTime && (
           <input
-            className="field !w-auto py-1 text-sm"
+            className="field py-2 text-sm"
             type="time"
             value={remindAt}
             onChange={(e) => setRemindAt(e.target.value)}
-            aria-label="알림 시각(선택)"
+            aria-label="알림 시각"
           />
-        </label>
+        )}
       </form>
 
       {todos.length > 0 ? (
-        <ul className="mt-3 flex flex-col gap-2">
+        <ul className="mt-4 flex flex-col divide-y divide-eddie-line/60 dark:divide-neutral-700">
           {todos.map((t) => (
-            <li key={t.id} className="flex items-center gap-3">
+            <li key={t.id} className="flex items-center gap-2.5 py-2">
               <button
                 onClick={() => complete(t)}
                 aria-pressed={t.done}
                 aria-label={`${t.text} 완료 토글`}
-                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                  t.done ? 'border-eddie-primary bg-eddie-primary text-white' : 'border-eddie-line'
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                  t.done ? 'border-eddie-primary bg-eddie-primary text-white' : 'border-eddie-line hover:border-eddie-primary'
                 }`}
               >
                 {t.done ? '✓' : ''}
               </button>
-              <span className={`flex-1 break-words ${t.done ? 'text-eddie-muted line-through' : ''}`}>
-                {t.priority && !t.done && <span className="mr-1 text-eddie-accent">★</span>}
-                {t.text}
-              </span>
+              <div className={`min-w-0 flex-1 ${t.done ? 'text-eddie-muted line-through' : ''}`}>
+                <span className="flex items-center gap-1.5">
+                  {t.priority && !t.done && <span className="text-eddie-accent">★</span>}
+                  <span className="truncate">{t.text}</span>
+                </span>
+                {t.remindAt && !t.done && (
+                  <button
+                    onClick={() => setTodoReminder(t.id, undefined)}
+                    className="mt-0.5 inline-flex items-center gap-0.5 rounded-full bg-eddie-primary-soft px-1.5 text-[11px] text-eddie-primary"
+                    aria-label={`알림 ${t.remindAt} 끄기`}
+                    title="알림 끄기"
+                  >
+                    🔔 {t.remindAt}
+                  </button>
+                )}
+              </div>
               {!t.done && (
-                <button
-                  onClick={() => toggleTodoPriority(t.id)}
-                  className={`btn-ghost px-2 ${t.priority ? 'text-eddie-accent' : 'text-eddie-muted'}`}
-                  aria-label={t.priority ? '우선순위 해제' : '오늘 꼭 (우선순위)'}
-                  title="오늘 꼭"
-                >
-                  {t.priority ? '★' : '☆'}
-                </button>
+                <>
+                  <button
+                    onClick={() => toggleTodoPriority(t.id)}
+                    className={`icon-btn ${t.priority ? 'text-eddie-accent' : ''}`}
+                    aria-label={t.priority ? '우선순위 해제' : '오늘 꼭 (우선순위)'}
+                    title="오늘 꼭"
+                  >
+                    {t.priority ? '★' : '☆'}
+                  </button>
+                  <button onClick={() => setFocus(t)} className="icon-btn text-eddie-primary" aria-label="집중 모드" title="집중 모드">
+                    🎯
+                  </button>
+                </>
               )}
-              {!t.done && (
-                <button
-                  onClick={() => setFocus(t)}
-                  className="btn-ghost px-2 text-eddie-primary"
-                  aria-label={`${t.text} 집중 모드`}
-                  title="집중 모드"
-                >
-                  🎯
-                </button>
-              )}
-              {t.remindAt && (
-                <button
-                  onClick={() => setTodoReminder(t.id, undefined)}
-                  className={`chip shrink-0 border-0 text-xs ${
-                    t.remindDate === today && !t.done
-                      ? 'bg-eddie-primary-soft text-eddie-primary'
-                      : 'bg-eddie-line text-eddie-muted'
-                  }`}
-                  aria-label={`알림 ${t.remindAt} 끄기`}
-                  title="알림 끄기"
-                >
-                  🔔 {t.remindAt}
-                </button>
-              )}
-              <button
-                onClick={() => removeTodo(t.id)}
-                className="btn-ghost px-2 text-red-500"
-                aria-label="할 일 삭제"
-              >
+              <button onClick={() => removeTodo(t.id)} className="icon-btn hover:text-red-500" aria-label="할 일 삭제">
                 ✕
               </button>
             </li>
