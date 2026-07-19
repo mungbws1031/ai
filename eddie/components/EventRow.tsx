@@ -7,7 +7,7 @@ import { ScheduleEvent } from '@/lib/types';
 import { copyText, formatEvent, nativeShare } from '@/lib/share';
 import { planEvent, PlanStyle, PlanTask } from '@/lib/plan-ai';
 import { buildEventICS, downloadICS, googleCalUrl } from '@/lib/ics';
-import { detectTemplate } from '@/lib/prep-templates';
+import { detectTemplate, genericBackPlan } from '@/lib/prep-templates';
 import { buildFlightPlan, isFlightEvent } from '@/lib/flight-plan';
 
 const LEADS = [7, 2, 1];
@@ -47,6 +47,12 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
   const [tplOpen, setTplOpen] = useState(false);
   const tpl = detectTemplate(e.title);
 
+  // 역산 계획 대상 태스크: 유형 템플릿이 있으면 그걸, 없으면 남은 기간에 맞춘 일반 마일스톤.
+  const [ey0, em0, ed0] = date.split('-').map((x) => parseInt(x, 10));
+  const daysUntil = Math.round((new Date(ey0, em0 - 1, ed0).getTime() - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime()) / 86400000);
+  const backTasks = tpl ? tpl.tasks : genericBackPlan(daysUntil);
+  const backLabel = tpl ? `📋 ${tpl.name} 준비 체크리스트` : '🗓️ 역산 계획 세우기';
+
   const isFlight = isFlightEvent(e.title);
 
   function addFlightPlan() {
@@ -68,9 +74,12 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
   }
 
   function addTemplate() {
-    if (!tpl) return;
-    tpl.tasks.forEach((t) => addTodo(t.text, '09:00', shiftDate(date, t.daysBefore)));
-    pushToast(`${tpl.name} 준비 ${tpl.tasks.length}개를 담았어 🐣`);
+    if (backTasks.length === 0) return;
+    backTasks.forEach((t) => {
+      const label = tpl ? t.text : `${e.title} · ${t.text}`;
+      addTodo(label, '09:00', shiftDate(date, t.daysBefore));
+    });
+    pushToast(`역산 계획 ${backTasks.length}개를 담았어 (각 날짜 알림) 🐣`);
     setTplOpen(false);
     setOpen(false);
   }
@@ -176,28 +185,31 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
             </div>
           </div>
 
-          {/* 유형별 준비 체크리스트 템플릿 (예: 출장) */}
-          {tpl && (
+          {/* 역산 계획 (유형 템플릿 있으면 그걸, 없으면 일반 마일스톤) — 키 불필요 */}
+          {backTasks.length > 0 && (
             <div className="rounded-xl border border-eddie-line p-2 dark:border-neutral-700">
               <button
                 onClick={() => setTplOpen((o) => !o)}
                 className="flex w-full items-center justify-between text-sm font-semibold"
               >
-                <span>📋 {tpl.name} 준비 체크리스트</span>
+                <span>{backLabel}</span>
                 <span className="text-eddie-muted">{tplOpen ? '▾' : '›'}</span>
               </button>
               {tplOpen && (
                 <div className="mt-2 flex flex-col gap-1">
+                  <p className="text-xs text-eddie-muted">일정일에서 역산해 각 날짜에 알림으로 챙겨줄게.</p>
                   <ul className="flex flex-col gap-1 text-sm">
-                    {tpl.tasks.map((t, i) => (
+                    {backTasks.map((t, i) => (
                       <li key={i}>
-                        · {t.text}{' '}
-                        <span className="text-eddie-muted">{t.daysBefore > 0 ? `(${t.daysBefore}일 전)` : '(당일)'}</span>
+                        <span className="font-mono text-xs text-eddie-primary">
+                          {t.daysBefore > 0 ? `D-${t.daysBefore}` : 'D-day'}
+                        </span>{' '}
+                        · {tpl ? t.text : `${e.title} · ${t.text}`}
                       </li>
                     ))}
                   </ul>
                   <button onClick={addTemplate} className="btn-primary mt-1 text-sm">
-                    {tpl.tasks.length}개 할 일로 담기 (날짜별 알림)
+                    {backTasks.length}개 할 일로 담기 (날짜별 알림)
                   </button>
                 </div>
               )}
