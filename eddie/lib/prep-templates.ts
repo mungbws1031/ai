@@ -81,3 +81,19 @@ export function detectTemplate(title: string): PrepTemplate | null {
   const t = title || '';
   return TEMPLATES.find((tpl) => tpl.keywords.some((k) => t.includes(k))) ?? null;
 }
+
+// 유형이 없는 일반 일정용 역산 마일스톤(키 불필요). 남은 기간에 맞는 것만 반환.
+const GENERIC_MILESTONES: PrepTemplateTask[] = [
+  { text: '준비 시작하기', daysBefore: 14 },
+  { text: '필요한 것 예약·구매하기', daysBefore: 7 },
+  { text: '중간 점검하기', daysBefore: 3 },
+  { text: '최종 확인·준비물 챙기기', daysBefore: 1 },
+  { text: '당일 챙기기', daysBefore: 0 },
+];
+
+/** 남은 일수에 맞춰 역산 마일스톤을 고른다. */
+export function genericBackPlan(daysUntil: number): PrepTemplateTask[] {
+  const room = Math.max(0, daysUntil);
+  const picked = GENERIC_MILESTONES.filter((c) => c.daysBefore <= room);
+  return picked.length > 0 ? picked : [{ text: '당일 챙기기', daysBefore: 0 }];
+}
