@@ -7,7 +7,7 @@ import { ScheduleEvent } from '@/lib/types';
 import { copyText, formatEvent, nativeShare } from '@/lib/share';
 import { planEvent, PlanStyle, PlanTask } from '@/lib/plan-ai';
 import { buildEventICS, downloadICS, googleCalUrl } from '@/lib/ics';
-import { detectTemplate, genericBackPlan } from '@/lib/prep-templates';
+import { detectTemplate, genericBackPlan, filterByRoom } from '@/lib/prep-templates';
 import { buildFlightPlan, isFlightEvent } from '@/lib/flight-plan';
 
 const LEADS = [7, 2, 1];
@@ -50,7 +50,7 @@ export default function EventRow({ date, e }: { date: string; e: ScheduleEvent }
   // 역산 계획 대상 태스크: 유형 템플릿이 있으면 그걸, 없으면 남은 기간에 맞춘 일반 마일스톤.
   const [ey0, em0, ed0] = date.split('-').map((x) => parseInt(x, 10));
   const daysUntil = Math.round((new Date(ey0, em0 - 1, ed0).getTime() - new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()).getTime()) / 86400000);
-  const backTasks = tpl ? tpl.tasks : genericBackPlan(daysUntil);
+  const backTasks = tpl ? filterByRoom(tpl.tasks, daysUntil) : genericBackPlan(daysUntil);
   const backLabel = tpl ? `📋 ${tpl.name} 준비 체크리스트` : '🗓️ 역산 계획 세우기';
 
   const isFlight = isFlightEvent(e.title);
