@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { StoreProvider } from '@/lib/store-context';
 import AppFrame from '@/components/AppFrame';
 import PwaRegister from '@/components/PwaRegister';
+import GoogleSyncEngine from '@/components/GoogleSyncEngine';
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <StoreProvider>
           <AppFrame>{children}</AppFrame>
+          <GoogleSyncEngine />
         </StoreProvider>
         <PwaRegister />
       </body>

@@ -27,6 +27,7 @@ import {
   DailyReview,
   Recurring,
   Mood,
+  GoogleSyncSettings,
 } from './types';
 import { defaultState, loadState, saveState, clearState } from './storage';
 import { dateKey, formatRealClock } from './clock';
@@ -118,6 +119,10 @@ interface StoreValue {
   updateEvent: (id: string, patch: Partial<Omit<ScheduleEvent, 'id'>>) => void;
   removeEvent: (id: string) => void;
   toggleEvent: (id: string) => void;
+
+  // 구글 캘린더 양방향 동기화
+  setGoogleSync: (patch: Partial<GoogleSyncSettings>) => void;
+  upsertGoogleEvents: (events: { googleEventId: string; title: string; date: string; time?: string }[]) => void;
 
   // 설정 (FR-205 화면 외 / NFR-A-003 / 톤)
   updateSettings: (patch: Partial<Settings>) => void;
@@ -643,6 +648,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setGoogleSync = useCallback<StoreValue['setGoogleSync']>((patch) => {
+    setState((s) => ({ ...s, googleSync: { ...s.googleSync, ...patch } }));
+  }, []);
+  // 구글에서 당겨온 일정을 반영: googleEventId로 이미 있으면 갱신, 없으면 새로 추가.
+  const upsertGoogleEvents = useCallback<StoreValue['upsertGoogleEvents']>((events) => {
+    setState((s) => {
+      const schedule = [...s.schedule];
+      events.forEach((ev) => {
+        const idx = schedule.findIndex((e) => e.googleEventId === ev.googleEventId);
+        if (idx >= 0) {
+          schedule[idx] = { ...schedule[idx], title: ev.title, date: ev.date, time: ev.time };
+        } else {
+          schedule.push({ id: uid('ev'), date: ev.date, title: ev.title, time: ev.time, done: false, googleEventId: ev.googleEventId });
+        }
+      });
+      return { ...s, schedule };
+    });
+  }, []);
+
   const updateSettings = useCallback<StoreValue['updateSettings']>((patch) => {
     setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
   }, []);
@@ -668,6 +692,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       settings: { ...base.settings, ...(parsed.settings ?? {}), apiKey: parsed.settings?.apiKey || s.settings.apiKey },
       departure: { ...base.departure, ...(parsed.departure ?? {}) },
       sleep: { ...base.sleep, ...(parsed.sleep ?? {}) },
+      // 로그인 세션은 이 기기에 없으므로 복원 후엔 항상 재연결이 필요하다
+      googleSync: { ...base.googleSync, ...(parsed.googleSync ?? {}), connected: false },
       streak: { ...base.streak, ...(parsed.streak ?? {}) },
       schemaVersion: base.schemaVersion,
     }));
@@ -720,6 +746,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     updateEvent,
     removeEvent,
     toggleEvent,
+    setGoogleSync,
+    upsertGoogleEvents,
     updateSettings,
     resetAll,
     importState,

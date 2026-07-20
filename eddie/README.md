@@ -48,6 +48,16 @@ ADHD 사용자가 앱을 자주 열고 할 일을 잊지 않게 하려면 "손�
   (집에서 출발 → 공항 도착·체크인 → 보안검색 → (출국심사) → 탑승구 대기 → 탑승)
 - `components/EventRow.tsx`(FlightPanel) — 시각 미리보기 → 담기: 전날 준비물은 **할 일**(전날 20시), 당일 동선은 **마감 알림**(각 시각 10·5분 전·정시). 자정 넘기는 단계는 전날로 자동 배치.
 
+## 구글 캘린더 양방향 동기화 📆
+
+서버 없는 정적 앱이지만, 구글 Calendar API(googleapis.com)는 OAuth 토큰을 실은 브라우저 fetch(CORS)를 허용하므로 백엔드 없이도 실시간 동기화가 가능하다. (노션 API는 브라우저 직접 호출을 막아놔서 — CORS 미지원 — 같은 방식이 불가능. 우회로: 노션 캘린더 앱 → 구글 캘린더 동기화 → 아래 구글 연동으로 자동 반영, 또는 기존 텍스트 붙여넣기 가져오기 사용.)
+
+- `lib/google-calendar.ts` — Google Identity Services(GIS) 토큰 클라이언트로 OAuth, Calendar API v3 직접 호출(list/insert). 서버·백엔드 없음.
+- `components/GoogleSyncEngine.tsx` — 레이아웃에 마운트되는 비가시 엔진. 연결 상태면 5분마다 + 탭 복귀 시 자동으로 pull(구글→에디, `googleEventId`로 upsert) + push(에디→구글, 오늘 이후 미연동 일정만). 배경 동기화의 일시적 실패로 연결 상태를 내리지 않음(진짜 세션 만료는 다음 수동/재접속 시 복구).
+- `app/more/google-sync/page.tsx` — 클라이언트 ID 등록(BYOK, 공개 식별자라 비밀 아님) + 연결/해제/수동 동기화. 조용한 재동기화 실패 시 자동으로 로그인 팝업 재시도.
+- `ScheduleEvent.googleEventId`로 dedup — 반복 동기화해도 중복 생성 없음(헤드리스로 3연속 동기화 검증).
+- `AppState.googleSync`는 `importState`로 백업 복원 시 `connected:false`로 강제(이 기기에 실제 로그인 세션이 없으므로).
+
 ## 음성으로 빨리 담기 🎙️
 
 적는 마찰이 곧 망각인 ADHD를 위해, 말로 담을 수 있다(브라우저 내장 음성인식, 키·서버 불필요).

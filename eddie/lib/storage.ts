@@ -28,6 +28,7 @@ export function defaultState(): AppState {
     sleep: { enabled: false, targetBedtime: '23:30', windDownLeadMin: 30 },
     sleepLogs: [],
     schedule: [],
+    googleSync: { clientId: '', connected: false },
     streak: { total: 0, momentum: 0 },
     settings: {
       tone: 'soft',

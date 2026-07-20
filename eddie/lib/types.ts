@@ -128,6 +128,14 @@ export interface ScheduleEvent {
   title: string;
   done: boolean;
   leadDays?: number[]; // 며칠 전에 미리 알림 (예: [7,2,1])
+  googleEventId?: string; // 구글 캘린더 양방향 동기화 연결 id
+}
+
+/** 구글 캘린더 연동(BYOK OAuth 클라이언트 ID) — 서버 없이 브라우저에서 직접 동기화 */
+export interface GoogleSyncSettings {
+  clientId: string;
+  connected: boolean;
+  lastSyncAt?: string; // ISO
 }
 
 /** 제자리 물건 (FR-301) */
@@ -226,6 +234,7 @@ export interface AppState {
   sleep: SleepSettings;
   sleepLogs: SleepLog[];
   schedule: ScheduleEvent[];
+  googleSync: GoogleSyncSettings;
 
   streak: Streak;
   settings: Settings;

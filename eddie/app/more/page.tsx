@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader';
 import InstallCard from '@/components/InstallCard';
 
 const links = [
+  { href: '/more/google-sync', label: '구글 캘린더 연동', desc: '자동으로 당겨오고 올리기 · 양방향', icon: '📆' },
   { href: '/more/medications', label: '복약 관리', desc: '약·시간·요일 설정', icon: '💊' },
   { href: '/more/recurring', label: '반복 알림', desc: '매일·매주 · 물·움직임 넛지', icon: '🔁' },
   { href: '/more/departure', label: '출발 알림', desc: '도착시각으로 출발 역산', icon: '🚪' },
