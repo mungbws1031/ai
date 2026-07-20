@@ -30,9 +30,11 @@ const TEMPLATES: PrepTemplate[] = [
     name: '여행',
     keywords: ['여행', '휴가'],
     tasks: [
-      { text: '숙소 예약하기', daysBefore: 7 },
-      { text: '교통편 예약하기', daysBefore: 7 },
-      { text: '짐 리스트 만들기', daysBefore: 2 },
+      // 항공권은 일찍 예약할수록 저렴하니 가장 먼저(멀리 남은 여행일수록 이 항목이 살아남는다).
+      { text: '항공권 예약하기 (일찍 할수록 저렴해)', daysBefore: 60 },
+      { text: '숙소 예약하기', daysBefore: 30 },
+      { text: '여행자보험·환전 준비하기', daysBefore: 14 },
+      { text: '짐 리스트 만들기', daysBefore: 3 },
       { text: '짐 싸기', daysBefore: 1 },
       { text: '여권·충전기·상비약 챙기기', daysBefore: 0 },
     ],
@@ -91,9 +93,21 @@ const GENERIC_MILESTONES: PrepTemplateTask[] = [
   { text: '당일 챙기기', daysBefore: 0 },
 ];
 
-/** 남은 일수에 맞춰 역산 마일스톤을 고른다. */
-export function genericBackPlan(daysUntil: number): PrepTemplateTask[] {
+/**
+ * 남은 일수(daysUntil)보다 먼 마일스톤은 제외한다 — 그대로 두면 임박한 일정에서
+ * '오늘보다 이전 날짜'로 할 일이 만들어지는 문제가 생긴다(예: 3일 남은 여행에
+ * '60일 전 항공권 예약'을 그대로 넣으면 -57일짜리 할 일이 생김).
+ * 하나도 안 남으면 가장 임박한 항목 하나는 남긴다(계획이 통째로 사라지지 않도록).
+ */
+export function filterByRoom(tasks: PrepTemplateTask[], daysUntil: number): PrepTemplateTask[] {
   const room = Math.max(0, daysUntil);
-  const picked = GENERIC_MILESTONES.filter((c) => c.daysBefore <= room);
-  return picked.length > 0 ? picked : [{ text: '당일 챙기기', daysBefore: 0 }];
+  const picked = tasks.filter((t) => t.daysBefore <= room);
+  if (picked.length > 0) return picked;
+  const closest = [...tasks].sort((a, b) => a.daysBefore - b.daysBefore)[0];
+  return closest ? [closest] : [];
+}
+
+/** 남은 일수에 맞춰 역산 마일스톤을 고른다(유형 없는 일반 일정용). */
+export function genericBackPlan(daysUntil: number): PrepTemplateTask[] {
+  return filterByRoom(GENERIC_MILESTONES, daysUntil);
 }
