@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포장 시뮬레이터 — ASTM D4169 DC-13 밸리데이션 지원 (L2)</title>
+<style>
+  :root{
+    --su-red:#E60044;
+    --su-gray:#727171;
+    --pass-green:#1F9254;
+    --bg:#F5F6F7;
+    --panel:#FFFFFF;
+    --border:#DADDE0;
+    --text:#22252A;
+    --text-mute:#6B6F73;
+    --warn-bg:#FFF4E5;
+    --warn-bd:#E8A33D;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Malgun Gothic",-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:13px;}
+  header.topbar{background:#1E2030;color:#fff;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+  header.topbar h1{font-size:15px;margin:0;font-weight:700;letter-spacing:.2px;}
+  header.topbar .sub{font-size:11px;color:#B7BBC4;}
+  .disclaimer{background:var(--warn-bg);border-bottom:2px solid var(--warn-bd);color:#7A4E00;padding:6px 18px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
+  .menu-guide{background:#F1F2F4;color:var(--text-mute);padding:5px 18px;font-size:11px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:4px 14px;}
+  .menu-guide b{color:var(--text);font-weight:600;}
+  .toolbtns{display:flex;gap:6px;flex-wrap:wrap;}
+  button{cursor:pointer;font-family:inherit;}
+  .btn{background:#fff;border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--text);}
+  .btn:hover{border-color:var(--su-red);color:var(--su-red);}
+  .btn.primary{background:var(--su-red);border-color:var(--su-red);color:#fff;}
+  .btn.primary:hover{opacity:.9;color:#fff;}
+  .btn.small{padding:3px 8px;font-size:11px;}
+
+  main.layout{display:grid;grid-template-columns:300px 1fr 340px;gap:12px;padding:12px;align-items:start;}
+  @media (max-width:1100px){main.layout{grid-template-columns:1fr;}}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+  .panel h2{font-size:12.5px;margin:0 0 10px;color:var(--su-gray);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+  .field{margin-bottom:9px;}
+  .field label{display:block;font-size:11.5px;color:var(--text-mute);margin-bottom:2px;}
+  .field .row2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;}
+  input[type=number],input[type=text],select{width:100%;padding:5px 7px;border:1px solid var(--border);border-radius:5px;font-size:12.5px;background:#fff;color:var(--text);}
+  input:focus,select:focus{outline:2px solid var(--su-red);outline-offset:0;border-color:var(--su-red);}
+  .hint{font-size:10.5px;color:var(--text-mute);margin-top:2px;}
+  .presetgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;}
+  .preset-btn{padding:8px 4px;border:1.5px solid var(--border);border-radius:7px;background:#fafafa;font-size:11px;text-align:center;color:var(--text);}
+  .preset-btn.active{border-color:var(--su-red);background:#FFF0F3;color:var(--su-red);font-weight:700;}
+
+  /* 완충재 드래그 팔레트 */
+  .palette{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+  .palette-card{border:1.5px solid var(--border);border-radius:8px;background:#fafafa;padding:6px 10px;font-size:11.5px;display:flex;align-items:center;gap:6px;cursor:grab;user-select:none;color:var(--text);}
+  .palette-card:hover{border-color:var(--su-red);color:var(--su-red);}
+  .palette-card:active{cursor:grabbing;}
+  .palette-card.active{border-color:var(--su-red);background:#FFF0F3;color:var(--su-red);font-weight:700;}
+  .palette-card svg{display:block;}
+  #svgWrap.dragover{outline:3px dashed var(--su-red);outline-offset:-3px;background:#FFF7F9;}
+
+  /* 초보자/전문가 모드 */
+  .adv-only{display:none;}
+  body.expert-mode .adv-only{display:block;}
+  .btn.mode-toggle{background:#1E2030;color:#fff;border-color:#1E2030;font-weight:600;}
+  .btn.mode-toggle:hover{opacity:.85;color:#fff;}
+  .help{display:inline-block;cursor:help;color:var(--su-gray);border-bottom:1px dotted var(--su-gray);font-size:10.5px;margin-left:3px;}
+
+  /* 결과 쉬운 요약 배너 */
+  .plain-summary{border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:13.5px;line-height:1.55;font-weight:600;}
+  .plain-summary.ok{background:#E7F6ED;color:#12693B;border:1.5px solid var(--pass-green);}
+  .plain-summary.warn{background:#FDE9EE;color:#8A0030;border:1.5px solid var(--su-red);}
+  .plain-summary ul{margin:6px 0 0;padding-left:18px;font-weight:400;font-size:12.5px;}
+
+  /* 규제 상세표 접이식 패널 */
+  details.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:12px;}
+  details.panel summary{font-size:12.5px;color:var(--su-gray);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none;}
+  details.panel summary::-webkit-details-marker{display:none;}
+  details.panel summary::before{content:"▸ ";color:var(--su-red);}
+  details.panel[open] summary::before{content:"▾ ";}
+  details.panel[open] summary{display:block;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+
+  #svgWrap{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px;}
+  #svgWrap svg{width:100%;height:auto;display:block;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text-mute);margin-top:6px;padding:0 4px;}
+  .legend span{display:inline-flex;align-items:center;gap:4px;}
+  .swatch{width:10px;height:10px;border-radius:2px;display:inline-block;}
+
+  .badge-pass{display:inline-flex;align-items:center;gap:6px;font-size:20px;font-weight:800;padding:10px 14px;border-radius:8px;width:100%;justify-content:center;}
+  .badge-pass.pass{background:#E7F6ED;color:var(--pass-green);border:2px solid var(--pass-green);}
+  .badge-pass.fail{background:#FDE9EE;color:var(--su-red);border:2px solid var(--su-red);}
+
+  table.datatbl{width:100%;border-collapse:collapse;font-size:11.5px;}
+  table.datatbl th,table.datatbl td{border:1px solid var(--border);padding:4px 6px;text-align:center;}
+  table.datatbl th{background:#F1F2F4;color:var(--su-gray);font-weight:600;}
+  table.datatbl input{padding:2px 4px;font-size:11px;text-align:center;}
+
+  .margin-row{display:grid;grid-template-columns:60px 1fr 70px 46px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px;}
+  .margin-row .bar-bg{background:#EEE;border-radius:4px;height:10px;overflow:hidden;position:relative;}
+  .margin-row .bar-fill{height:100%;border-radius:4px;}
+  .chip{font-size:10.5px;font-weight:700;padding:2px 6px;border-radius:10px;text-align:center;}
+  .chip.pass{background:#E7F6ED;color:var(--pass-green);}
+  .chip.fail{background:#FDE9EE;color:var(--su-red);}
+  .chip.na{background:#F1F2F4;color:var(--text-mute);}
+
+  .kv{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px dashed var(--border);}
+  .kv b{color:var(--text);}
+  .warnbox{background:var(--warn-bg);border:1px solid var(--warn-bd);color:#7A4E00;border-radius:6px;padding:6px 8px;font-size:11.5px;margin-top:6px;}
+  .flagbox{background:#FDE9EE;border:1px solid var(--su-red);color:#8A0030;border-radius:6px;padding:6px 8px;font-size:11.5px;margin-top:6px;}
+
+  .modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:#fff;border-radius:10px;max-width:920px;width:100%;padding:18px 20px;max-height:90vh;overflow:auto;}
+  .modal h3{margin-top:0;font-size:15px;}
+  .modal-section{margin-bottom:16px;}
+  .modal-section h4{font-size:12px;color:var(--su-gray);text-transform:uppercase;margin-bottom:6px;}
+  .close-x{float:right;background:none;border:none;font-size:18px;color:var(--text-mute);}
+  textarea{width:100%;min-height:120px;font-family:monospace;font-size:11px;padding:8px;border:1px solid var(--border);border-radius:6px;}
+  .matgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:700px){.matgrid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div>
+    <h1>포장 시뮬레이터</h1>
+    <div class="sub">운송 밸리데이션 &amp; 생산 지원용 · ASTM D4169 DC-13(사내 SOP 절차 기준) · L2 (cushion curve + McKee 근사)</div>
+  </div>
+  <div class="toolbtns">
+    <button class="btn mode-toggle" id="modeToggleBtn" title="복잡한 전문가 옵션을 숨기거나 보여줍니다" onclick="toggleExpertMode()">🔰 초보자 모드</button>
+    <button class="btn" title="값을 잘 몰라도 결과를 바로 볼 수 있도록 예시 값을 채워줍니다" onclick="loadExample()">✨ 예시로 시작하기</button>
+    <button class="btn" title="낙하고·cushion curve·ECT·진동 프로파일 등 예시 데이터를 직접 수정합니다" onclick="openDataModal()">⚙ 데이터 테이블 편집</button>
+    <button class="btn" title="지금 설정값 기준으로 밸리데이션 프로토콜·스펙시트·예측 리포트를 만듭니다" onclick="openReportModal()">📄 리포트 생성</button>
+    <button class="btn" title="현재 데이터 테이블(낙하고·곡선·단가 등)을 JSON 파일로 저장합니다" onclick="exportJSON()">⬇ 내보내기</button>
+    <button class="btn" title="이전에 내보낸 JSON 데이터 파일을 불러와 덮어씁니다" onclick="document.getElementById('importFile').click()">⬆ 불러오기</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+  </div>
+</header>
+<div class="menu-guide">
+  <span><b>🔰 초보자/전문가 모드</b> — 처음이면 초보자 모드로, 세부 수치를 조정하려면 전문가 모드로 전환하세요</span>
+  <span><b>✨ 예시로 시작하기</b> — 값을 몰라도 예시 제품으로 화면이 어떻게 동작하는지 바로 확인</span>
+  <span><b>⚙ 데이터 편집</b> — 낙하고·완충재 곡선 등 예시 수치를 원문/실측값으로 교체</span>
+  <span><b>📄 리포트 생성</b> — 프로토콜 초안·스펙시트(BOM)·예측 리포트 3종 출력</span>
+</div>
+<div class="disclaimer">⚠ 본 결과는 <b>시뮬레이션 예측치</b>이며 실물 ASTM D4169 DC-13 시험(사내 운송 밸리데이션 절차)을 대체하지 않습니다. 설계 1차 스크리닝 용도로만 사용하세요. 수치(핸들링 낙하 스케줄·cushion curve 등)는 예시 데이터이므로 반드시 현행 규격 원문·사내 SOP·공급사 datasheet로 교체·검증할 것.</div>
+
+<main class="layout">
+
+  <!-- ================= LEFT: INPUTS ================= -->
+  <div id="colLeft">
+    <div class="panel">
+      <h2>제품</h2>
+      <div class="field"><label>무게 (kg)</label><input type="number" id="p_weight" value="4.2" step="0.1" min="0.01"></div>
+      <div class="field">
+        <label>치수 L×W×H (mm)</label>
+        <div class="row2">
+          <input type="number" id="p_L" value="300" min="1">
+          <input type="number" id="p_W" value="220" min="1">
+          <input type="number" id="p_H" value="180" min="1">
+        </div>
+      </div>
+      <div class="field"><label>Critical G <span class="help" title="제품이 버틸 수 있는 최대 충격의 세기입니다. 숫자가 작을수록 잘 깨지는 제품이에요. 잘 모르면 전자기기는 보통 40~80G 정도로 둡니다.">ⓘ 이게 뭐예요?</span></label><input type="number" id="p_criticalG" value="60" min="1"></div>
+      <div class="field adv-only"><label>Assurance Level <span class="help" title="ASTM D4169 규격의 취약도/가치 등급입니다. 비싸거나 잘 깨지는 제품일수록 I, 일반적인 제품은 II를 선택하세요.">ⓘ</span></label><select id="p_assurance"><option value="0">I (고위험/고가 — 가장 엄격)</option><option value="1" selected>II (일반)</option><option value="2">III (완화)</option></select></div>
+      <div class="hint adv-only">레벨이 높을수록(I) 핸들링 낙하 스케줄의 낙하고가 완화 없이 그대로, III로 갈수록 데이터 편집에서 정한 배율만큼 완화 적용 (예시 배율, 사내 SOP 대조 필요)</div>
+    </div>
+
+    <div class="panel">
+      <h2>카톤 (골판지)</h2>
+      <div class="field"><label>등급 / ECT <span class="help" title="숫자(ECT)가 클수록 튼튼한 박스입니다. 잘 모르면 기본값을 그대로 쓰세요.">ⓘ</span></label><select id="c_grade"></select></div>
+      <div class="field"><label>Flute (판 두께 자동 반영, mm)</label><select id="c_flute"></select></div>
+      <div class="field adv-only">
+        <label>적재 층수(자기 포함) / 안전계수 / 습윤 강도저하(%) <span class="help" title="창고에 몇 단으로 쌓는지, 안전 여유를 얼마나 둘지, 습해지면 박스가 약해지는 정도입니다. 잘 모르면 기본값 사용을 권장합니다.">ⓘ</span></label>
+        <div class="row2">
+          <input type="number" id="c_layers" value="4" min="1">
+          <input type="number" id="c_safety" value="4" min="1" step="0.5">
+          <input type="number" id="c_humidity" value="35" min="0" max="90">
+        </div>
+      </div>
+      <div class="hint adv-only">위 압축 설정은 박스를 쌓아 올렸을 때 눌려서 찌그러지는지를 계산하는 전문가용 값입니다.</div>
+    </div>
+
+    <div class="panel">
+      <h2>환경 컨디셔닝 (ASTM D4169 온습도)</h2>
+      <div class="hint" style="margin-bottom:8px;">유통 사이클 진행 시 계절별 주변 환경과, 사이클 종료 후 72시간 챔버 보관 조건을 선택합니다. 값은 사내 SOP 예시이며 데이터 편집에서 교체 가능합니다.</div>
+      <div class="field"><label>운송 계절 프로파일</label><select id="env_season"></select></div>
+      <div class="field"><label>사이클 종료 후 보관 조건 (72h)</label><select id="env_storage"></select></div>
+      <div class="hint" id="envNote"></div>
+    </div>
+
+    <div class="panel">
+      <h2>완충재</h2>
+      <div class="field"><label>재질</label><select id="cu_material"></select></div>
+      <div class="field">
+        <label>밀도(kg/m³) / 두께(mm)</label>
+        <div class="row2" style="grid-template-columns:1fr 1fr;">
+          <input type="number" id="cu_density" value="30" min="1">
+          <input type="number" id="cu_thickness" value="25" min="1">
+        </div>
+      </div>
+      <div class="field">
+        <label>배치 프리셋</label>
+        <div class="presetgrid" id="placementGrid"></div>
+      </div>
+      <div class="field" id="placementExtra"></div>
+      <div class="field adv-only">
+        <label>모서리/코너 응력집중 계수 (경험적 배수) <span class="help" title="박스를 모서리나 꼭짓점으로 떨어뜨리면 충격이 더 세집니다. 그 정도를 배수로 나타낸 값이에요. 잘 모르면 기본값 사용을 권장합니다.">ⓘ</span></label>
+        <div class="row2" style="grid-template-columns:1fr 1fr;">
+          <input type="number" id="cu_edgeF" value="1.3" step="0.05" min="1">
+          <input type="number" id="cu_cornerF" value="1.6" step="0.05" min="1">
+        </div>
+      </div>
+      <div class="field adv-only"><label>다중낙하 열화(set) 보정 (%) <span class="help" title="완충재는 여러 번 떨어뜨리면 눌려서 성능이 떨어집니다. 그 저하량을 %로 반영합니다. 잘 모르면 기본값 사용을 권장합니다.">ⓘ</span></label><input type="number" id="cu_degrad" value="15" min="0" max="80"></div>
+    </div>
+
+    <div class="panel">
+      <h2>운송 진동 조건 (가상 진동테스트)</h2>
+      <div class="hint" style="margin-bottom:8px;">선택한 운송수단의 실제 진동 주파수 대역을 기준으로, 제품+완충재 조합이 그 대역에서 공진(진동이 증폭)하는지 가상으로 확인합니다. 대역 수치는 예시이며 데이터 편집에서 교체 가능합니다.</div>
+      <div class="field"><label>운송 수단</label><select id="vib_mode"></select></div>
+      <div class="hint" id="vibModeNote"></div>
+      <div class="field adv-only"><label>완충재 감쇠비 ζ (재질 예시값, 편집 가능) <span class="help" title="완충재가 진동을 얼마나 흡수하는지 나타내는 값입니다. 잘 모르면 기본값 0.2를 그대로 쓰세요.">ⓘ</span></label><input type="number" id="cu_zeta" value="0.2" step="0.01" min="0.01" max="1"></div>
+      <div class="field adv-only"><label>공진 위험 임계값 (전달률 배수) <span class="help" title="진동이 몇 배 이상 증폭되면 위험으로 판단할지 정하는 기준입니다. 잘 모르면 기본값 1.5를 그대로 쓰세요.">ⓘ</span></label><input type="number" id="vib_threshold" value="1.5" step="0.1" min="1"></div>
+    </div>
+  </div>
+
+  <!-- ================= CENTER: CROSS SECTION ================= -->
+  <div id="colCenter">
+    <div class="panel">
+      <h2>단면 뷰 (정면 개략도)</h2>
+      <div class="hint" style="margin-bottom:6px;">👇 아래 완충재 카드를 <b>잡아서 박스 안으로 끌어다 놓아보세요</b> (클릭해도 적용됩니다). 박스 안 완충재를 클릭하면 다시 뺄 수 있어요.</div>
+      <div class="palette" id="palette"></div>
+      <div id="svgWrap"></div>
+      <div class="legend">
+        <span><i class="swatch" style="background:#C9704A"></i>카톤(골판지)</span>
+        <span><i class="swatch" style="background:#8FB8DE"></i>제품</span>
+        <span><i class="swatch" style="background:#FFD37A"></i>완충재</span>
+        <span><i class="swatch" style="background:#FDE9EE;border:1px solid var(--su-red)"></i>완충재 미배치(직접지지)</span>
+      </div>
+    </div>
+    <details class="panel">
+      <summary>ASTM D4169 DC-13 유통 사이클 (자세히 보기)</summary>
+      <div class="hint" style="margin-bottom:8px;">제품이 창고에서 나와 최종 목적지까지 이동하며 겪는 충격·진동 단계입니다.</div>
+      <div id="sequenceBox"></div>
+    </details>
+    <details class="panel">
+      <summary>샘플링 계획 (자세히 보기)</summary>
+      <div class="hint" style="margin-bottom:8px;">시험에 몇 개 제품을 써야 하는지에 대한 기준입니다.</div>
+      <div id="samplingBox"></div>
+    </details>
+    <details class="panel">
+      <summary>제품 성능 검사 항목 (자세히 보기)</summary>
+      <div class="hint" style="margin-bottom:8px;">운송 시험 전/후 제품이 정상인지 비교 확인하는 체크리스트입니다.</div>
+      <div id="testItemsBox"></div>
+    </details>
+  </div>
+
+  <!-- ================= RIGHT: RESULTS ================= -->
+  <div id="colRight">
+    <div id="plainSummary" class="plain-summary ok">계산 중...</div>
+
+    <div class="panel">
+      <div id="passBadge" class="badge-pass pass">PASS ✓</div>
+    </div>
+
+    <div class="panel adv-only">
+      <h2>낙하 충격 상세 수치</h2>
+      <div id="dropMarginBox"></div>
+    </div>
+
+    <div class="panel adv-only">
+      <h2>압축(BCT) 마진</h2>
+      <div id="bctBox"></div>
+    </div>
+
+    <div class="panel adv-only">
+      <h2>가상 진동 테스트 (운송수단 기준)</h2>
+      <div id="vibTestBox"></div>
+    </div>
+
+    <div class="panel adv-only">
+      <h2>부피효율 / 재료비 추정</h2>
+      <div id="efficiencyBox"></div>
+    </div>
+  </div>
+</main>
+
+<!-- ================= DATA EDIT MODAL ================= -->
+<div class="modal-backdrop" id="dataModal">
+  <div class="modal">
+    <button class="close-x" onclick="closeDataModal()">✕</button>
+    <h3>데이터 테이블 편집</h3>
+    <p class="hint">⚠ 아래 수치는 <b>모두 예시(placeholder) 값</b>입니다. 실제 사용 전 현행 ASTM D4169 원문 및 사내 SOP, 완충재 공급사 datasheet 수치로 반드시 교체하세요. 이 도구는 값을 하드코딩하지 않고 전부 편집 가능하게 노출합니다.</p>
+
+    <div class="modal-section">
+      <h4>핸들링 낙하 충격 스케줄 (무게구간 → 낙하고 mm, Assurance Level II 기준)</h4>
+      <table class="datatbl" id="dropHeightTable"></table>
+      <button class="btn small" onclick="addDropRow()">+ 행 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>Assurance Level 배율 (낙하고에 곱해 완화/강화)</h4>
+      <table class="datatbl" id="assuranceTable"></table>
+    </div>
+
+    <div class="modal-section">
+      <h4>유통 사이클 단계 (ASTM D4169 DC-13, 사내 SOP 예시)</h4>
+      <table class="datatbl" id="cycleTable"></table>
+      <button class="btn small" onclick="addCycleRow()">+ 단계 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>운송 계절 프로파일 (예시)</h4>
+      <table class="datatbl" id="seasonTable"></table>
+      <button class="btn small" onclick="addSeasonRow()">+ 계절 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>사이클 종료 후 온습도 보관 조건 (72h, 예시)</h4>
+      <table class="datatbl" id="storageTable"></table>
+      <button class="btn small" onclick="addStorageRow()">+ 조건 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>샘플링 계획 (ISO 2859-1, 예시 — 실제 표준 원문으로 검증 필요)</h4>
+      <table class="datatbl" id="samplingTable"></table>
+      <button class="btn small" onclick="addSamplingRow()">+ 로트 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>제품 성능 검사 항목 (사이클 전후 비교 기준, 제품별 편집)</h4>
+      <table class="datatbl" id="testItemTable"></table>
+      <button class="btn small" onclick="addTestItemRow()">+ 항목 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>Cushion Curve (재질별 정적응력 S(kPa) vs 전달 G) — 기준두께에서의 근사 곡선</h4>
+      <div class="matgrid" id="curveEditArea"></div>
+    </div>
+
+    <div class="modal-section">
+      <h4>골판지 등급 (ECT, 판두께)</h4>
+      <table class="datatbl" id="boardTable"></table>
+      <button class="btn small" onclick="addBoardRow()">+ 행 추가</button>
+    </div>
+
+    <div class="modal-section">
+      <h4>Flute별 판두께 (mm)</h4>
+      <table class="datatbl" id="fluteTable"></table>
+    </div>
+
+    <div class="modal-section">
+      <h4>재료 단가 (원가 추정용)</h4>
+      <div class="field row2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label class="hint">골판지 단가 (원/m²)</label><input type="number" id="cost_board" value="1800"></div>
+        <div><label class="hint">완충재 단가 (원/L, 부피기준)</label><input type="number" id="cost_cushion" value="15"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>운송수단별 진동 프로파일 (Hz) — 가상 진동테스트에 사용, 예시값</h4>
+      <p class="hint">전체 대역(하한~상한 Hz)에서 전달률을 계산하고, 그 중 "주요 에너지 대역(피크 하한~상한)"에 공진점이 걸리는지로 위험을 판정합니다. 실제 운송기관·구간의 실측 PSD로 교체 권장.</p>
+      <table class="datatbl" id="vibProfileTable"></table>
+      <button class="btn small" onclick="addVibProfileRow()">+ 운송수단 추가</button>
+    </div>
+
+    <button class="btn primary" onclick="applyDataEdits()">적용 &amp; 재계산</button>
+    <button class="btn" onclick="resetDefaults()">기본값으로 초기화</button>
+  </div>
+</div>
+
+<!-- ================= REPORT MODAL ================= -->
+<div class="modal-backdrop" id="reportModal">
+  <div class="modal">
+    <button class="close-x" onclick="closeReportModal()">✕</button>
+    <h3>리포트</h3>
+    <div class="toolbtns" style="margin-bottom:10px;">
+      <button class="btn" title="선택한 D4169 유통 사이클·환경조건·샘플링·판정기준 표" onclick="showReport('protocol')">밸리데이션 프로토콜 초안</button>
+      <button class="btn" title="카톤·완충재 재질/치수/배치와 BOM" onclick="showReport('spec')">포장 스펙시트(BOM)</button>
+      <button class="btn" title="낙하·압축·진동 마진과 종합 판정" onclick="showReport('predict')">예측 리포트</button>
+      <button class="btn primary" title="현재 화면에 표시된 리포트를 인쇄하거나 PDF로 저장" onclick="printReport()">🖨 인쇄/PDF</button>
+    </div>
+    <div id="reportContent" style="font-size:12.5px;line-height:1.6;"></div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   기본 데이터 (전부 예시값 — ASTM D4169 원문·사내 SOP·공급사 datasheet로 교체 필요)
+   ========================================================= */
+const DEFAULTS = {
+  dropHeight: [ // [weight_upper_kg, height_mm]  가벼울수록 높게 낙하 (예시 구간)
+    {upto:9.5, height:760},
+    {upto:18,  height:610},
+    {upto:27,  height:460},
+    {upto:45,  height:380},
+    {upto:70,  height:300},
+  ],
+  board: [
+    {grade:'A (32ECT)', ect:3.2},
+    {grade:'B (44ECT)', ect:4.4},
+    {grade:'C (52ECT)', ect:5.2},
+    {grade:'BC (더블, 61ECT)', ect:6.1},
+  ],
+  flute: [
+    {name:'E', thickness:1.5},
+    {name:'B', thickness:3.0},
+    {name:'C', thickness:4.0},
+    {name:'BC(더블)', thickness:6.5},
+  ],
+  materials: {
+    eps_low:{label:'EPS (저밀도)', tRef:25, points:[[2,140],[5,60],[10,38],[16,33],[24,40],[35,60],[50,95],[70,140]]},
+    eps_med:{label:'EPS (중밀도)', tRef:25, points:[[3,150],[7,65],[14,40],[21,35],[28,42],[41,62],[55,90],[75,130]]},
+    epe:    {label:'EPE (발포PE)', tRef:25, points:[[3,130],[7,58],[13,38],[20,34],[30,40],[45,58],[60,82],[80,115]]},
+    epp:    {label:'EPP', tRef:25, points:[[4,120],[9,55],[16,36],[24,32],[34,38],[48,54],[65,76],[85,105]]},
+    pu_soft:{label:'PU foam(연질)', tRef:25, points:[[1,90],[3,42],[6,28],[10,26],[16,30],[24,42],[35,62],[50,90]]},
+    pu_rigid:{label:'PU foam(경질)', tRef:25, points:[[6,160],[12,70],[20,45],[30,40],[42,48],[58,68],[78,98],[100,135]]},
+    pulp:   {label:'몰디드 펄프', tRef:15, points:[[5,170],[10,90],[18,60],[26,52],[36,58],[50,78],[68,105],[90,140]]},
+    honeycomb:{label:'골판지 인서트/허니콤', tRef:20, points:[[8,190],[16,95],[26,65],[36,58],[48,64],[65,85],[85,112],[110,145]]},
+    air_pillow:{label:'에어필로우/루즈필/종이완충 (정성)', qualitative:true},
+  },
+  costBoard: 1800,
+  costCushion: 15,
+  vibrationProfiles: [ // ASTM D4169 DC-13 사내 SOP의 실제 유통 사이클 진동 요소 기준 (예시 대역 — 실측 PSD로 교체 필요)
+    {name:'지상운송 - 포장도로 진동(Ground Shipping, Paved Road)', lowHz:3, highHz:100, peakLow:4,  peakHigh:20, note:'현가장치 공진+노면 요철 대역 우세 (예시)'},
+    {name:'지상운송 - 비포장도로 진동(Air/Ship Shipping, Dirt Road)', lowHz:3, highHz:150, peakLow:15, peakHigh:60, note:'비포장로 요철로 인한 고진폭·광대역 진동 우세 (예시)'},
+  ],
+  assuranceLevels: [ // ASTM D4169 Assurance Level — 배율은 예시, 원문 스케줄로 교체 필요
+    {name:'I (고위험/고가 — 가장 엄격)', factor:1.15},
+    {name:'II (일반, 기준 테이블)', factor:1.0},
+    {name:'III (완화)', factor:0.85},
+  ],
+  distributionCycle: [ // ASTM D4169 DC-13 예시 스케줄 — 값은 전부 가상 예시(실제 사내 SOP 수치 아님), 사용 전 자사 절차로 교체 필요
+    {stage:'핸들링(충격)', route:'출발지 창고 — 차량 상하차(핸드카트/지게차 등)', hours:1},
+    {stage:'지상운송(포장도로 진동)', route:'출발지 → 경유지, 평균 60km/h(최대 80km/h) 포장도로 주행', hours:3},
+    {stage:'항공/해상운송(비포장도로 진동)', route:'경유지 인근 비포장도로 구간, 최대 80km/h', hours:4},
+    {stage:'지상운송(포장도로 진동)', route:'경유지 → 도착지, 복귀 경로', hours:3},
+    {stage:'핸들링(충격)', route:'도착지 창고 — 차량 상하차', hours:1},
+  ],
+  envSeasons: [ // 예시 — 사내 SOP 대조 필요
+    {name:'봄/가을 (Control)', temp:'20~25°C'},
+    {name:'겨울 (Winter)', temp:'-15±3°C'},
+    {name:'여름 (Summer)', temp:'40±3°C'},
+  ],
+  envStorage: [ // 사이클 종료 후 72h 챔버 보관 조건, 예시 — 사내 SOP 대조 필요
+    {name:'무보관 (사이클 직후 즉시 시험)', temp:'N/A', rh:'N/A'},
+    {name:'저온·고습', temp:'-15°C', rh:'90%RH'},
+    {name:'고온·고습', temp:'65°C', rh:'90%RH'},
+    {name:'저온·저습', temp:'-15°C', rh:'10%RH'},
+    {name:'고온·저습', temp:'65°C', rh:'10%RH'},
+  ],
+  samplingPlan: [ // ISO 2859-1 예시(가상 수치) — 실제 표준 원문/자사 SOP로 검증 필요
+    {lot:200, level:'S-3', aql:1.5, sampleSize:8, ac:0, re:1},
+  ],
+  testItems: [ // 사이클 전후 비교 검사 항목 — 제품별 편집
+    {name:'외관', criteria:'찢김·긁힘·홀 등 손상 없음, 캡/바디/배터리 등 결합부 정상'},
+    {name:'포장용기 상태', criteria:'운송용기(카톤/파렛트) 손상 없음'},
+    {name:'기기 동작 표시', criteria:'전원 인가 시 정상 표시, 상태 표시(배터리/통신 등) 정상'},
+    {name:'삽입/체결부', criteria:'정상 체결(클릭음 등), 인위적으로 당겨도 분리되지 않음'},
+    {name:'무선통신', criteria:'페어링 기기 자동 인식 및 연결 성공'},
+    {name:'라벨', criteria:'라벨 탈락/인쇄 손상 없음'},
+    {name:'성능분석', criteria:'기준 시료 판정값이 사내 SOP 허용범위 이내'},
+  ],
+};
+
+const PLACEMENTS = [
+  {key:'corner_block', label:'코너 블록', desc:'8개 모서리에 완충 블록 배치'},
+  {key:'end_cap',      label:'엔드 캡',   desc:'양 끝단 면 전체 커버, 측면은 카톤 직접 지지'},
+  {key:'full_wrap',    label:'전면 랩',   desc:'6면 전체를 완충재로 감쌈'},
+  {key:'suspension',   label:'서스펜션',  desc:'현수/텐션재로 전면 이격 지지(부분 커버리지)'},
+  {key:'none',         label:'완충재 없음', desc:'완충재 미적용 상태 — 판정불가'},
+];
+
+let DATA = JSON.parse(JSON.stringify(DEFAULTS));
+let state = { placement:'none', blockSize:50, suspensionCoverage:35 };
+
+/* =========================================================
+   persistence
+   ========================================================= */
+function loadPersisted(){
+  try{
+    const raw = localStorage.getItem('pkgsim_data');
+    if(raw) DATA = JSON.parse(raw);
+  }catch(e){}
+  ['vibrationProfiles','assuranceLevels','distributionCycle','envSeasons','envStorage','samplingPlan','testItems'].forEach(key=>{
+    if(!DATA[key] || !DATA[key].length) DATA[key] = JSON.parse(JSON.stringify(DEFAULTS[key]));
+  });
+}
+function savePersisted(){
+  try{ localStorage.setItem('pkgsim_data', JSON.stringify(DATA)); }catch(e){}
+}
+
+/* =========================================================
+   UI bootstrap
+   ========================================================= */
+function el(id){ return document.getElementById(id); }
+
+function toggleExpertMode(){
+  const isExpert = document.body.classList.toggle('expert-mode');
+  el('modeToggleBtn').textContent = isExpert ? '🛠 전문가 모드' : '🔰 초보자 모드';
+  try{ localStorage.setItem('pkgsim_expert', isExpert ? '1' : '0'); }catch(e){}
+}
+
+function loadExample(){
+  const example = {
+    p_weight:4.2, p_L:300, p_W:220, p_H:180, p_criticalG:60,
+    cu_density:30, cu_thickness:25,
+  };
+  Object.keys(example).forEach(id=>{ if(el(id)) el(id).value = example[id]; });
+  state.placement = 'corner_block';
+  state.blockSize = 21;
+  renderPlacementUI();
+  el('cu_material').value = 'epp';
+  recompute();
+  alert('예시 제품 값을 채웠습니다. 왼쪽 입력값을 하나씩 바꿔보면서 오른쪽 결과가 어떻게 바뀌는지 확인해보세요.');
+}
+
+function populateSelects(){
+  const gradeSel = el('c_grade'); gradeSel.innerHTML='';
+  DATA.board.forEach((b,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${b.grade} — ECT ${b.ect}kN/m`; gradeSel.appendChild(o); });
+
+  const fluteSel = el('c_flute'); fluteSel.innerHTML='';
+  DATA.flute.forEach((f,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${f.name} (${f.thickness}mm)`; fluteSel.appendChild(o); });
+
+  const matSel = el('cu_material'); matSel.innerHTML='';
+  Object.keys(DATA.materials).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=DATA.materials[k].label; matSel.appendChild(o); });
+
+  const vibSel = el('vib_mode'); const prevVib=vibSel.value; vibSel.innerHTML='';
+  DATA.vibrationProfiles.forEach((v,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${v.name} (${v.lowHz}-${v.highHz}Hz)`; vibSel.appendChild(o); });
+  if(prevVib!=='' && DATA.vibrationProfiles[+prevVib]) vibSel.value=prevVib;
+  vibSel.onchange = updateVibModeNote;
+  updateVibModeNote();
+
+  const seasonSel = el('env_season'); const prevSeason=seasonSel.value; seasonSel.innerHTML='';
+  DATA.envSeasons.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${s.name} (${s.temp})`; seasonSel.appendChild(o); });
+  if(prevSeason!=='' && DATA.envSeasons[+prevSeason]) seasonSel.value=prevSeason;
+
+  const storageSel = el('env_storage'); const prevStorage=storageSel.value; storageSel.innerHTML='';
+  DATA.envStorage.forEach((s,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=`${s.name} (${s.temp}/${s.rh})`; storageSel.appendChild(o); });
+  if(prevStorage!=='' && DATA.envStorage[+prevStorage]) storageSel.value=prevStorage;
+  seasonSel.onchange = updateEnvNote; storageSel.onchange = updateEnvNote;
+  updateEnvNote();
+
+  const grid = el('placementGrid'); grid.innerHTML='';
+  PLACEMENTS.forEach(p=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='preset-btn'+(p.key===state.placement?' active':'');
+    b.textContent=p.label; b.title=p.desc;
+    b.onclick=()=>{ state.placement=p.key; renderPlacementUI(); recompute(); };
+    grid.appendChild(b);
+  });
+  renderPlacementUI();
+}
+
+function paletteIcon(key){
+  const c='#E0A93A', f='#FFD37A';
+  switch(key){
+    case 'corner_block': return `<svg width="26" height="20" viewBox="0 0 26 20"><rect x="1" y="1" width="24" height="18" fill="none" stroke="#C9704A" stroke-width="1.5"/><rect x="2" y="2" width="6" height="5" fill="${f}" stroke="${c}"/><rect x="18" y="2" width="6" height="5" fill="${f}" stroke="${c}"/><rect x="2" y="13" width="6" height="5" fill="${f}" stroke="${c}"/><rect x="18" y="13" width="6" height="5" fill="${f}" stroke="${c}"/></svg>`;
+    case 'end_cap': return `<svg width="26" height="20" viewBox="0 0 26 20"><rect x="1" y="1" width="24" height="18" fill="none" stroke="#C9704A" stroke-width="1.5"/><rect x="2" y="2" width="22" height="4" fill="${f}" stroke="${c}"/><rect x="2" y="14" width="22" height="4" fill="${f}" stroke="${c}"/></svg>`;
+    case 'full_wrap': return `<svg width="26" height="20" viewBox="0 0 26 20"><rect x="1" y="1" width="24" height="18" fill="none" stroke="#C9704A" stroke-width="1.5"/><rect x="2" y="2" width="22" height="16" fill="${f}" stroke="${c}"/><rect x="7" y="6" width="12" height="8" fill="#8FB8DE" stroke="#4E7FAF"/></svg>`;
+    case 'suspension': return `<svg width="26" height="20" viewBox="0 0 26 20"><rect x="1" y="1" width="24" height="18" fill="none" stroke="#C9704A" stroke-width="1.5"/><rect x="8" y="6" width="10" height="8" fill="none" stroke="${c}" stroke-dasharray="2 2"/><line x1="1" y1="1" x2="8" y2="6" stroke="${c}"/><line x1="25" y1="1" x2="18" y2="6" stroke="${c}"/><line x1="1" y1="19" x2="8" y2="14" stroke="${c}"/><line x1="25" y1="19" x2="18" y2="14" stroke="${c}"/></svg>`;
+    default: return '';
+  }
+}
+
+function buildPalette(){
+  const pal = el('palette'); if(!pal) return;
+  pal.innerHTML='';
+  PLACEMENTS.filter(p=>p.key!=='none').forEach(p=>{
+    const card=document.createElement('div');
+    card.className='palette-card'+(p.key===state.placement?' active':'');
+    card.draggable=true;
+    card.dataset.key=p.key;
+    card.title=p.desc+' — 박스 안으로 드래그하거나 클릭하면 적용됩니다';
+    card.innerHTML=`${paletteIcon(p.key)}<span>${p.label}</span>`;
+    card.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', p.key); e.dataTransfer.effectAllowed='copy'; });
+    card.addEventListener('click', ()=> setPlacement(p.key));
+    pal.appendChild(card);
+  });
+}
+
+function setupDropZone(){
+  const zone = el('svgWrap'); if(!zone) return;
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect='copy'; zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', ()=> zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e=>{
+    e.preventDefault(); zone.classList.remove('dragover');
+    const key = e.dataTransfer.getData('text/plain');
+    setPlacement(key);
+  });
+}
+
+function renderPlacementUI(){
+  document.querySelectorAll('.preset-btn').forEach((b,i)=>{
+    b.classList.toggle('active', PLACEMENTS[i].key===state.placement);
+  });
+  document.querySelectorAll('.palette-card').forEach(c=>{
+    c.classList.toggle('active', c.dataset.key===state.placement);
+  });
+  const extra = el('placementExtra');
+  if(state.placement==='corner_block'){
+    extra.innerHTML = `<label>코너 블록 1개 접촉 footprint (mm, 정사각형 한 변)</label><input type="number" id="cu_blocksize" value="${state.blockSize}" min="5">`;
+    el('cu_blocksize').oninput = (e)=>{ state.blockSize=+e.target.value||50; recompute(); };
+  } else if(state.placement==='suspension'){
+    extra.innerHTML = `<label>서스펜션 커버리지 (면적 대비 %, 전체 6면 공통 적용)</label><input type="number" id="cu_susp" value="${state.suspensionCoverage}" min="5" max="100">`;
+    el('cu_susp').oninput = (e)=>{ state.suspensionCoverage=+e.target.value||35; recompute(); };
+  } else {
+    extra.innerHTML = '';
+  }
+}
+
+['p_weight','p_L','p_W','p_H','p_criticalG','c_grade','c_flute','c_layers','c_safety','c_humidity',
+ 'cu_material','cu_density','cu_thickness','cu_edgeF','cu_cornerF','cu_degrad','cu_zeta','vib_threshold'].forEach(id=>{
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const node = el(id);
+    if(node) node.addEventListener('input', recompute);
+  });
+});
+
+function updateVibModeNote(){
+  const v = DATA.vibrationProfiles[+el('vib_mode').value];
+  el('vibModeNote').textContent = v ? `주요 에너지 대역: ${v.peakLow}-${v.peakHigh}Hz · ${v.note}` : '';
+}
+
+function updateEnvNote(){
+  const s = DATA.envSeasons[+el('env_season').value];
+  const st = DATA.envStorage[+el('env_storage').value];
+  const highHumidity = st && /90%/.test(st.rh);
+  el('envNote').textContent = (s&&st) ? `${s.name}(${s.temp}) 유통 후 ${st.name}(${st.temp}/${st.rh}) 72h 보관${highHumidity?' — 고습 조건, 압축 강도저하(%) 입력값을 상향 검토하세요':''}` : '';
+}
+
+/* =========================================================
+   core physics helpers
+   ========================================================= */
+function interpG(points, S){
+  // piecewise-linear interpolation over static stress S(kPa); clamp to range ends
+  const pts = points.slice().sort((a,b)=>a[0]-b[0]);
+  if(S<=pts[0][0]) return pts[0][1];
+  if(S>=pts[pts.length-1][0]) return pts[pts.length-1][1];
+  for(let i=0;i<pts.length-1;i++){
+    const [s1,g1]=pts[i], [s2,g2]=pts[i+1];
+    if(S>=s1 && S<=s2){
+      const t=(S-s1)/(s2-s1);
+      return g1 + t*(g2-g1);
+    }
+  }
+  return pts[pts.length-1][1];
+}
+
+function cushionG(materialKey, thicknessMm, S_kPa){
+  const mat = DATA.materials[materialKey];
+  if(!mat || mat.qualitative) return null;
+  const g = interpG(mat.points, S_kPa);
+  const scale = Math.sqrt(mat.tRef / thicknessMm); // 두께 스케일링 근사: G ∝ 1/√t
+  return g*scale;
+}
+
+function getDropHeight(weightKg){
+  const table = DATA.dropHeight.slice().sort((a,b)=>a.upto-b.upto);
+  for(let i=0;i<table.length;i++){
+    if(weightKg<=table[i].upto) return {height:table[i].height, tierIndex:i, table};
+  }
+  return {height:table[table.length-1].height, tierIndex:table.length-1, table};
+}
+
+function bearingAreaMm2(faceAreaMm2){
+  // returns {area, covered} per placement preset for a given face
+  switch(state.placement){
+    case 'full_wrap': return {area: faceAreaMm2, covered:true};
+    case 'corner_block': return {area: 4*state.blockSize*state.blockSize, covered:true};
+    case 'end_cap': return {area: faceAreaMm2, covered:'end_only'};
+    case 'suspension': return {area: faceAreaMm2*(state.suspensionCoverage/100), covered:true};
+    case 'none': return {area: 0, covered:false};
+    default: return {area: faceAreaMm2, covered:true};
+  }
+}
+
+function setPlacement(key){
+  if(!PLACEMENTS.some(p=>p.key===key)) return;
+  state.placement = key;
+  renderPlacementUI();
+  recompute();
+}
+
+/* =========================================================
+   main compute + render
+   ========================================================= */
+function recompute(){
+  // 음수·비정상 입력 방어: 물리적으로 의미 없는 값은 최소값으로 보정
+  const weight = Math.max(0, +el('p_weight').value||0);
+  const L=Math.max(1,+el('p_L').value||1), W=Math.max(1,+el('p_W').value||1), H=Math.max(1,+el('p_H').value||1);
+  const criticalG = Math.max(1, +el('p_criticalG').value||1);
+
+  const board = DATA.board[+el('c_grade').value] || DATA.board[0];
+  const flute = DATA.flute[+el('c_flute').value] || DATA.flute[0];
+  const layers = Math.max(1, +el('c_layers').value||1);
+  const safety = Math.max(1, +el('c_safety').value||1);
+  const humidity = Math.min(0.9, Math.max(0, (+el('c_humidity').value||0)/100));
+
+  const matKey = el('cu_material').value;
+  const density = Math.max(1, +el('cu_density').value||1);
+  const thickness = Math.max(1, +el('cu_thickness').value||25);
+  const edgeF = Math.max(1, +el('cu_edgeF').value||1.3);
+  const cornerF = Math.max(1, +el('cu_cornerF').value||1.6);
+  const degrad = Math.min(0.8, Math.max(0, (+el('cu_degrad').value||0)/100));
+
+  const assuranceIdx = +el('p_assurance').value||0;
+  const assurance = DATA.assuranceLevels[assuranceIdx] || DATA.assuranceLevels[0];
+
+  const {height:h_ref_base, tierIndex, table} = getDropHeight(weight);
+  const h_ref = h_ref_base*assurance.factor;
+  const h_extra = (tierIndex>0 ? table[tierIndex-1].height : h_ref_base)*assurance.factor; // 한 단계 높은 낙하고(더 가벼운 구간 값) × Assurance Level 배율
+
+  // face areas (mm^2), pick the largest as "most likely face"
+  const faces = [
+    {name:'L×W면', area:L*W},
+    {name:'L×H면', area:L*H},
+    {name:'W×H면', area:W*H},
+  ].sort((a,b)=>b.area-a.area);
+  const mainFace = faces[0];
+
+  const weightN = weight*9.81;
+  const {area:bearingArea, covered} = bearingAreaMm2(mainFace.area);
+  const bearingArea_m2 = bearingArea/1_000_000;
+  const S_kPa = covered ? (weightN/bearingArea_m2)/1000 : null; // Pa->kPa
+
+  let G_face=null, G_edge=null, G_corner=null, G_extraDrop=null;
+  const qualitative = DATA.materials[matKey] && DATA.materials[matKey].qualitative;
+
+  if(!qualitative && covered!==false && S_kPa!=null){
+    G_face = cushionG(matKey, thickness, S_kPa);
+    G_edge = G_face*edgeF;
+    G_corner = G_face*cornerF;
+    const heightScale = Math.sqrt(h_extra/h_ref); // 에너지∝h, G∝√h 근사
+    G_extraDrop = G_face*heightScale*(1+degrad);
+  }
+
+  const marginFace = G_face!=null ? criticalG-G_face : null;
+  const marginEdge = G_edge!=null ? criticalG-G_edge*(1+degrad) : null;
+  const marginCorner = G_corner!=null ? criticalG-G_corner*(1+degrad) : null;
+  const marginExtra = G_extraDrop!=null ? criticalG-G_extraDrop : null;
+  const unprotectedFaces = covered==='end_only';
+  const noCushion = state.placement==='none';
+  const thicknessEff = noCushion ? 0 : thickness; // 완충재 없음 상태는 외형 치수에 완충두께 미반영
+
+  renderDropMargins({criticalG, G_face,G_edge,G_corner,G_extraDrop, marginFace,marginEdge,marginCorner,marginExtra, unprotectedFaces, qualitative});
+
+  // ---- compression (McKee) ----
+  const outerL=L+2*thicknessEff+2*flute.thickness, outerW=W+2*thicknessEff+2*flute.thickness;
+  const perimeter_m = 2*(outerL+outerW)/1000;
+  const thickness_m = flute.thickness/1000;
+  const BCT_kN = 5.87*board.ect*Math.sqrt(thickness_m*perimeter_m);
+  const BCT_eff = BCT_kN*(1-humidity);
+  const loadKN = (layers-1)*weight*9.81/1000;
+  const requiredKN = loadKN*safety;
+  const bctMargin = requiredKN>0 ? ((BCT_eff-requiredKN)/requiredKN)*100 : 999;
+  renderBCT({BCT_kN,BCT_eff,requiredKN,bctMargin,layers});
+
+  // ---- 가상 진동 테스트 (운송수단별 주파수 대역 기준 전달률 계산) ----
+  const zeta = +el('cu_zeta').value||0.2;
+  const vibThreshold = +el('vib_threshold').value||1.5;
+  const profile = DATA.vibrationProfiles[+el('vib_mode').value] || DATA.vibrationProfiles[0];
+  let f_n=null, vibTest=null, resonanceRisk=false;
+  if(G_face!=null){
+    const thickness_m2 = thickness/1000;
+    const deflection_m = thickness_m2*0.5; // 완충재 두께의 약 50% 압축을 가정한 근사
+    const k = (G_face*9.81*weight)/deflection_m; // N/m
+    f_n = (1/(2*Math.PI))*Math.sqrt(k/weight);
+    vibTest = computeVibTest(f_n, zeta, profile);
+    resonanceRisk = vibTest.inPeakBand && vibTest.maxT>=vibThreshold;
+  }
+  renderVibTest({f_n, zeta, profile, vibTest, resonanceRisk, vibThreshold});
+
+  // ---- volume efficiency & cost ----
+  const innerVol_m3 = (L*W*H)/1e9;
+  const outerH = H+2*thicknessEff+2*flute.thickness;
+  const cartonVol_m3 = (outerL*outerW*outerH)/1e9;
+  const volEff = (innerVol_m3/cartonVol_m3)*100;
+  const boardArea_m2 = 2*(outerL*outerW+outerL*outerH+outerW*outerH)/1e6;
+  const cushionVol_L = (bearingArea*thickness*(state.placement==='corner_block'?8: (state.placement==='end_cap'?2:6)))/1e6; // rough total volume (mm3->L via /1e6 approx *1000/1e9)
+  const boardCost = boardArea_m2*DATA.costBoard;
+  const cushionCost = (cushionVol_L)*DATA.costCushion;
+  renderEfficiency({volEff, boardArea_m2, boardCost, cushionCost, total:boardCost+cushionCost});
+
+  // ---- overall pass/fail ----
+  const margins = [marginFace,marginEdge,marginCorner,marginExtra].filter(m=>m!=null);
+  const overallPass = !noCushion && !qualitative && !unprotectedFaces && margins.length>0 && margins.every(m=>m>=0) && bctMargin>=0 && !resonanceRisk;
+  renderBadge(overallPass, qualitative, unprotectedFaces, noCushion);
+  renderPlainSummary({overallPass, qualitative, unprotectedFaces, noCushion, marginFace, marginEdge, marginCorner, marginExtra, bctMargin, resonanceRisk});
+
+  renderCycle({assurance,h_ref,h_extra,weight});
+  renderSamplingBox();
+  renderTestItemsBox();
+  renderSVG({L,W,H,thickness:thicknessEff,flute:flute.thickness,placement:state.placement,unprotectedFaces});
+
+  const envSeason = DATA.envSeasons[+el('env_season').value];
+  const envStorage = DATA.envStorage[+el('env_storage').value];
+
+  lastResult = {weight,L,W,H,criticalG,board,flute,layers,safety,humidity,matKey,density,thickness,edgeF,cornerF,degrad,
+    assurance,h_ref,h_extra,mainFace,S_kPa,G_face,G_edge,G_corner,G_extraDrop,marginFace,marginEdge,marginCorner,marginExtra,
+    BCT_kN,BCT_eff,requiredKN,bctMargin,f_n,zeta,profile,vibTest,vibThreshold,resonanceRisk,volEff,boardArea_m2,boardCost,cushionCost,overallPass,unprotectedFaces,qualitative,noCushion,
+    envSeason,envStorage};
+}
+let lastResult=null;
+
+function fmt(n,d=1){ return (n==null||isNaN(n)) ? '—' : n.toFixed(d); }
+
+function renderDropMargins({criticalG,G_face,G_edge,G_corner,G_extraDrop,marginFace,marginEdge,marginCorner,marginExtra,unprotectedFaces,qualitative}){
+  const box = el('dropMarginBox');
+  if(qualitative){
+    box.innerHTML = `<div class="warnbox">선택한 완충재는 정성(qualitative) 등급 재질입니다. 곡선 데이터가 없어 정량 G 마진을 계산하지 않습니다. 경량·저손상위험 제품에 한해 사용을 권장하며, 별도 실낙하 시험으로 판정하세요.</div>`;
+    return;
+  }
+  box.innerHTML='';
+  if(unprotectedFaces){
+    box.innerHTML += `<div class="flagbox">엔드캡 배치: 측면 4면은 완충재 없이 카톤이 직접 지지합니다 — 해당 면 낙하는 정량 예측 불가(별도 검토 필요).</div>`;
+  }
+  const rows = [
+    ['면(Face)', G_face, marginFace],
+    ['모서리(Edge)', G_edge, marginEdge],
+    ['코너(Corner)', G_corner, marginCorner],
+    ['최빈면 추가낙하(1단 높은 낙하고)', G_extraDrop, marginExtra],
+  ];
+  rows.forEach(([label,G,margin])=>{
+    const pass = margin!=null && margin>=0;
+    const pct = G!=null ? Math.min(100,(G/criticalG)*100) : 0;
+    const row = document.createElement('div'); row.className='margin-row';
+    row.innerHTML = `
+      <div>${label}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${pass?'var(--pass-green)':'var(--su-red)'}"></div></div>
+      <div>${G!=null?fmt(G,1)+' G':'—'}</div>
+      <div class="chip ${G==null?'na':(pass?'pass':'fail')}">${G==null?'N/A':(pass?'PASS ✓':'FAIL ✕')}</div>`;
+    box.appendChild(row);
+  });
+  const note=document.createElement('div'); note.className='hint';
+  note.textContent = `Critical G = ${criticalG}G 기준. 마진(양수)=critical G − 전달 G. 다중낙하 열화 보정 반영됨(모서리/코너/추가낙하).`;
+  box.appendChild(note);
+}
+
+function renderBCT({BCT_kN,BCT_eff,requiredKN,bctMargin,layers}){
+  const pass = bctMargin>=0;
+  el('bctBox').innerHTML = `
+    <div class="kv"><span>McKee 근사 BCT</span><b>${fmt(BCT_kN,2)} kN</b></div>
+    <div class="kv"><span>습윤 강도저하 반영 BCT</span><b>${fmt(BCT_eff,2)} kN</b></div>
+    <div class="kv"><span>예상 상단하중×안전계수 (${layers}단)</span><b>${fmt(requiredKN,2)} kN</b></div>
+    <div class="kv"><span>마진</span><b style="color:${pass?'var(--pass-green)':'var(--su-red)'}">${fmt(bctMargin,1)}%</b></div>
+    <span class="chip ${pass?'pass':'fail'}">${pass?'PASS ✓':'FAIL ✕'}</span>
+    <div class="hint" style="margin-top:6px;">McKee 경험식 근사치입니다. 개구부·인쇄·실제 적재조건에 따라 실측값과 차이가 클 수 있습니다.</div>`;
+}
+
+function computeVibTest(fn, zeta, profile){
+  // 1자유도 전달률(transmissibility) 스윕: T(r,ζ) = √(1+(2ζr)²) / √((1-r²)²+(2ζr)²), r=f/fn
+  const N=60;
+  const freqs=[], Ts=[];
+  for(let i=0;i<=N;i++){
+    const f = profile.lowHz + (profile.highHz-profile.lowHz)*i/N;
+    const r = fn>0 ? f/fn : 0;
+    const T = Math.sqrt(1+(2*zeta*r)**2) / Math.sqrt((1-r*r)**2+(2*zeta*r)**2);
+    freqs.push(f); Ts.push(T);
+  }
+  let maxT=-Infinity, maxF=freqs[0];
+  freqs.forEach((f,i)=>{ if(Ts[i]>maxT){maxT=Ts[i]; maxF=f;} });
+  const inPeakBand = maxF>=profile.peakLow && maxF<=profile.peakHigh;
+  return {freqs,Ts,maxT,maxF,inPeakBand};
+}
+
+function vibChartSVG(vibTest, profile, fn){
+  const w=280,h=90,padL=4,padR=4,padT=6,padB=4;
+  const {freqs,Ts,maxT}=vibTest;
+  const Tcap = Math.max(3, Math.ceil(maxT));
+  const x = f => padL + (w-padL-padR)*(f-profile.lowHz)/(profile.highHz-profile.lowHz);
+  const y = T => h-padB - (h-padT-padB)*Math.min(T,Tcap)/Tcap;
+  const path = freqs.map((f,i)=>`${i===0?'M':'L'}${x(f).toFixed(1)},${y(Ts[i]).toFixed(1)}`).join(' ');
+  const bandX1 = x(Math.max(profile.lowHz,profile.peakLow)), bandX2 = x(Math.min(profile.highHz,profile.peakHigh));
+  const fnX = (fn>=profile.lowHz && fn<=profile.highHz) ? x(fn) : null;
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}">
+    <rect x="${bandX1}" y="0" width="${Math.max(0,bandX2-bandX1)}" height="${h}" fill="#FFF0F3"/>
+    <line x1="${padL}" y1="${y(1)}" x2="${w-padR}" y2="${y(1)}" stroke="#DADDE0" stroke-dasharray="2 2"/>
+    <path d="${path}" fill="none" stroke="var(--su-red)" stroke-width="1.6"/>
+    ${fnX!=null?`<line x1="${fnX}" y1="0" x2="${fnX}" y2="${h}" stroke="#4E7FAF" stroke-width="1.2" stroke-dasharray="3 2"/>`:''}
+    <text x="${padL}" y="${h-1}" font-size="7" fill="#727171">${profile.lowHz}Hz</text>
+    <text x="${w-padR}" y="${h-1}" font-size="7" fill="#727171" text-anchor="end">${profile.highHz}Hz</text>
+  </svg>`;
+}
+
+function renderVibTest({f_n,zeta,profile,vibTest,resonanceRisk,vibThreshold}){
+  const box = el('vibTestBox');
+  if(f_n==null || !vibTest){
+    box.innerHTML = '<div class="hint">완충 G값이 계산되지 않아 진동테스트를 생략합니다.</div>';
+    return;
+  }
+  box.innerHTML = `
+    <div class="kv"><span>운송수단</span><b>${profile.name}</b></div>
+    <div class="kv"><span>추정 고유진동수 (제품+완충재)</span><b>${fmt(f_n,1)} Hz</b></div>
+    <div class="kv"><span>감쇠비 ζ / 임계 전달률</span><b>${zeta} / ${vibThreshold}배</b></div>
+    <div class="kv"><span>스윕 최대 전달률</span><b>${fmt(vibTest.maxT,2)}배 @ ${fmt(vibTest.maxF,1)}Hz</b></div>
+    ${vibChartSVG(vibTest, profile, f_n)}
+    <div class="hint" style="margin-top:2px;">분홍 영역=해당 운송수단의 주요 에너지 대역, 점선(파랑)=고유진동수 위치, 가로 점선=전달률 1(증폭 없음) 기준선.</div>
+    ${resonanceRisk?`<div class="flagbox">⚠ 주요 에너지 대역 내에서 전달률이 임계값(${vibThreshold}배)을 초과합니다 — 공진에 의한 진동 증폭 위험. 완충재 두께/재질/배치 변경 검토.</div>`
+      :`<div class="hint">주요 에너지 대역 내 공진 위험 낮음(1자유도 근사, 실측 랜덤진동시험(PSD)으로 최종 검증 권장).</div>`}`;
+}
+
+function renderEfficiency({volEff,boardArea_m2,boardCost,cushionCost,total}){
+  el('efficiencyBox').innerHTML = `
+    <div class="kv"><span>부피효율</span><b>${fmt(volEff,1)}%</b></div>
+    <div class="kv"><span>골판지 면적</span><b>${fmt(boardArea_m2,3)} m²</b></div>
+    <div class="kv"><span>골판지 원가(추정)</span><b>${Math.round(boardCost).toLocaleString()}원</b></div>
+    <div class="kv"><span>완충재 원가(추정)</span><b>${Math.round(cushionCost).toLocaleString()}원</b></div>
+    <div class="kv"><span>합계(추정)</span><b>${Math.round(total).toLocaleString()}원</b></div>
+    <div class="hint">단가는 데이터 편집 패널에서 조정 가능. 실제 조달가와 차이 있을 수 있음.</div>`;
+}
+
+function renderPlainSummary({overallPass, qualitative, unprotectedFaces, noCushion, marginFace, marginEdge, marginCorner, marginExtra, bctMargin, resonanceRisk}){
+  const box = el('plainSummary');
+  if(noCushion){
+    box.className = 'plain-summary warn';
+    box.innerHTML = '📦 아직 완충재가 없어요! 가운데 화면의 완충재 카드를 <b>박스 안으로 끌어다 놓아</b> 보세요. 어떤 배치가 좋은지 결과가 바로 계산됩니다.';
+    return;
+  }
+  if(qualitative){
+    box.className = 'plain-summary warn';
+    box.innerHTML = '⚠️ 지금 고른 완충재는 수치로 계산할 수 없는 재질이라 결과를 판단할 수 없어요. 다른 완충재를 골라보세요.';
+    return;
+  }
+  if(overallPass){
+    box.className = 'plain-summary ok';
+    box.innerHTML = '✅ 좋아요! 지금 설정대로면 운송 시험을 통과할 가능성이 높다고 예측돼요.';
+    return;
+  }
+  const reasons = [];
+  if(unprotectedFaces) reasons.push('완충재가 없는 면이 있어서 그 부분은 확인이 안 돼요 — 배치 방법을 바꿔보세요');
+  if([marginFace,marginEdge,marginCorner,marginExtra].some(m=>m!=null && m<0)) reasons.push('떨어뜨렸을 때 충격이 제품이 버틸 수 있는 한계보다 커요 — 완충재를 더 두껍게 하거나 재질을 바꿔보세요');
+  if(bctMargin<0) reasons.push('박스를 쌓아 올렸을 때 눌려서 찌그러질 수 있어요 — 더 튼튼한 박스 등급을 골라보세요');
+  if(resonanceRisk) reasons.push('운송 중 흔들림이 심해지는 구간과 겹쳐요 — 완충재 두께나 재질을 바꿔보세요');
+  box.className = 'plain-summary warn';
+  box.innerHTML = `⚠️ 지금 설정대로면 통과가 어려울 수 있어요. 이유:<ul>${reasons.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+}
+
+function renderBadge(pass, qualitative, unprotectedFaces, noCushion){
+  const badge = el('passBadge');
+  if(noCushion){
+    badge.className='badge-pass fail';
+    badge.textContent = '판정불가 (완충재 없음)';
+    return;
+  }
+  if(qualitative || unprotectedFaces){
+    badge.className='badge-pass fail';
+    badge.textContent = qualitative ? '판정불가 (정성 재질)' : '판정불가 (미보호 면 존재)';
+    return;
+  }
+  badge.className='badge-pass '+(pass?'pass':'fail');
+  badge.textContent = pass ? 'PASS ✓ (예측)' : 'FAIL ✕ (예측)';
+}
+
+function renderCycle({assurance,h_ref,h_extra,weight}){
+  const totalHours = DATA.distributionCycle.reduce((s,c)=>s+c.hours,0);
+  const rows = DATA.distributionCycle.map(c=>`<tr><td>${c.stage}</td><td style="text-align:left;">${c.route}</td><td>${c.hours}h</td></tr>`).join('');
+  el('sequenceBox').innerHTML = `
+    <table class="datatbl"><tr><th>단계</th><th style="text-align:left;">구간/방법</th><th>시간</th></tr>${rows}
+      <tr><td colspan="2" style="text-align:right;font-weight:600;">총 사이클 시간</td><td><b>${totalHours}h</b></td></tr></table>
+    <div class="kv" style="margin-top:8px;"><span>Assurance Level</span><b>${assurance.name} (배율 ×${assurance.factor})</b></div>
+    <div class="kv"><span>핸들링 낙하고 (${fmt(weight,1)}kg 구간, Level 적용)</span><b>${h_ref.toFixed(0)} mm</b></div>
+    <div class="kv"><span>연속 취급(핸들링) 1회 추가 낙하고</span><b>${h_extra.toFixed(0)} mm</b></div>
+    <div class="hint">핸들링(충격) 단계에는 낙하 충격 스케줄을, 지상/항공·해상운송 단계에는 좌측 "운송 진동 조건"에서 선택한 진동 프로파일을 대응시켜 확인하세요. 값은 사내 SOP 예시 — 원문·SOP 대조 필수.</div>`;
+}
+
+function renderSamplingBox(){
+  const rows = DATA.samplingPlan.map(s=>`<tr><td>${s.lot}</td><td>${s.level}</td><td>${s.aql}</td><td>${s.sampleSize}</td><td>${s.ac}</td><td>${s.re}</td></tr>`).join('');
+  el('samplingBox').innerHTML = `
+    <table class="datatbl"><tr><th>로트 크기</th><th>검사수준</th><th>AQL</th><th>샘플수</th><th>Ac</th><th>Re</th></tr>${rows}</table>
+    <div class="hint" style="margin-top:6px;">단일 포장단위(파렛트)=1로트로 간주. ISO 2859-1 예시값 — 실제 표준 원문·사내 SOP로 검증 필요.</div>`;
+}
+
+function renderTestItemsBox(){
+  const rows = DATA.testItems.map(t=>`<tr><td>${t.name}</td><td style="text-align:left;">${t.criteria}</td></tr>`).join('');
+  el('testItemsBox').innerHTML = `
+    <table class="datatbl"><tr><th>검사 항목</th><th style="text-align:left;">판정 기준</th></tr>${rows}</table>
+    <div class="hint" style="margin-top:6px;">사이클 전/후 동일 항목으로 비교. 항목·기준은 데이터 편집에서 제품에 맞게 수정하세요.</div>`;
+}
+
+function renderSVG({L,W,H,thickness,flute,placement,unprotectedFaces}){
+  const vb_w=320, vb_h=240;
+  const maxDim = Math.max(L,H);
+  const scale = Math.min((vb_w-40)/(L+2*thickness+2*flute), (vb_h-40)/(H+2*thickness+2*flute));
+  const bw=(L+2*thickness+2*flute)*scale, bh=(H+2*thickness+2*flute)*scale;
+  const pw=L*scale, ph=H*scale;
+  const cx=vb_w/2, cy=vb_h/2;
+  const boxX=cx-bw/2, boxY=cy-bh/2;
+  const prodX=cx-pw/2, prodY=cy-ph/2;
+  const cush = thickness*scale;
+  const cushColor = unprotectedFaces ? '#FDE9EE' : '#FFD37A';
+  const cushStroke = unprotectedFaces ? 'var(--su-red)' : '#E0A93A';
+
+  let cushionShapes='';
+  if(placement==='full_wrap'){
+    cushionShapes = `<rect x="${boxX+flute*scale}" y="${boxY+flute*scale}" width="${bw-2*flute*scale}" height="${bh-2*flute*scale}" fill="${cushColor}" stroke="${cushStroke}"/>`;
+  } else if(placement==='corner_block'){
+    const bs=Math.max(8,Math.min(cush,20));
+    const corners=[[prodX-bs,prodY-bs],[prodX+pw,prodY-bs],[prodX-bs,prodY+ph],[prodX+pw,prodY+ph]];
+    cushionShapes = corners.map(([x,y])=>`<rect x="${x}" y="${y}" width="${bs}" height="${bs}" fill="${cushColor}" stroke="${cushStroke}"/>`).join('');
+  } else if(placement==='end_cap'){
+    cushionShapes = `<rect x="${prodX}" y="${prodY-cush}" width="${pw}" height="${cush}" fill="${cushColor}" stroke="${cushStroke}"/>
+                      <rect x="${prodX}" y="${prodY+ph}" width="${pw}" height="${cush}" fill="${cushColor}" stroke="${cushStroke}"/>`;
+  } else if(placement==='suspension'){
+    const g=cush*0.6;
+    cushionShapes = `<rect x="${prodX-g}" y="${prodY-g}" width="${pw+2*g}" height="${ph+2*g}" fill="none" stroke="${cushStroke}" stroke-width="2" stroke-dasharray="4 3"/>
+      <line x1="${prodX-g}" y1="${prodY-g}" x2="${boxX+flute*scale}" y2="${boxY+flute*scale}" stroke="${cushStroke}" stroke-width="1.5"/>
+      <line x1="${prodX+pw+g}" y1="${prodY-g}" x2="${boxX+bw-flute*scale}" y2="${boxY+flute*scale}" stroke="${cushStroke}" stroke-width="1.5"/>
+      <line x1="${prodX-g}" y1="${prodY+ph+g}" x2="${boxX+flute*scale}" y2="${boxY+bh-flute*scale}" stroke="${cushStroke}" stroke-width="1.5"/>
+      <line x1="${prodX+pw+g}" y1="${prodY+ph+g}" x2="${boxX+bw-flute*scale}" y2="${boxY+bh-flute*scale}" stroke="${cushStroke}" stroke-width="1.5"/>`;
+  }
+
+  let overlay='';
+  if(placement==='none'){
+    cushionShapes = `<rect x="${prodX-4}" y="${prodY-4}" width="${pw+8}" height="${ph+8}" fill="none" stroke="var(--su-red)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    overlay = `<text x="${cx}" y="${prodY+ph/2-6}" text-anchor="middle" font-size="12" fill="#8A0030" font-weight="700">완충재 없음</text>
+      <text x="${cx}" y="${prodY+ph/2+10}" text-anchor="middle" font-size="9" fill="#8A0030">위 카드를 여기로 끌어다 놓으세요</text>`;
+  } else if(cushionShapes){
+    cushionShapes = `<g onclick="setPlacement('none')" style="cursor:pointer"><title>클릭하면 완충재를 뺍니다</title>${cushionShapes}</g>`;
+  }
+
+  el('svgWrap').innerHTML = `<svg viewBox="0 0 ${vb_w} ${vb_h}" xmlns="http://www.w3.org/2000/svg">
+    <rect x="${boxX}" y="${boxY}" width="${bw}" height="${bh}" fill="none" stroke="#C9704A" stroke-width="3"/>
+    ${cushionShapes}
+    <rect x="${prodX}" y="${prodY}" width="${pw}" height="${ph}" fill="#8FB8DE" stroke="#4E7FAF" stroke-width="1.5" pointer-events="none"/>
+    ${overlay}
+    <text x="${cx}" y="${vb_h-8}" text-anchor="middle" font-size="9" fill="#727171">정면 단면 개략도 (배치: ${PLACEMENTS.find(p=>p.key===placement).label})</text>
+  </svg>`;
+}
+
+/* =========================================================
+   data modal
+   ========================================================= */
+function openDataModal(){
+  renderDropHeightTable();
+  renderCurveEditor();
+  renderBoardTable();
+  renderFluteTable();
+  renderVibProfileTable();
+  renderAssuranceTable();
+  renderCycleTable();
+  renderSeasonTable();
+  renderStorageTable();
+  renderSamplingTable();
+  renderTestItemTable();
+  el('cost_board').value = DATA.costBoard;
+  el('cost_cushion').value = DATA.costCushion;
+  el('dataModal').classList.add('open');
+}
+function closeDataModal(){ el('dataModal').classList.remove('open'); }
+
+function renderDropHeightTable(){
+  const t = el('dropHeightTable');
+  let html = '<tr><th>무게 상한(kg)</th><th>낙하고(mm)</th><th></th></tr>';
+  DATA.dropHeight.forEach((r,i)=>{
+    html += `<tr>
+      <td><input type="number" value="${r.upto}" onchange="DATA.dropHeight[${i}].upto=+this.value"></td>
+      <td><input type="number" value="${r.height}" onchange="DATA.dropHeight[${i}].height=+this.value"></td>
+      <td><button class="btn small" onclick="DATA.dropHeight.splice(${i},1);renderDropHeightTable();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addDropRow(){ DATA.dropHeight.push({upto:100,height:200}); renderDropHeightTable(); }
+
+function renderCurveEditor(){
+  const area = el('curveEditArea'); area.innerHTML='';
+  Object.keys(DATA.materials).forEach(key=>{
+    const mat = DATA.materials[key];
+    const div = document.createElement('div');
+    if(mat.qualitative){
+      div.innerHTML = `<b>${mat.label}</b><div class="hint">정성 등급 재질 — 곡선 데이터 없음(의도적으로 정량화하지 않음).</div>`;
+      area.appendChild(div); return;
+    }
+    let rows = mat.points.map((p,i)=>`<tr>
+        <td><input type="number" value="${p[0]}" onchange="DATA.materials['${key}'].points[${i}][0]=+this.value"></td>
+        <td><input type="number" value="${p[1]}" onchange="DATA.materials['${key}'].points[${i}][1]=+this.value"></td>
+        <td><button class="btn small" onclick="DATA.materials['${key}'].points.splice(${i},1);renderCurveEditor();">×</button></td>
+      </tr>`).join('');
+    div.innerHTML = `<b>${mat.label}</b> <span class="hint">기준두께 ${mat.tRef}mm</span>
+      <table class="datatbl"><tr><th>S(kPa)</th><th>G</th><th></th></tr>${rows}</table>
+      <button class="btn small" onclick="DATA.materials['${key}'].points.push([10,50]);renderCurveEditor();">+ 포인트 추가</button>`;
+    area.appendChild(div);
+  });
+}
+
+function renderBoardTable(){
+  const t = el('boardTable');
+  let html = '<tr><th>등급명</th><th>ECT(kN/m)</th><th></th></tr>';
+  DATA.board.forEach((b,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${b.grade}" onchange="DATA.board[${i}].grade=this.value"></td>
+      <td><input type="number" step="0.1" value="${b.ect}" onchange="DATA.board[${i}].ect=+this.value"></td>
+      <td><button class="btn small" onclick="DATA.board.splice(${i},1);renderBoardTable();populateSelects();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addBoardRow(){ DATA.board.push({grade:'신규등급', ect:4.0}); renderBoardTable(); populateSelects(); }
+
+function renderVibProfileTable(){
+  const t = el('vibProfileTable');
+  let html = '<tr><th>운송수단</th><th>하한Hz</th><th>상한Hz</th><th>피크 하한Hz</th><th>피크 상한Hz</th><th>비고</th><th></th></tr>';
+  DATA.vibrationProfiles.forEach((v,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${v.name}" onchange="DATA.vibrationProfiles[${i}].name=this.value;populateSelects();"></td>
+      <td><input type="number" value="${v.lowHz}" onchange="DATA.vibrationProfiles[${i}].lowHz=+this.value;populateSelects();"></td>
+      <td><input type="number" value="${v.highHz}" onchange="DATA.vibrationProfiles[${i}].highHz=+this.value;populateSelects();"></td>
+      <td><input type="number" value="${v.peakLow}" onchange="DATA.vibrationProfiles[${i}].peakLow=+this.value;updateVibModeNote();"></td>
+      <td><input type="number" value="${v.peakHigh}" onchange="DATA.vibrationProfiles[${i}].peakHigh=+this.value;updateVibModeNote();"></td>
+      <td><input type="text" value="${v.note}" onchange="DATA.vibrationProfiles[${i}].note=this.value;updateVibModeNote();"></td>
+      <td><button class="btn small" onclick="DATA.vibrationProfiles.splice(${i},1);renderVibProfileTable();populateSelects();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addVibProfileRow(){
+  DATA.vibrationProfiles.push({name:'신규 운송수단', lowHz:2, highHz:100, peakLow:5, peakHigh:20, note:'예시'});
+  renderVibProfileTable(); populateSelects();
+}
+
+function renderAssuranceTable(){
+  const t = el('assuranceTable');
+  let html = '<tr><th>Level</th><th>배율</th></tr>';
+  DATA.assuranceLevels.forEach((a,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${a.name}" onchange="DATA.assuranceLevels[${i}].name=this.value"></td>
+      <td><input type="number" step="0.01" value="${a.factor}" onchange="DATA.assuranceLevels[${i}].factor=+this.value"></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+
+function renderCycleTable(){
+  const t = el('cycleTable');
+  let html = '<tr><th>단계</th><th>구간/방법</th><th>시간(h)</th><th></th></tr>';
+  DATA.distributionCycle.forEach((c,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${c.stage}" onchange="DATA.distributionCycle[${i}].stage=this.value"></td>
+      <td><input type="text" value="${c.route}" onchange="DATA.distributionCycle[${i}].route=this.value"></td>
+      <td><input type="number" step="0.5" value="${c.hours}" onchange="DATA.distributionCycle[${i}].hours=+this.value"></td>
+      <td><button class="btn small" onclick="DATA.distributionCycle.splice(${i},1);renderCycleTable();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addCycleRow(){ DATA.distributionCycle.push({stage:'신규 단계', route:'예시 구간', hours:1}); renderCycleTable(); }
+
+function renderSeasonTable(){
+  const t = el('seasonTable');
+  let html = '<tr><th>계절</th><th>온도</th><th></th></tr>';
+  DATA.envSeasons.forEach((s,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${s.name}" onchange="DATA.envSeasons[${i}].name=this.value;populateSelects();"></td>
+      <td><input type="text" value="${s.temp}" onchange="DATA.envSeasons[${i}].temp=this.value;populateSelects();"></td>
+      <td><button class="btn small" onclick="DATA.envSeasons.splice(${i},1);renderSeasonTable();populateSelects();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addSeasonRow(){ DATA.envSeasons.push({name:'신규 계절', temp:'0°C'}); renderSeasonTable(); populateSelects(); }
+
+function renderStorageTable(){
+  const t = el('storageTable');
+  let html = '<tr><th>조건명</th><th>온도</th><th>상대습도</th><th></th></tr>';
+  DATA.envStorage.forEach((s,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${s.name}" onchange="DATA.envStorage[${i}].name=this.value;populateSelects();"></td>
+      <td><input type="text" value="${s.temp}" onchange="DATA.envStorage[${i}].temp=this.value;populateSelects();"></td>
+      <td><input type="text" value="${s.rh}" onchange="DATA.envStorage[${i}].rh=this.value;populateSelects();"></td>
+      <td><button class="btn small" onclick="DATA.envStorage.splice(${i},1);renderStorageTable();populateSelects();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addStorageRow(){ DATA.envStorage.push({name:'신규 조건', temp:'0°C', rh:'50%RH'}); renderStorageTable(); populateSelects(); }
+
+function renderSamplingTable(){
+  const t = el('samplingTable');
+  let html = '<tr><th>로트 크기</th><th>검사수준</th><th>AQL</th><th>샘플수</th><th>Ac</th><th>Re</th><th></th></tr>';
+  DATA.samplingPlan.forEach((s,i)=>{
+    html += `<tr>
+      <td><input type="number" value="${s.lot}" onchange="DATA.samplingPlan[${i}].lot=+this.value"></td>
+      <td><input type="text" value="${s.level}" onchange="DATA.samplingPlan[${i}].level=this.value"></td>
+      <td><input type="number" step="0.1" value="${s.aql}" onchange="DATA.samplingPlan[${i}].aql=+this.value"></td>
+      <td><input type="number" value="${s.sampleSize}" onchange="DATA.samplingPlan[${i}].sampleSize=+this.value"></td>
+      <td><input type="number" value="${s.ac}" onchange="DATA.samplingPlan[${i}].ac=+this.value"></td>
+      <td><input type="number" value="${s.re}" onchange="DATA.samplingPlan[${i}].re=+this.value"></td>
+      <td><button class="btn small" onclick="DATA.samplingPlan.splice(${i},1);renderSamplingTable();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addSamplingRow(){ DATA.samplingPlan.push({lot:160, level:'S-2', aql:2.5, sampleSize:5, ac:0, re:1}); renderSamplingTable(); }
+
+function renderTestItemTable(){
+  const t = el('testItemTable');
+  let html = '<tr><th>검사 항목</th><th>판정 기준</th><th></th></tr>';
+  DATA.testItems.forEach((it,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${it.name}" onchange="DATA.testItems[${i}].name=this.value"></td>
+      <td><input type="text" value="${it.criteria}" onchange="DATA.testItems[${i}].criteria=this.value"></td>
+      <td><button class="btn small" onclick="DATA.testItems.splice(${i},1);renderTestItemTable();">삭제</button></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+function addTestItemRow(){ DATA.testItems.push({name:'신규 항목', criteria:'예시 기준'}); renderTestItemTable(); }
+
+function renderFluteTable(){
+  const t = el('fluteTable');
+  let html = '<tr><th>Flute</th><th>판두께(mm)</th></tr>';
+  DATA.flute.forEach((f,i)=>{
+    html += `<tr>
+      <td><input type="text" value="${f.name}" onchange="DATA.flute[${i}].name=this.value"></td>
+      <td><input type="number" step="0.1" value="${f.thickness}" onchange="DATA.flute[${i}].thickness=+this.value"></td>
+    </tr>`;
+  });
+  t.innerHTML = html;
+}
+
+function applyDataEdits(){
+  DATA.costBoard = +el('cost_board').value||0;
+  DATA.costCushion = +el('cost_cushion').value||0;
+  savePersisted();
+  populateSelects();
+  closeDataModal();
+  recompute();
+}
+function resetDefaults(){
+  if(!confirm('모든 데이터 테이블을 기본 예시값으로 초기화합니다. 계속할까요?')) return;
+  DATA = JSON.parse(JSON.stringify(DEFAULTS));
+  savePersisted();
+  populateSelects();
+  openDataModal();
+  recompute();
+}
+
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(DATA,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'packaging_sim_data.json';
+  a.click();
+}
+function importJSON(evt){
+  const file = evt.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      DATA = JSON.parse(e.target.result);
+      savePersisted(); populateSelects(); recompute();
+      alert('데이터를 불러왔습니다.');
+    }catch(err){ alert('JSON 파싱 실패: '+err.message); }
+  };
+  reader.readAsText(file);
+}
+
+/* =========================================================
+   reports
+   ========================================================= */
+function openReportModal(){ el('reportModal').classList.add('open'); showReport('protocol'); }
+function closeReportModal(){ el('reportModal').classList.remove('open'); }
+
+function showReport(kind){
+  if(!lastResult) recompute();
+  const r = lastResult;
+  const today = new Date().toISOString().slice(0,10);
+  let html='';
+  if(kind==='protocol'){
+    const cycleRows = DATA.distributionCycle.map(c=>`<tr><td>${c.stage}</td><td>${c.route}</td><td>${c.hours}h</td></tr>`).join('');
+    const totalHours = DATA.distributionCycle.reduce((s,c)=>s+c.hours,0);
+    const storageRows = DATA.envStorage.map(s=>`<tr><td>${s.name}</td><td>${s.temp}</td><td>${s.rh}</td><td>72h</td></tr>`).join('');
+    const samplingRows = DATA.samplingPlan.map(s=>`<tr><td>${s.lot}</td><td>${s.level}</td><td>${s.aql}</td><td>${s.sampleSize}</td><td>${s.ac}/${s.re}</td></tr>`).join('');
+    const testItemRows = DATA.testItems.map(t=>`<tr><td>${t.name}</td><td>${t.criteria}</td></tr>`).join('');
+    html = `<h4>밸리데이션 프로토콜 초안</h4>
+    <table class="datatbl" style="text-align:left;">
+      <tr><th>항목</th><th>내용</th></tr>
+      <tr><td>규격</td><td>ASTM D4169 Distribution Cycle 13 (DC-13), 사내 SOP 절차 기준</td></tr>
+      <tr><td>Assurance Level</td><td>${r.assurance.name} (핸들링 낙하고 배율 ×${r.assurance.factor})</td></tr>
+      <tr><td>핸들링 낙하고</td><td>${r.h_ref.toFixed(0)} mm (${fmt(r.weight,1)}kg 구간, 예시 테이블 기준)</td></tr>
+      <tr><td>연속 취급 추가 낙하고</td><td>${r.h_extra.toFixed(0)} mm</td></tr>
+      <tr><td>압축 시험 조건</td><td>적재 ${r.layers}단, 안전계수 ${r.safety}, 습윤강도저하 ${Math.round(r.humidity*100)}%</td></tr>
+      <tr><td>진동(사이클 대응)</td><td>가상 진동테스트 — ${r.profile?r.profile.name:'—'} 기준 ${r.profile?r.profile.lowHz+'-'+r.profile.highHz:'—'}Hz 스윕, 주요대역 ${r.profile?r.profile.peakLow+'-'+r.profile.peakHigh:'—'}Hz (L2 1자유도 근사, 실측 PSD 별도 필요)</td></tr>
+      <tr><td>환경 조건</td><td>${r.envSeason?r.envSeason.name+'('+r.envSeason.temp+')':'—'} 유통 후 ${r.envStorage?r.envStorage.name+'('+r.envStorage.temp+'/'+r.envStorage.rh+')':'—'} 72h 보관</td></tr>
+      <tr><td>판정기준</td><td>낙하/진동 후 critical G(${r.criticalG}G) 초과 없음, BCT 마진 ≥0%, 좌측 제품 성능 검사 항목 전부 Pass, 포장·제품 손상 없음</td></tr>
+    </table>
+    <h4 style="margin-top:14px;">유통 사이클 (ASTM D4169 DC-13)</h4>
+    <table class="datatbl" style="text-align:left;"><tr><th>단계</th><th>구간/방법</th><th>시간</th></tr>${cycleRows}
+      <tr><td colspan="2" style="text-align:right;"><b>총 사이클 시간</b></td><td><b>${totalHours}h</b></td></tr></table>
+    <h4 style="margin-top:14px;">사이클 종료 후 온습도 보관 조건 (각 72h)</h4>
+    <table class="datatbl" style="text-align:left;"><tr><th>조건</th><th>온도</th><th>상대습도</th><th>기간</th></tr>${storageRows}</table>
+    <h4 style="margin-top:14px;">샘플링 계획 (ISO 2859-1)</h4>
+    <table class="datatbl" style="text-align:left;"><tr><th>로트</th><th>검사수준</th><th>AQL</th><th>샘플수</th><th>Ac/Re</th></tr>${samplingRows}</table>
+    <h4 style="margin-top:14px;">제품 성능 검사 항목 (사이클 전후 비교)</h4>
+    <table class="datatbl" style="text-align:left;"><tr><th>항목</th><th>판정 기준</th></tr>${testItemRows}</table>
+    <div class="warnbox">본 프로토콜 초안은 시뮬레이션 기반 제안이며, 실제 시험은 ASTM D4169 원문 및 사내 운송 밸리데이션 절차를 따라야 합니다.</div>`;
+  } else if(kind==='spec'){
+    html = `<h4>포장 스펙시트 (BOM)</h4>
+    <table class="datatbl" style="text-align:left;">
+      <tr><th>구성</th><th>사양</th></tr>
+      <tr><td>제품</td><td>${r.L}×${r.W}×${r.H}mm, ${fmt(r.weight,2)}kg, critical G ${r.criticalG}G</td></tr>
+      <tr><td>카톤</td><td>${r.board.grade}, Flute ${r.flute.name}(${r.flute.thickness}mm), 골판지 면적 ${fmt(r.boardArea_m2,3)}m²</td></tr>
+      <tr><td>완충재</td><td>${DATA.materials[r.matKey].label}, 밀도 ${r.density}kg/m³, 두께 ${r.thickness}mm, 배치: ${PLACEMENTS.find(p=>p.key===state.placement).label}</td></tr>
+      <tr><td>부피효율</td><td>${fmt(r.volEff,1)}%</td></tr>
+      <tr><td>원가 추정</td><td>골판지 ${Math.round(r.boardCost).toLocaleString()}원 + 완충재 ${Math.round(r.cushionCost).toLocaleString()}원 = ${Math.round(r.boardCost+r.cushionCost).toLocaleString()}원</td></tr>
+    </table>`;
+  } else {
+    html = `<h4>예측 리포트</h4>
+    <table class="datatbl" style="text-align:left;">
+      <tr><th>항목</th><th>예측값</th><th>판정</th></tr>
+      <tr><td>면(Face) G 마진</td><td>${fmt(r.marginFace)}G</td><td>${r.marginFace>=0?'PASS':'FAIL'}</td></tr>
+      <tr><td>모서리(Edge) G 마진</td><td>${fmt(r.marginEdge)}G</td><td>${r.marginEdge>=0?'PASS':'FAIL'}</td></tr>
+      <tr><td>코너(Corner) G 마진</td><td>${fmt(r.marginCorner)}G</td><td>${r.marginCorner>=0?'PASS':'FAIL'}</td></tr>
+      <tr><td>최빈면 추가낙하 마진</td><td>${fmt(r.marginExtra)}G</td><td>${r.marginExtra>=0?'PASS':'FAIL'}</td></tr>
+      <tr><td>압축(BCT) 마진</td><td>${fmt(r.bctMargin,1)}%</td><td>${r.bctMargin>=0?'PASS':'FAIL'}</td></tr>
+      <tr><td>가상 진동테스트 (${r.profile?r.profile.name:'—'})</td><td>고유진동수 ${fmt(r.f_n,1)}Hz, 최대전달률 ${r.vibTest?fmt(r.vibTest.maxT,2):'—'}배@${r.vibTest?fmt(r.vibTest.maxF,1):'—'}Hz</td><td>${r.resonanceRisk?'공진 위험':'낮음'}</td></tr>
+      <tr><td>종합 판정(예측)</td><td colspan="2"><b>${r.overallPass?'PASS ✓':'FAIL ✕'}</b></td></tr>
+    </table>
+    <div class="warnbox">생성일 ${today} · 시뮬레이션 예측 — 실물 ASTM D4169 DC-13 시험(사내 운송 밸리데이션 절차)으로 최종 검증 필요.</div>`;
+  }
+  el('reportContent').innerHTML = html;
+}
+function printReport(){
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>포장 시뮬레이터 리포트</title></head><body>${el('reportContent').innerHTML}</body></html>`);
+  w.document.close(); w.print();
+}
+
+/* =========================================================
+   init
+   ========================================================= */
+loadPersisted();
+document.addEventListener('DOMContentLoaded', ()=>{
+  let isExpert = false;
+  try{ isExpert = localStorage.getItem('pkgsim_expert')==='1'; }catch(e){}
+  document.body.classList.toggle('expert-mode', isExpert);
+  el('modeToggleBtn').textContent = isExpert ? '🛠 전문가 모드' : '🔰 초보자 모드';
+  buildPalette();
+  setupDropZone();
+  populateSelects();
+  recompute();
+  document.querySelectorAll('input,select').forEach(n=>{
+    if(!n.oninput && n.tagName!=='INPUT' || n.type==='number' || n.tagName==='SELECT'){
+      n.addEventListener('change', recompute);
+    }
+  });
+});
+</script>
+</body>
+</html>
