@@ -101,10 +101,10 @@ export function decodeScheduleEvents(code: string): SharedSchedEvent[] | null {
   }
 }
 
-/** 친구에게 보낼 가져오기 링크. (#sched= 해시라 서버 처리 불필요) */
+/** 친구에게 보낼 가져오기 링크. (#sched= 해시라 서버 처리 불필요) 달력이 첫 화면(/)이라 거기로 보낸다. */
 export function scheduleShareLink(events: SharedSchedEvent[]): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return `${origin}${BASE}/calendar/#sched=${encodeScheduleEvents(events)}`;
+  return `${origin}${BASE}/#sched=${encodeScheduleEvents(events)}`;
 }
 
 /** 클립보드 복사. 실패 시 false. */
