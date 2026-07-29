@@ -69,4 +69,35 @@ describe('parseWhen', () => {
   it('매칭된 위치만 잘라내 제목을 보존한다', () => {
     expect(parseWhen('다음주 화요일 점심 약속', NOW).cleanedText).toBe('점심 약속');
   });
+
+  it('N일/N주/N개월/N년 뒤·후 (숫자)', () => {
+    // 기준 2026-06-22
+    expect(parseWhen('3일 뒤 세금 신고', NOW).date).toBe('2026-06-25');
+    expect(parseWhen('2주 후 발표 준비', NOW).date).toBe('2026-07-06');
+    expect(parseWhen('1개월 후 정기검진', NOW).date).toBe('2026-07-22');
+    expect(parseWhen('1년 뒤 갱신', NOW).date).toBe('2027-06-22');
+  });
+
+  it('한 달 뒤 (한글 수사, 공백 있어도 인식)', () => {
+    const r = parseWhen('한달뒤 비자 갱신', NOW);
+    expect(r.date).toBe('2026-07-22');
+    expect(r.cleanedText).toBe('비자 갱신');
+
+    expect(parseWhen('두 달 뒤 이사', NOW).date).toBe('2026-08-22');
+  });
+
+  it('월말 기준 개월 계산은 말일로 클램프한다', () => {
+    const endOfMonth = new Date(2026, 0, 31, 9, 0, 0); // 2026-01-31
+    expect(parseWhen('1달 뒤 정산', endOfMonth).date).toBe('2026-02-28');
+  });
+
+  it('일주일 뒤(=7일), 보름 뒤(=15일)', () => {
+    expect(parseWhen('일주일 뒤 회의', NOW).date).toBe('2026-06-29');
+    expect(parseWhen('보름 후 결과 확인', NOW).date).toBe('2026-07-07');
+  });
+
+  it("'3일 뒤'는 '3일(날짜)'로 오인하지 않는다", () => {
+    // 뒤/후가 없는 'D일'은 여전히 '이번달 D일'로 해석돼야 한다(기존 동작 유지)
+    expect(parseWhen('23일 정산', NOW).date).toBe('2026-06-23');
+  });
 });
