@@ -1,5 +1,5 @@
 /* 전자혀 서비스워커 — 오프라인 + 빠른 로딩 */
-const CACHE = "jeonjahyeo-v1";
+const CACHE = "jeonjahyeo-v2";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
