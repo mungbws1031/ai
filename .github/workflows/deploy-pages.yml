@@ -1,12 +1,13 @@
 name: Deploy apps to GitHub Pages
 
 # Publishes standalone apps so they can be shared from one Pages site:
-#   site/          -> https://<user>.github.io/<repo>/             (ticketing practice simulator)
-#   eddie/         -> https://<user>.github.io/<repo>/eddie/       ("에디의 하루" app)
-#   scent-mixer/   -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
-#   tina/          -> https://<user>.github.io/<repo>/tina/        (티나 정리 임팩트 PWA)
-#   miri/          -> https://<user>.github.io/<repo>/miri/        (미리 스케줄 PWA)
-#   cook/          -> https://<user>.github.io/<repo>/cook/        (셰프 미강 TASTE ENGINE)
+#   site/              -> https://<user>.github.io/<repo>/             (ticketing practice simulator)
+#   eddie/             -> https://<user>.github.io/<repo>/eddie/       ("에디의 하루" app)
+#   scent-mixer/       -> https://<user>.github.io/<repo>/scent-mixer/ (Scent Mixer PWA)
+#   tina/              -> https://<user>.github.io/<repo>/tina/        (티나 정리 임팩트 PWA)
+#   miri/              -> https://<user>.github.io/<repo>/miri/        (미리 스케줄 PWA)
+#   cook/              -> https://<user>.github.io/<repo>/cook/        (셰프 미강 TASTE ENGINE)
+#   nfc-tag-review-guide/ -> https://<user>.github.io/<repo>/nfc/     (NFC 태그 리뷰 가이드)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
@@ -19,8 +20,76 @@ on:
       - "tina/**"
       - "miri/**"
       - "cook/**"
+      - "nfc-tag-review-guide/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; newer pushes cancel in-progress runs.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: eddie/package-lock.json
+
+      - name: Build Eddie's Day (static export)
+        working-directory: eddie
+        env:
+          GITHUB_PAGES: "true"
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build 미리 (Vite PWA)
+        working-directory: miri
+        run: |
+          npm ci
+          npm run build
+
+      - name: Assemble Pages site
+        run: |
+          rm -rf _site
+          mkdir -p _site
+          cp -r site/. _site/
+          mkdir -p _site/eddie
+          cp -r eddie/out/. _site/eddie/
+          mkdir -p _site/scent-mixer
+          cp -r scent-mixer/. _site/scent-mixer/
+          rm -f _site/scent-mixer/gen_icons.py
+          mkdir -p _site/tina
+          cp -r tina/. _site/tina/
+          rm -f _site/tina/gen_icons.py
+          mkdir -p _site/miri
+          cp -r miri/dist/. _site/miri/
+          mkdir -p _site/cook
+          cp -r cook/. _site/cook/
+          mkdir -p _site/nfc
+          cp -r nfc-tag-review-guide/. _site/nfc/
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
 
 permissions:
   contents: read
