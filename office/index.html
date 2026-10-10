@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 오피스</title>
+<style>
+  :root { --bg:#14151f; --panel:#1f2133; --line:#33365a; --text:#e8e9f5; --muted:#9a9cc0; --accent:#f4b942; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif; }
+  header { padding:12px 16px; border-bottom:1px solid var(--line); }
+  header h1 { margin:0; font-size:18px; }
+  header p { margin:4px 0 0; font-size:12px; color:var(--muted); }
+  main { display:flex; flex-wrap:wrap; gap:12px; padding:12px 16px; align-items:flex-start; }
+  .stage { flex:1 1 560px; min-width:0; }
+  canvas { width:100%; height:auto; image-rendering:pixelated; border:2px solid var(--line); border-radius:4px; background:#1b1d2b; display:block; }
+  aside { flex:1 1 300px; max-width:520px; display:flex; flex-direction:column; gap:10px; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:10px; }
+  .box h2 { margin:0 0 8px; font-size:13px; color:var(--accent); }
+  textarea, input { width:100%; background:#14151f; color:var(--text); border:1px solid var(--line); border-radius:4px; padding:8px; font:inherit; font-size:14px; }
+  textarea { resize:vertical; min-height:70px; }
+  .row { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+  button { background:var(--accent); color:#222; border:0; border-radius:4px; padding:8px 12px; font:inherit; font-size:13px; font-weight:600; cursor:pointer; }
+  button.sub { background:#2d3050; color:var(--text); font-weight:500; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  #log { list-style:none; margin:0; padding:0; max-height:260px; overflow:auto; font-size:12.5px; line-height:1.5; }
+  #log li { padding:3px 0; border-bottom:1px dashed var(--line); }
+  #log time { color:var(--muted); margin-right:6px; }
+  .hint { font-size:11.5px; color:var(--muted); margin:6px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AI 오피스 <span style="color:var(--muted);font-weight:400">· 도트 사무실</span></h1>
+  <p>총괄(GM)에게 일을 맡기면 필요한 팀과 직원을 알아서 세팅해서 진행합니다.</p>
+</header>
+<main>
+  <div class="stage"><canvas id="c" aria-label="도트 이미지 AI 사무실"></canvas></div>
+  <aside>
+    <section class="box">
+      <h2>총괄에게 업무 지시</h2>
+      <textarea id="task" placeholder="예) 슬림 펜형 기기의 CR2032 배터리 커버 구조와 외관 디자인, 안전 리스크를 검토하고 PRD로 정리해줘"></textarea>
+      <div class="row">
+        <button id="go">지시하기</button>
+        <button id="brief" class="sub">Claude용 브리핑 복사</button>
+        <button id="clear" class="sub">전원 퇴근</button>
+      </div>
+      <p class="hint">GM이 키워드로 필요한 팀을 고르고 직원을 투입합니다. 화면은 업무 배분 시뮬레이션이며, 실제 검토 내용은 복사한 브리핑을 Claude에 붙여넣어 받습니다.</p>
+    </section>
+    <section class="box">
+      <h2>팀 추가</h2>
+      <input id="tname" placeholder="팀 이름 (예: 생산기술팀)" maxlength="10">
+      <input id="tkw" placeholder="담당 키워드, 쉼표로 구분 (예: 양산,금형,원가)" style="margin-top:6px">
+      <div class="row"><button id="addTeam" class="sub">팀 만들기</button><button id="resetTeams" class="sub">기본 팀으로</button></div>
+    </section>
+    <section class="box">
+      <h2>업무 로그</h2>
+      <ul id="log"></ul>
+    </section>
+  </aside>
+</main>
+<script>
+"use strict";
+// ---------- 데이터 ----------
+const DEFAULT_TEAMS = [
+  { name:"기획팀",     role:"Product Planner",        color:"#f4b942", kw:["기획","사용자","니즈","우선순위","기능","전략","타깃","방향"], out:"기능 우선순위 정리" },
+  { name:"디자인팀",   role:"Industrial Designer",    color:"#e86a9a", kw:["디자인","외관","형상","cmf","비율","이미지","색상","분할선","그립"], out:"형태·CMF 검토" },
+  { name:"기구팀",     role:"Mechanical Engineer",    color:"#4fa8e8", kw:["기구","구조","조립","스냅","사출","공차","커버","체결","언더컷","버튼","슬라이드"], out:"조립순서·구조 검토" },
+  { name:"전자팀",     role:"Electronics Engineer",   color:"#5fd08a", kw:["pcb","배터리","스위치","cr2032","회로","전자","택트","부품","간섭","디스플레이"], out:"PCB·배터리 간섭 검토" },
+  { name:"인허가·QA팀", role:"Regulatory and QA",     color:"#b58cf0", kw:["안전","인증","규제","ivdr","iso","iec","rohs","ul","세척","품질","의료","리스크","위험"], out:"안전·규제 확인목록" },
+  { name:"리서치팀",   role:"Researcher",             color:"#f08a4b", kw:["조사","경쟁","특허","레퍼런스","사례","시장","트렌드","리서치","비교"], out:"사례·경쟁 조사" },
+  { name:"문서팀",     role:"Documentation Manager",  color:"#8fd3d9", kw:["prd","회의록","문서","요구사항","노션","정리","이력","옵시디언"], out:"PRD·회의록 초안" }
+];
+const PALETTE = ["#e5d35a","#d96b6b","#6bd9c4","#a0a0ff","#d9a06b","#7ad96b"];
+const NAMES = ["민수","지아","도윤","서연","하준","유나","준호","수아","태오","하린"];
+const MAX_TEAMS = 8, SLOTS = 4;
+
+let teams = loadTeams();
+let rooms = [];
+let memos = [];
+let gmBubble = { text:"일을 맡겨주세요!", until:0 };
+let lastBrief = "";
+
+function loadTeams() {
+  try {
+    const s = JSON.parse(localStorage.getItem("ai-office-teams") || "null");
+    if (Array.isArray(s) && s.length) return s.map(t => ({ ...t, staff: [] }));
+  } catch (e) {}
+  return DEFAULT_TEAMS.map(t => ({ ...t, staff: [] }));
+}
+function saveTeams() {
+  try { localStorage.setItem("ai-office-teams", JSON.stringify(teams.map(({ staff, ...t }) => t))); } catch (e) {}
+}
+
+// ---------- 캔버스 ----------
+const W = 480, H = 300;
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+cv.width = W; cv.height = H; ctx.imageSmoothingEnabled = false;
+const bg = document.createElement("canvas"); bg.width = W; bg.height = H;
+const bx = bg.getContext("2d");
+const rect = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(x), Math.round(y), w, h); };
+
+function layout() {
+  rooms = teams.map((t, i) => ({ t, x: 3 + (i % 4) * 120, y: 94 + Math.floor(i / 4) * 100, w: 114, h: 94 }));
+  drawBackground();
+}
+function slotPos(room, s) { return { dx: room.x + 8 + (s % 2) * 54, dy: room.y + (s < 2 ? 40 : 78) }; }
+
+function drawBackground() {
+  rect(bx, 0, 0, W, H, "#1b1d2b");
+  // 총괄실
+  for (let y = 4; y < 86; y += 8) for (let x = 3; x < 477; x += 8)
+    rect(bx, x, y, 8, 8, ((x + y) / 8) % 2 ? "#6b4a32" : "#73503a");
+  rect(bx, 3, 4, 474, 14, "#3a2a20");
+  bx.fillStyle = "#f4b942"; bx.font = "bold 10px sans-serif"; bx.fillText("총괄실  GM", 10, 14);
+  // 화분
+  for (const px of [20, 440]) { rect(bx, px, 56, 12, 10, "#8b5e3c"); rect(bx, px - 2, 44, 16, 14, "#3f9b4f"); rect(bx, px + 2, 40, 8, 6, "#4fbf63"); }
+  // 화이트보드
+  rect(bx, 350, 22, 70, 36, "#ddd"); rect(bx, 352, 24, 66, 32, "#f6f6f6");
+  rect(bx, 356, 30, 40, 2, "#4fa8e8"); rect(bx, 356, 38, 52, 2, "#e86a9a"); rect(bx, 356, 46, 30, 2, "#5fd08a");
+  // 팀룸
+  for (const r of rooms) {
+    rect(bx, r.x, r.y, r.w, r.h, "#262a3d");
+    for (let y = r.y + 16; y < r.y + r.h; y += 8) for (let x = r.x; x < r.x + r.w; x += 8)
+      if (((x - r.x + y - r.y) / 8) % 2) { bx.globalAlpha = .1; rect(bx, x, y, 8, 8, r.t.color); bx.globalAlpha = 1; }
+    rect(bx, r.x, r.y, r.w, 16, r.t.color);
+    rect(bx, r.x, r.y + 16, r.w, 2, "rgba(0,0,0,.35)");
+    bx.fillStyle = "#1a1a24"; bx.font = "bold 10px sans-serif"; bx.fillText(r.t.name, r.x + 6, r.y + 12);
+    bx.strokeStyle = "#000"; bx.globalAlpha = .5; bx.strokeRect(r.x + .5, r.y + .5, r.w - 1, r.h - 1); bx.globalAlpha = 1;
+    // 문
+    rect(bx, r.x + r.w / 2 - 6, r.y, 12, 3, "#222");
+  }
+}
+
+function person(x, y, color, tick, working, big) {
+  const s = big ? 1.4 : 1;
+  const px = (ox, oy, w, h, c) => rect(ctx, x + ox * s, y + oy * s, Math.ceil(w * s), Math.ceil(h * s), c);
+  px(2, 0, 8, 7, "#f2c9a0");
+  px(2, 0, 8, 3, big ? "#d9d9e6" : "#3b2a20");
+  px(4, 4, 1, 1, "#222"); px(7, 4, 1, 1, "#222");
+  px(1, 8, 10, 10, color);
+  if (big) px(5, 8, 2, 8, "#c0392b");
+  const f = working && Math.floor(tick / 150) % 2;
+  px(-1, 11 + (f ? 1 : 0), 2, 5, color);
+  px(11, 11 + (f ? 0 : 1), 2, 5, color);
+}
+
+function bubble(text, cx, y) {
+  ctx.font = "9px sans-serif";
+  const w = Math.ceil(ctx.measureText(text).width) + 8;
+  let x = Math.round(cx - w / 2); x = Math.max(2, Math.min(W - w - 2, x));
+  rect(ctx, x, y, w, 13, "#fff"); rect(ctx, x + 1, y - 1, w - 2, 15, "#fff");
+  rect(ctx, cx - 2, y + 14, 4, 3, "#fff");
+  ctx.fillStyle = "#222"; ctx.fillText(text, x + 4, y + 10);
+}
+const clip = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+
+function render(now) {
+  ctx.drawImage(bg, 0, 0);
+  // GM
+  const gx = W / 2 - 8, gy = 30;
+  person(gx, gy, "#2c3e50", now, gmBubble.until > now, true);
+  rect(ctx, gx - 22, gy + 22, 60, 14, "#8b5e3c"); rect(ctx, gx - 22, gy + 22, 60, 3, "#a87449");
+  rect(ctx, gx + 4, gy + 14, 14, 8, "#222"); rect(ctx, gx + 5, gy + 15, 12, 6, "#4fa8e8");
+  if (gmBubble.text && (gmBubble.until > now || gmBubble.until === 0)) bubble(gmBubble.text, gx + 8, 6);
+
+  for (const r of rooms) {
+    for (let s = 0; s < SLOTS; s++) {
+      const { dx, dy } = slotPos(r, s);
+      const st = r.t.staff[s];
+      if (st) person(dx + 4, dy - 18, r.t.color, now, st.state === "working");
+      rect(ctx, dx, dy, 44, 10, "#8b5e3c"); rect(ctx, dx, dy, 44, 2, "#a87449");
+      const glow = st && st.state === "working" ? r.t.color : (st && st.state === "done" ? "#5fd08a" : "#1a3a4a");
+      rect(ctx, dx + 24, dy - 9, 14, 9, "#222"); rect(ctx, dx + 25, dy - 8, 12, 7, glow);
+      if (!st) rect(ctx, dx + 6, dy - 8, 10, 8, "#3a3d55"); // 빈 의자
+      if (st) {
+        let status = "";
+        const age = now - st.spawn;
+        if (age < 500) for (let k = 0; k < 6; k++) rect(ctx, dx + 4 + ((k * 7 + age / 20) % 14), dy - 22 - ((age / 12 + k * 5) % 14), 2, 2, "#ffe066");
+        if (st.state === "working") {
+          rect(ctx, dx, dy + 12, 44, 3, "#14151f"); rect(ctx, dx, dy + 12, Math.round(44 * st.p), 3, r.t.color);
+          status = "작업중" + ".".repeat(1 + Math.floor(now / 300) % 3);
+        } else if (st.state === "done") {
+          status = "✔ 완료";
+        }
+        ctx.font = "8px sans-serif"; ctx.fillStyle = "#cfd0e8"; ctx.fillText(st.name + " " + status, dx + 1, dy + 22);
+      }
+    }
+  }
+  // 메모
+  for (const m of memos) {
+    rect(ctx, m.x - 4, m.y - 3, 9, 7, "#fff"); rect(ctx, m.x - 4, m.y - 3, 9, 2, m.color);
+  }
+}
+
+// ---------- 시뮬레이션 ----------
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.1, (now - last) / 1000); last = now;
+  for (const m of memos) {
+    const dx = m.tx - m.x, dy = m.ty - m.y, d = Math.hypot(dx, dy), step = 170 * dt;
+    if (d <= step) { m.x = m.tx; m.y = m.ty; m.done = true; } else { m.x += dx / d * step; m.y += dy / d * step; }
+  }
+  const arrived = memos.filter(m => m.done); memos = memos.filter(m => !m.done);
+  arrived.forEach(m => m.cb());
+  for (const r of rooms) for (const st of r.t.staff) {
+    if (st && st.state === "working") {
+      st.p += dt / st.dur;
+      if (st.p >= 1) { st.p = 1; st.state = "done"; st.onDone && st.onDone(); st.onDone = null; }
+    }
+  }
+  render(now);
+  requestAnimationFrame(frame);
+}
+
+function pickTeams(text) {
+  const t = text.toLowerCase();
+  const scored = teams.map(tm => ({ tm, hits: tm.kw.filter(k => t.includes(k.toLowerCase())).length })).filter(x => x.hits > 0);
+  if (scored.length) return scored;
+  const fallback = ["기획팀", "리서치팀"].map(n => teams.find(x => x.name === n)).filter(Boolean);
+  return (fallback.length ? fallback : [teams[0]]).map(tm => ({ tm, hits: 1 }));
+}
+
+const logEl = document.getElementById("log");
+function log(msg) {
+  const li = document.createElement("li");
+  const tm = document.createElement("time"); tm.textContent = new Date().toTimeString().slice(0, 8);
+  li.append(tm, msg); logEl.prepend(li);
+}
+
+function assign(text) {
+  const picks = pickTeams(text);
+  const snippet = clip(text.replace(/\s+/g, " "), 40);
+  log(`GM 접수: "${snippet}"`);
+  gmBubble = { text: "업무 분석중…", until: performance.now() + 1200 };
+  lastBrief = makeBrief(text, picks);
+  let remaining = picks.length;
+  picks.forEach(({ tm, hits }, i) => {
+    const count = Math.min(SLOTS, hits >= 3 ? 3 : hits === 2 ? 2 : 1);
+    const room = rooms.find(r => r.t === tm);
+    setTimeout(() => {
+      memos.push({ x: W / 2, y: 50, tx: room.x + room.w / 2, ty: room.y + 24, color: tm.color, cb: () => {
+        log(`${tm.name}: 직원 ${count}명 투입 (${tm.role})`);
+        for (let k = 0; k < count; k++) hire(tm, k, () => {
+          if (tm.staff.slice(0, count).every(s => s && s.state === "done")) {
+            if (!tm._reported) { tm._reported = true; log(`${tm.name} 완료: ${tm.out}`); if (--remaining === 0) finish(picks); }
+          }
+        });
+        tm._reported = false;
+      } });
+    }, 400 + i * 450);
+  });
+}
+function hire(tm, slot, onDone) {
+  tm.staff[slot] = { name: NAMES[Math.floor(Math.random() * NAMES.length)], state: "working", p: 0, dur: 2.5 + Math.random() * 3, spawn: performance.now(), onDone };
+}
+function finish(picks) {
+  gmBubble = { text: "종합 완료! 브리핑 복사 가능", until: performance.now() + 6000 };
+  log(`GM 종합: ${picks.map(p => p.tm.name).join(" → ")} 검토 완료. "Claude용 브리핑 복사"로 실제 검토를 요청하세요.`);
+}
+
+function makeBrief(text, picks) {
+  return [
+    "[AI 오피스 총괄 브리핑]",
+    `요청: ${text}`,
+    "",
+    "투입 팀/역할:",
+    ...picks.map(p => `- ${p.tm.name} (${p.tm.role}): ${p.tm.out}`),
+    "",
+    "규칙: 구조 제안 시 조립 순서를 설명하고, 부품 수 증가는 사유를 밝히며, 규제 사항은 '검증 필요'로 표시.",
+    "출력 형식: 1) 요청 해석 2) 필요 에이전트 3) 에이전트별 검토 4) 통합 결론 5) 액션 플랜 6) 리스크 7) 다음 액션"
+  ].join("\n");
+}
+
+// ---------- UI ----------
+const $ = id => document.getElementById(id);
+$("go").onclick = () => {
+  const v = $("task").value.trim();
+  if (!v) { $("task").focus(); return; }
+  assign(v);
+};
+$("task").addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) $("go").click(); });
+$("clear").onclick = () => { teams.forEach(t => { t.staff = []; }); memos = []; gmBubble = { text: "모두 퇴근!", until: performance.now() + 2000 }; log("전원 퇴근 처리"); };
+$("brief").onclick = async () => {
+  if (!lastBrief) { log("먼저 업무를 지시해주세요."); return; }
+  try { await navigator.clipboard.writeText(lastBrief); }
+  catch (e) { const ta = document.createElement("textarea"); ta.value = lastBrief; document.body.append(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+  log("Claude용 브리핑을 복사했습니다.");
+};
+$("addTeam").onclick = () => {
+  const name = $("tname").value.trim();
+  if (!name) { $("tname").focus(); return; }
+  if (teams.length >= MAX_TEAMS) { log(`팀은 최대 ${MAX_TEAMS}개까지 만들 수 있습니다.`); return; }
+  if (teams.some(t => t.name === name)) { log("같은 이름의 팀이 이미 있습니다."); return; }
+  const kw = $("tkw").value.split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+  teams.push({ name, role: "Custom Team", color: PALETTE[teams.length % PALETTE.length], kw: kw.length ? kw : [name.replace(/팀$/, "")], out: "업무 검토", staff: [] });
+  saveTeams(); layout(); log(`새 팀 "${name}" 생성`);
+  $("tname").value = ""; $("tkw").value = "";
+};
+$("resetTeams").onclick = () => {
+  teams = DEFAULT_TEAMS.map(t => ({ ...t, staff: [] })); memos = [];
+  saveTeams(); layout(); log("기본 팀으로 초기화");
+};
+
+layout();
+log("사무실 오픈. 총괄에게 업무를 지시해보세요.");
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
