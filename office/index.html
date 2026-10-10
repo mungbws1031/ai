@@ -26,13 +26,15 @@
   #log { list-style:none; margin:0; padding:0; max-height:260px; overflow:auto; font-size:12.5px; line-height:1.5; }
   #log li { padding:3px 0; border-bottom:1px dashed var(--line); }
   #log time { color:var(--muted); margin-right:6px; }
+  #res { white-space:pre-wrap; word-break:break-word; margin:0; max-height:360px; overflow:auto; font:inherit; font-size:13px; line-height:1.55; }
+  button.tab.on { background:var(--accent); color:#222; }
   .hint { font-size:11.5px; color:var(--muted); margin:6px 0 0; }
 </style>
 </head>
 <body>
 <header>
   <h1>AI 오피스 <span style="color:var(--muted);font-weight:400">· 도트 사무실</span></h1>
-  <p>총괄(GM)에게 일을 맡기면 필요한 팀과 직원을 알아서 세팅해서 진행합니다.</p>
+  <p>총괄(GM)에게 일을 맡기면 필요한 팀과 직원을 알아서 세팅해서 진행합니다. <b id="mode" style="color:var(--accent)">모드 확인중…</b></p>
 </header>
 <main>
   <div class="stage"><canvas id="c" aria-label="도트 이미지 AI 사무실"></canvas></div>
@@ -45,13 +47,18 @@
         <button id="brief" class="sub">Claude용 브리핑 복사</button>
         <button id="clear" class="sub">전원 퇴근</button>
       </div>
-      <p class="hint">GM이 키워드로 필요한 팀을 고르고 직원을 투입합니다. 화면은 업무 배분 시뮬레이션이며, 실제 검토 내용은 복사한 브리핑을 Claude에 붙여넣어 받습니다.</p>
+      <p class="hint">GM이 키워드로 필요한 팀을 고르고 직원을 투입합니다. 서버(<code>python office/server.py</code>)와 API 키가 있으면 각 팀이 실제 Claude로 검토합니다. 없으면 업무 배분 시뮬레이션으로 동작합니다.</p>
     </section>
     <section class="box">
       <h2>팀 추가</h2>
       <input id="tname" placeholder="팀 이름 (예: 생산기술팀)" maxlength="10">
       <input id="tkw" placeholder="담당 키워드, 쉼표로 구분 (예: 양산,금형,원가)" style="margin-top:6px">
       <div class="row"><button id="addTeam" class="sub">팀 만들기</button><button id="resetTeams" class="sub">기본 팀으로</button></div>
+    </section>
+    <section class="box">
+      <h2>팀별 결과</h2>
+      <div class="row" id="tabs" style="margin:0 0 8px"></div>
+      <pre id="res">아직 결과가 없습니다. 실제 Claude 모드에서 업무를 지시하면 팀별 검토와 총괄 종합이 여기에 표시됩니다.</pre>
     </section>
     <section class="box">
       <h2>업무 로그</h2>
@@ -170,7 +177,7 @@ function render(now) {
       const st = r.t.staff[s];
       if (st) person(dx + 4, dy - 18, r.t.color, now, st.state === "working");
       rect(ctx, dx, dy, 44, 10, "#8b5e3c"); rect(ctx, dx, dy, 44, 2, "#a87449");
-      const glow = st && st.state === "working" ? r.t.color : (st && st.state === "done" ? "#5fd08a" : "#1a3a4a");
+      const glow = st && st.state === "working" ? r.t.color : (st && st.state === "done" ? "#5fd08a" : (st && st.state === "error" ? "#e05555" : "#1a3a4a"));
       rect(ctx, dx + 24, dy - 9, 14, 9, "#222"); rect(ctx, dx + 25, dy - 8, 12, 7, glow);
       if (!st) rect(ctx, dx + 6, dy - 8, 10, 8, "#3a3d55"); // 빈 의자
       if (st) {
@@ -182,6 +189,8 @@ function render(now) {
           status = "작업중" + ".".repeat(1 + Math.floor(now / 300) % 3);
         } else if (st.state === "done") {
           status = "✔ 완료";
+        } else if (st.state === "error") {
+          status = "✖ 오류";
         }
         ctx.font = "8px sans-serif"; ctx.fillStyle = "#cfd0e8"; ctx.fillText(st.name + " " + status, dx + 1, dy + 22);
       }
@@ -204,7 +213,9 @@ function frame(now) {
   const arrived = memos.filter(m => m.done); memos = memos.filter(m => !m.done);
   arrived.forEach(m => m.cb());
   for (const r of rooms) for (const st of r.t.staff) {
-    if (st && st.state === "working") {
+    if (st && st.state === "working" && st.live) {
+      st.p += (0.92 - st.p) * dt * 0.12; // 실제 호출은 끝날 때까지 천천히 차오름
+    } else if (st && st.state === "working") {
       st.p += dt / st.dur;
       if (st.p >= 1) { st.p = 1; st.state = "done"; st.onDone && st.onDone(); st.onDone = null; }
     }
@@ -229,6 +240,7 @@ function log(msg) {
 }
 
 function assign(text) {
+  if (live) return assignLive(text);
   const picks = pickTeams(text);
   const snippet = clip(text.replace(/\s+/g, " "), 40);
   log(`GM 접수: "${snippet}"`);
@@ -251,12 +263,74 @@ function assign(text) {
     }, 400 + i * 450);
   });
 }
-function hire(tm, slot, onDone) {
-  tm.staff[slot] = { name: NAMES[Math.floor(Math.random() * NAMES.length)], state: "working", p: 0, dur: 2.5 + Math.random() * 3, spawn: performance.now(), onDone };
+function hire(tm, slot, onDone, live) {
+  tm.staff[slot] = { name: NAMES[Math.floor(Math.random() * NAMES.length)], state: "working", p: 0, dur: 2.5 + Math.random() * 3, spawn: performance.now(), onDone, live: !!live };
 }
 function finish(picks) {
   gmBubble = { text: "종합 완료! 브리핑 복사 가능", until: performance.now() + 6000 };
   log(`GM 종합: ${picks.map(p => p.tm.name).join(" → ")} 검토 완료. "Claude용 브리핑 복사"로 실제 검토를 요청하세요.`);
+}
+
+// ---------- 실제 Claude 모드 ----------
+let live = false, busy = false, results = {}, activeTab = null;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+async function post(url, body) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  let data = {};
+  try { data = await res.json(); } catch (e) {}
+  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+  return data.text;
+}
+function renderResults() {
+  const tabs = $("tabs"); tabs.textContent = "";
+  Object.keys(results).forEach(k => {
+    const b = document.createElement("button");
+    b.className = "tab sub" + (k === activeTab ? " on" : ""); b.textContent = k;
+    b.onclick = () => { activeTab = k; renderResults(); };
+    tabs.append(b);
+  });
+  if (activeTab && results[activeTab] !== undefined) $("res").textContent = results[activeTab];
+}
+async function assignLive(text) {
+  if (busy) { log("이전 업무가 진행 중입니다."); return; }
+  busy = true; $("go").disabled = true;
+  const picks = pickTeams(text);
+  lastBrief = makeBrief(text, picks);
+  results = {}; activeTab = null; renderResults();
+  log(`GM 접수: "${clip(text.replace(/\s+/g, " "), 40)}"`);
+  gmBubble = { text: "업무 분석중…", until: performance.now() + 1200 };
+  const okParts = [];
+  await Promise.all(picks.map(async ({ tm, hits }, i) => {
+    const count = Math.min(SLOTS, hits >= 3 ? 3 : hits === 2 ? 2 : 1);
+    const room = rooms.find(r => r.t === tm);
+    await wait(400 + i * 450);
+    await new Promise(res => memos.push({ x: W / 2, y: 50, tx: room.x + room.w / 2, ty: room.y + 24, color: tm.color, cb: res }));
+    log(`${tm.name}: 직원 ${count}명 투입, Claude에 검토 요청`);
+    for (let k = 0; k < count; k++) hire(tm, k, null, true);
+    const staff = tm.staff.slice(0, count);
+    try {
+      const out = await post("/api/work", { task: text, team: { name: tm.name, role: tm.role, out: tm.out } });
+      results[tm.name] = out; okParts.push({ team: tm.name, text: out });
+      staff.forEach(s => { if (s) { s.state = "done"; s.p = 1; } });
+      log(`${tm.name} 완료: ${tm.out}`);
+    } catch (e) {
+      results[tm.name] = "오류: " + e.message;
+      staff.forEach(s => { if (s) s.state = "error"; });
+      log(`${tm.name} 오류: ${e.message}`);
+    }
+    if (!activeTab) activeTab = tm.name;
+    renderResults();
+  }));
+  if (okParts.length > 1) {
+    gmBubble = { text: "종합 정리중…", until: performance.now() + 180000 };
+    try {
+      results["GM 종합"] = await post("/api/synthesize", { task: text, results: okParts });
+      activeTab = "GM 종합"; log("GM 종합 완료");
+    } catch (e) { results["GM 종합"] = "오류: " + e.message; log("GM 종합 오류: " + e.message); }
+    renderResults();
+  }
+  gmBubble = { text: okParts.length ? "완료! 결과 확인하세요" : "작업이 실패했어요", until: performance.now() + 6000 };
+  busy = false; $("go").disabled = false;
 }
 
 function makeBrief(text, picks) {
@@ -302,6 +376,10 @@ $("resetTeams").onclick = () => {
   saveTeams(); layout(); log("기본 팀으로 초기화");
 };
 
+fetch("/api/status").then(r => r.json()).then(d => {
+  live = !!d.live;
+  $("mode").textContent = live ? `실제 Claude 모드 (${d.model})` : "시뮬레이션 모드 (서버에 ANTHROPIC_API_KEY 없음)";
+}).catch(() => { $("mode").textContent = "시뮬레이션 모드 (server.py 없이 열림)"; });
 layout();
 log("사무실 오픈. 총괄에게 업무를 지시해보세요.");
 requestAnimationFrame(frame);
