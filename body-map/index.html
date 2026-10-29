@@ -127,6 +127,15 @@ table.tech th,table.tech td{text-align:left;padding:8px 10px;border-bottom:1px s
 table.tech th{font-size:12px;color:var(--muted);font-weight:600}
 .where{font-size:11.5px;white-space:nowrap;border-radius:999px;padding:1px 8px;background:var(--bg);border:1px solid var(--line)}
 .scroll{overflow-x:auto}
+.finder{border:1px solid var(--line);border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.findrow{display:flex;gap:8px;flex-wrap:wrap}
+.findrow input{flex:1 1 220px;min-width:0;font:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+.finds{display:flex;flex-direction:column;gap:6px}
+.frow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px dashed var(--line)}
+.frow b{font-size:14px}
+.frow .maps{display:flex;gap:6px;flex-wrap:wrap}
+.frow .maps a{font-size:12.5px;text-decoration:none;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:2px 10px}
+.frow .maps a:hover{background:var(--accent);color:var(--accent-ink)}
 .links{display:flex;flex-wrap:wrap;gap:10px;font-size:13.5px}
 .links a{color:var(--accent)}
 .foot{color:var(--muted);font-size:12.5px;max-width:80ch}
@@ -155,6 +164,7 @@ table.tech th{font-size:12px;color:var(--muted);font-weight:600}
 .is-sick .a-grind{animation:grind .9s ease-in-out infinite}
 .a-breathe{animation:breathe 4s ease-in-out infinite}
 .a-bubble{animation:bubble 3s ease-in-out infinite}
+.is-sick .a-slide{animation:slide 1.8s ease-in-out infinite}
 .is-sick .a-dilate{animation:dilate 1.3s ease-in-out infinite}
 .thick{transition:stroke-width .6s}
 .is-sick .thin-sick{stroke-width:2.5}
@@ -173,6 +183,7 @@ table.tech th{font-size:12px;color:var(--muted);font-weight:600}
 @keyframes grind{50%{transform:translate(2px,2px)}}
 @keyframes breathe{50%{transform:scale(1.04,1.02)}}
 @keyframes bubble{50%{transform:translate(6px,-4px) scale(1.1)}}
+@keyframes slide{0%,100%{transform:translateX(0)}40%{transform:translateX(24px)}55%{transform:translateX(42px)}}
 @keyframes dilate{50%{stroke-width:12}}
 .paused *, .paused{animation-play-state:paused!important}
 @media (prefers-reduced-motion: reduce){ .scene *, .spot.sel .hit, .ref .core{animation-duration:0s!important;animation-iteration-count:1!important} }
@@ -184,7 +195,7 @@ table.tech th{font-size:12px;color:var(--muted);font-weight:600}
     <div>
       <div class="eyebrow">Atlas of Pain · 교육용 시뮬레이션</div>
       <h1>몸속 통증 지도</h1>
-      <p class="lede">아픈 부위를 누르면 그 부위가 아플 수 있는 대표 원인을 보여주고, 몸속에서 무슨 일이 일어나는지 애니메이션으로 보여줍니다. 어느 과와 어느 병원 단계로 가면 되는지도 함께 안내합니다.</p>
+      <p class="lede">아픈 부위를 누르면 그 부위가 아플 수 있는 대표 원인을 보여주고, 몸속에서 무슨 일이 일어나는지 애니메이션으로 보여줍니다. 어느 과와 어느 병원 단계로 가면 되는지, 내 근처 어디서 찾을지도 함께 안내합니다.</p>
     </div>
   </header>
   <p class="notice"><b>진단 도구가 아닙니다.</b> 흔한 원인을 단순화해 그린 교육용 그림이며, 실제 원인은 진찰과 검사로만 알 수 있습니다. 갑작스럽고 극심한 통증, 가슴 통증과 식은땀·호흡곤란, 마비·말 어눌함, 고열과 의식 저하가 있으면 바로 <b>119</b>에 연락하세요.</p>
@@ -198,7 +209,7 @@ table.tech th{font-size:12px;color:var(--muted);font-weight:600}
           <button id="vBack" aria-pressed="false">뒤</button>
         </div>
       </div>
-      <svg id="map" viewBox="0 0 200 440" role="img" aria-label="인체 지도"></svg>
+      <svg id="map" viewBox="0 0 200 456" role="img" aria-label="인체 지도"></svg>
       <div class="chips" id="chips"></div>
       <div class="legend"><span><i style="background:var(--hot)"></i>선택한 부위</span><span><i style="background:var(--warn)"></i>함께 아플 수 있는 곳(연관통)</span></div>
     </section>
@@ -249,24 +260,34 @@ table.tech th{font-size:12px;color:var(--muted);font-weight:600}
 <script>
 /* ---------- data: regions ---------- */
 const REGIONS={
-  head:{name:'머리',latin:'Caput · 頭部',causes:['tension','migraine','sinus']},
-  neck:{name:'목·어깨',latin:'Cervix & Cingulum pectorale',causes:['neck','cdisc']},
-  chest:{name:'가슴',latin:'Thorax · 胸部',causes:['angina','gerd','costo']},
-  epi:{name:'명치·윗배',latin:'Epigastrium · 心窩部',causes:['ulcer','gall']},
+  head:{name:'머리',latin:'Caput · 頭部',causes:['tension','migraine','sinus','sah']},
+  throat:{name:'목 앞·목구멍',latin:'Pharynx & Glandula thyroidea',causes:['tonsil','thyroid']},
+  neck:{name:'목·어깨 뒤',latin:'Cervix & Cingulum pectorale',causes:['neck','cdisc']},
+  shoulder:{name:'어깨 관절',latin:'Articulatio humeri',causes:['frozen','rotator']},
+  chest:{name:'가슴',latin:'Thorax · 胸部',causes:['angina','gerd','costo','ptx','pneumonia']},
+  epi:{name:'명치·윗배',latin:'Epigastrium · 心窩部',causes:['ulcer','gall','pancreas']},
   rlq:{name:'오른쪽 아랫배',latin:'Regio inguinalis dextra · RLQ',causes:['appendix','ibs']},
+  llq:{name:'왼쪽 아랫배',latin:'Regio inguinalis sinistra · LLQ',causes:['diverti','constip']},
   lower:{name:'아랫배 가운데',latin:'Hypogastrium · 下腹部',causes:['cramps','cystitis']},
   flank:{name:'옆구리',latin:'Regio lumbalis lateralis · CVA',causes:['kstone','pyelo']},
-  lowback:{name:'허리',latin:'Regio lumbalis · L1–S1',causes:['ldisc','lstrain']},
-  knee:{name:'무릎',latin:'Articulatio genus',causes:['koa','menis']}
+  lowback:{name:'허리',latin:'Regio lumbalis · L1–S1',causes:['ldisc','lstrain','stenosis']},
+  wrist:{name:'손목·손',latin:'Carpus & Manus',causes:['carpal','trigger']},
+  knee:{name:'무릎',latin:'Articulatio genus',causes:['koa','menis']},
+  foot:{name:'발',latin:'Pes · 足',causes:['plantar','gout']}
 };
 const SPOTS={
   front:[
-    ['head','<ellipse cx="100" cy="40" rx="25" ry="30"/>',[100,40]],
+    ['head','<ellipse cx="100" cy="38" rx="25" ry="28"/>',[100,38]],
+    ['throat','<rect x="89" y="68" width="22" height="20" rx="7"/>',[100,78]],
+    ['shoulder','<circle cx="56" cy="100" r="10"/><circle cx="144" cy="100" r="10"/>',[100,100]],
     ['chest','<rect x="68" y="100" width="64" height="46" rx="10"/>',[100,123]],
     ['epi','<rect x="82" y="150" width="36" height="30" rx="10"/>',[100,165]],
     ['rlq','<circle cx="78" cy="212" r="13"/>',[78,212]],
+    ['llq','<circle cx="122" cy="212" r="13"/>',[122,212]],
+    ['wrist','<circle cx="33" cy="238" r="9"/><circle cx="167" cy="238" r="9"/>',[100,238]],
     ['lower','<circle cx="104" cy="238" r="12"/>',[104,238]],
-    ['knee','<circle cx="82" cy="335" r="11"/><circle cx="118" cy="335" r="11"/>',[100,335]]
+    ['knee','<circle cx="82" cy="335" r="11"/><circle cx="118" cy="335" r="11"/>',[100,335]],
+    ['foot','<circle cx="80" cy="428" r="9"/><circle cx="120" cy="428" r="9"/>',[100,428]]
   ],
   back:[
     ['head','<ellipse cx="100" cy="40" rx="25" ry="30"/>',[100,40]],
@@ -283,6 +304,8 @@ const SIL=`<g class="sil">
  <path d="M150 100 Q166 112 168 160 L173 240 L160 243 L153 168 L142 122 Z"/>
  <path d="M56 250 L99 250 L95 420 L73 420 Z"/>
  <path d="M101 250 L144 250 L127 420 L105 420 Z"/>
+ <ellipse cx="80" cy="428" rx="14" ry="8"/><ellipse cx="120" cy="428" rx="14" ry="8"/>
+ <ellipse cx="33" cy="250" rx="7" ry="11"/><ellipse cx="167" cy="250" rx="7" ry="11"/>
 </g>`;
 const BACKMARK=`<g stroke="var(--body-line)" fill="none" stroke-width="1.2"><path d="M100 92 L100 250" stroke-dasharray="3 3"/><path d="M70 110 Q80 128 90 120"/><path d="M130 110 Q120 128 110 120"/></g>`;
 
@@ -308,7 +331,7 @@ migraine:`
  <path class="a-dilate" d="M50 70 C110 40 170 100 270 62" stroke="var(--blood)" stroke-width="5" fill="none" stroke-linecap="round"/>
  <path d="M60 170 C110 130 160 150 230 120" stroke="var(--nerve)" stroke-width="3.5" fill="none"/>
  <path class="so a-flow-s" d="M60 170 C110 130 160 150 230 120" stroke="#fff" stroke-width="3.5" fill="none"/>
- <circle class="so a-blink" cx="160" cy="80" r="26" fill="var(--hot)" opacity=".25"/>
+ <circle class="so a-blink" cx="160" cy="80" r="26" fill="var(--hot)" fill-opacity=".25"/>
  <polyline class="so a-blink" points="250,160 262,150 274,162 286,150 298,162" stroke="var(--accent)" stroke-width="3" fill="none"/>
  ${sp(214,124)}${sp(150,150,'d2')}
  ${T(40,40,'뇌막 혈관이 넓어짐','k')}${T(46,195,'삼차신경이 통증 신호 전달')}${T(236,186,'빛 번쩍임(조짐)','so w')}`,
@@ -359,7 +382,7 @@ angina:`
   <path d="M110 50 C70 30 30 70 50 120 C66 160 110 190 130 200 C160 180 200 150 205 110 C210 60 165 30 130 55 Z" fill="var(--muscle)" opacity=".9"/>
   <path d="M128 56 C112 90 96 120 104 170" stroke="var(--blood)" stroke-width="6" fill="none"/>
   <path class="a-flow slow" d="M128 56 C112 90 96 120 104 170" stroke="#fff" stroke-width="2.5" fill="none" opacity=".85"/>
-  <path class="so a-blink" d="M80 140 C90 165 110 185 128 195 C120 175 110 160 104 150Z" fill="#3a0d0d" opacity=".55"/>
+  <path class="so a-blink" d="M80 140 C90 165 110 185 128 195 C120 175 110 160 104 150Z" fill="#3a0d0d" fill-opacity=".55"/>
  </g>
  <circle cx="114" cy="110" r="10" fill="none" stroke="var(--ink)" stroke-dasharray="3 3"/>
  <path d="M124 108 L210 92" stroke="var(--ink)" stroke-dasharray="3 3"/>
@@ -373,7 +396,7 @@ gerd:`
  <path d="M84 176 C100 210 180 214 236 168 L236 182 C200 214 120 220 90 196Z" fill="var(--acid)" opacity=".75"/>
  <rect class="no" x="146" y="112" width="34" height="11" rx="4" fill="var(--muscle)"/>
  <g class="so"><rect x="144" y="112" width="9" height="11" rx="3" fill="var(--muscle)"/><rect x="173" y="112" width="9" height="11" rx="3" fill="var(--muscle)"/></g>
- <rect class="so a-rise" x="154" y="34" width="18" height="86" rx="5" fill="var(--acid)" opacity=".8"/>
+ <rect class="so a-rise" x="154" y="34" width="18" height="86" rx="5" fill="var(--acid)" fill-opacity=".8"/>
  ${sp(146,52)}${sp(180,78,'d2')}${sp(146,96,'d3')}
  ${T(186,26,'식도','k')}${T(190,116,'하부식도괄약근')}${T(196,132,'느슨해져 열림','so w')}${T(100,214,'위산')}${T(10,70,'위산이 거꾸로 올라와','so w')}${T(10,84,'가슴뼈 뒤가 타는 듯','so w')}`,
 costo:`
@@ -381,9 +404,9 @@ costo:`
   <rect x="150" y="16" width="20" height="176" rx="6" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
   ${[0,1,2,3,4].map(i=>{const y=38+i*34;return `<path d="M128 ${y} Q80 ${y-8} 30 ${y+22}" stroke="var(--bone)" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M192 ${y} Q240 ${y-8} 290 ${y+22}" stroke="var(--bone)" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M128 ${y}H150M170 ${y}H192" stroke="var(--cart)" stroke-width="9"/>`}).join('')}
  </g>
- <circle class="so a-blink" cx="138" cy="72" r="10" fill="var(--hot)" opacity=".55"/>
- <circle class="so a-blink d2" cx="182" cy="106" r="10" fill="var(--hot)" opacity=".55"/>
- <circle class="so a-blink d1" cx="138" cy="106" r="9" fill="var(--hot)" opacity=".45"/>
+ <circle class="so a-blink" cx="138" cy="72" r="10" fill="var(--hot)" fill-opacity=".55"/>
+ <circle class="so a-blink d2" cx="182" cy="106" r="10" fill="var(--hot)" fill-opacity=".55"/>
+ <circle class="so a-blink d1" cx="138" cy="106" r="9" fill="var(--hot)" fill-opacity=".45"/>
  ${T(176,14,'가슴뼈(흉골)','k')}${T(200,212,'갈비연골')}${T(10,212,'연골 관절 염증 → 누르면 아픔','so w')}`,
 ulcer:`
  ${T(14,22,'위 안쪽 공간','k')}
@@ -411,7 +434,7 @@ appendix:`
  <path d="M70 14 L70 136 Q70 172 104 172 L140 172" stroke="var(--tissue)" stroke-width="44" fill="none" stroke-linecap="round"/>
  <path d="M310 118 L150 150" stroke="var(--tissue-d)" stroke-width="22" fill="none" stroke-linecap="round"/>
  <path class="no" d="M100 192 Q104 212 134 210" stroke="var(--tissue-d)" stroke-width="9" fill="none" stroke-linecap="round"/>
- <circle class="so a-blink" cx="118" cy="204" r="22" fill="var(--hot)" opacity=".3"/>
+ <circle class="so a-blink" cx="118" cy="204" r="22" fill="var(--hot)" fill-opacity=".3"/>
  <g class="a-throb"><path class="so" d="M100 192 Q104 212 134 210" stroke="#e1574b" stroke-width="18" fill="none" stroke-linecap="round"/></g>
  <circle class="so" cx="100" cy="190" r="5" fill="#6a4c28"/>
  <circle class="so a-blink" cx="114" cy="206" r="2.5" fill="#3b5f12"/><circle class="so a-blink d2" cx="124" cy="210" r="2.5" fill="#3b5f12"/>
@@ -434,14 +457,14 @@ cramps:`
  ${T(234,40,'난소')}${T(126,214,'자궁경부')}${T(232,130,'프로스타글란딘','so w')}${T(10,214,'자궁근육이 세게 수축','so w')}${T(226,190,'혈류↓ → 통증','so w')}${T(124,100,'내막','k')}`,
 cystitis:`
  <path d="M90 60 Q160 20 230 60 Q250 130 196 160 L172 168 L148 168 L124 160 Q70 130 90 60Z" fill="#f4e8a8" stroke="var(--tissue-d)" stroke-width="8"/>
- <path class="so a-blink" d="M90 60 Q160 20 230 60 Q250 130 196 160 L172 168 L148 168 L124 160 Q70 130 90 60Z" fill="none" stroke="var(--hot)" stroke-width="8" opacity=".6"/>
+ <path class="so a-blink" d="M90 60 Q160 20 230 60 Q250 130 196 160 L172 168 L148 168 L124 160 Q70 130 90 60Z" fill="none" stroke="var(--hot)" stroke-width="8" stroke-opacity=".6"/>
  <path d="M160 168 V214" stroke="var(--tissue-d)" stroke-width="10"/>
  ${bug(160,206)}${bug(160,186,'d1')}${bug(140,140,'d2')}${bug(186,120,'d3')}${bug(128,96,'d1')}
  <path d="M60 30 C40 60 40 100 84 70 M260 30 C280 60 280 100 236 70" stroke="var(--urine)" stroke-width="5" fill="none"/>
  ${T(146,90,'방광','k')}${T(176,212,'요도')}${T(10,200,'세균이 요도로 올라와','so w')}${T(10,214,'방광벽 염증 → 찌릿·자주 마려움','so w')}`,
 kstone:`
  <path d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--kidney)"/>
- <ellipse class="so a-throb" cx="68" cy="72" rx="16" ry="30" fill="var(--fluid)" opacity=".7"/>
+ <ellipse class="so a-throb" cx="68" cy="72" rx="16" ry="30" fill="var(--fluid)" fill-opacity=".7"/>
  <path id="ureter" d="M96 76 C140 84 156 120 158 200" stroke="var(--urine)" stroke-width="8" fill="none"/>
  <path class="so a-flow-s" d="M96 76 C140 84 156 120 158 200" stroke="var(--muscle)" stroke-width="3" fill="none"/>
  <ellipse cx="170" cy="212" rx="58" ry="14" fill="#f4e8a8" stroke="var(--tissue-d)" stroke-width="3"/>
@@ -450,7 +473,7 @@ kstone:`
  ${T(14,148,'신장','k')}${T(170,110,'요관(지름 약 3~4mm)','k')}${T(170,150,'돌이 내려가며 요관이 경련','so w')}${T(10,170,'소변이 막혀 신장이 부음','so w')}${T(230,196,'방광')}`,
 pyelo:`
  <path d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--kidney)"/>
- <path class="so a-blink" d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--hot)" opacity=".45"/>
+ <path class="so a-blink" d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--hot)" fill-opacity=".45"/>
  <path d="M96 76 C140 84 156 120 158 200" stroke="var(--urine)" stroke-width="8" fill="none"/>
  <ellipse cx="170" cy="212" rx="58" ry="14" fill="#f4e8a8" stroke="var(--tissue-d)" stroke-width="3"/>
  ${[0,1.2,2.4].map(d=>`<g class="so"><circle r="3.5" fill="#4d7a17"><animateMotion dur="3.6s" begin="${d}s" repeatCount="indefinite" path="M158 200 C156 120 140 84 96 76"/></circle></g>`).join('')}
@@ -475,7 +498,7 @@ lstrain:`
  <rect x="20" y="10" width="34" height="200" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
  <g class="a-shake">${[0,1,2,3,4,5,6,7].map(i=>{const y=32+i*22;return `<path d="M60 ${y} Q170 ${y-8} 290 ${y+4}" stroke="var(--muscle)" stroke-width="6" fill="none" stroke-linecap="round"/>`}).join('')}</g>
  <g class="so"><rect x="160" y="70" width="10" height="40" fill="var(--scene)"/><rect x="190" y="112" width="10" height="30" fill="var(--scene)"/></g>
- <ellipse class="so a-blink" cx="180" cy="108" rx="44" ry="34" fill="var(--hot)" opacity=".28"/>
+ <ellipse class="so a-blink" cx="180" cy="108" rx="44" ry="34" fill="var(--hot)" fill-opacity=".28"/>
  ${T(24,8,'')}${T(64,214,'척추 옆 근육(척추기립근)','k')}${T(200,30,'근섬유 미세 파열 + 경련','so w')}`,
 koa:`
  <g class="a-grind"><path d="M100 0 L220 0 L224 90 Q220 128 186 124 Q160 120 134 124 Q100 128 96 90Z" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
@@ -483,7 +506,7 @@ koa:`
  <rect x="90" y="150" width="140" height="70" rx="6" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
  <path class="thick thin-sick" d="M94 150 H226" stroke="var(--cart)" stroke-width="9"/>
  <g class="so"><path d="M90 150 l-10 -6 l8 -6Z M230 150 l10 -6 l-8 -6Z" fill="var(--bone-line)"/></g>
- <ellipse class="so a-blink" cx="160" cy="140" rx="96" ry="22" fill="var(--fluid)" opacity=".3"/>
+ <ellipse class="so a-blink" cx="160" cy="140" rx="96" ry="22" fill="var(--fluid)" fill-opacity=".3"/>
  ${sp(140,138)}${sp(180,140,'d2')}
  ${T(236,40,'넙다리뼈','k')}${T(236,190,'정강이뼈','k')}${T(236,140,'연골')}${T(10,120,'연골이 닳아','so w')}${T(10,134,'뼈끼리 마찰','so w')}${T(10,170,'뼈 돌기(골극)','so w')}`,
 menis:`
@@ -494,6 +517,135 @@ menis:`
  <g class="so a-wiggle"><path d="M78 104 Q104 112 96 128" stroke="var(--cart)" stroke-width="10" fill="none" stroke-linecap="round"/></g>
  ${sp(84,116)}
  ${T(14,22,'위에서 본 정강이뼈 윗면','k')}${T(16,206,'안쪽 반월상연골')}${T(220,206,'바깥쪽')}${T(110,116,'찢어진 조각이 관절에 끼임','so w')}`
+,
+sah:`
+ <ellipse cx="160" cy="110" rx="122" ry="92" fill="var(--tissue)"/>
+ <path d="M80 70q30 20 0 50M130 52q-14 40 10 70M190 52q14 40-10 70M240 70q-30 20 0 50" stroke="var(--tissue-d)" stroke-width="3" fill="none"/>
+ <path d="M60 190 C110 160 140 150 160 124 C180 150 210 160 260 190 M160 124 V196" stroke="var(--blood)" stroke-width="7" fill="none"/>
+ <circle class="no" cx="160" cy="114" r="11" fill="var(--blood)" stroke="#7a1015" stroke-width="2"/>
+ <ellipse class="so a-throb" cx="160" cy="112" rx="82" ry="46" fill="var(--blood)" fill-opacity=".45"/>
+ <circle class="so" cx="160" cy="114" r="12" fill="#7a1015"/>
+ <g class="so" stroke="var(--warn)" stroke-width="2.6" fill="none"><path d="M40 60l-16-14m4 12-4-12 12 2"/><path d="M280 60l16-14m-4 12 4-12-12 2"/><path d="M160 14v-12m-6 6 6-6 6 6"/></g>
+ ${sp(120,90)}${sp(200,90,'d2')}
+ ${T(186,118,'뇌동맥류(꽈리처럼 부푼 혈관)','k')}${T(20,214,'터진 피가 뇌막 아래로 퍼져 뇌압 급상승','so w')}${T(10,30,'벼락 두통','so w')}`,
+tonsil:`
+ <ellipse cx="160" cy="110" rx="130" ry="96" fill="#7c2633"/>
+ <path d="M40 60 Q160 -10 280 60 L280 20 H40Z" fill="var(--tissue)"/>
+ <path d="M150 40 Q160 30 170 40 L168 78 Q160 92 152 78Z" fill="var(--tissue)"/>
+ <path d="M60 200 Q160 120 260 200 V220 H60Z" fill="var(--tissue-d)"/>
+ <ellipse cx="96" cy="112" rx="20" ry="30" fill="var(--tissue)"/><ellipse cx="224" cy="112" rx="20" ry="30" fill="var(--tissue)"/>
+ <g class="a-throb"><ellipse class="so" cx="100" cy="112" rx="30" ry="40" fill="#e3594d"/></g>
+ <g class="a-throb d2"><ellipse class="so" cx="220" cy="112" rx="30" ry="40" fill="#e3594d"/></g>
+ <g class="so" fill="#fff6d8"><circle cx="94" cy="100" r="4"/><circle cx="106" cy="122" r="5"/><circle cx="226" cy="104" r="4"/><circle cx="214" cy="126" r="5"/></g>
+ ${T(176,70,'목젖','k')}${T(120,174,'혀')}${T(14,170,'편도','k')}${T(176,214,'붓고 흰 고름이 낌','so w')}`,
+thyroid:`
+ <rect x="146" y="6" width="28" height="208" rx="10" fill="#d9e3e6" stroke="var(--body-line)" stroke-width="2"/>
+ ${[0,1,2,3,4,5,6,7,8].map(i=>`<path d="M148 ${22+i*22}h24" stroke="var(--body-line)" stroke-width="3"/>`).join('')}
+ <g class="a-throb"><ellipse cx="126" cy="122" rx="26" ry="46" fill="#c86e7a"/><ellipse cx="194" cy="122" rx="26" ry="46" fill="#c86e7a"/><rect x="140" y="130" width="40" height="18" rx="6" fill="#c86e7a"/></g>
+ <ellipse class="so a-blink" cx="160" cy="124" rx="80" ry="58" fill="var(--hot)" fill-opacity=".25"/>
+ ${[[90,90],[230,90],[86,160],[234,160],[160,190]].map((p,i)=>`<circle class="so a-spark d${i%4}" cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--nerve)"/>`).join('')}
+ ${T(186,18,'기관(숨길)')}${T(20,52,'갑상선','k')}${T(10,212,'염증으로 저장된 호르몬이 새어 나옴 → 두근거림','so w')}`,
+frozen:`
+ <path d="M30 30 Q80 60 92 100 Q80 140 30 170Z" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <circle cx="140" cy="100" r="44" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="128" y="130" width="28" height="90" rx="10" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path class="no" d="M84 52 Q150 30 190 90 Q196 140 150 160 Q100 160 84 148" stroke="var(--cart)" stroke-width="6" fill="none"/>
+ <g class="a-squeeze"><path class="so" d="M84 56 Q146 44 178 92 Q182 132 148 150 Q104 152 86 144" stroke="var(--muscle)" stroke-width="12" fill="none"/></g>
+ <path class="no" d="M240 200 A80 80 0 0 1 240 40" stroke="var(--accent)" stroke-width="3" stroke-dasharray="5 5" fill="none"/>
+ <path class="so" d="M240 200 A80 80 0 0 1 171 160" stroke="var(--warn)" stroke-width="4" fill="none"/>
+ ${T(250,124,'팔 올리는 범위','k')}${T(250,140,'정상: 거의 180°','no')}${T(250,140,'굳어서 크게 줄어듦','so w')}${T(10,212,'관절주머니가 두꺼워지고 오그라듦','so w')}${T(30,22,'어깨뼈')}${T(150,36,'위팔뼈 머리')}`,
+rotator:`
+ <path d="M40 28 H250 Q262 48 238 58 H60 Q36 50 40 28Z" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <g class="a-grind"><circle cx="150" cy="128" r="50" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/><rect x="134" y="160" width="32" height="60" rx="10" fill="var(--bone)"/></g>
+ <path d="M20 96 Q120 58 220 104" stroke="#ece6da" stroke-width="13" fill="none" stroke-linecap="round"/>
+ <path d="M20 96 Q120 58 220 104" stroke="var(--bone-line)" stroke-width="1" fill="none"/>
+ <rect class="so" x="132" y="68" width="16" height="18" fill="var(--scene)"/>
+ ${sp(140,72)}${sp(110,72,'d2')}
+ ${T(150,20,'견봉(어깨뼈 지붕)','k')}${T(10,120,'회전근개 힘줄')}${T(206,150,'팔을 들 때 끼이고 닳아','so w')}${T(206,164,'힘줄이 찢어짐','so w')}`,
+ptx:`
+ <path d="M44 34 Q160 4 276 34 L286 210 H34Z" fill="none" stroke="var(--bone-line)" stroke-width="3" stroke-dasharray="8 6"/>
+ <path d="M152 8 V70 M152 70 L120 90 M168 8 V70 L200 90" stroke="var(--body-line)" stroke-width="8" fill="none"/>
+ <path d="M140 40 Q90 40 70 110 Q60 180 100 192 Q140 198 146 150Z" fill="var(--tissue)"/>
+ <path class="no" d="M180 40 Q230 40 250 110 Q260 180 220 192 Q180 198 174 150Z" fill="var(--tissue)"/>
+ <g class="a-squeeze"><path class="so" d="M182 66 Q210 70 216 112 Q218 150 198 158 Q182 160 178 130Z" fill="var(--tissue)"/></g>
+ <g class="so" stroke="var(--fluid)" stroke-width="2.5" fill="none"><path d="M236 70 q12 20 2 40"/><path d="M244 120 q-20 10-24 30"/><path d="M230 170 q-10-10-20-12"/></g>
+ ${sp(226,62)}
+ ${T(30,24,'흉곽')}${T(70,212,'정상 폐','k')}${T(224,52,'터진 기포','so w')}${T(196,212,'샌 공기가 폐를 눌러 쪼그라듦','so w')}`,
+pneumonia:`
+ <path d="M30 210 Q100 150 160 110 L200 70 M160 110 L206 140 M140 126 L210 176" stroke="var(--tissue-d)" stroke-width="8" fill="none" stroke-linecap="round"/>
+ ${[[200,56],[224,70],[212,94],[238,104],[200,124],[228,138],[252,124],[214,158],[240,172],[264,152],[190,184],[220,198]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="13" fill="var(--scene)" stroke="var(--tissue-d)" stroke-width="2.5"/>`).join('')}
+ ${[[212,94],[238,104],[228,138],[252,124],[240,172],[264,152],[214,158]].map((p,i)=>`<circle class="so a-blink d${i%4}" cx="${p[0]}" cy="${p[1]}" r="11" fill="var(--fluid)" fill-opacity=".7"/>`).join('')}
+ ${bug(232,120)}${bug(254,166,'d2')}
+ <path d="M296 20 V210" stroke="var(--tissue-d)" stroke-width="4"/>
+ <path class="so a-blink" d="M296 20 V210" stroke="var(--hot)" stroke-width="8" fill-opacity=".5"/>
+ ${T(20,40,'기관지 끝 폐포(공기주머니)','k')}${T(20,60,'염증액·고름으로 차서 산소 교환↓','so w')}${T(200,16,'흉막')}${T(20,80,'흉막 염증 → 숨 쉴 때 찌릿','so w')}`,
+pancreas:`
+ <path d="M90 20 Q200 0 260 50 Q240 90 160 84 Q110 80 90 20Z" fill="var(--tissue)" opacity=".45"/>
+ <path d="M70 60 Q22 110 62 176" stroke="var(--tissue)" stroke-width="18" fill="none" stroke-linecap="round"/>
+ <g class="a-throb"><path d="M64 128 Q120 100 200 114 Q260 120 292 100 Q302 122 270 140 Q200 152 120 150 Q74 154 64 128Z" fill="#e6b678"/></g>
+ <path d="M70 130 Q150 124 286 112" stroke="#b97f35" stroke-width="3" fill="none"/>
+ <circle class="so" cx="70" cy="130" r="6" fill="#e3d18c" stroke="var(--bile)"/>
+ ${[[110,170],[170,176],[230,162],[150,96],[220,96],[282,150]].map((p,i)=>`<circle class="so a-spark d${i%4}" cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--acid)"/>`).join('')}
+ <ellipse class="so a-blink" cx="180" cy="128" rx="120" ry="40" fill="var(--hot)" fill-opacity=".2"/>
+ ${T(180,40,'위(앞쪽)')}${T(8,200,'십이지장')}${T(200,90,'췌장(위 뒤쪽)','k')}${T(120,212,'소화효소가 새어 자기 조직을 녹임','so w')}`,
+diverti:`
+ <path d="M10 110 Q80 80 160 110 T310 110" stroke="var(--tissue)" stroke-width="44" fill="none"/>
+ <circle cx="90" cy="70" r="10" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <circle cx="240" cy="74" r="10" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <circle cx="170" cy="142" r="11" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <circle class="so a-blink" cx="170" cy="148" r="30" fill="var(--hot)" fill-opacity=".25"/>
+ <g class="a-throb"><circle class="so" cx="170" cy="146" r="17" fill="#e1574b"/></g>
+ ${bug(166,148)}${bug(178,140,'d2')}
+ ${T(20,40,'대장','k')}${T(96,56,'게실(벽이 꽈리처럼 튀어나옴)')}${T(70,198,'입구가 막혀 세균이 자라고 염증','so w')}`,
+constip:`
+ <path d="M60 214 V60 Q60 30 90 30 H230 Q260 30 260 60 V170 Q260 200 220 200 H180" stroke="var(--tissue)" stroke-width="36" fill="none" stroke-linecap="round"/>
+ <path class="no a-flow" d="M60 214 V60 Q60 30 90 30 H230 Q260 30 260 60 V170 Q260 200 220 200 H180" stroke="#9a7444" stroke-width="9" fill="none"/>
+ <g class="so">${[[260,120],[256,140],[264,158],[258,176],[244,198],[226,200],[208,198]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="8" fill="#6d4f27"/>`).join('')}</g>
+ <g class="so a-throb"><circle cx="150" cy="30" r="9" fill="var(--scene)" stroke="var(--tissue-d)"/><circle cx="60" cy="90" r="8" fill="var(--scene)" stroke="var(--tissue-d)"/></g>
+ ${T(90,70,'대장','k')}${T(286,170,'왼쪽','k')}${T(80,120,'수분이 빠져 딱딱해진 변이','so w')}${T(80,134,'쌓이고 가스가 장을 늘림','so w')}${T(80,120,'변이 부드럽게 이동','no')}`,
+stenosis:`
+ <ellipse cx="160" cy="56" rx="78" ry="42" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <circle cx="160" cy="146" r="46" fill="var(--scene)" stroke="var(--bone)" stroke-width="14"/>
+ <path class="so" d="M118 166 Q160 200 202 166 Q190 150 160 156 Q130 150 118 166Z" fill="#e6c86a"/>
+ <path class="so" d="M114 120 l18 8 -16 8Z M206 120 l-18 8 16 8Z" fill="var(--bone-line)"/>
+ <g class="a-squeeze">${[[-14,-12],[0,-16],[14,-12],[-18,2],[-4,0],[10,0],[22,2],[-10,14],[6,14]].map(o=>`<circle cx="${160+o[0]}" cy="${146+o[1]}" r="6" fill="var(--nerve)"/>`).join('')}</g>
+ ${sp(140,150)}${sp(184,150,'d2')}
+ ${T(250,56,'척추뼈 몸통','k')}${T(216,136,'척추관','k')}${T(216,152,'신경다발')}${T(10,212,'두꺼워진 인대·뼈 돌기가 신경을 조임','so w')}`,
+carpal:`
+ ${[70,104,138,172,206,240].map((x,i)=>`<circle cx="${x+5}" cy="${172-Math.abs(i-2.5)*6}" r="18" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>`).join('')}
+ <path d="M60 146 Q160 52 260 146" stroke="#ece6da" stroke-width="12" fill="none"/>
+ <g class="a-throb">${[[120,124],[146,132],[176,132],[202,124],[132,110],[190,110],[160,138]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="10" fill="#f3eee4" stroke="var(--bone-line)"/>`).join('')}</g>
+ <ellipse class="no" cx="160" cy="100" rx="13" ry="10" fill="var(--nerve)"/>
+ <ellipse class="so" cx="160" cy="100" rx="20" ry="5" fill="var(--nerve)"/>
+ ${sp(160,98)}${sp(280,40,'d2')}${sp(300,60,'d3')}
+ ${T(200,60,'가로 손목 인대(터널 지붕)')}${T(10,214,'손목뼈','k')}${T(176,94,'정중신경','k')}${T(100,214,'힘줄이 부어 신경을 납작하게 누름 → 손가락 저림','so w')}`,
+trigger:`
+ <rect x="20" y="50" width="90" height="36" rx="16" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="116" y="52" width="80" height="32" rx="14" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="202" y="54" width="70" height="28" rx="12" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path d="M10 124 H300" stroke="#ece6da" stroke-width="9" stroke-linecap="round"/>
+ <rect class="thick" x="150" y="110" width="30" height="28" rx="6" fill="none" stroke="var(--muscle)" stroke-width="5"/>
+ <rect class="so" x="146" y="106" width="38" height="36" rx="8" fill="none" stroke="var(--muscle)" stroke-width="5"/>
+ <g class="a-slide"><circle class="so" cx="118" cy="124" r="10" fill="#ece6da" stroke="var(--bone-line)"/></g>
+ ${sp(150,124)}
+ ${T(20,40,'손가락뼈','k')}${T(10,160,'굽힘 힘줄')}${T(140,166,'활차(고리)','k')}${T(30,200,'힘줄 결절이 고리에 걸렸다 빠지며 딸깍','so w')}`,
+plantar:`
+ <path d="M40 120 Q40 60 90 50 L120 50 Q140 100 200 130 Q260 150 300 160 Q312 190 290 200 L70 204 Q40 200 40 170Z" fill="var(--tissue)" opacity=".5"/>
+ <ellipse cx="82" cy="168" rx="38" ry="26" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path d="M118 150 L280 172" stroke="var(--bone)" stroke-width="12" stroke-linecap="round"/>
+ <path d="M76 194 Q170 204 286 188" stroke="#ece6da" stroke-width="8" fill="none"/>
+ <path class="so" d="M70 192 l-10 8 14 0Z" fill="var(--bone-line)"/>
+ <ellipse class="so a-blink" cx="84" cy="194" rx="26" ry="12" fill="var(--hot)" fill-opacity=".45"/>
+ ${sp(90,196)}${sp(110,198,'d2')}
+ ${T(40,140,'발뒤꿈치뼈','k')}${T(170,216,'족저근막','k')}${T(150,60,'뒤꿈치 부착부 미세 파열·염증','so w')}${T(150,76,'아침 첫발에 가장 아픔','so w')}`,
+gout:`
+ <rect x="20" y="78" width="130" height="64" rx="30" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="168" y="84" width="122" height="52" rx="22" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path d="M150 90 V130 M168 92 V128" stroke="var(--cart)" stroke-width="6"/>
+ <ellipse cx="160" cy="110" rx="56" ry="54" fill="none" stroke="var(--tissue-d)" stroke-width="3"/>
+ <g class="a-throb"><ellipse class="so" cx="160" cy="110" rx="70" ry="66" fill="var(--hot)" fill-opacity=".25"/></g>
+ <g class="so a-blink" stroke="var(--ink)" stroke-width="1.6">${[[152,96,20],[160,112,-30],[156,126,60],[166,100,-60],[164,124,10]].map(c=>`<path d="M${c[0]-6} ${c[1]}h12" transform="rotate(${c[2]} ${c[0]} ${c[1]})"/>`).join('')}</g>
+ ${T(20,40,'엄지발가락 관절','k')}${T(200,190,'관절주머니')}${T(10,200,'바늘 모양 요산 결정을 면역세포가 공격','so w')}${T(10,214,'→ 붉게 붓고 극심한 통증','so w')}`
 };
 
 /* ---------- data: causes ---------- */
@@ -558,7 +710,7 @@ angina:{n:'협심증',en:'Angina pectoris',tag:'응급 가능',feel:'가슴 한�
  steps:['콜레스테롤이 관상동맥 벽에 쌓여 혈관이 좁아집니다.','운동하면 심장근육은 산소를 더 원하지만 좁은 혈관으로 피가 충분히 못 갑니다.','산소가 모자란 심장근육이 통증 신호를 보냅니다. 혈관이 완전히 막히면 심근경색입니다.'],
  ref:[['front',100,120,'가슴'],['front',152,150,'왼팔'],['front',100,66,'턱']],refText:'왼쪽 어깨·팔 안쪽, 턱, 명치',
  flags:['쉬어도 20분 넘게 가슴 통증이 지속 → 즉시 119','식은땀·호흡곤란·구역질·실신 동반','처음 생긴 가슴 통증, 또는 평소보다 쉽게·자주 생김'],
- care:{dept:['순환기내과(심장내과)','흉부외과'],start:'general',startWhy:'운동 시 가슴 통증은 심장 검사가 가능한 종합병원 이상을 권합니다. 지속되는 통증은 119로 심혈관센터가 있는 응급실로 가세요.',
+ care:{find:['심혈관센터'],dept:['순환기내과(심장내과)','흉부외과'],start:'general',startWhy:'운동 시 가슴 통증은 심장 검사가 가능한 종합병원 이상을 권합니다. 지속되는 통증은 119로 심혈관센터가 있는 응급실로 가세요.',
   t:{clinic:['심전도·혈액검사(콜레스테롤·당), 위험인자 약 처방, 상급병원 의뢰','심전도·혈액검사'],
    hosp:['심장초음파, 운동부하검사(보유 병원)','심장초음파·트레드밀'],
    general:['관상동맥 CT, 운동부하검사, 심혈관조영술·스텐트(심혈관센터 보유 시), 24시간 응급','관상동맥 CT·심혈관조영실'],
@@ -568,7 +720,7 @@ gerd:{n:'역류성 식도염',en:'Gastroesophageal reflux disease',tag:'흔함',
  steps:['위와 식도 사이의 괄약근이 느슨해집니다.','위산과 음식물이 식도로 거꾸로 올라옵니다.','산에 약한 식도 점막이 헐어 타는 듯한 통증이 생깁니다.'],
  ref:[['front',100,124,'가슴뼈 뒤'],['front',100,80,'목']],refText:'가슴뼈 뒤, 목, 명치',
  flags:['음식을 삼킬 때 걸리거나 아픔','이유 없는 체중 감소, 피를 토함, 검은 변','운동할 때 심해지는 가슴 통증(심장 먼저 확인)'],
- care:{dept:['소화기내과'],start:'clinic',startWhy:'위내시경이 되는 내과 의원에서 진단·치료가 대부분 가능합니다.',
+ care:{find:['위내시경'],dept:['소화기내과'],start:'clinic',startWhy:'위내시경이 되는 내과 의원에서 진단·치료가 대부분 가능합니다.',
   t:{clinic:['위내시경으로 식도염 확인, 위산억제제 처방, 생활습관 교정','위내시경'],
    hosp:['반복·약 효과 부족 시 내시경 재평가','위내시경·조직검사'],
    general:['24시간 식도 산도·임피던스 검사, 식도내압검사','pH-임피던스·식도내압계'],
@@ -588,7 +740,7 @@ ulcer:{n:'위염·위궤양',en:'Gastritis / peptic ulcer',tag:'흔함',feel:'�
  steps:['헬리코박터균이나 소염진통제가 위의 점액 보호막을 약하게 만듭니다.','위산이 드러난 위 점막을 공격합니다.','점막이 깊게 패이면 궤양이 되고, 더 깊어지면 출혈이나 천공이 생깁니다.'],
  ref:[['front',100,160,'명치']],refText:'명치, 등 쪽으로 뻗기도 함',
  flags:['검은 변(짜장 색) 또는 피를 토함','배 전체가 판자처럼 딱딱하고 극심하게 아픔(천공)','체중 감소·삼킴 곤란'],
- care:{dept:['소화기내과'],start:'clinic',startWhy:'내과 의원 위내시경으로 진단하고 헬리코박터 검사까지 받을 수 있습니다.',
+ care:{find:['위내시경'],dept:['소화기내과'],start:'clinic',startWhy:'내과 의원 위내시경으로 진단하고 헬리코박터 검사까지 받을 수 있습니다.',
   t:{clinic:['위내시경·헬리코박터 검사, 제균 치료와 위산억제제','위내시경·신속요소분해효소검사'],
    hosp:['조직검사, 제균 확인 검사','요소호기검사'],
    general:['출혈 시 응급 내시경 지혈, 24시간 내시경 당직','치료 내시경'],
@@ -608,7 +760,7 @@ appendix:{n:'충수염(맹장염)',en:'Acute appendicitis',tag:'응급 가능',f
  steps:['충수 입구가 변 덩어리나 림프조직 부기로 막힙니다.','안에 세균이 불어나고 충수가 부어오릅니다.','염증이 배 안쪽 막(복막)까지 닿으면 통증이 오른쪽 아랫배로 정확히 모입니다. 터지면 복막염.'],
  ref:[['front',100,200,'처음: 배꼽'],['front',78,212,'나중: 오른쪽']],refText:'배꼽 주위 → 오른쪽 아랫배로 이동',
  flags:['통증이 점점 심해지고 걸을 때 울림','열·구토 동반','배 전체가 딱딱하고 극심한 통증 → 응급실'],
- care:{dept:['외과','응급의학과'],start:'general',startWhy:'의심되면 CT와 응급 수술이 가능한 종합병원 응급실이 가장 빠릅니다.',
+ care:{find:['응급실'],dept:['외과','응급의학과'],start:'general',startWhy:'의심되면 CT와 응급 수술이 가능한 종합병원 응급실이 가장 빠릅니다.',
   t:{clinic:['진찰·혈액검사로 의심 시 바로 수술 가능한 병원 의뢰','혈액검사'],
    hosp:['외과 병원에서 초음파·CT 후 수술(24시간 수술 가능 여부 확인)','초음파·CT'],
    general:['응급실 CT, 복강경 충수절제술','CT·복강경'],
@@ -648,7 +800,7 @@ kstone:{n:'요로결석',en:'Urolithiasis / renal colic',tag:'주의',feel:'옆�
  steps:['소변 속 칼슘 등이 뭉쳐 신장에 돌이 생깁니다.','돌이 지름 3~4mm 요관으로 내려오다 걸립니다.','요관이 돌을 밀어내려 경련하고, 막힌 소변에 신장이 부어 통증이 옵니다. 5mm 미만은 저절로 빠지는 경우가 많음.'],
  ref:[['back',135,182,'옆구리'],['front',84,252,'사타구니']],refText:'옆구리 → 아랫배 → 사타구니·고환/음순',
  flags:['열·오한 동반(막힌 신장 감염은 응급)','소변이 전혀 안 나옴','구토로 물도 못 마심, 신장이 하나뿐'],
- care:{dept:['비뇨의학과','응급의학과'],start:'hosp',startWhy:'통증이 심하면 응급실, 진정되면 체외충격파가 되는 비뇨의학과 병원에서 치료합니다.',
+ care:{find:['체외충격파'],dept:['비뇨의학과','응급의학과'],start:'hosp',startWhy:'통증이 심하면 응급실, 진정되면 체외충격파가 되는 비뇨의학과 병원에서 치료합니다.',
   t:{clinic:['소변검사·X-ray·초음파, 진통제, 작은 돌은 배출 약','X-ray·초음파'],
    hosp:['체외충격파 쇄석술(비뇨의학과 병원 다수)','체외충격파 쇄석기'],
    general:['비조영 CT, 요관내시경 레이저, 감염 시 배액','CT·요관내시경·레이저'],
@@ -668,7 +820,7 @@ ldisc:{n:'허리 디스크(요추 추간판 탈출)',en:'Lumbar disc herniation'
  steps:['반복적인 숙임·들기로 디스크 바깥 섬유가 찢어집니다.','수핵이 뒤쪽으로 튀어나와 신경뿌리를 누릅니다(주로 L4–5, L5–S1).','눌린 신경과 염증 물질 때문에 좌골신경을 따라 다리까지 저립니다.'],
  ref:[['back',100,216,'허리'],['back',82,262,'엉덩이'],['back',80,300,'허벅지 뒤'],['back',80,370,'종아리']],refText:'엉덩이 → 허벅지 뒤 → 종아리·발',
  flags:['대소변 조절이 안 되거나 회음부 감각이 둔함(마미증후군 → 응급)','다리 힘이 점점 빠짐(발목이 안 들림)','열·암 병력과 함께 생긴 허리 통증'],
- care:{dept:['신경외과','정형외과(척추)','재활의학과','마취통증의학과'],start:'clinic',startWhy:'90% 가까이는 6~12주 보존 치료로 좋아집니다. 시술·수술 권유가 과하지 않은지 확인하세요.',
+ care:{find:['척추 전문병원'],dept:['신경외과','정형외과(척추)','재활의학과','마취통증의학과'],start:'clinic',startWhy:'90% 가까이는 6~12주 보존 치료로 좋아집니다. 시술·수술 권유가 과하지 않은지 확인하세요.',
   t:{clinic:['진찰·X-ray, 약물, 물리치료, 신경차단술','X-ray·C-arm'],
    hosp:['척추 전문병원: MRI, 경막외 주사, 내시경 디스크 제거','MRI·척추 내시경'],
    general:['근전도, 수술, 다른 원인 감별','근전도·MRI'],
@@ -688,7 +840,7 @@ koa:{n:'퇴행성 관절염',en:'Knee osteoarthritis',tag:'흔함',feel:'계단�
  steps:['나이·체중·과사용으로 관절 연골이 닳습니다.','연골이 얇아져 뼈끼리 가까워지고 마찰합니다.','뼈 가장자리에 돌기(골극)가 자라고 관절액이 늘어 붓습니다.'],
  ref:[['front',82,335,'무릎 안쪽']],refText:'무릎 안쪽, 무릎 앞',
  flags:['갑자기 붉게 붓고 열이 남(감염·통풍)','다리에 체중을 전혀 못 실음','종아리가 붓고 아픔(혈전)'],
- care:{dept:['정형외과','재활의학과'],start:'clinic',startWhy:'체중을 실은 X-ray로 진행 단계를 확인하고, 운동과 약으로 시작합니다.',
+ care:{find:['관절 전문병원'],dept:['정형외과','재활의학과'],start:'clinic',startWhy:'체중을 실은 X-ray로 진행 단계를 확인하고, 운동과 약으로 시작합니다.',
   t:{clinic:['체중부하 X-ray, 약물, 히알루론산 주사, 운동 지도','X-ray·초음파'],
    hosp:['관절 전문병원: 관절경, 휜 다리 교정(절골술), 인공관절','MRI·관절경·인공관절 수술실'],
    general:['동반 질환이 많은 환자의 수술','MRI·마취·중환자 지원'],
@@ -698,25 +850,176 @@ menis:{n:'반월상연골 파열',en:'Meniscal tear',tag:'주의',feel:'비틀�
  steps:['무릎을 굽힌 채 비틀면 뼈 사이 쿠션인 반월상연골이 끼어 찢어집니다.','찢어진 조각이 관절 안에서 움직입니다.','조각이 끼면 무릎이 걸리거나 펴지지 않고(잠김) 붓습니다.'],
  ref:[['front',80,335,'무릎 안쪽']],refText:'무릎 관절선(안쪽 또는 바깥쪽)',
  flags:['무릎이 잠겨 펴지지 않음','다친 직후 크게 붓거나 불안정함(인대 손상 동반 가능)','체중을 실을 수 없음'],
- care:{dept:['정형외과(스포츠·관절)'],start:'hosp',startWhy:'진단에는 MRI가 필요해 MRI·관절경이 되는 관절 전문병원이 효율적입니다.',
+ care:{find:['관절 전문병원'],dept:['정형외과(스포츠·관절)'],start:'hosp',startWhy:'진단에는 MRI가 필요해 MRI·관절경이 되는 관절 전문병원이 효율적입니다.',
   t:{clinic:['진찰(맥머리 검사 등), X-ray, 보조기·약','X-ray'],
    hosp:['MRI 진단, 관절경 봉합 또는 부분 절제','MRI·관절경'],
    general:['인대 손상 동반 시 재건술','MRI·관절경'],
    univ:['연골판 이식, 재파열·복합 손상','동종 연골판 이식']},
   tech:[['관절경 봉합술','찢어진 연골판을 꿰매 보존. 가능하면 절제보다 우선','병원 이상'],['동종 반월상연골 이식','연골판을 많이 잃은 젊은 환자에게 이식','대학병원'],['MRI','연골판·인대 손상을 가장 정확히 확인','병원 이상']]}}
+,
+sah:{n:'지주막하출혈(뇌동맥류 파열)',en:'Subarachnoid hemorrhage',tag:'응급 가능',feel:'망치로 맞은 듯 갑자기 터지는, 평생 처음 겪는 최악의 두통. 구토·목 뻣뻣·의식 저하.',
+ steps:['뇌혈관 갈림길에 꽈리처럼 부푼 동맥류가 생깁니다(대개 터지기 전엔 증상 없음).','혈압이 오르는 순간 동맥류가 터져 피가 뇌막 아래로 퍼집니다.','뇌압이 급격히 올라 극심한 두통·구토·의식 저하가 오고, 재출혈 위험이 큽니다.'],
+ ref:[['front',100,28,'머리 전체'],['back',100,80,'목 뻣뻣']],refText:'머리 전체, 뒷목',
+ flags:['갑자기 터지듯 생긴 극심한 두통 → 즉시 119','의식 저하·경련·한쪽 마비','목이 뻣뻣하고 반복 구토'],
+ care:{dept:['신경외과','응급의학과','신경과'],start:'univ',startWhy:'의원을 거치지 말고 119로 뇌혈관 수술·시술이 24시간 가능한 응급실(권역심뇌혈관질환센터 등)로 가야 합니다.',find:['권역심뇌혈관질환센터','응급실'],
+  t:{clinic:['응급 상황에서는 거치지 않습니다. 평소 동맥류 가족력 상담·검진 의뢰','—'],
+   hosp:['뇌혈관 시술 가능 여부를 반드시 확인','CT'],
+   general:['응급 CT·CT혈관조영, 코일 색전술·클립 결찰(뇌혈관센터 보유 시)','CT혈관조영·혈관조영실'],
+   univ:['24시간 뇌혈관 수술·시술, 신경계 중환자실','혈관조영실·신경중환자실']},
+  tech:[['코일 색전술','사타구니·손목 혈관으로 들어가 동맥류 안을 코일로 채움','종합·대학'],['클립 결찰술','머리를 열고 동맥류 목을 클립으로 막음','종합·대학'],['흐름 전환 스텐트','큰 동맥류에서 혈류 방향을 바꿔 동맥류를 막음','대학병원'],['뇌 MRA 검진','터지기 전 동맥류를 발견','병원 이상']]}},
+tonsil:{n:'편도염',en:'Acute tonsillitis',tag:'흔함',feel:'침 삼킬 때 목이 찢어지듯 아프고 열·오한, 귀까지 당김.',
+ steps:['바이러스나 세균(연쇄상구균)이 편도에 감염됩니다.','편도가 붓고 표면에 흰 고름이 낍니다.','염증이 주변으로 퍼지면 편도 주위에 고름집(농양)이 생길 수 있습니다.'],
+ ref:[['front',100,78,'목'],['front',76,44,'귀']],refText:'목구멍, 귀',
+ flags:['입이 잘 안 벌어지고 목소리가 뭉개짐(편도주위농양)','침도 못 삼키고 숨쉬기 힘듦','고열이 3일 넘게 지속'],
+ care:{dept:['이비인후과','내과','소아청소년과'],start:'clinic',startWhy:'이비인후과 의원에서 바로 진찰·검사·처방이 가능합니다.',
+  t:{clinic:['목 진찰, 신속 연쇄상구균 검사, 항생제·진통제','후두내시경·신속항원검사'],
+   hosp:['농양 배농, 수액·입원','CT·배농'],
+   general:['농양 배농·입원, 기도 위험 평가','CT'],
+   univ:['기도 폐쇄 위험·심부 경부 감염','기도 관리·중환자실']},
+  tech:[['신속 연쇄상구균 항원검사','10분 내 세균성 여부 확인해 항생제 필요성 판단','의원 이상'],['편도 절제술','반복 편도염(연 7회 이상 등) 기준을 만족할 때','병원 이상'],['코블레이션 편도 절제','저온 고주파로 절제해 수술 후 통증을 줄이려는 방법','일부 병원']]}},
+thyroid:{n:'아급성 갑상선염',en:'Subacute thyroiditis',tag:'주의',feel:'목 앞 아래를 누르면 아프고 턱·귀로 뻗침. 열과 두근거림이 함께 옴.',
+ steps:['감기 같은 바이러스 감염 뒤 갑상선에 염증이 생깁니다.','갑상선 세포가 터지며 저장된 호르몬이 새어 나와 두근거림·땀·체중 감소가 옵니다.','대부분 수주~수개월에 회복되고, 중간에 일시적인 기능 저하가 올 수 있습니다.'],
+ ref:[['front',100,82,'목 앞'],['front',78,52,'턱·귀']],refText:'목 앞, 턱, 귀',
+ flags:['숨쉬기·삼키기 어려움','심한 두근거림·고열','목에 딱딱한 혹이 빠르게 커짐'],
+ care:{dept:['내분비내과','내과'],start:'clinic',startWhy:'갑상선 혈액검사와 초음파가 되는 내과에서 시작합니다.',find:['갑상선'],
+  t:{clinic:['갑상선 기능·염증 혈액검사, 소염제','혈액검사·초음파'],
+   hosp:['갑상선 초음파','초음파'],
+   general:['갑상선 스캔으로 다른 갑상선염과 감별','갑상선 스캔'],
+   univ:['감별이 어려운 경우, 혹이면 세침검사·수술','초음파 유도 세침검사']},
+  tech:[['갑상선 초음파','염증 부위와 혹을 확인','의원 이상'],['갑상선 스캔(섭취율)','호르몬을 만드는지 새는지 구분','종합 이상'],['초음파 유도 세침검사','혹이 있으면 세포를 뽑아 확인','병원 이상']]}},
+frozen:{n:'오십견(유착성 관절낭염)',en:'Adhesive capsulitis',tag:'흔함',feel:'어깨가 서서히 굳어 팔이 위·뒤로 안 올라가고 밤에 욱신거림.',
+ steps:['어깨 관절을 싸는 주머니(관절낭)에 염증이 생깁니다.','관절낭이 두꺼워지고 오그라들어 들러붙습니다.','움직일 공간이 줄어 모든 방향으로 굳습니다. 보통 1~3년에 걸쳐 서서히 풀립니다.'],
+ ref:[['front',56,100,'어깨'],['front',44,140,'팔 바깥']],refText:'어깨, 위팔 바깥쪽',
+ flags:['넘어진 뒤 팔을 못 듦(골절·파열)','열이 나고 붉게 부음','가슴 통증·숨참과 함께 왼어깨 통증(심장)'],
+ care:{dept:['정형외과','재활의학과'],start:'clinic',startWhy:'진찰과 X-ray·초음파로 진단하고 운동·주사로 시작합니다.',find:['어깨'],
+  t:{clinic:['진찰·X-ray, 약, 스트레칭·운동','X-ray·초음파'],
+   hosp:['초음파 유도 관절 주사, 관절 수압팽창술','초음파·C-arm'],
+   general:['잘 안 풀릴 때 마취하 도수조작·관절경 유리술','MRI·관절경'],
+   univ:['당뇨 등 동반 난치성','—']},
+  tech:[['관절 수압팽창술','오그라든 관절낭을 액체로 늘려 움직임을 회복','병원'],['초음파 유도 관절 주사','염증을 가라앉혀 운동치료를 돕기','의원 이상'],['관절경 관절낭 유리술','들러붙은 관절낭을 내시경으로 풀어줌','병원 이상']]}},
+rotator:{n:'회전근개 파열',en:'Rotator cuff tear',tag:'주의',feel:'팔을 옆으로 들 때 중간 높이에서 아프고, 아픈 쪽으로 누우면 아픔. 팔 힘이 빠짐.',
+ steps:['어깨뼈 지붕(견봉)과 위팔뼈 사이로 지나는 힘줄이 팔을 들 때마다 끼입니다.','반복해서 닳은 힘줄이 부분 파열에서 전층 파열로 진행합니다.','파열이 커지면 근육이 위축되어 팔을 드는 힘이 약해집니다.'],
+ ref:[['front',56,100,'어깨'],['front',46,130,'위팔']],refText:'어깨 앞·옆, 위팔',
+ flags:['다친 뒤 갑자기 팔을 못 듦','팔 힘이 점점 빠짐','밤에 잠을 못 잘 정도의 통증 지속'],
+ care:{dept:['정형외과(어깨)','재활의학과'],start:'hosp',startWhy:'초음파·MRI로 파열 크기를 확인해야 해 어깨 진료를 많이 하는 병원이 효율적입니다.',find:['어깨 전문병원'],
+  t:{clinic:['초음파 진단, 주사·운동','초음파'],
+   hosp:['MRI, 관절경 봉합술','MRI·관절경'],
+   general:['큰 파열·재파열 수술','MRI·관절경'],
+   univ:['봉합이 어려운 대형 파열: 관절낭 재건, 역행성 인공관절','역행성 인공관절']},
+  tech:[['관절경 회전근개 봉합술','작은 구멍으로 찢어진 힘줄을 뼈에 다시 고정','병원 이상'],['상부 관절낭 재건술','봉합이 불가능한 큰 파열에서 지붕을 새로 만듦','종합·대학'],['역행성 인공어깨관절','힘줄 기능을 잃은 어깨에서 삼각근으로 팔을 들게 함','종합·대학']]}},
+ptx:{n:'기흉',en:'Pneumothorax',tag:'응급 가능',feel:'갑자기 한쪽 가슴이 찌르듯 아프고 숨이 참. 마르고 키 큰 젊은 남성에 흔함.',
+ steps:['폐 표면의 작은 공기주머니(기포)가 터집니다.','공기가 폐와 가슴벽 사이 공간으로 새어 나갑니다.','새어 나간 공기가 폐를 눌러 폐가 쪼그라들고 숨이 찹니다.'],
+ ref:[['front',120,118,'한쪽 가슴'],['front',140,96,'어깨']],refText:'한쪽 가슴, 어깨',
+ flags:['숨이 점점 차고 입술이 파래짐 → 119','가슴 통증과 함께 어지러움·빠른 맥박','예전에 기흉을 앓은 적이 있음(재발)'],
+ care:{dept:['흉부외과','호흡기내과','응급의학과'],start:'general',startWhy:'흉부 X-ray와 흉관 삽입이 바로 가능한 응급실이 있는 종합병원 이상으로 가세요.',find:['흉부외과','응급실'],
+  t:{clinic:['청진, 의심 시 바로 의뢰','—'],
+   hosp:['흉부 X-ray, 작은 기흉은 산소·관찰','X-ray'],
+   general:['흉관 삽입, 흉강경 수술','X-ray·CT·흉강경'],
+   univ:['재발·양쪽·폐질환 동반 기흉','단일공 흉강경']},
+  tech:[['흉강경 수술(VATS)','작은 구멍으로 터진 기포를 잘라 재발을 줄임','종합·대학'],['흉관 삽입','가슴에 관을 넣어 새어 나온 공기를 빼냄','종합 이상'],['단일공 흉강경','구멍 하나로 수술','대학병원']]}},
+pneumonia:{n:'폐렴·흉막염',en:'Pneumonia / pleurisy',tag:'주의',feel:'기침·가래·열과 함께 숨을 깊게 들이쉴 때 옆가슴이 찌릿.',
+ steps:['세균·바이러스가 기관지 끝 공기주머니(폐포)로 들어갑니다.','폐포가 염증액과 고름으로 차서 산소 교환이 떨어집니다.','염증이 폐를 싸는 막(흉막)까지 닿으면 숨 쉴 때 찌르는 통증이 생깁니다.'],
+ ref:[['front',122,130,'옆가슴']],refText:'아픈 쪽 옆가슴, 등',
+ flags:['숨이 차고 산소포화도 94% 미만','의식이 흐리거나 입술이 파래짐','65세 이상·만성질환자의 고열'],
+ care:{dept:['호흡기내과','내과','소아청소년과'],start:'clinic',startWhy:'가벼우면 의원 X-ray와 약으로 치료하고, 숨이 차거나 고령이면 입원 가능한 병원으로 갑니다.',
+  t:{clinic:['청진, 흉부 X-ray, 항생제','X-ray·산소포화도 측정기'],
+   hosp:['입원 수액·항생제','X-ray·혈액검사'],
+   general:['흉부 CT, 가래 배양, 흉수 천자','CT·배양검사'],
+   univ:['중증 폐렴 중환자 치료, 인공호흡·ECMO','중환자실·ECMO']},
+  tech:[['산소포화도 측정','손가락으로 혈중 산소를 바로 확인','어디서나'],['흉부 CT','X-ray로 안 보이는 염증·흉수 확인','종합 이상'],['폐렴구균·독감 예방접종','고령·만성질환자 폐렴 예방','의원·보건소']]}},
+pancreas:{n:'급성 췌장염',en:'Acute pancreatitis',tag:'응급 가능',feel:'명치가 찌르듯 극심하게 아프고 등까지 띠처럼 뻗침. 웅크리면 조금 나음. 반복 구토.',
+ steps:['담석이 췌관 출구를 막거나 과음으로 췌장이 자극됩니다.','소화효소가 췌장 안에서 미리 활성화되어 자기 조직을 녹입니다.','염증이 주변으로 번지고, 심하면 전신 염증과 장기 손상으로 이어집니다.'],
+ ref:[['front',100,164,'명치'],['back',100,188,'등']],refText:'명치, 등 가운데로 띠처럼',
+ flags:['극심한 통증과 반복 구토 → 응급실','열·황달 동반','숨참·소변 감소·어지러움'],
+ care:{dept:['소화기내과','응급의학과'],start:'general',startWhy:'혈액검사(리파아제)와 CT, 입원이 필요해 응급실이 있는 종합병원 이상으로 가세요.',find:['응급실'],
+  t:{clinic:['의심되면 바로 응급실 의뢰','—'],
+   hosp:['입원 금식·수액','혈액검사·초음파'],
+   general:['CT, 담석이 원인이면 ERCP','CT·ERCP'],
+   univ:['중증 괴사성 췌장염 중환자 치료, 내시경 괴사조직 제거','초음파내시경·중환자실']},
+  tech:[['리파아제 혈액검사','췌장 효소 수치로 진단','병원 이상'],['ERCP','담석이 막았으면 내시경으로 제거','종합·대학'],['초음파내시경 유도 배액','고인 액체·괴사조직을 위벽을 통해 빼냄','대학병원']]}},
+diverti:{n:'게실염',en:'Diverticulitis',tag:'주의',feel:'아랫배 한 곳이 계속 아프고 열이 남. 서양은 왼쪽, 한국인은 오른쪽에도 흔함.',
+ steps:['대장 벽의 약한 곳이 바깥으로 꽈리처럼 튀어나옵니다(게실).','게실 입구가 막혀 안에서 세균이 자랍니다.','염증과 미세 천공이 생기고, 심하면 고름집이나 복막염이 됩니다.'],
+ ref:[['front',122,212,'왼쪽 아랫배'],['front',78,212,'오른쪽(한국인 흔함)']],refText:'왼쪽 또는 오른쪽 아랫배',
+ flags:['고열과 배 전체가 딱딱함','혈변','구토로 먹지 못함'],
+ care:{dept:['소화기내과','외과'],start:'general',startWhy:'진단에 복부 CT가 필요해 CT와 입원이 가능한 병원이 좋습니다.',
+  t:{clinic:['진찰·혈액검사, 의심되면 CT 가능한 곳 의뢰','혈액검사'],
+   hosp:['CT, 가벼우면 먹는 항생제','CT'],
+   general:['입원 항생제, 고름집 배액','CT·중재시술'],
+   univ:['천공·반복 재발 수술','복강경·로봇']},
+  tech:[['복부 CT','염증 범위와 고름집 확인','병원 이상'],['경피적 배액술','피부를 통해 고름집을 빼냄','종합·대학'],['복강경 대장 부분 절제','반복되거나 합병증이 있을 때','종합·대학']]}},
+constip:{n:'변비',en:'Constipation',tag:'흔함',feel:'배가 묵직하고 빵빵하며 왼쪽 아랫배가 뻐근함. 변이 딱딱하고 잘 안 나옴.',
+ steps:['수분·섬유질·운동이 부족하면 대장 운동이 느려집니다.','대장에 오래 머문 변에서 수분이 빠져 딱딱해집니다.','쌓인 변과 가스가 장을 늘려 통증과 더부룩함이 생깁니다.'],
+ ref:[['front',122,212,'왼쪽 아랫배']],refText:'왼쪽 아랫배, 배 전체',
+ flags:['혈변·체중 감소·빈혈','50세 이후 새로 생긴 배변 변화','가스·변이 전혀 안 나오고 구토(장폐색)'],
+ care:{dept:['소화기내과','대장항문외과','가정의학과'],start:'clinic',startWhy:'생활 습관과 약으로 대부분 좋아집니다. 경고 증상이 있으면 대장내시경을 받으세요.',find:['대장항문'],
+  t:{clinic:['식이·운동 지도, 변비약 처방','—'],
+   hosp:['대장항문 전문병원: 대장내시경, 배변 기능 검사','대장내시경·항문 내압검사'],
+   general:['장폐색 감별 CT','CT'],
+   univ:['난치성 변비 정밀검사','대장통과시간 검사·바이오피드백']},
+  tech:[['대장통과시간 검사','표지자 캡슐로 변이 장을 지나는 속도를 측정','병원 이상'],['항문직장 내압검사·바이오피드백','변을 밀어내는 힘과 조이는 근육의 협응 훈련','전문병원·대학'],['국가 대장암검진','만 50세 이상 매년 분변잠혈검사','검진기관']]}},
+stenosis:{n:'척추관 협착증',en:'Lumbar spinal stenosis',tag:'흔함',feel:'걸으면 엉덩이·다리가 저리고 터질 듯해 쉬어야 함. 허리를 숙이면 나아짐. 60대 이후 흔함.',
+ steps:['나이가 들며 척추 뒤 인대가 두꺼워지고 뼈 돌기가 자랍니다.','신경이 지나는 척추관이 좁아집니다.','걸을 때 신경으로 가는 혈류가 모자라 다리가 저리고 아파 멈춰 쉬게 됩니다.'],
+ ref:[['back',100,216,'허리'],['back',82,300,'양 다리'],['back',118,300,'']],refText:'엉덩이, 양쪽 다리',
+ flags:['대소변 조절 이상','다리 힘이 빠짐','쉬어도 저림이 계속됨'],
+ care:{dept:['신경외과','정형외과(척추)','재활의학과','마취통증의학과'],start:'clinic',startWhy:'약·운동·주사로 시작하고, 걷는 거리가 계속 줄면 MRI가 되는 척추 병원으로 갑니다.',find:['척추 전문병원'],
+  t:{clinic:['X-ray, 약, 신경차단술, 운동','X-ray·C-arm'],
+   hosp:['척추 전문병원: MRI, 경막외 주사, 내시경 감압술','MRI·척추 내시경'],
+   general:['근전도, 감압·유합술','근전도·MRI'],
+   univ:['여러 마디 협착·척추 변형 교정','네비게이션·로봇']},
+  tech:[['양방향 척추내시경 감압술(UBE)','작은 구멍으로 두꺼워진 인대와 뼈를 깎아 공간 확보','전문병원·대학'],['경막외 신경성형술·풍선확장술','관을 넣어 약물·풍선으로 유착을 푸는 시술. 비급여가 많아 근거와 필요성 확인','일부 병원'],['척추 유합술','불안정성이 동반되면 뼈를 고정','종합·대학']]}},
+carpal:{n:'손목터널증후군',en:'Carpal tunnel syndrome',tag:'흔함',feel:'엄지~약지 절반이 저리고 밤에 손이 저려 깸. 손을 털면 나아짐.',
+ steps:['손목 앞 터널(손목뼈와 인대 지붕)로 힘줄 9개와 정중신경이 지나갑니다.','반복 사용·호르몬 변화로 힘줄이 부어 터널 안 압력이 올라갑니다.','정중신경이 눌려 손가락이 저리고, 오래되면 엄지 근육이 빠집니다.'],
+ ref:[['front',30,254,'엄지~약지']],refText:'엄지, 검지, 중지, 약지 절반',
+ flags:['엄지 근육이 빠지고 단추 채우기가 어려움','목에서부터 팔 전체가 저림(목 디스크 감별)','갑자기 생긴 마비'],
+ care:{dept:['정형외과(수부)','재활의학과','신경외과'],start:'clinic',startWhy:'진찰과 초음파로 시작하고, 근전도로 신경 손상 정도를 확인합니다.',find:['수부외과'],
+  t:{clinic:['진찰·약, 손목 보조기, 주사','초음파'],
+   hosp:['신경전도검사, 수근관 유리술','근전도·초음파'],
+   general:['근전도, 수술','근전도'],
+   univ:['재발·복합 손상','—']},
+  tech:[['신경전도검사(근전도)','신경이 얼마나 눌렸는지 수치로 확인','병원 이상'],['초음파 유도 수근관 유리술','작은 절개로 인대 지붕을 잘라 공간 확보','일부 병원'],['내시경 수근관 유리술','내시경으로 인대를 잘라 회복을 빠르게','병원 이상']]}},
+trigger:{n:'방아쇠수지',en:'Trigger finger',tag:'흔함',feel:'손가락을 굽혔다 펼 때 딸깍 걸리고, 아침에 심함. 손바닥 마디 아래가 아픔.',
+ steps:['손가락 굽힘 힘줄이 도르래 같은 고리(활차) 아래를 지나갑니다.','반복 사용으로 힘줄이 붓고 결절이 생기며 고리도 두꺼워집니다.','결절이 고리에 걸렸다 빠지며 딸깍거리고, 심하면 굽은 채 걸립니다.'],
+ ref:[['front',30,254,'손가락']],refText:'손바닥 쪽 손가락 뿌리',
+ flags:['손가락이 굽은 채 펴지지 않음','붉게 붓고 열이 남(감염)','여러 손가락이 동시에, 당뇨가 있음'],
+ care:{dept:['정형외과(수부)'],start:'clinic',startWhy:'진찰만으로 진단하고 주사로 좋아지는 경우가 많습니다.',find:['수부외과'],
+  t:{clinic:['진찰·주사, 보조기','초음파'],
+   hosp:['초음파 유도 주사, 활차 절개','초음파'],
+   general:['수술','—'],
+   univ:['대개 필요 없음','—']},
+  tech:[['초음파 유도 주사','힘줄 막에 정확히 주사','의원 이상'],['경피적 활차 절개','바늘로 두꺼워진 고리를 자름','병원'],['수술적 활차 유리','작게 절개해 고리를 풀어줌','병원 이상']]}},
+plantar:{n:'족저근막염',en:'Plantar fasciitis',tag:'흔함',feel:'아침 첫발을 디딜 때 뒤꿈치가 찌르듯 아프고, 걷다 보면 덜해짐.',
+ steps:['발바닥 아치를 받치는 두꺼운 막(족저근막)이 걸을 때마다 당겨집니다.','과사용·체중·딱딱한 바닥 때문에 뒤꿈치 부착부에 미세 파열이 생깁니다.','반복 손상으로 퇴행과 염증이 생기고, 뼈 돌기가 동반되기도 합니다.'],
+ ref:[['front',80,430,'뒤꿈치']],refText:'발뒤꿈치 안쪽, 발바닥',
+ flags:['붓고 붉으며 열이 남','다친 뒤 디딜 수 없음(골절)','양쪽 발과 다른 관절도 아픔(류마티스 계열)'],
+ care:{dept:['정형외과(족부)','재활의학과'],start:'clinic',startWhy:'스트레칭·깔창으로 대부분 좋아집니다. 오래가면 체외충격파를 합니다.',find:['족부'],
+  t:{clinic:['진찰·X-ray, 스트레칭, 깔창, 약','X-ray'],
+   hosp:['체외충격파, 초음파','체외충격파·초음파'],
+   general:['MRI, 드물게 수술','MRI'],
+   univ:['대개 필요 없음','—']},
+  tech:[['체외충격파(ESWT)','만성 족저근막염 통증 완화. 대부분 비급여','병원'],['맞춤 깔창·야간 부목','근막 긴장을 줄임','어디서나'],['초음파 진단','근막 두께를 재서 진단·경과 확인','의원 이상']]}},
+gout:{n:'통풍',en:'Gout',tag:'흔함',feel:'밤사이 엄지발가락 관절이 붉게 부어 이불만 스쳐도 극심하게 아픔.',
+ steps:['혈액 속 요산이 높으면 관절에 바늘 모양 요산 결정이 쌓입니다.','음주·고기·탈수 뒤 결정이 떨어져 나오면 면역세포가 공격합니다.','급성 염증으로 붉게 붓고 뜨거워지며, 반복되면 관절이 망가집니다.'],
+ ref:[['front',80,430,'엄지발가락']],refText:'엄지발가락, 발등, 발목',
+ flags:['고열·오한 동반(세균성 관절염 감별)','여러 관절이 동시에 아픔','신장결석·신장 기능 저하 동반'],
+ care:{dept:['류마티스내과','내과','정형외과'],start:'clinic',startWhy:'요산 혈액검사와 진찰로 시작하고, 재발을 막는 장기 치료가 핵심입니다.',find:['류마티스내과'],
+  t:{clinic:['요산 혈액검사, 소염제·콜히친, 요산강하제','혈액검사'],
+   hosp:['관절액 검사, 초음파','초음파'],
+   general:['이중에너지 CT로 요산 결정 확인','이중에너지 CT'],
+   univ:['난치성·결절 통풍','—']},
+  tech:[['이중에너지 CT(DECT)','관절 속 요산 결정을 색으로 보여줌','종합 이상'],['관절액 편광현미경 검사','결정을 직접 확인하는 확진 방법','병원 이상'],['요산 목표치 관리','요산강하제로 6mg/dL 미만 유지가 재발 예방의 핵심','의원 이상']]}}
 };
 
 /* ---------- state & rendering ---------- */
 const $=s=>document.querySelector(s);
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const S={view:'front',region:'rlq',cause:'appendix',sick:true,paused:reduce,tab:'inside'};
+const S={view:'front',region:'rlq',cause:'appendix',sick:true,paused:reduce,tab:'inside',loc:loadLoc(),coords:null,geoMsg:''};
 
 function renderMap(){
   const spots=SPOTS[S.view].map(([r,shape])=>`<g class="spot${r===S.region?' sel':''}" data-r="${r}" tabindex="0" role="button" aria-label="${REGIONS[r].name}"><g class="hit">${shape}</g></g>`).join('');
   const refs=(C[S.cause].ref||[]).filter(f=>f[0]===S.view).map(([v,x,y,l])=>`<g class="ref"><circle cx="${x}" cy="${y}" r="9"/><circle class="core" cx="${x}" cy="${y}" r="3"/><text x="${x<100?x-11:x+11}" y="${y+3}" text-anchor="${x<100?'end':'start'}">${l}</text></g>`).join('');
   const side=S.view==='front'?['오른쪽','왼쪽']:['왼쪽','오른쪽'];
   $('#map').innerHTML=SIL+(S.view==='back'?BACKMARK:'')+spots+refs+
-    `<text class="maplabel" x="4" y="436">${side[0]}</text><text class="maplabel" x="176" y="436">${side[1]}</text><text class="maplabel" x="64" y="436">${S.view==='front'?'앞모습 · 본인 기준':'뒷모습 · 본인 기준'}</text>`;
+    `<text class="maplabel" x="4" y="452">${side[0]}</text><text class="maplabel" x="176" y="452">${side[1]}</text><text class="maplabel" x="64" y="452">${S.view==='front'?'앞모습 · 본인 기준':'뒷모습 · 본인 기준'}</text>`;
   $('#map').querySelectorAll('.spot').forEach(g=>{
     const go=()=>pickRegion(g.dataset.r);
     g.addEventListener('click',go);
@@ -766,7 +1069,41 @@ function renderCare(){
     <p class="mono" style="margin-top:8px">상급종합병원은 의원·병원의 진료의뢰서가 있어야 건강보험이 적용됩니다(응급·분만 등 예외).</p></div>
     <div><h3 style="margin-bottom:8px">주요 검사·치료 기술</h3><div class="scroll"><table class="tech"><thead><tr><th>기술·장비</th><th>무엇을 하나</th><th>주로 어디서</th></tr></thead><tbody>
       ${k.tech.map(([n,d,w])=>`<tr><td><b>${n}</b></td><td>${d}</td><td><span class="where">${w}</span></td></tr>`).join('')}</tbody></table></div></div>
+    ${finderHTML(k)}
     <div class="links"><a href="https://www.hira.or.kr" target="_blank" rel="noopener">건강보험심사평가원 · 병원 찾기(진료과·보유 장비)</a><a href="https://www.e-gen.or.kr" target="_blank" rel="noopener">응급의료포털 · 지금 열린 응급실</a></div>`;
+  bindFinder(k);
+}
+function loadLoc(){try{return localStorage.getItem('bm-loc')||''}catch(e){return ''}}
+function saveLoc(v){try{localStorage.setItem('bm-loc',v)}catch(e){}}
+const esc=v=>String(v).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function findTerms(k){
+  const t=k.dept.map(d=>d.replace(/\(.*\)/,'').trim());
+  if(k.start==='univ') t.push('상급종합병원'); if(k.start==='general') t.push('종합병원 응급실');
+  return [...new Set([...(k.find||[]),...t])];
+}
+function findRows(k){
+  return findTerms(k).map(term=>{
+    const q=(S.loc?S.loc+' ':'')+term, e=encodeURIComponent(q);
+    const g=S.coords?`https://www.google.com/maps/search/${encodeURIComponent(term)}/@${S.coords[0]},${S.coords[1]},14z`:`https://www.google.com/maps/search/${e}`;
+    return `<div class="frow"><b>${esc(q)}</b><span class="maps"><a href="https://map.naver.com/p/search/${e}" target="_blank" rel="noopener">네이버 지도</a><a href="https://map.kakao.com/?q=${e}" target="_blank" rel="noopener">카카오맵</a><a href="${g}" target="_blank" rel="noopener">구글 지도${S.coords?' · 현재 위치':''}</a></span></div>`}).join('');
+}
+function finderHTML(k){
+  return `<div class="finder"><h3>내 근처에서 찾기</h3>
+    <div class="findrow"><label class="mono" for="loc" style="flex-basis:100%">동네 이름(비워 두면 지도 앱이 지금 보고 있는 위치 주변을 보여줘요)</label>
+    <input id="loc" placeholder="예: 수원시 영통구, 부산 해운대" value="${esc(S.loc)}"><button class="ghost" id="geo" type="button">현재 위치 사용</button></div>
+    <p class="mono" id="geoMsg">${S.geoMsg||''}</p>
+    <div class="finds" id="finds">${findRows(k)}</div>
+    <p class="mono">지도 앱에서 결과가 열립니다. 입력한 동네 이름은 이 브라우저에만 저장되고 어디로도 보내지 않습니다.</p></div>`;
+}
+function bindFinder(k){
+  $('#loc').addEventListener('input',e=>{S.loc=e.target.value.trim();saveLoc(S.loc);$('#finds').innerHTML=findRows(k)});
+  $('#geo').onclick=()=>{
+    const fail=()=>{S.geoMsg='이 화면에서는 위치 권한을 쓸 수 없어요. 동네 이름을 입력하거나, 지역을 비운 채 지도 앱 버튼을 누르면 지도 앱이 내 주변을 보여줍니다.';$('#geoMsg').textContent=S.geoMsg};
+    try{ if(!navigator.geolocation) return fail();
+      $('#geoMsg').textContent='위치를 확인하는 중…';
+      navigator.geolocation.getCurrentPosition(p=>{S.coords=[p.coords.latitude.toFixed(5),p.coords.longitude.toFixed(5)];S.geoMsg='현재 위치를 찾았어요. 구글 지도 링크가 이 위치 주변을 보여줍니다.';$('#geoMsg').textContent=S.geoMsg;$('#finds').innerHTML=findRows(k)},fail,{timeout:8000,maximumAge:600000});
+    }catch(e){fail()}
+  };
 }
 function renderTab(){
   $('#tInside').setAttribute('aria-selected',S.tab==='inside'); $('#tCare').setAttribute('aria-selected',S.tab==='care');
