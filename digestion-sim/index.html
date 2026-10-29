@@ -1,0 +1,845 @@
+<meta charset="utf-8">
+<title>한 끼의 소화 여정</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@700;800&display=swap">
+<style>
+/* Layout: an anatomical plate on the left, a live lab notebook on the right, data plates below. */
+:root{
+  --paper:#F2F5F3; --sheet:#FFFFFF; --ink:#1D2A29; --ink-2:#55635F; --rule:#D3DBD7;
+  --tissue:#F4D3CA; --wall:#C27F6F; --organ:#D9A092; --liver:#A65446; --torso:#E9EEEB;
+  --accent:#12706A; --accent-2:#5FA8A1; --accent-3:#A9D3CD;
+  --carb:#DB8418; --prot:#C2385A; --fat:#7A56C6; --fib:#5A8A2A; --water:#3B7DC0; --bact:#8C918A;
+  --portal:#9A2B4A; --lymph:#C99512;
+  --loc-mouth:#EBD8CB; --loc-stom:#E2A68E; --loc-si:#C66F5E; --loc-colon:#8A5240; --loc-ferm:#8DB060; --loc-out:#4E3F33;
+  --display:"Nanum Myeongjo","Noto Serif KR",serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111716; --sheet:#182120; --ink:#E4ECE9; --ink-2:#A1AFAB; --rule:#2C3836;
+  --tissue:#5C3B36; --wall:#B47264; --organ:#7E4C43; --liver:#8A4237; --torso:#1E2928;
+  --accent:#55C4B8; --accent-2:#3E8F87; --accent-3:#2A5E59;
+  --carb:#F0A443; --prot:#EC6C89; --fat:#A68BEE; --fib:#93C25A; --water:#6EAAE8; --bact:#A4A9A1;
+  --portal:#E2617F; --lymph:#EDC24B;
+  --loc-mouth:#4A3E37; --loc-stom:#8C5A4A; --loc-si:#B1604F; --loc-colon:#C48A6A; --loc-ferm:#7FA552; --loc-out:#D9C7B5;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111716; --sheet:#182120; --ink:#E4ECE9; --ink-2:#A1AFAB; --rule:#2C3836;
+  --tissue:#5C3B36; --wall:#B47264; --organ:#7E4C43; --liver:#8A4237; --torso:#1E2928;
+  --accent:#55C4B8; --accent-2:#3E8F87; --accent-3:#2A5E59;
+  --carb:#F0A443; --prot:#EC6C89; --fat:#A68BEE; --fib:#93C25A; --water:#6EAAE8; --bact:#A4A9A1;
+  --portal:#E2617F; --lymph:#EDC24B;
+  --loc-mouth:#4A3E37; --loc-stom:#8C5A4A; --loc-si:#B1604F; --loc-colon:#C48A6A; --loc-ferm:#7FA552; --loc-out:#D9C7B5;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:24px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,4.4vw,44px);line-height:1.15;letter-spacing:-0.01em}
+h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:1.3}
+h3{font-size:14px;font-weight:600}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lede{max-width:64ch;color:var(--ink-2);margin:10px 0 0}
+.panel{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:18px 20px;min-width:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--ink-2)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* meal */
+.meal{display:grid;gap:16px}
+.meal-top{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:baseline;justify-content:space-between}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:13px;border:1px solid var(--rule);background:transparent;padding:5px 12px;border-radius:999px;cursor:pointer;line-height:1.5}
+.chip:hover{border-color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px 22px}
+.sl{display:grid;gap:2px;min-width:0}
+.sl label{display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.sl label span:first-child{display:flex;align-items:center;gap:6px}
+.sw{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
+.sl input{width:100%;accent-color:var(--c)}
+.kcal{font-size:13px;color:var(--ink-2)}
+.kcal b{color:var(--ink);font-family:var(--mono);font-weight:500}
+
+/* main */
+.main{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:880px){.main{grid-template-columns:minmax(0,1fr)}}
+.plate{padding:10px 10px 14px}
+.plate svg{width:100%;max-width:430px;height:auto;display:block;margin:0 auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--ink-2);padding:6px 8px 0}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.line{border-radius:0;height:3px;width:16px;vertical-align:3px}
+.legend i.dash{border-radius:0;height:0;width:16px;border-top:3px dashed var(--lymph);background:none;vertical-align:3px}
+
+.svg-organ{cursor:pointer}
+.svg-organ:focus{outline:none}
+.svg-organ:focus-visible .wall,.svg-organ:focus-visible .shape{stroke:var(--accent);stroke-width:3}
+.wall{fill:none;stroke:var(--wall);stroke-linecap:round;stroke-linejoin:round}
+.lumen{fill:none;stroke:var(--tissue);stroke-linecap:round;stroke-linejoin:round}
+.wat{fill:none;stroke:var(--water);stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.shape{fill:var(--tissue);stroke:var(--wall);stroke-width:1.5}
+.liver{fill:var(--liver);stroke:var(--liver);opacity:.85}
+.pan{fill:var(--organ);stroke:var(--wall);stroke-width:1.2}
+.gb{fill:var(--lymph);stroke:var(--wall);stroke-width:1;opacity:.75}
+.sel .wall,.sel .shape{stroke:var(--accent)!important;stroke-width:3}
+.sel.liver,.sel .liver,.sel .pan,.sel .gb{stroke:var(--accent)!important;stroke-width:3}
+.torso{fill:var(--torso);stroke:var(--rule);stroke-width:1.5}
+.lbl{font-family:var(--body);font-size:10.5px;fill:var(--ink-2);paint-order:stroke;stroke:var(--torso);stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.vessel{fill:none;stroke-width:3;stroke-linecap:round;pointer-events:none}
+.v-portal{stroke:var(--portal);stroke-dasharray:6 5}
+.v-scfa{stroke:var(--fib);stroke-dasharray:5 5}
+.v-lymph{stroke:var(--lymph);stroke-dasharray:3 5}
+.v-bile{stroke:var(--lymph);stroke-width:2;stroke-dasharray:3 3}
+.flow{animation:flow 1.1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-22}}
+@media (prefers-reduced-motion:reduce){.flow{animation:none}}
+.d-carb{fill:var(--carb)} .d-prot{fill:var(--prot)} .d-fat{fill:var(--fat)} .d-fib{fill:var(--fib)} .d-bact{fill:var(--bact)}
+.organ-chips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 6px 0}
+.organ-chips .chip{font-size:12px;padding:3px 10px}
+
+.side{display:grid;gap:18px;min-width:0}
+.timeline{display:grid;gap:10px}
+.tl-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.play{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--sheet);border:0;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer}
+.play svg{width:12px;height:12px;fill:currentColor}
+.clock{display:grid;line-height:1.3}
+.clock strong{font-family:var(--display);font-size:22px;font-weight:800}
+.clock span{font-size:13px;color:var(--ink-2)}
+.speed{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:12px;color:var(--ink-2)}
+.speed .chip{font-size:12px;padding:3px 10px}
+.scrub-wrap{position:relative;padding-bottom:28px}
+#scrub{width:100%;accent-color:var(--accent);margin:0}
+.ticks{position:absolute;left:8px;right:8px;top:24px;height:24px;font-family:var(--mono);font-size:10.5px;color:var(--ink-2)}
+.ticks span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.ticks span.bm{color:var(--loc-out);top:12px;font-family:var(--body)}
+.ticks span.bm::before{content:"";position:absolute;left:50%;top:-6px;width:1px;height:5px;background:currentColor}
+.where{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--rule)}
+.where span{display:block;height:100%}
+.where-legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--ink-2)}
+.where-legend b{font-family:var(--mono);font-weight:500;color:var(--ink)}
+.where-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+
+.organ-card{display:grid;gap:12px}
+.oc-head{display:grid;gap:2px}
+.oc-meta{font-size:13px;color:var(--ink-2)}
+.oc-meta .mono{color:var(--ink)}
+.oc-now{background:var(--paper);border-radius:8px;padding:12px 14px;display:grid;gap:8px;font-size:14px}
+.oc-now .stack{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--rule)}
+.oc-now .stack span{height:100%}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:4px 14px;font-size:13px}
+.kv div{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dotted var(--rule);padding-bottom:2px}
+.kv div span:first-child{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.kv .mono{color:var(--ink)}
+.facts{margin:0;padding-left:18px;display:grid;gap:6px;font-size:14px;max-width:68ch}
+.facts li::marker{color:var(--accent)}
+.auto-btn{justify-self:start;font-size:12px}
+
+/* charts + results */
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+@media (max-width:880px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.chart-panel{display:grid;gap:8px}
+.chart-panel svg{width:100%;height:auto;display:block;cursor:crosshair;touch-action:pan-y}
+.chart-note{font-size:12.5px;color:var(--ink-2)}
+.axis{font-family:var(--mono);font-size:10px;fill:var(--ink-2)}
+.grid-line{stroke:var(--rule);stroke-width:1}
+.cursor{stroke:var(--ink);stroke-width:1.2}
+.results{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:24px}
+@media (max-width:1000px){.results{grid-template-columns:minmax(0,1fr)}}
+.fate{display:grid;gap:12px}
+.fate-row{display:grid;grid-template-columns:96px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px}
+.fate-row .bar{display:flex;height:16px;border-radius:4px;overflow:hidden;background:var(--rule)}
+.fate-row .bar span{height:100%}
+.fate-row .pct{font-family:var(--mono);font-size:12px;text-align:right;color:var(--ink-2)}
+.fate-legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--ink-2)}
+.fate-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.big{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.1}
+.big small{font-family:var(--body);font-size:14px;font-weight:500;color:var(--ink-2);margin-left:4px}
+.list{display:grid;gap:4px;font-size:13px;margin:0;padding:0;list-style:none}
+.list li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dotted var(--rule);padding-bottom:3px}
+.list li span:first-child{color:var(--ink-2);display:flex;align-items:center;gap:6px}
+.list .mono{color:var(--ink)}
+.card-body{display:grid;gap:10px}
+.note{font-size:12.5px;color:var(--ink-2);max-width:90ch;line-height:1.65}
+.note strong{color:var(--ink)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Digestive transit · 72-hour simulation</div>
+    <h1>한 끼의 소화 여정</h1>
+    <p class="lede">먹은 음식이 입에서 위, 소장, 대장을 지나며 어떻게 쪼개지는지, 영양소가 어느 혈관으로 흡수되어 어디로 가는지, 그리고 결국 얼마가 변으로 나오는지를 시간에 따라 따라가 봅니다. 식단을 고르고 재생하거나, 시간 막대를 끌어 보세요.</p>
+  </header>
+
+  <section class="panel meal" aria-label="식단 설정">
+    <div class="meal-top">
+      <div class="presets" id="presets"></div>
+      <div class="kcal">섭취 열량 약 <b id="kcalIn">0</b> kcal · 12:00 식사 기준</div>
+    </div>
+    <div class="sliders" id="sliders"></div>
+  </section>
+
+  <div class="main">
+    <section class="panel plate" aria-label="소화관 그림">
+      <svg id="body" viewBox="0 0 360 560" role="img" aria-label="입에서 직장까지의 소화관 모식도">
+        <path class="torso" d="M150,74 L210,74 C215,90 240,96 300,104 C316,108 322,124 320,150 L314,300 C312,380 318,460 306,540 L54,540 C42,460 48,380 46,300 L40,150 C38,124 44,108 60,104 C120,96 145,90 150,74 Z"/>
+        <circle class="torso" cx="180" cy="42" r="28"/>
+        <g id="organs"></g>
+        <g id="vessels">
+          <path id="vPortal" class="vessel v-portal flow" d="M190,352 C186,320 182,282 170,242 C164,224 158,210 146,194"/>
+          <path id="vScfa" class="vessel v-scfa flow" d="M108,384 C132,352 166,334 188,322"/>
+          <path id="vLymph" class="vessel v-lymph flow" d="M216,352 C216,320 206,290 202,240 C198,190 194,140 210,100"/>
+          <path id="vBile" class="vessel v-bile flow" d="M152,222 C160,240 170,255 176,268"/>
+        </g>
+        <g id="dots" style="pointer-events:none"></g>
+        <g id="labels"></g>
+      </svg>
+      <div class="legend">
+        <span><i style="background:var(--carb)"></i>탄수화물</span>
+        <span><i style="background:var(--prot)"></i>단백질</span>
+        <span><i style="background:var(--fat)"></i>지방</span>
+        <span><i style="background:var(--fib)"></i>식이섬유</span>
+        <span><i style="background:var(--bact)"></i>세균·점막</span>
+        <span><i style="background:var(--water)"></i>수분(장 안쪽 푸른 기)</span>
+        <span><i class="line" style="background:var(--portal)"></i>간문맥(포도당·아미노산)</span>
+        <span><i class="dash"></i>림프관(지방)</span>
+        <span><i class="line" style="background:var(--fib)"></i>단쇄지방산</span>
+      </div>
+      <div class="organ-chips" id="organChips" aria-label="장기 선택"></div>
+    </section>
+
+    <div class="side">
+      <section class="panel timeline" aria-label="시간">
+        <div class="tl-row">
+          <button class="play" id="play" type="button"><svg id="playIcon" viewBox="0 0 12 12"><path d="M2 1 L11 6 L2 11 Z"/></svg><span id="playLbl">재생</span></button>
+          <div class="clock"><strong id="tElapsed">식후 0분</strong><span id="tClock">낮 12:00</span></div>
+          <div class="speed" role="group" aria-label="재생 속도">속도
+            <button class="chip" type="button" data-speed="90">느리게</button>
+            <button class="chip" type="button" data-speed="45" aria-pressed="true">보통</button>
+            <button class="chip" type="button" data-speed="20">빠르게</button>
+          </div>
+        </div>
+        <div class="scrub-wrap">
+          <input type="range" id="scrub" min="0" max="1000" step="1" value="0" aria-label="식후 경과 시간">
+          <div class="ticks" id="ticks"></div>
+        </div>
+        <div class="where" id="whereBar"></div>
+        <div class="where-legend" id="whereLegend"></div>
+      </section>
+
+      <section class="panel organ-card" aria-live="polite">
+        <div class="oc-head">
+          <div class="eyebrow" id="ocMode">자동 추적 · 음식이 가장 많은 곳</div>
+          <h2 id="ocTitle">위</h2>
+          <div class="oc-meta" id="ocMeta"></div>
+        </div>
+        <div class="oc-now" id="ocNow"></div>
+        <ul class="facts" id="ocFacts"></ul>
+        <button class="chip auto-btn" id="autoBtn" type="button" hidden>자동 추적으로 돌아가기</button>
+      </section>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <section class="panel chart-panel">
+      <h3>음식은 지금 어디에 있나</h3>
+      <div class="chart-note">먹은 고형 영양소(탄수화물·단백질·지방·섬유) 전체를 100%로 놓고 위치별 비율을 쌓았습니다. 가로축은 앞쪽 몇 시간을 넓게 보도록 제곱근 눈금입니다.</div>
+      <svg id="chartA" viewBox="0 0 640 230"></svg>
+      <div class="fate-legend" id="chartALegend"></div>
+    </section>
+    <section class="panel chart-panel">
+      <h3>혈액으로 들어가는 속도 (g/시간)</h3>
+      <div class="chart-note">소장에서 포도당·아미노산·지방이 흡수되는 속도와, 대장에서 세균이 섬유를 발효해 만든 단쇄지방산이 흡수되는 속도입니다.</div>
+      <svg id="chartB" viewBox="0 0 640 230"></svg>
+      <div class="fate-legend">
+        <span><i style="background:var(--carb)"></i>당류(포도당 등)</span>
+        <span><i style="background:var(--prot)"></i>아미노산</span>
+        <span><i style="background:var(--fat)"></i>지방(킬로미크론)</span>
+        <span><i style="background:var(--fib)"></i>단쇄지방산</span>
+      </div>
+    </section>
+  </div>
+
+  <div class="results">
+    <section class="panel fate">
+      <div>
+        <h3>영양소별 행방 <span class="muted mono" id="fateTime" style="font-weight:400"></span></h3>
+        <div class="chart-note">시간 막대를 움직이면 그 시점 기준으로 바뀝니다.</div>
+      </div>
+      <div id="fateRows" class="fate"></div>
+      <div class="fate-legend">
+        <span><i style="background:var(--accent-3)"></i>십이지장 흡수</span>
+        <span><i style="background:var(--accent)"></i>공장 흡수</span>
+        <span><i style="background:var(--accent-2)"></i>회장 흡수</span>
+        <span><i style="background:var(--loc-ferm)"></i>대장 세균이 발효</span>
+        <span><i style="background:var(--loc-out)"></i>변으로 배출</span>
+        <span><i style="background:var(--loc-mouth)"></i>아직 장 속</span>
+      </div>
+    </section>
+    <section class="panel card-body">
+      <h3>몸으로 들어간 것</h3>
+      <div class="big" id="absKcal">0<small>kcal 흡수</small></div>
+      <ul class="list" id="absList"></ul>
+      <div class="note" id="absNote"></div>
+    </section>
+    <section class="panel card-body">
+      <h3>변으로 나가는 것</h3>
+      <div class="big" id="fecesBig">0<small>g (72시간 예측)</small></div>
+      <ul class="list" id="fecesList"></ul>
+      <div class="note" id="fecesNote"></div>
+    </section>
+  </div>
+
+  <p class="note"><strong>이 시뮬레이션은 교육용 근사 모델입니다.</strong> 위 배출 반감기(지방·단백질이 많을수록 길어짐), 소장 구간별 체류(십이지장 약 12분, 공장 약 100분, 회장 약 120분), 대장 체류(약 28시간), 영양소별 소화율(탄수화물 약 96%, 단백질 약 92%, 지방 약 95%), 대장 발효율(수용성 섬유 약 90%, 불용성 섬유 약 30%)을 교과서 범위의 평균값으로 넣은 구획 모델이며, 실제 값은 사람·음식 조리 상태·장내세균·건강 상태에 따라 크게 달라집니다. 변 무게는 수분 약 75%를 가정했고, 한 끼에서 나온 몫만 계산하므로 하루 실제 배변량(보통 100–200 g)보다 작게 나옵니다. 진단이나 식단 처방 용도로 쓰지 마세요. 배변 시각은 매일 오전 8시로 가정했습니다.</p>
+</div>
+
+<script>
+(function(){
+"use strict";
+// ---------- model constants ----------
+const T = 72*60;                 // minutes simulated
+const NC = 10, NN = 8, STR = NC*NN;
+const MOUTH=0, STOM=1, DUO=2, JEJ=3, ILE=4, ASC=5, TRA=6, DES=7, REC=8, OUT=9;
+const CARB=0, PROT=1, FAT=2, SFIB=3, IFIB=4, ENDO=5, BACT=6, WATER=7;
+const BM_TIMES = [20*60, 44*60, 68*60];  // 08:00 next mornings for a 12:00 meal
+const SI_TAU=[12,100,120], SI_W=[0.5,1,0.6];
+const CO_TAU=[480,600,600], CO_W=[1,0.6,0.3];
+// fraction that escapes each region unabsorbed / unfermented
+const SI_ESC=[0.04,0.08,0.05,1,1,1,1,0.15];
+const CO_ESC=[0.05,0.4,1,0.1,0.7,0.6,1,0.08];
+
+function solveRate(taus, ws, e){
+  if (e >= 0.9999) return 0;
+  const esc = A => taus.reduce((p,tau,i)=>p*((1/tau)/((1/tau)+A*ws[i])),1);
+  let lo=0, hi=1; while (esc(hi) > e) hi *= 2;
+  for (let k=0;k<60;k++){ const mid=(lo+hi)/2; if (esc(mid) > e) lo=mid; else hi=mid; }
+  return (lo+hi)/2;
+}
+const SI_A = SI_ESC.map(e=>solveRate(SI_TAU,SI_W,e));
+const CO_F = CO_ESC.map(e=>solveRate(CO_TAU,CO_W,e));
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function simulate(meal){
+  const m = new Float64Array(NN);
+  m[CARB]=meal.carb; m[PROT]=meal.prot; m[FAT]=meal.fat;
+  m[SFIB]=meal.fib*meal.sol; m[IFIB]=meal.fib*(1-meal.sol); m[WATER]=meal.water;
+  const S0 = meal.carb+meal.prot+meal.fat+meal.fib;
+  const th = clamp(40 + 1.1*meal.fat + 0.45*meal.prot + 0.25*meal.carb + 0.6*meal.fib, 35, 260);
+  const kge = Math.LN2/th, kw = Math.LN2/15;
+  const L = new Float64Array(STR);
+  const absSite = new Float64Array(4*NN), ferm = new Float64Array(NN), sec = new Float64Array(5);
+  const R = { S0, th, meal:m,
+    L:new Float32Array((T+1)*STR), abs:new Float32Array((T+1)*4*NN), ferm:new Float32Array((T+1)*NN),
+    sec:new Float32Array((T+1)*5), rate:new Float32Array((T+1)*5), bms:[] };
+  const I=(c,n)=>c*NN+n;
+  const rec = i => { R.L.set(L,i*STR); R.abs.set(absSite,i*4*NN); R.ferm.set(ferm,i*NN); R.sec.set(sec,i*5); };
+  for (let i=0;i<T;i++){
+    rec(i);
+    const rt=[0,0,0,0,0];
+    // colon, last segment first so material moves one segment per minute at most
+    for (let s=2;s>=0;s--){
+      const c=ASC+s, nx=c+1, k=1/CO_TAU[s];
+      let f=0;
+      for (let n=0;n<NN;n++){
+        const v=L[I(c,n)]; if (v<=1e-9) continue;
+        const a=CO_F[n]*CO_W[s], K=k+a, out=v*(1-Math.exp(-K)), mv=out*k/K, ab=out-mv;
+        L[I(c,n)]-=out; L[I(nx,n)]+=mv;
+        if (n===WATER) absSite[3*NN+WATER]+=ab; else { ferm[n]+=ab; f+=ab; }
+      }
+      L[I(c,BACT)] += f*0.4;         // new bacterial biomass
+      rt[3] += f*0.4;                // short-chain fatty acids absorbed
+    }
+    // rectum keeps ~75% water stool; colon pulls back the rest
+    let sol=0; for (let n=0;n<WATER;n++) sol+=L[I(REC,n)];
+    if (L[I(REC,WATER)] > 3*sol){ absSite[3*NN+WATER]+=L[I(REC,WATER)]-3*sol; L[I(REC,WATER)]=3*sol; }
+    // small intestine
+    for (let s=2;s>=0;s--){
+      const c=DUO+s, nx=c+1, k=1/SI_TAU[s];
+      for (let n=0;n<NN;n++){
+        const v=L[I(c,n)]; if (v<=1e-9) continue;
+        const a=SI_A[n]*SI_W[s], K=k+a, out=v*(1-Math.exp(-K)), mv=out*k/K, ab=out-mv;
+        L[I(c,n)]-=out; L[I(nx,n)]+=mv; absSite[s*NN+n]+=ab;
+        if (n<3) rt[n]+=ab;
+      }
+    }
+    // stomach: solids empty after a short lag, liquids fast
+    const kS = kge*Math.min(1,(i+1)/20);
+    let emptied=0;
+    for (let n=0;n<NN;n++){
+      const v=L[I(STOM,n)]; if (v<=1e-9) continue;
+      const out=v*(1-Math.exp(-(n===WATER?kw:kS)));
+      L[I(STOM,n)]-=out; L[I(DUO,n)]+=out; if (n!==WATER) emptied+=out;
+    }
+    const f = S0>1 ? emptied/S0 : 0;
+    L[I(STOM,WATER)]+=600*f; sec[1]+=600*f;                 // gastric juice
+    L[I(DUO,WATER)]+=750*f; sec[2]+=500*f; sec[3]+=250*f;   // pancreatic juice + bile
+    L[I(JEJ,WATER)]+=500*f; sec[4]+=500*f;                  // intestinal juice
+    L[I(JEJ,ENDO)]+=2.5*f;                                  // shed cells and mucus
+    rt[4] = 250*f;                                          // bile flow, for the duct animation
+    // mouth -> esophagus -> stomach
+    for (let n=0;n<NN;n++){ const v=L[I(MOUTH,n)]; if (v<=1e-9) continue; const out=v*0.74; L[I(MOUTH,n)]-=out; L[I(STOM,n)]+=out; }
+    if (i<10) for (let n=0;n<NN;n++) L[I(MOUTH,n)]+=m[n]/10;   // eating takes ~10 min
+    if (i<12){ L[I(MOUTH,WATER)]+=15; sec[0]+=15; }            // saliva
+    // bowel movement
+    if (BM_TIMES.includes(i+1)){
+      const bm=new Float64Array(NN);
+      for (let n=0;n<NN;n++){ bm[n]=L[I(REC,n)]; L[I(OUT,n)]+=bm[n]; L[I(REC,n)]=0; }
+      R.bms.push({t:i+1, comp:bm});
+    }
+    R.rate.set(rt,i*5);
+  }
+  rec(T);
+  R.max = [0,0,0,0,0];
+  for (let i=0;i<=T;i++) for (let j=0;j<5;j++) R.max[j]=Math.max(R.max[j],R.rate[i*5+j]);
+  return R;
+}
+
+// ---------- derived values ----------
+const Lg=(R,i,c,n)=>R.L[i*STR+c*NN+n];
+const Ab=(R,i,site,n)=>R.abs[i*4*NN+site*NN+n];
+const Fe=(R,i,n)=>R.ferm[i*NN+n];
+const MEAL=[CARB,PROT,FAT,SFIB,IFIB];
+function mealIn(R,i,cs){ let s=0; for (const c of cs) for (const n of MEAL) s+=Lg(R,i,c,n); return s; }
+function uneaten(R,i){ return R.S0*Math.max(0,1-i/10); }
+function locations(R,i){
+  let absd=0, fer=0, out=0;
+  for (const n of MEAL){ absd+=Ab(R,i,0,n)+Ab(R,i,1,n)+Ab(R,i,2,n); fer+=Fe(R,i,n); out+=Lg(R,i,OUT,n); }
+  return [
+    {k:'mouth', name:'입·식사 중', v:mealIn(R,i,[MOUTH])+uneaten(R,i), col:'--loc-mouth'},
+    {k:'stom',  name:'위',        v:mealIn(R,i,[STOM]), col:'--loc-stom'},
+    {k:'si',    name:'소장',      v:mealIn(R,i,[DUO,JEJ,ILE]), col:'--loc-si'},
+    {k:'colon', name:'대장·직장', v:mealIn(R,i,[ASC,TRA,DES,REC]), col:'--loc-colon'},
+    {k:'abs',   name:'흡수됨',    v:absd, col:'--accent'},
+    {k:'ferm',  name:'발효됨',    v:fer, col:'--loc-ferm'},
+    {k:'out',   name:'배출됨',    v:out, col:'--loc-out'}
+  ];
+}
+function kcalAbs(R,i){
+  let a=0; for (let s=0;s<3;s++){ a+=4*Ab(R,i,s,CARB)+4*Ab(R,i,s,PROT)+9*Ab(R,i,s,FAT); }
+  return a + 2*(Fe(R,i,CARB)+Fe(R,i,SFIB)+Fe(R,i,IFIB));
+}
+const fmt=v=>{ const a=Math.abs(v); return a>=100?Math.round(v).toLocaleString('ko-KR'):a>=10?v.toFixed(0):a>=1?v.toFixed(1):a>0.05?v.toFixed(2):'0'; };
+function fmtDur(min){ if (min<60) return Math.round(min)+'분'; const h=Math.floor(min/60), mm=Math.round(min%60); return mm? `${h}시간 ${mm}분`:`${h}시간`; }
+function clockOf(min){
+  const tot=12*60+Math.round(min), day=Math.floor(tot/1440), mm=tot%1440, h=Math.floor(mm/60), m=mm%60;
+  const ap = h<6?'새벽':h<12?'오전':h<18?(h===12?'낮':'오후'):'저녁';
+  const h12 = h%12===0?12:h%12;
+  const d = ['','다음 날 ','이틀 뒤 ','사흘 뒤 '][day]||'';
+  return `${d}${ap} ${h12}:${String(m).padStart(2,'0')}`;
+}
+
+// ---------- organ info ----------
+const INFO = {
+  mouth:{title:'입·식도', meta:'체류 약 1분 · pH 6.5–7.5 · 식도 통과 5–10초',
+    facts:['이로 씹어 음식을 잘게 부수고 침과 섞어 삼키기 좋은 덩어리(식괴)로 만듭니다.',
+      '침 속 아밀레이스가 녹말을 맥아당으로 일부 분해합니다. 밥을 오래 씹으면 단맛이 나는 이유입니다.',
+      '혀 리페이스가 지방을 아주 조금 분해하고, 식도는 연동운동으로 식괴를 위로 밀어 넣습니다.']},
+  stomach:{title:'위', meta:'체류 2–4시간 · pH 1.5–3.5 · 용량 약 1–1.5 L',
+    facts:['염산이 단백질의 접힌 구조를 풀고(변성) 함께 들어온 세균 대부분을 죽입니다.',
+      '펩신이 단백질을 펩타이드로 자릅니다. 위에서 끝나는 단백질 분해는 전체의 10–20% 정도입니다.',
+      '위 리페이스가 지방 일부를 분해하고, 위 근육이 음식을 죽 같은 미즙으로 반죽합니다.',
+      '유문이 미즙을 조금씩만 십이지장으로 내보냅니다. 지방이 많으면 장 호르몬(CCK)이 배출을 늦춥니다.',
+      '영양소는 거의 흡수되지 않고, 알코올과 일부 약물만 소량 흡수됩니다.']},
+  duo:{title:'십이지장', meta:'길이 약 25 cm · 체류 약 10–15분 · pH 6–7',
+    facts:['췌장액의 중탄산염이 위산을 중화해 효소가 일할 수 있는 환경을 만듭니다.',
+      '췌장 아밀레이스(녹말), 트립신·키모트립신(단백질), 리페이스(지방)가 본격적인 분해를 시작합니다.',
+      '담낭이 수축해 담즙을 내보내고, 담즙산이 지방 덩어리를 작은 방울로 유화해 리페이스가 닿을 면적을 넓힙니다.',
+      '철과 칼슘이 주로 흡수되는 곳입니다.']},
+  jej:{title:'공장(빈창자)', meta:'길이 약 2.5 m · 체류 약 1.5–2시간 · 흡수의 중심',
+    facts:['융모와 미세융모 덕분에 소장 흡수 표면은 약 30 m²에 이릅니다.',
+      '장벽의 이당류분해효소(락테이스, 수크레이스)가 마지막 분해를 마쳐 포도당·과당·갈락토스를 만듭니다. 포도당은 SGLT1 수송체로 흡수됩니다.',
+      '펩티데이스가 펩타이드를 아미노산과 작은 펩타이드로 자르고, 이것들이 장세포로 들어갑니다.',
+      '당과 아미노산은 모세혈관 → 간문맥 → 간으로 갑니다.',
+      '지방산·모노글리세리드는 담즙 미셀에 실려 장세포에 들어가 킬로미크론으로 재조립되고, 혈관이 아닌 림프관(암죽관)으로 나가 가슴관을 거쳐 왼쪽 쇄골하정맥으로 들어갑니다. 간을 처음에는 거치지 않습니다.']},
+  ile:{title:'회장(돌창자)', meta:'길이 약 3.5 m · 체류 약 2시간',
+    facts:['공장에서 남은 영양소를 마저 흡수합니다.',
+      '비타민 B12(위에서 만든 내인자와 결합한 상태)가 흡수되는 유일한 곳입니다.',
+      '담즙산의 약 95%를 재흡수해 간으로 돌려보냅니다(장간순환).',
+      '회맹판이 대장으로 넘어가는 속도를 조절하고, 대장 세균이 소장으로 역류하지 않게 막습니다.']},
+  colon:{title:'대장', meta:'길이 약 1.5 m · 체류 12–48시간 · 장내세균 약 38조 마리',
+    facts:['남은 수분과 나트륨 등 전해질을 흡수해 내용물을 단단한 변으로 만듭니다.',
+      '세균이 소장에서 소화되지 않은 식이섬유와 저항성 전분을 발효해 단쇄지방산(아세트산·프로피온산·부티르산)을 만듭니다.',
+      '부티르산은 대장 점막 세포의 주 에너지원이고, 나머지 단쇄지방산은 간문맥으로 흡수됩니다. 섬유 1 g은 이렇게 약 2 kcal를 냅니다.',
+      '발효 과정에서 수소·이산화탄소·메탄 가스가 생기고, 세균은 비타민 K와 비오틴을 일부 만듭니다.',
+      '흡수되지 못한 단백질은 세균이 부패 발효해 암모니아 등을 만듭니다.']},
+  rectum:{title:'직장', meta:'길이 약 12–15 cm · 배출 전 저장',
+    facts:['변이 차서 벽이 늘어나면 배변 반사가 일어납니다.',
+      '변은 약 75%가 수분이고, 고형분의 25–55%는 세균 덩어리입니다. 나머지는 섬유, 떨어져 나온 점막 세포, 소량의 지방과 단백질입니다.',
+      '이 시뮬레이션은 매일 오전 8시에 배변한다고 가정합니다.']},
+  liver:{title:'간', meta:'무게 약 1.5 kg · 간문맥 혈류가 전체 혈류의 약 75%',
+    facts:['간문맥으로 들어온 포도당을 글리코겐으로 저장합니다(최대 약 100 g). 넘치는 몫은 근육 글리코겐, 뇌·적혈구 연료로 쓰이거나 지방으로 바뀝니다.',
+      '아미노산으로 알부민·응고인자 같은 혈장 단백질을 만들고, 쓰고 남은 아미노기는 요소로 바꿔 소변으로 내보냅니다.',
+      '프로피온산 같은 단쇄지방산을 포도당 신생합성에 씁니다.',
+      '하루 약 0.5–1 L의 담즙을 만들어 담낭으로 보냅니다.',
+      '킬로미크론은 림프로 들어가 지방조직·근육에 지방을 먼저 내려놓고, 남은 찌꺼기(잔여입자)가 나중에 간으로 옵니다.']},
+  pancreas:{title:'췌장', meta:'하루 췌장액 약 1.5 L · 내분비 + 외분비',
+    facts:['외분비: 중탄산염과 소화효소(아밀레이스, 트립시노겐, 리페이스)를 십이지장으로 분비합니다.',
+      '트립시노겐은 십이지장에서 활성화되어 트립신이 되므로 췌장 자신은 소화되지 않습니다.',
+      '내분비: 혈당이 오르면 β세포가 인슐린을 내보내 간·근육·지방조직이 포도당을 받아들이게 합니다.']},
+  gb:{title:'담낭(쓸개)', meta:'용량 약 30–50 mL · 담즙을 5–10배 농축',
+    facts:['간에서 만든 담즙을 저장하고 농축합니다.',
+      '지방이 십이지장에 들어오면 CCK 호르몬 신호로 수축해 담즙을 내보냅니다.',
+      '담즙산은 세제처럼 지방을 유화하고 미셀을 만들어 지방 흡수를 돕습니다.']}
+};
+const LUMEN={mouth:[MOUTH],stomach:[STOM],duo:[DUO],jej:[JEJ],ile:[ILE],colon:[ASC,TRA,DES],rectum:[REC]};
+const ORDER=['mouth','stomach','duo','jej','ile','colon','rectum','liver','pancreas','gb'];
+
+// ---------- diagram ----------
+const SVGNS='http://www.w3.org/2000/svg';
+const el=(tag,attrs,parent)=>{ const e=document.createElementNS(SVGNS,tag); for (const k in attrs) e.setAttribute(k,attrs[k]); if (parent) parent.appendChild(e); return e; };
+const TUBES = {
+  mouth:{segs:[{c:MOUTH,d:'M169,57 Q180,62 191,57',w:7,jit:1.5}], esoph:'M180,70 C182,110 190,150 212,178'},
+  duo:{segs:[{c:DUO,d:'M208,246 C188,248 172,252 170,268 C168,285 185,292 205,291 L238,288',w:12,jit:3}]},
+  jej:{segs:[{c:JEJ,d:'M238,288 L238,338 L132,338 A12.5,12.5 0 0 0 132,363 L238,363 A12.5,12.5 0 0 1 238,388 L150,388',w:13,jit:3.5}]},
+  ile:{segs:[{c:ILE,d:'M150,388 L132,388 A12.5,12.5 0 0 0 132,413 L238,413 A12.5,12.5 0 0 1 238,438 L122,438 Q108,438 102,448',w:13,jit:3.5}]},
+  colon:{segs:[{c:ASC,d:'M98,462 L98,312',w:25,jit:8},{c:TRA,d:'M98,312 Q190,324 282,312',w:25,jit:8},{c:DES,d:'M282,312 L282,445 Q282,470 240,468 Q208,466 197,478',w:23,jit:7}]},
+  rectum:{segs:[{c:REC,d:'M197,478 L192,522',w:18,jit:4}]}
+};
+const STOMACH_D='M212,176 C222,158 262,150 282,170 C300,190 298,232 276,252 C258,268 226,266 210,252 L204,244 C214,236 234,236 248,226 C262,214 258,196 242,192 C230,189 220,190 214,192 Z';
+const STOMACH_C='M218,184 C244,168 276,176 280,206 C283,232 262,250 236,252 C222,252 212,248 206,244';
+const organsG=document.getElementById('organs');
+const organEls={}, compPath={}, watEls={};
+function organGroup(key){
+  const g=el('g',{class:'svg-organ','data-key':key,tabindex:'0',role:'button','aria-label':INFO[key].title+' 자세히 보기'},organsG);
+  organEls[key]=g; return g;
+}
+// drawing order: liver, gb, pancreas, colon, stomach, duo, SI, rectum, mouth
+{ const g=organGroup('liver'); el('path',{class:'liver',d:'M56,150 C92,128 196,130 230,152 C226,170 205,188 176,200 C140,216 92,222 66,200 C54,188 52,166 56,150 Z'},g); }
+{ const g=organGroup('gb'); el('ellipse',{class:'gb',cx:150,cy:212,rx:7,ry:11,transform:'rotate(-20 150 212)'},g); }
+{ const g=organGroup('pancreas'); el('path',{class:'pan',d:'M188,262 C214,262 250,258 288,250 C296,258 288,268 262,272 C236,276 210,282 192,280 C184,276 182,266 188,262 Z'},g); }
+function drawTube(key){
+  const g=organGroup(key), t=TUBES[key];
+  if (t.esoph){ el('path',{class:'wall',d:t.esoph,'stroke-width':10},g); el('path',{class:'lumen',d:t.esoph,'stroke-width':6},g); }
+  for (const s of t.segs){
+    el('path',{class:'wall',d:s.d,'stroke-width':s.w+3},g);
+    el('path',{class:'lumen',d:s.d,'stroke-width':s.w},g);
+    watEls[s.c]=el('path',{class:'wat',d:s.d,'stroke-width':s.w},g);
+    compPath[s.c]={p:el('path',{d:s.d,fill:'none',stroke:'none'},g),jit:s.jit};
+  }
+}
+drawTube('colon');
+{ const g=organGroup('stomach'); el('path',{class:'shape',d:STOMACH_D},g);
+  watEls[STOM]=el('path',{class:'wat',d:STOMACH_D,fill:'var(--water)',stroke:'none'},g); watEls[STOM].style.fill='var(--water)';
+  compPath[STOM]={p:el('path',{d:STOMACH_C,fill:'none',stroke:'none'},g),jit:10}; }
+drawTube('duo'); drawTube('jej'); drawTube('ile'); drawTube('rectum'); drawTube('mouth');
+const LABELS=[['입',214,47,'start'],['식도',196,122,'start'],['간',96,176,'middle'],['담낭',138,236,'end'],['위',292,198,'start'],
+  ['췌장',294,264,'start'],['십이지장',162,262,'end'],['공장',186,355,'middle'],['회장',186,430,'middle'],['대장',58,392,'start'],['직장',208,516,'start'],['항문',196,536,'start']];
+const labelsG=document.getElementById('labels');
+for (const [t,x,y,a] of LABELS){ const tx=el('text',{class:'lbl',x,y,'text-anchor':a},labelsG); tx.textContent=t; }
+for (const key of ORDER){
+  const g=organEls[key];
+  g.addEventListener('click',()=>selectOrgan(key));
+  g.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); selectOrgan(key);} });
+}
+// dot pools
+const CAP={[MOUTH]:24,[STOM]:90,[DUO]:18,[JEJ]:50,[ILE]:50,[ASC]:30,[TRA]:30,[DES]:36,[REC]:28};
+const UNIT=1.5;
+const dotsG=document.getElementById('dots');
+const pools={};
+let seed=7; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+for (const c of [MOUTH,STOM,DUO,JEJ,ILE,ASC,TRA,DES,REC]){
+  pools[c]=[]; const len=compPath[c].p.getTotalLength(); compPath[c].len=len;
+  for (let j=0;j<CAP[c];j++) pools[c].push({e:el('circle',{r:2.5,class:'d-carb',visibility:'hidden'},dotsG),s1:rnd(),s2:rnd(),s3:rnd()});
+}
+const DOTKINDS=[['d-carb',[CARB]],['d-prot',[PROT]],['d-fat',[FAT]],['d-fib',[SFIB,IFIB]],['d-bact',[ENDO,BACT]]];
+const SPEED={[MOUTH]:0.3,[STOM]:0.04,[DUO]:0.08,[JEJ]:0.02,[ILE]:0.02,[ASC]:0.006,[TRA]:0.006,[DES]:0.006,[REC]:0.004};
+
+// ---------- UI state ----------
+const PRESETS=[
+  {id:'bibim', name:'비빔밥 한 그릇', carb:85, prot:20, fat:15, fib:6, water:350, sol:0.3},
+  {id:'burger', name:'치킨버거 + 콜라', carb:95, prot:30, fat:35, fib:3, water:450, sol:0.25},
+  {id:'samgyup', name:'삼겹살 200 g + 공깃밥', carb:70, prot:35, fat:65, fib:3, water:300, sol:0.3},
+  {id:'brown', name:'현미밥 + 된장찌개 + 나물', carb:75, prot:22, fat:10, fib:11, water:420, sol:0.3},
+  {id:'oat', name:'그릭요거트 + 귀리 + 베리', carb:50, prot:22, fat:8, fib:9, water:250, sol:0.5}
+];
+const SLIDERS=[
+  {k:'carb',name:'탄수화물',unit:'g',max:200,col:'--carb'},
+  {k:'prot',name:'단백질',unit:'g',max:120,col:'--prot'},
+  {k:'fat',name:'지방',unit:'g',max:120,col:'--fat'},
+  {k:'fib',name:'식이섬유',unit:'g',max:40,col:'--fib'},
+  {k:'water',name:'물·국물',unit:'mL',max:1000,col:'--water',step:10}
+];
+const meal={...PRESETS[0]};
+let R=null, u=0, playing=false, playSecs=45, sel=null, lastI=-1;
+
+const presetsEl=document.getElementById('presets');
+for (const p of PRESETS){
+  const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=p.name; b.dataset.id=p.id;
+  b.addEventListener('click',()=>{ Object.assign(meal,p); syncSliders(); markPreset(p.id); recompute(); });
+  presetsEl.appendChild(b);
+}
+function markPreset(id){ for (const b of presetsEl.children) b.setAttribute('aria-pressed', String(b.dataset.id===id)); }
+const slidersEl=document.getElementById('sliders'), sliderEls={};
+for (const s of SLIDERS){
+  const w=document.createElement('div'); w.className='sl'; w.style.setProperty('--c',`var(${s.col})`);
+  w.innerHTML=`<label for="sl-${s.k}"><span><i class="sw"></i>${s.name}</span><output class="mono" id="out-${s.k}"></output></label><input type="range" id="sl-${s.k}" min="0" max="${s.max}" step="${s.step||1}">`;
+  slidersEl.appendChild(w);
+  const inp=w.querySelector('input'); sliderEls[s.k]={inp,out:w.querySelector('output'),unit:s.unit};
+  inp.addEventListener('input',()=>{ meal[s.k]=+inp.value; meal.id='custom'; markPreset('custom'); sliderEls[s.k].out.textContent=inp.value+' '+s.unit; recompute(); });
+}
+function syncSliders(){ for (const s of SLIDERS){ const o=sliderEls[s.k]; o.inp.value=meal[s.k]; o.out.textContent=meal[s.k]+' '+o.unit; } }
+const organChips=document.getElementById('organChips');
+for (const key of ORDER){
+  const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=INFO[key].title; b.dataset.key=key;
+  b.addEventListener('click',()=>selectOrgan(key)); organChips.appendChild(b);
+}
+document.getElementById('autoBtn').addEventListener('click',()=>{ sel=null; render(true); });
+function selectOrgan(key){ sel=key; render(true); }
+
+// time mapping: slider position u in [0,1], t = T*u^2
+const tOf=u=>Math.round(T*u*u);
+const uOf=t=>Math.sqrt(t/T);
+const scrub=document.getElementById('scrub');
+scrub.addEventListener('input',()=>{ u=scrub.value/1000; if (playing) togglePlay(false); render(); });
+const ticksEl=document.getElementById('ticks');
+for (const h of [0,1,2,4,8,12,24,48,72]){ const s=document.createElement('span'); s.style.left=(uOf(h*60)*100)+'%'; s.textContent=h+'h'; ticksEl.appendChild(s); }
+BM_TIMES.forEach((t,ix)=>{ const s=document.createElement('span'); s.className='bm'; s.style.left=(uOf(t)*100)+'%'; s.textContent='배변'+(ix+1); ticksEl.appendChild(s); });
+const playBtn=document.getElementById('play');
+playBtn.addEventListener('click',()=>togglePlay());
+function togglePlay(force){
+  playing = force===undefined ? !playing : force;
+  if (playing && u>=1) u=0;
+  document.getElementById('playLbl').textContent = playing?'일시정지':'재생';
+  document.getElementById('playIcon').innerHTML = playing?'<path d="M2 1 H5 V11 H2 Z M7 1 H10 V11 H7 Z"/>':'<path d="M2 1 L11 6 L2 11 Z"/>';
+}
+document.querySelectorAll('.speed .chip').forEach(b=>b.addEventListener('click',()=>{
+  playSecs=+b.dataset.speed; document.querySelectorAll('.speed .chip').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+}));
+
+// ---------- charts ----------
+const CW=640, CH=230, PL=40, PR=12, PT=12, PB=30;
+const cx=t=>PL+uOf(t)*(CW-PL-PR);
+function axes(svg,yMax,yFmt){
+  let s='';
+  for (const h of [0,1,2,4,8,12,24,48,72]){ const x=cx(h*60); s+=`<line class="grid-line" x1="${x}" x2="${x}" y1="${PT}" y2="${CH-PB}"/><text class="axis" x="${x}" y="${CH-PB+14}" text-anchor="middle">${h}h</text>`; }
+  for (let k=0;k<=4;k++){ const v=yMax*k/4, y=CH-PB-(CH-PT-PB)*k/4; s+=`<text class="axis" x="${PL-6}" y="${y+3}" text-anchor="end">${yFmt(v)}</text>`; }
+  for (const t of BM_TIMES){ const x=cx(t); s+=`<line x1="${x}" x2="${x}" y1="${PT}" y2="${CH-PB}" stroke="var(--loc-out)" stroke-dasharray="2 3"/>`; }
+  return s;
+}
+const SAMPLES=(()=>{ const a=[]; for (let k=0;k<=360;k++){ const t=tOf(k/360); if (!a.length||a[a.length-1]!==t) a.push(t); } return a; })();
+function drawCharts(){
+  // A: stacked share of meal solids
+  const svgA=document.getElementById('chartA');
+  const ys=CH-PT-PB, S0=R.S0||1;
+  const layers=locations(R,0).map(l=>({...l,pts:[]}));
+  for (const t of SAMPLES){ const loc=locations(R,t); let acc=0; loc.forEach((l,ix)=>{ const lo=acc; acc+=l.v/S0; layers[ix].pts.push([cx(t),lo,acc]); }); }
+  let s=axes(svgA,100,v=>v+'%');
+  for (const l of layers){
+    const top=l.pts.map(p=>`${p[0].toFixed(1)},${(CH-PB-ys*Math.min(1,p[2])).toFixed(1)}`);
+    const bot=l.pts.slice().reverse().map(p=>`${p[0].toFixed(1)},${(CH-PB-ys*Math.min(1,p[1])).toFixed(1)}`);
+    s+=`<polygon points="${top.join(' ')} ${bot.join(' ')}" fill="var(${l.col})"/>`;
+  }
+  s+=`<line id="curA" class="cursor" y1="${PT}" y2="${CH-PB}"/>`;
+  svgA.innerHTML=s;
+  document.getElementById('chartALegend').innerHTML=layers.map(l=>`<span><i style="background:var(${l.col})"></i>${l.name}</span>`).join('');
+  // B: absorption rates g/h
+  const svgB=document.getElementById('chartB');
+  const ser=[[0,'--carb'],[1,'--prot'],[2,'--fat'],[3,'--fib']];
+  let mx=0; for (let i=0;i<T;i++) for (let j=0;j<4;j++) mx=Math.max(mx,R.rate[i*5+j]*60);
+  const q=[1,2,5,10,20,50].find(q=>mx<=q*4*1.0)||50; const yMax=q*4;
+  let sb=axes(svgB,yMax,v=>Math.round(v));
+  for (const [j,col] of ser){
+    const pts=SAMPLES.map(t=>{ let a=0,c=0; for (let k=Math.max(0,t-5);k<=Math.min(T-1,t+5);k++){a+=R.rate[k*5+j];c++;} return `${cx(t).toFixed(1)},${(CH-PB-ys*(a/c*60)/yMax).toFixed(1)}`; });
+    sb+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(${col})" stroke-width="2" stroke-linejoin="round"/>`;
+  }
+  sb+=`<line id="curB" class="cursor" y1="${PT}" y2="${CH-PB}"/>`;
+  svgB.innerHTML=sb;
+}
+for (const id of ['chartA','chartB']){
+  const svg=document.getElementById(id);
+  const pick=e=>{ const r=svg.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*CW; u=clamp((x-PL)/(CW-PL-PR),0,1); if (playing) togglePlay(false); render(); };
+  svg.addEventListener('click',pick);
+}
+
+// ---------- render ----------
+const $=id=>document.getElementById(id);
+const sw=col=>`<i class="sw" style="background:var(${col})"></i>`;
+function recompute(){
+  R=simulate(meal);
+  const kin=4*meal.carb+4*meal.prot+9*meal.fat+2*meal.fib;
+  $('kcalIn').textContent=Math.round(kin).toLocaleString('ko-KR');
+  drawCharts(); render(true);
+}
+function autoOrgan(i){
+  let best='stomach', bv=-1;
+  for (const key of ['mouth','stomach','duo','jej','ile','colon','rectum']){ let v=mealIn(R,i,LUMEN[key]); if (key==='mouth') v+=uneaten(R,i); if (v>bv){bv=v;best=key;} }
+  if (bv<0.05) best='rectum';
+  return best;
+}
+function render(force){
+  const i=tOf(u);
+  if (!force && i===lastI) return;
+  lastI=i;
+  scrub.value=Math.round(u*1000);
+  $('tElapsed').textContent='식후 '+fmtDur(i);
+  $('tClock').textContent=clockOf(i)+(BM_TIMES.some(t=>t<=i)?` · 배변 ${BM_TIMES.filter(t=>t<=i).length}회 지남`:'');
+  // where bar
+  const loc=locations(R,i), S0=R.S0||1;
+  $('whereBar').innerHTML=loc.map(l=>`<span style="width:${(l.v/S0*100).toFixed(2)}%;background:var(${l.col})"></span>`).join('');
+  $('whereLegend').innerHTML=loc.filter(l=>l.v>0.05).map(l=>`<span><i style="background:var(${l.col})"></i>${l.name} <b>${fmt(l.v)} g</b></span>`).join('');
+  // cursors
+  for (const id of ['curA','curB']){ const c=$(id); if (c){ c.setAttribute('x1',cx(i)); c.setAttribute('x2',cx(i)); } }
+  // organ
+  const key = sel || autoOrgan(i);
+  for (const k of ORDER){ organEls[k].classList.toggle('sel',k===key); }
+  for (const b of organChips.children) b.setAttribute('aria-pressed',String(b.dataset.key===key));
+  $('ocMode').textContent = sel? '선택한 장기' : '자동 추적 · 음식이 가장 많은 곳';
+  $('autoBtn').hidden = !sel;
+  $('ocTitle').textContent=INFO[key].title;
+  $('ocMeta').textContent=INFO[key].meta;
+  $('ocFacts').innerHTML=INFO[key].facts.map(f=>`<li>${f}</li>`).join('');
+  $('ocNow').innerHTML=organNow(key,i);
+  // water tint
+  for (const c in watEls){
+    const w=Lg(R,i,+c,WATER); const cap=+c===STOM?600:+c<=ILE?160:220;
+    watEls[c].style.opacity=(Math.min(1,w/cap)*0.28).toFixed(3);
+  }
+  // vessels
+  const r=k=>R.rate[Math.min(i,T-1)*5+k];
+  const norm=(v,m)=>m>0?Math.min(1,v/m):0;
+  $('vPortal').style.opacity=(0.12+0.88*norm(r(0)+r(1),R.max[0]+R.max[1]*0.6)).toFixed(2);
+  $('vLymph').style.opacity=(0.12+0.88*norm(r(2),R.max[2])).toFixed(2);
+  $('vScfa').style.opacity=(0.12+0.88*norm(r(3),R.max[3])).toFixed(2);
+  $('vBile').style.opacity=(0.15+0.85*norm(r(4),R.max[4])).toFixed(2);
+  renderResults(i);
+  layoutDots(i);
+}
+function nutrientRows(i,cs){
+  const g=n=>cs.reduce((a,c)=>a+Lg(R,i,c,n),0);
+  return [['탄수화물','--carb',g(CARB)],['단백질','--prot',g(PROT)],['지방','--fat',g(FAT)],['식이섬유','--fib',g(SFIB)+g(IFIB)],['세균·점막','--bact',g(BACT)+g(ENDO)],['수분','--water',g(WATER)]];
+}
+function organNow(key,i){
+  const ip=Math.min(i,T-1);
+  if (LUMEN[key]){
+    const cs=LUMEN[key], rows=nutrientRows(i,cs);
+    let extra='';
+    if (key==='mouth' && i<10) extra=`<div>식사 중입니다. 아직 먹지 않은 음식 <b class="mono">${fmt(uneaten(R,i))} g</b></div>`;
+    if (key==='stomach') extra=`<div>이 식단의 위 배출 반감기 약 <b class="mono">${fmtDur(R.th)}</b> (지방 ${meal.fat} g·단백질 ${meal.prot} g 반영)</div>`;
+    if (key==='duo'||key==='jej'||key==='ile'){
+      const s=key==='duo'?0:key==='jej'?1:2, d=n=>(Ab(R,ip+1,s,n)-Ab(R,ip,s,n))*60;
+      extra=`<div>이 구간 흡수 속도: 당 <b class="mono">${fmt(d(CARB))}</b> · 아미노산 <b class="mono">${fmt(d(PROT))}</b> · 지방 <b class="mono">${fmt(d(FAT))}</b> g/시간</div>
+             <div>지금까지 이 구간에서 흡수: <b class="mono">${fmt(Ab(R,i,s,CARB)+Ab(R,i,s,PROT)+Ab(R,i,s,FAT))} g</b></div>`;
+    }
+    if (key==='colon'){ const fer=MEAL.reduce((a,n)=>a+Fe(R,i,n),0);
+      extra=`<div>지금까지 세균이 발효한 양 <b class="mono">${fmt(fer)} g</b> → 단쇄지방산 약 <b class="mono">${fmt(fer*0.4)} g</b> 흡수, 가스 약 <b class="mono">${fmt(fer*0.2)} g</b></div>
+             <div>대장이 다시 흡수한 수분 <b class="mono">${fmt(Ab(R,i,3,WATER))} mL</b></div>`; }
+    if (key==='rectum'){ const nb=R.bms.filter(b=>b.t<=i).length; extra=`<div>${nb?`배변 ${nb}회 후`:'첫 배변 전'} · 지금까지 배출 <b class="mono">${fmt(totalOut(i))} g</b></div>`; }
+    const solid=rows.slice(0,5).reduce((a,r)=>a+r[2],0);
+    const stack=solid>0.01? rows.slice(0,5).map(r=>`<span style="width:${(r[2]/solid*100).toFixed(1)}%;background:var(${r[1]})"></span>`).join(''):'';
+    return `<div><b>지금 이 안에</b> <span class="mono">${fmt(solid)} g</span> <span class="muted">(수분 제외)</span></div>
+      <div class="stack">${stack}</div>
+      <div class="kv">${rows.map(r=>`<div><span>${sw(r[1])}${r[0]}</span><span class="mono">${fmt(r[2])} ${r[0]==='수분'?'mL':'g'}</span></div>`).join('')}</div>${extra}`;
+  }
+  if (key==='liver'){
+    const sum=n=>Ab(R,i,0,n)+Ab(R,i,1,n)+Ab(R,i,2,n);
+    const scfa=MEAL.reduce((a,n)=>a+Fe(R,i,n),0)*0.4;
+    const rate=(R.rate[ip*5]+R.rate[ip*5+1])*60;
+    return `<div><b>간문맥으로 들어온 누계</b></div>
+      <div class="kv"><div><span>${sw('--carb')}포도당 등 단당류</span><span class="mono">${fmt(sum(CARB))} g</span></div>
+      <div><span>${sw('--prot')}아미노산</span><span class="mono">${fmt(sum(PROT))} g</span></div>
+      <div><span>${sw('--fib')}단쇄지방산</span><span class="mono">${fmt(scfa)} g</span></div></div>
+      <div>지금 유입 속도(당+아미노산) <b class="mono">${fmt(rate)} g/시간</b></div>
+      <div class="muted">지방 <span class="mono">${fmt(sum(FAT))} g</span>은 림프관으로 들어가 간보다 지방조직·근육에 먼저 도착합니다.</div>`;
+  }
+  if (key==='pancreas'){ const s=R.sec.subarray(i*5,i*5+5);
+    return `<div><b>이번 식사로 분비한 양</b></div><div class="kv"><div><span>췌장액</span><span class="mono">${fmt(s[2])} mL</span></div><div><span>위액</span><span class="mono">${fmt(s[1])} mL</span></div><div><span>장액</span><span class="mono">${fmt(s[4])} mL</span></div><div><span>침</span><span class="mono">${fmt(s[0])} mL</span></div></div>
+    <div class="muted">소화액 대부분은 소장과 대장에서 다시 흡수됩니다.</div>`; }
+  if (key==='gb'){ const s=R.sec.subarray(i*5,i*5+5);
+    return `<div>이번 식사로 내보낸 담즙 <b class="mono">${fmt(s[3])} mL</b></div><div class="muted">지방이 많은 식단일수록 위 배출이 느려져 담즙도 더 오래 나뉘어 나옵니다.</div>`; }
+  return '';
+}
+function totalOut(i){ let s=0; for (let n=0;n<NN;n++) s+=Lg(R,i,OUT,n); return s; }
+function renderResults(i){
+  $('fateTime').textContent=`· 식후 ${fmtDur(i)}`;
+  const rows=[['탄수화물',[CARB],R.meal[CARB]],['단백질',[PROT],R.meal[PROT]],['지방',[FAT],R.meal[FAT]],['식이섬유',[SFIB,IFIB],R.meal[SFIB]+R.meal[IFIB]]];
+  $('fateRows').innerHTML=rows.map(([name,ns,tot])=>{
+    if (tot<=0) return `<div class="fate-row"><span>${name}</span><div class="bar"></div><span class="pct">0 g</span></div>`;
+    const seg=[0,0,0,0,0,0];
+    for (const n of ns){ seg[0]+=Ab(R,i,0,n); seg[1]+=Ab(R,i,1,n); seg[2]+=Ab(R,i,2,n); seg[3]+=Fe(R,i,n); seg[4]+=Lg(R,i,OUT,n); }
+    seg[5]=Math.max(0,tot-seg.slice(0,5).reduce((a,b)=>a+b,0));
+    const cols=['--accent-3','--accent','--accent-2','--loc-ferm','--loc-out','--loc-mouth'];
+    const absP=(seg[0]+seg[1]+seg[2])/tot*100, ferP=seg[3]/tot*100;
+    const lbl = name==='식이섬유' ? `발효 ${Math.round(ferP)}%` : `흡수 ${Math.round(absP)}%`;
+    return `<div class="fate-row"><span>${name} <span class="muted mono" style="font-size:11px">${fmt(tot)}g</span></span><div class="bar">${seg.map((v,k)=>`<span style="width:${(v/tot*100).toFixed(2)}%;background:var(${cols[k]})"></span>`).join('')}</div><span class="pct">${lbl}</span></div>`;
+  }).join('');
+  // absorbed
+  const sum=n=>Ab(R,i,0,n)+Ab(R,i,1,n)+Ab(R,i,2,n);
+  const fer=MEAL.reduce((a,n)=>a+Fe(R,i,n),0);
+  const kin=4*meal.carb+4*meal.prot+9*meal.fat+2*meal.fib;
+  const ka=kcalAbs(R,i);
+  $('absKcal').innerHTML=`${Math.round(ka).toLocaleString('ko-KR')}<small>kcal 흡수 · 섭취의 ${kin>0?Math.round(ka/kin*100):0}%</small>`;
+  $('absList').innerHTML=`
+    <li><span>${sw('--carb')}당류 → 간문맥 → 간·근육·뇌</span><span class="mono">${fmt(sum(CARB))} g</span></li>
+    <li><span>${sw('--prot')}아미노산 → 간문맥 → 간·근육</span><span class="mono">${fmt(sum(PROT))} g</span></li>
+    <li><span>${sw('--fat')}지방 → 림프관 → 지방조직·근육</span><span class="mono">${fmt(sum(FAT))} g</span></li>
+    <li><span>${sw('--fib')}단쇄지방산 → 대장세포·간</span><span class="mono">${fmt(fer*0.4)} g</span></li>
+    <li><span>${sw('--water')}다시 흡수된 수분(음식+소화액)</span><span class="mono">${fmt(Ab(R,i,0,WATER)+Ab(R,i,1,WATER)+Ab(R,i,2,WATER)+Ab(R,i,3,WATER))} mL</span></li>`;
+  const glyco=Math.min(100,sum(CARB));
+  $('absNote').textContent = sum(CARB)>0.5
+    ? `흡수된 당 중 최대 약 100 g까지 간 글리코겐으로 저장될 수 있고(현재 계산상 ${fmt(glyco)} g 상당), 나머지는 근육 글리코겐과 에너지로 쓰이며 남으면 지방으로 바뀝니다.`
+    : '아직 혈액으로 들어간 영양소가 거의 없습니다. 음식은 입과 위에 있습니다.';
+  // feces
+  const fin=T, outNow=totalOut(i), outFin=totalOut(fin);
+  const comp=n=>Lg(R,fin,OUT,n);
+  const left=[ASC,TRA,DES,REC].reduce((a,c)=>{ for (let n=0;n<NN;n++) a+=Lg(R,fin,c,n); return a; },0);
+  $('fecesBig').innerHTML=`${fmt(outFin)}<small>g · 72시간 동안 배출 예측</small>`;
+  const solidsFin=outFin-comp(WATER);
+  $('fecesList').innerHTML=`
+    <li><span>${sw('--water')}수분</span><span class="mono">${fmt(comp(WATER))} g</span></li>
+    <li><span>${sw('--bact')}장내세균 덩어리</span><span class="mono">${fmt(comp(BACT))} g</span></li>
+    <li><span>${sw('--fib')}발효되지 않은 섬유</span><span class="mono">${fmt(comp(SFIB)+comp(IFIB))} g</span></li>
+    <li><span>${sw('--bact')}떨어진 점막 세포·점액</span><span class="mono">${fmt(comp(ENDO))} g</span></li>
+    <li><span>${sw('--fat')}흡수 안 된 지방</span><span class="mono">${fmt(comp(FAT))} g</span></li>
+    <li><span>${sw('--prot')}흡수 안 된 단백질·탄수화물</span><span class="mono">${fmt(comp(PROT)+comp(CARB))} g</span></li>`;
+  const bmTxt=R.bms.map((b,ix)=>`${ix+1}회차(${clockOf(b.t).replace(/^(다음 날|이틀 뒤|사흘 뒤) /,'$1 ')}) ${fmt(b.comp.reduce((a,v)=>a+v,0))} g`).join(', ');
+  const solidShare = solidsFin>0 ? Math.round(comp(BACT)/solidsFin*100) : 0;
+  $('fecesNote').textContent=`지금까지 배출 ${fmt(outNow)} g. 배변별: ${bmTxt}. 72시간 뒤에도 대장에 ${fmt(left)} g이 남습니다. 고형분 중 세균 비율 약 ${solidShare}%.`;
+}
+function layoutDots(i){
+  for (const cs in pools){
+    const c=+cs, pool=pools[c];
+    const counts=DOTKINDS.map(([cls,ns])=>ns.reduce((a,n)=>a+Lg(R,i,c,n),0)/UNIT);
+    let tot=counts.reduce((a,b)=>a+b,0);
+    const scale = tot>pool.length ? pool.length/tot : 1;
+    const rounded=counts.map(v=>Math.round(v*scale));
+    let j=0;
+    rounded.forEach((cnt,k)=>{ for (let q=0;q<cnt && j<pool.length;q++,j++){ pool[j].kind=DOTKINDS[k][0]; } });
+    for (let q=0;q<pool.length;q++){ const d=pool[q]; const on=q<j;
+      if (on){ if (d.cls!==d.kind){ d.e.setAttribute('class',d.kind); d.cls=d.kind; } if (!d.on){ d.e.setAttribute('visibility','visible'); d.on=true; } }
+      else if (d.on){ d.e.setAttribute('visibility','hidden'); d.on=false; }
+    }
+  }
+}
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let phase=0, lastTs=0;
+function moveDots(){
+  for (const cs in pools){
+    const c=+cs, {p,len,jit}=compPath[c], sp=SPEED[c];
+    for (const d of pools[c]){
+      if (!d.on) continue;
+      const f=((d.s1 + phase*sp) % 1 + 1) % 1;
+      const L0=f*len, a=p.getPointAtLength(L0), b=p.getPointAtLength(Math.min(len,L0+1));
+      let dx=b.x-a.x, dy=b.y-a.y; const m=Math.hypot(dx,dy)||1; dx/=m; dy/=m;
+      const off=(d.s2-0.5)*2*jit + (reduceMotion?0:Math.sin(phase*1.7+d.s3*6.28)*0.6);
+      d.e.setAttribute('cx',(a.x-dy*off).toFixed(1)); d.e.setAttribute('cy',(a.y+dx*off).toFixed(1));
+    }
+  }
+}
+function frame(ts){
+  const dt=lastTs?Math.min(0.1,(ts-lastTs)/1000):0; lastTs=ts;
+  if (playing){ u=Math.min(1,u+dt/playSecs); if (u>=1) togglePlay(false); render(); }
+  if (!reduceMotion || dt===0) phase+=dt;
+  moveDots();
+  requestAnimationFrame(frame);
+}
+syncSliders(); markPreset(meal.id);
+u=uOf(150);              // open at 2.5 h after the meal so the first view already shows digestion
+recompute();
+moveDots();
+requestAnimationFrame(frame);
+})();
+</script>
