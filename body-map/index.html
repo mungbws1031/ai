@@ -1,0 +1,787 @@
+<!doctype html><!--wrap-->
+<html lang="ko"><!--wrap-->
+<head><!--wrap-->
+<meta charset="utf-8"><!--wrap-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><!--wrap-->
+<title>몸속 통증 지도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Nanum+Myeongjo:wght@700;800&display=swap">
+<style>
+/* Layout: anatomy-atlas plate — body map on the left, an animated "inside view" plate and care guide on the right; stacks on phones. */
+:root{
+  --bg:#eaf0f1; --panel:#fbfdfd; --ink:#14232b; --muted:#566a74; --line:#cfdbdf;
+  --accent:#0d6870; --accent-ink:#ffffff; --accent-soft:#d3eaea;
+  --scene:#f3f8f8; --body:#dbe5e8; --body-line:#93aab3;
+  --tissue:#f0b3aa; --tissue-d:#d27f74; --muscle:#b3463e; --bone:#efe5cf; --bone-line:#b3a37c;
+  --cart:#bfe0ea; --nerve:#e2ad00; --blood:#c5262b; --acid:#a3c22a; --fluid:#5aa3d3;
+  --mucus:#cfe3bf; --liver:#9a4639; --bile:#6f9b2f; --kidney:#a3473f; --urine:#e9d36a; --plaque:#f0cf73;
+  --hot:#ff3d2e; --warn:#a8231b; --warn-soft:#fbe3df; --ok:#2f7d4f; --ok-soft:#dcefe2;
+  --f-display:"Nanum Myeongjo", "Noto Serif KR", serif;
+  --f-body:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e161a; --panel:#152127; --ink:#e2ecef; --muted:#90a4ad; --line:#283940;
+  --accent:#5ec4c7; --accent-ink:#06282b; --accent-soft:#163a3d;
+  --scene:#0a1215; --body:#22333b; --body-line:#4f6771;
+  --bone:#d9cfb7; --bone-line:#8f8263; --cart:#86b9c9; --mucus:#8fb07a;
+  --warn:#ff8f84; --warn-soft:#3b1f1c; --ok:#7ed3a0; --ok-soft:#173326; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0e161a; --panel:#152127; --ink:#e2ecef; --muted:#90a4ad; --line:#283940;
+  --accent:#5ec4c7; --accent-ink:#06282b; --accent-soft:#163a3d;
+  --scene:#0a1215; --body:#22333b; --body-line:#4f6771;
+  --bone:#d9cfb7; --bone-line:#8f8263; --cart:#86b9c9; --mucus:#8fb07a;
+  --warn:#ff8f84; --warn-soft:#3b1f1c; --ok:#7ed3a0; --ok-soft:#173326; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:clamp(26px,4vw,36px);font-weight:800}
+h2{font-size:22px;font-weight:800}
+h3{font-size:16px;font-weight:700}
+.mono{font-family:var(--f-mono);font-size:12px;letter-spacing:.02em;color:var(--muted)}
+.eyebrow{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+p{margin:0}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+header .lede{max-width:62ch;color:var(--muted)}
+.notice{background:var(--warn-soft);color:var(--ink);border-left:3px solid var(--warn);padding:10px 14px;border-radius:4px;font-size:13.5px;max-width:100%}
+.notice b{color:var(--warn)}
+
+.grid{display:grid;grid-template-columns:minmax(260px,330px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+
+/* body map */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:var(--bg)}
+.seg button{font:inherit;font-size:13px;border:0;background:transparent;color:var(--muted);padding:5px 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+button:focus-visible,.spot:focus-visible,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.maphead{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+#map{width:100%;max-width:300px;display:block;margin:0 auto}
+.sil{fill:var(--body);stroke:var(--body-line);stroke-width:1.4}
+.spot{cursor:pointer}
+.spot .hit{fill:var(--accent);fill-opacity:.10;stroke:var(--accent);stroke-opacity:.45;stroke-width:1.2;stroke-dasharray:3 3;transition:fill-opacity .2s}
+.spot:hover .hit{fill-opacity:.25}
+.spot.sel .hit{fill:var(--hot);fill-opacity:.32;stroke:var(--hot);stroke-opacity:.9;stroke-dasharray:none;animation:blink 1.6s ease-in-out infinite}
+.maplabel{font-family:var(--f-mono);font-size:8px;fill:var(--muted)}
+.ref circle{fill:none;stroke:var(--warn);stroke-width:1.6;stroke-dasharray:2 2}
+.ref .core{fill:var(--warn);stroke:none;opacity:.7;animation:blink 1.4s ease-in-out infinite}
+.ref text{font-size:7.5px;fill:var(--warn);font-family:var(--f-body);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:4px 10px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--hot);background:color-mix(in srgb,var(--hot) 14%,var(--panel))}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:-1px}
+
+/* causes */
+.causes{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 14px}
+.cause{font:inherit;text-align:left;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cause[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.cause > span{white-space:nowrap}
+.cause small{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;margin-left:6px;vertical-align:1px}
+.tag.common{background:var(--ok-soft);color:var(--ok)}
+.tag.care{background:var(--warn-soft);color:var(--warn)}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+.tabs button{font:inherit;font-size:14px;font-weight:600;border:0;background:none;color:var(--muted);padding:8px 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+
+.inside{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px}
+@media (max-width:1000px){.inside{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--scene);border:1px solid var(--line);border-radius:8px;padding:8px;position:relative}
+.stage svg{width:100%;height:auto;display:block}
+.stagebar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ghost{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 12px;border-radius:999px;cursor:pointer}
+.facts{display:flex;flex-direction:column;gap:14px;min-width:0}
+.facts ol{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.feel{background:var(--bg);border-radius:6px;padding:8px 12px;font-size:14px}
+.flags{border:1px solid var(--warn);border-radius:8px;padding:10px 14px;background:var(--warn-soft)}
+.flags h3{color:var(--warn);font-family:var(--f-body);font-size:14px}
+.flags ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+
+/* care guide */
+.care{display:flex;flex-direction:column;gap:16px}
+.depts{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.dept{border:1px solid var(--accent);color:var(--accent);border-radius:6px;padding:3px 10px;font-weight:600;font-size:14px}
+.dept.main{background:var(--accent);color:var(--accent-ink)}
+.startbox{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border-radius:8px;padding:10px 14px;font-size:14px}
+.startbox b{color:var(--accent)}
+.ladder{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:1000px){.ladder{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:520px){.ladder{grid-template-columns:minmax(0,1fr)}}
+.tier{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--panel);min-width:0}
+.tier.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.tier .lvl{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.tier .lvl span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.tier .rec-badge{font-size:11px;font-weight:600;color:var(--accent-ink);background:var(--accent);border-radius:999px;padding:1px 8px;align-self:flex-start}
+.tier p{font-size:13.5px}
+.equip{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto}
+.equip span{font-size:11.5px;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.cost{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+table.tech{width:100%;border-collapse:collapse;font-size:13.5px}
+table.tech th,table.tech td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.tech th{font-size:12px;color:var(--muted);font-weight:600}
+.where{font-size:11.5px;white-space:nowrap;border-radius:999px;padding:1px 8px;background:var(--bg);border:1px solid var(--line)}
+.scroll{overflow-x:auto}
+.links{display:flex;flex-wrap:wrap;gap:10px;font-size:13.5px}
+.links a{color:var(--accent)}
+.foot{color:var(--muted);font-size:12.5px;max-width:80ch}
+
+/* scene primitives */
+.scene *{transform-box:fill-box;transform-origin:center}
+.scene text{font-family:var(--f-body);font-size:10px;fill:var(--muted)}
+.scene text.k{fill:var(--ink);font-weight:600}
+.scene text.w{fill:var(--warn);font-weight:600}
+.so{opacity:0;transition:opacity .5s}
+.no{opacity:1;transition:opacity .5s}
+.is-sick .so{opacity:1}
+.is-sick .no{opacity:0}
+.a-beat{animation:beat 1.1s ease-in-out infinite}
+.a-flow{stroke-dasharray:4 12;animation:flow 1.2s linear infinite}
+.is-sick .a-flow.slow{animation-duration:4.5s}
+.is-sick .a-flow-s{stroke-dasharray:4 12;animation:flow .7s linear infinite}
+.is-sick .a-throb{animation:throb 1.3s ease-in-out infinite}
+.is-sick .a-squeeze{animation:squeeze 1.6s ease-in-out infinite}
+.is-sick .a-blink{animation:blink 1.2s ease-in-out infinite}
+.is-sick .a-spark{animation:spark 1.4s ease-out infinite}
+.is-sick .a-shake{animation:shake .35s linear infinite}
+.is-sick .a-wiggle{animation:wiggle .8s ease-in-out infinite}
+.is-sick .a-rise{transform-origin:bottom;animation:rise 2.6s ease-in-out infinite alternate}
+.is-sick .a-drop{animation:drop 1.8s ease-in infinite}
+.is-sick .a-grind{animation:grind .9s ease-in-out infinite}
+.a-breathe{animation:breathe 4s ease-in-out infinite}
+.a-bubble{animation:bubble 3s ease-in-out infinite}
+.is-sick .a-dilate{animation:dilate 1.3s ease-in-out infinite}
+.thick{transition:stroke-width .6s}
+.is-sick .thin-sick{stroke-width:2.5}
+.is-sick .thick-sick{stroke-width:17}
+.d1{animation-delay:.25s!important}.d2{animation-delay:.5s!important}.d3{animation-delay:.75s!important}.d4{animation-delay:1s!important}
+@keyframes beat{0%,100%{transform:scale(1)}15%{transform:scale(1.05)}30%{transform:scale(.99)}}
+@keyframes flow{to{stroke-dashoffset:-32}}
+@keyframes throb{50%{transform:scale(1.14)}}
+@keyframes squeeze{50%{transform:scale(.9)}}
+@keyframes blink{50%{opacity:.3}}
+@keyframes spark{0%{opacity:0;transform:scale(.4)}35%{opacity:1}100%{opacity:0;transform:scale(1.5)}}
+@keyframes shake{25%{transform:translateX(-1.5px)}75%{transform:translateX(1.5px)}}
+@keyframes wiggle{50%{transform:rotate(10deg)}}
+@keyframes rise{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
+@keyframes drop{0%{transform:translateY(-26px);opacity:0}30%{opacity:1}100%{transform:translateY(8px);opacity:0}}
+@keyframes grind{50%{transform:translate(2px,2px)}}
+@keyframes breathe{50%{transform:scale(1.04,1.02)}}
+@keyframes bubble{50%{transform:translate(6px,-4px) scale(1.1)}}
+@keyframes dilate{50%{stroke-width:12}}
+.paused *, .paused{animation-play-state:paused!important}
+@media (prefers-reduced-motion: reduce){ .scene *, .spot.sel .hit, .ref .core{animation-duration:0s!important;animation-iteration-count:1!important} }
+</style>
+</head><!--wrap-->
+<body><!--wrap-->
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Atlas of Pain · 교육용 시뮬레이션</div>
+      <h1>몸속 통증 지도</h1>
+      <p class="lede">아픈 부위를 누르면 그 부위가 아플 수 있는 대표 원인을 보여주고, 몸속에서 무슨 일이 일어나는지 애니메이션으로 보여줍니다. 어느 과와 어느 병원 단계로 가면 되는지도 함께 안내합니다.</p>
+    </div>
+  </header>
+  <p class="notice"><b>진단 도구가 아닙니다.</b> 흔한 원인을 단순화해 그린 교육용 그림이며, 실제 원인은 진찰과 검사로만 알 수 있습니다. 갑작스럽고 극심한 통증, 가슴 통증과 식은땀·호흡곤란, 마비·말 어눌함, 고열과 의식 저하가 있으면 바로 <b>119</b>에 연락하세요.</p>
+
+  <div class="grid">
+    <section class="panel" aria-label="부위 선택">
+      <div class="maphead">
+        <h2>어디가 아프세요?</h2>
+        <div class="seg" role="group" aria-label="보기 방향">
+          <button id="vFront" aria-pressed="true">앞</button>
+          <button id="vBack" aria-pressed="false">뒤</button>
+        </div>
+      </div>
+      <svg id="map" viewBox="0 0 200 440" role="img" aria-label="인체 지도"></svg>
+      <div class="chips" id="chips"></div>
+      <div class="legend"><span><i style="background:var(--hot)"></i>선택한 부위</span><span><i style="background:var(--warn)"></i>함께 아플 수 있는 곳(연관통)</span></div>
+    </section>
+
+    <section class="panel" aria-live="polite">
+      <div class="eyebrow" id="rLatin"></div>
+      <h2 id="rName"></h2>
+      <div class="causes" id="causes"></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tInside" aria-selected="true">몸속에서 일어나는 일</button>
+        <button role="tab" id="tCare" aria-selected="false">어디로 가야 하나</button>
+      </div>
+
+      <div id="pInside" role="tabpanel">
+        <div class="inside">
+          <div>
+            <div class="stage" id="stage"></div>
+            <div class="stagebar">
+              <div class="seg" role="group" aria-label="상태">
+                <button id="sNormal" aria-pressed="false">정상일 때</button>
+                <button id="sSick" aria-pressed="true">아플 때</button>
+              </div>
+              <button class="ghost" id="pause">일시정지</button>
+            </div>
+          </div>
+          <div class="facts">
+            <div>
+              <h3 id="cName"></h3>
+              <div class="mono" id="cEn"></div>
+            </div>
+            <div class="feel" id="cFeel"></div>
+            <div><h3>몸속에서 일어나는 순서</h3><ol id="cSteps"></ol></div>
+            <div id="cRef" class="mono"></div>
+            <div class="flags"><h3>이럴 땐 바로 병원·응급실</h3><ul id="cFlags"></ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pCare" role="tabpanel" hidden>
+        <div class="care" id="care"></div>
+      </div>
+    </section>
+  </div>
+
+  <p class="foot">병원 단계별 외래 본인부담률은 동(洞) 지역 일반 환자 기준의 대략적인 비율이며 약제비·비급여·지역·자격에 따라 달라집니다. 장비와 시술은 같은 단계라도 병원마다 다르니, 방문 전 건강보험심사평가원 ‘병원·약국 찾기’에서 해당 병원의 진료과와 보유 장비(CT·MRI 등)를 확인하세요. 특정 병원을 추천하지 않습니다.</p>
+</div>
+
+<script>
+/* ---------- data: regions ---------- */
+const REGIONS={
+  head:{name:'머리',latin:'Caput · 頭部',causes:['tension','migraine','sinus']},
+  neck:{name:'목·어깨',latin:'Cervix & Cingulum pectorale',causes:['neck','cdisc']},
+  chest:{name:'가슴',latin:'Thorax · 胸部',causes:['angina','gerd','costo']},
+  epi:{name:'명치·윗배',latin:'Epigastrium · 心窩部',causes:['ulcer','gall']},
+  rlq:{name:'오른쪽 아랫배',latin:'Regio inguinalis dextra · RLQ',causes:['appendix','ibs']},
+  lower:{name:'아랫배 가운데',latin:'Hypogastrium · 下腹部',causes:['cramps','cystitis']},
+  flank:{name:'옆구리',latin:'Regio lumbalis lateralis · CVA',causes:['kstone','pyelo']},
+  lowback:{name:'허리',latin:'Regio lumbalis · L1–S1',causes:['ldisc','lstrain']},
+  knee:{name:'무릎',latin:'Articulatio genus',causes:['koa','menis']}
+};
+const SPOTS={
+  front:[
+    ['head','<ellipse cx="100" cy="40" rx="25" ry="30"/>',[100,40]],
+    ['chest','<rect x="68" y="100" width="64" height="46" rx="10"/>',[100,123]],
+    ['epi','<rect x="82" y="150" width="36" height="30" rx="10"/>',[100,165]],
+    ['rlq','<circle cx="78" cy="212" r="13"/>',[78,212]],
+    ['lower','<circle cx="104" cy="238" r="12"/>',[104,238]],
+    ['knee','<circle cx="82" cy="335" r="11"/><circle cx="118" cy="335" r="11"/>',[100,335]]
+  ],
+  back:[
+    ['head','<ellipse cx="100" cy="40" rx="25" ry="30"/>',[100,40]],
+    ['neck','<rect x="66" y="74" width="68" height="32" rx="12"/>',[100,90]],
+    ['flank','<circle cx="65" cy="182" r="11"/><circle cx="135" cy="182" r="11"/>',[100,182]],
+    ['lowback','<rect x="84" y="196" width="32" height="40" rx="10"/>',[100,216]]
+  ]
+};
+const SIL=`<g class="sil">
+ <ellipse cx="100" cy="40" rx="24" ry="30"/>
+ <rect x="89" y="66" width="22" height="22" rx="6"/>
+ <path d="M60 92 Q100 80 140 92 L152 110 L142 200 Q139 225 146 252 L54 252 Q61 225 58 200 L48 110 Z"/>
+ <path d="M50 100 Q34 112 32 160 L27 240 L40 243 L47 168 L58 122 Z"/>
+ <path d="M150 100 Q166 112 168 160 L173 240 L160 243 L153 168 L142 122 Z"/>
+ <path d="M56 250 L99 250 L95 420 L73 420 Z"/>
+ <path d="M101 250 L144 250 L127 420 L105 420 Z"/>
+</g>`;
+const BACKMARK=`<g stroke="var(--body-line)" fill="none" stroke-width="1.2"><path d="M100 92 L100 250" stroke-dasharray="3 3"/><path d="M70 110 Q80 128 90 120"/><path d="M130 110 Q120 128 110 120"/></g>`;
+
+/* ---------- helpers for scenes ---------- */
+const sp=(x,y,c='',r=1)=>`<g transform="translate(${x} ${y}) scale(${r})"><path class="so a-spark ${c}" d="M0-7L2-2 7 0 2 2 0 7-2 2-7 0-2-2Z" fill="var(--hot)"/></g>`;
+const T=(x,y,s,c='')=>`<text x="${x}" y="${y}" class="${c}">${s}</text>`;
+const bug=(x,y,c='')=>`<g transform="translate(${x} ${y})"><g class="so a-wiggle ${c}"><rect x="-6" y="-2.5" width="12" height="5" rx="2.5" fill="#6a8f2a"/><path d="M6 0 q4 -3 7 0" stroke="#6a8f2a" fill="none" stroke-width="1.2"/></g></g>`;
+
+/* ---------- scenes (viewBox 0 0 320 220) ---------- */
+const SCENES={
+tension:`
+ <ellipse cx="160" cy="104" rx="72" ry="80" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <ellipse cx="160" cy="106" rx="60" ry="66" fill="var(--tissue)"/>
+ <path d="M118 86q18 18 0 38M142 70q-10 30 10 52M178 70q10 30-10 52M202 86q-18 18 0 38" stroke="var(--tissue-d)" stroke-width="3" fill="none"/>
+ <g class="a-squeeze"><path class="thick thick-sick" d="M86 96 Q160 38 234 96" stroke="var(--muscle)" stroke-width="11" fill="none" stroke-linecap="round" opacity=".9"/></g>
+ <path class="thick thick-sick" d="M128 182 L108 216 M192 182 L212 216" stroke="var(--muscle)" stroke-width="12" stroke-linecap="round"/>
+ <g class="so" stroke="var(--warn)" stroke-width="2.5" fill="none"><path d="M42 100h26m-7-7 7 7-7 7"/><path d="M278 100h-26m7-7-7 7 7 7"/></g>
+ ${sp(86,118)}${sp(234,118,'d2')}${sp(112,200,'d3')}${sp(208,200,'d1')}
+ ${T(160,22,'이마·두피 근육 (머리띠 모양)','k')}${T(10,210,'목 뒤 근육')}${T(232,40,'꽉 조임','so w')}`,
+migraine:`
+ <ellipse cx="160" cy="110" rx="118" ry="88" fill="var(--tissue)"/>
+ <path d="M80 80q30 20 0 50M130 60q-14 40 10 70M190 60q14 40-10 70M240 80q-30 20 0 50" stroke="var(--tissue-d)" stroke-width="3" fill="none"/>
+ <path class="a-dilate" d="M50 70 C110 40 170 100 270 62" stroke="var(--blood)" stroke-width="5" fill="none" stroke-linecap="round"/>
+ <path d="M60 170 C110 130 160 150 230 120" stroke="var(--nerve)" stroke-width="3.5" fill="none"/>
+ <path class="so a-flow-s" d="M60 170 C110 130 160 150 230 120" stroke="#fff" stroke-width="3.5" fill="none"/>
+ <circle class="so a-blink" cx="160" cy="80" r="26" fill="var(--hot)" opacity=".25"/>
+ <polyline class="so a-blink" points="250,160 262,150 274,162 286,150 298,162" stroke="var(--accent)" stroke-width="3" fill="none"/>
+ ${sp(214,124)}${sp(150,150,'d2')}
+ ${T(40,40,'뇌막 혈관이 넓어짐','k')}${T(46,195,'삼차신경이 통증 신호 전달')}${T(236,186,'빛 번쩍임(조짐)','so w')}`,
+sinus:`
+ <path d="M90 20 Q160 0 230 20 Q260 110 220 190 Q160 225 100 190 Q60 110 90 20Z" fill="var(--tissue)" opacity=".7"/>
+ <ellipse cx="128" cy="78" rx="16" ry="10" fill="var(--panel)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <ellipse cx="192" cy="78" rx="16" ry="10" fill="var(--panel)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <path d="M160 82 L148 140 L172 140Z" fill="var(--tissue-d)"/>
+ <g><rect x="98" y="100" width="44" height="40" rx="12" fill="var(--scene)" stroke="var(--tissue-d)" stroke-width="3" class="thick"/>
+ <rect x="178" y="100" width="44" height="40" rx="12" fill="var(--scene)" stroke="var(--tissue-d)" stroke-width="3"/></g>
+ <rect class="so a-rise" x="101" y="106" width="38" height="31" rx="10" fill="var(--mucus)"/>
+ <rect class="so a-rise d2" x="181" y="106" width="38" height="31" rx="10" fill="var(--mucus)"/>
+ <rect x="143" y="44" width="34" height="18" rx="8" fill="var(--scene)" stroke="var(--tissue-d)" stroke-width="2.5"/>
+ <rect class="so a-rise d1" x="146" y="47" width="28" height="12" rx="6" fill="var(--mucus)"/>
+ <g class="so" stroke="var(--warn)" stroke-width="2.2" fill="none"><path d="M98 120h-18m6-6-6 6 6 6"/><path d="M222 120h18m-6-6 6 6-6 6"/></g>
+ ${sp(120,150)}${sp(200,150,'d2')}
+ ${T(236,110,'상악동(광대뼈 안 빈 공간)','k')}${T(186,40,'전두동')}${T(60,208,'점막이 붓고 콧물이 고여 압력 증가','so w')}`,
+neck:`
+ <g class="no">
+  <circle cx="150" cy="58" r="36" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+  <path d="M152 96 Q146 140 160 200" stroke="var(--bone)" stroke-width="14" stroke-dasharray="10 4" fill="none"/>
+  <path d="M128 82 Q120 140 136 200" stroke="var(--muscle)" stroke-width="7" fill="none" opacity=".8"/>
+  ${T(196,60,'귀–어깨가 일직선','k')}${T(196,76,'머리 무게 약 5kg')}
+ </g>
+ <g class="so">
+  <circle cx="212" cy="76" r="36" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+  <path d="M160 200 Q146 140 190 108" stroke="var(--bone)" stroke-width="14" stroke-dasharray="10 4" fill="none"/>
+  <path d="M136 200 Q112 130 182 72" stroke="var(--muscle)" stroke-width="7" fill="none"/>
+  <circle class="a-throb" cx="128" cy="140" r="7" fill="var(--hot)" opacity=".7"/>
+  <circle class="a-throb d2" cx="140" cy="106" r="6" fill="var(--hot)" opacity=".7"/>
+  <path d="M212 120 v40 m-7-8 7 8 7-8" stroke="var(--warn)" stroke-width="2.4" fill="none"/>
+  ${T(226,150,'앞으로 15°만 숙여도','w')}${T(226,164,'목 부담 약 12kg','w')}${T(20,130,'뭉친 근육(통증 유발점)','w')}
+ </g>
+ ${T(20,212,'옆에서 본 목뼈와 목 뒤 근육')}`,
+cdisc:`
+ <rect x="80" y="30" width="110" height="52" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="80" y="122" width="110" height="52" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <ellipse cx="135" cy="102" rx="56" ry="18" fill="#c9d6e6" stroke="#93a8c2" stroke-width="2"/>
+ <ellipse class="no" cx="135" cy="102" rx="20" ry="9" fill="var(--fluid)"/>
+ <ellipse class="so a-throb" cx="190" cy="102" rx="20" ry="11" fill="var(--fluid)"/>
+ <rect x="206" y="20" width="18" height="180" rx="9" fill="var(--nerve)" opacity=".45"/>
+ <path d="M214 104 C250 120 270 160 300 210" stroke="var(--nerve)" stroke-width="6" fill="none"/>
+ <path class="so a-flow-s" d="M214 104 C250 120 270 160 300 210" stroke="#fff" stroke-width="3" fill="none"/>
+ ${sp(214,104)}${sp(262,150,'d2')}${sp(292,196,'d3')}
+ ${T(84,22,'목뼈(경추)','k')}${T(30,106,'디스크')}${T(108,130,'수핵','no')}${T(236,92,'신경뿌리')}${T(150,214,'튀어나온 수핵이 신경을 눌러 팔이 저림','so w')}`,
+angina:`
+ <g class="a-beat">
+  <path d="M110 50 C70 30 30 70 50 120 C66 160 110 190 130 200 C160 180 200 150 205 110 C210 60 165 30 130 55 Z" fill="var(--muscle)" opacity=".9"/>
+  <path d="M128 56 C112 90 96 120 104 170" stroke="var(--blood)" stroke-width="6" fill="none"/>
+  <path class="a-flow slow" d="M128 56 C112 90 96 120 104 170" stroke="#fff" stroke-width="2.5" fill="none" opacity=".85"/>
+  <path class="so a-blink" d="M80 140 C90 165 110 185 128 195 C120 175 110 160 104 150Z" fill="#3a0d0d" opacity=".55"/>
+ </g>
+ <circle cx="114" cy="110" r="10" fill="none" stroke="var(--ink)" stroke-dasharray="3 3"/>
+ <path d="M124 108 L210 92" stroke="var(--ink)" stroke-dasharray="3 3"/>
+ <circle cx="262" cy="96" r="48" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="3"/>
+ <circle class="no" cx="262" cy="96" r="32" fill="var(--blood)"/>
+ <g class="so"><circle cx="262" cy="96" r="32" fill="var(--plaque)"/><circle cx="248" cy="110" r="11" fill="var(--blood)"/></g>
+ ${T(224,160,'관상동맥 단면','k')}${T(206,176,'지방 덩어리(플라크)로 좁아짐','so w')}${T(20,212,'피가 덜 가서 산소가 모자란 심장근육','so w')}${T(20,22,'심장을 먹여 살리는 관상동맥','k')}`,
+gerd:`
+ <rect x="150" y="8" width="26" height="110" rx="6" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <path d="M150 122 C88 120 66 182 118 206 C180 226 252 190 242 140 C234 112 202 118 186 122 Z" fill="var(--tissue)" stroke="var(--tissue-d)" stroke-width="2"/>
+ <path d="M84 176 C100 210 180 214 236 168 L236 182 C200 214 120 220 90 196Z" fill="var(--acid)" opacity=".75"/>
+ <rect class="no" x="146" y="112" width="34" height="11" rx="4" fill="var(--muscle)"/>
+ <g class="so"><rect x="144" y="112" width="9" height="11" rx="3" fill="var(--muscle)"/><rect x="173" y="112" width="9" height="11" rx="3" fill="var(--muscle)"/></g>
+ <rect class="so a-rise" x="154" y="34" width="18" height="86" rx="5" fill="var(--acid)" opacity=".8"/>
+ ${sp(146,52)}${sp(180,78,'d2')}${sp(146,96,'d3')}
+ ${T(186,26,'식도','k')}${T(190,116,'하부식도괄약근')}${T(196,132,'느슨해져 열림','so w')}${T(100,214,'위산')}${T(10,70,'위산이 거꾸로 올라와','so w')}${T(10,84,'가슴뼈 뒤가 타는 듯','so w')}`,
+costo:`
+ <g class="a-breathe">
+  <rect x="150" y="16" width="20" height="176" rx="6" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+  ${[0,1,2,3,4].map(i=>{const y=38+i*34;return `<path d="M128 ${y} Q80 ${y-8} 30 ${y+22}" stroke="var(--bone)" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M192 ${y} Q240 ${y-8} 290 ${y+22}" stroke="var(--bone)" stroke-width="10" fill="none" stroke-linecap="round"/><path d="M128 ${y}H150M170 ${y}H192" stroke="var(--cart)" stroke-width="9"/>`}).join('')}
+ </g>
+ <circle class="so a-blink" cx="138" cy="72" r="10" fill="var(--hot)" opacity=".55"/>
+ <circle class="so a-blink d2" cx="182" cy="106" r="10" fill="var(--hot)" opacity=".55"/>
+ <circle class="so a-blink d1" cx="138" cy="106" r="9" fill="var(--hot)" opacity=".45"/>
+ ${T(176,14,'가슴뼈(흉골)','k')}${T(200,212,'갈비연골')}${T(10,212,'연골 관절 염증 → 누르면 아픔','so w')}`,
+ulcer:`
+ ${T(14,22,'위 안쪽 공간','k')}
+ <circle class="a-bubble" cx="80" cy="56" r="7" fill="var(--acid)"/><circle class="a-bubble d2" cx="150" cy="44" r="6" fill="var(--acid)"/><circle class="a-bubble d3" cx="230" cy="62" r="8" fill="var(--acid)"/>
+ <circle class="so a-drop" cx="160" cy="98" r="5" fill="var(--acid)"/><circle class="so a-drop d2" cx="152" cy="96" r="4" fill="var(--acid)"/>
+ <rect class="no" x="0" y="108" width="320" height="16" fill="var(--mucus)"/>
+ <rect class="so" x="0" y="118" width="320" height="6" fill="var(--mucus)"/>
+ <rect x="0" y="124" width="320" height="30" fill="var(--tissue)"/>
+ <rect x="0" y="154" width="320" height="22" fill="var(--tissue-d)" opacity=".7"/>
+ <rect x="0" y="176" width="320" height="44" fill="var(--muscle)" opacity=".85"/>
+ <path class="so a-blink" d="M134 118 Q160 176 186 118 Z" fill="#5c1616"/>
+ ${bug(96,114)}${bug(220,116,'d2')}
+ ${T(238,104,'점액 보호막','k')}${T(250,144,'점막')}${T(250,204,'근육층')}${T(36,94,'위산')}${T(110,214,'보호막이 얇아져 위벽이 패임(궤양)','so w')}${T(196,92,'헬리코박터균','so w')}`,
+gall:`
+ <path d="M20 20 Q160 0 300 40 Q260 90 140 92 Q60 94 20 60Z" fill="var(--liver)" opacity=".9"/>
+ <g class="a-squeeze"><ellipse cx="110" cy="140" rx="30" ry="44" fill="#acca6c" stroke="var(--bile)" stroke-width="3"/>
+ <circle cx="100" cy="150" r="7" fill="#e3d18c"/><circle cx="118" cy="160" r="6" fill="#e3d18c"/><circle cx="108" cy="130" r="5" fill="#e3d18c"/></g>
+ <path d="M126 104 C150 96 180 96 196 110 C214 126 230 160 252 186" stroke="var(--bile)" stroke-width="7" fill="none"/>
+ <path class="no a-flow" d="M126 104 C150 96 180 96 196 110 C214 126 230 160 252 186" stroke="#fff" stroke-width="2.5" fill="none"/>
+ <circle class="so" cx="160" cy="98" r="7" fill="#e3d18c" stroke="var(--bile)"/>
+ <path d="M220 200 Q260 176 310 200" stroke="var(--tissue)" stroke-width="22" fill="none" stroke-linecap="round"/>
+ ${sp(160,98)}${sp(140,120,'d2')}
+ ${T(30,40,'간','k')}${T(36,196,'담낭(쓸개)','k')}${T(206,100,'담관')}${T(232,216,'십이지장')}${T(150,150,'돌이 출구를 막고','so w')}${T(150,164,'담낭이 쥐어짜듯 수축','so w')}`,
+appendix:`
+ <path d="M70 14 L70 136 Q70 172 104 172 L140 172" stroke="var(--tissue)" stroke-width="44" fill="none" stroke-linecap="round"/>
+ <path d="M310 118 L150 150" stroke="var(--tissue-d)" stroke-width="22" fill="none" stroke-linecap="round"/>
+ <path class="no" d="M100 192 Q104 212 134 210" stroke="var(--tissue-d)" stroke-width="9" fill="none" stroke-linecap="round"/>
+ <circle class="so a-blink" cx="118" cy="204" r="22" fill="var(--hot)" opacity=".3"/>
+ <g class="a-throb"><path class="so" d="M100 192 Q104 212 134 210" stroke="#e1574b" stroke-width="18" fill="none" stroke-linecap="round"/></g>
+ <circle class="so" cx="100" cy="190" r="5" fill="#6a4c28"/>
+ <circle class="so a-blink" cx="114" cy="206" r="2.5" fill="#3b5f12"/><circle class="so a-blink d2" cx="124" cy="210" r="2.5" fill="#3b5f12"/>
+ ${T(110,40,'대장 시작부(맹장)','k')}${T(200,110,'소장 끝')}${T(146,206,'충수','k')}${T(150,190,'입구가 막혀 붓고 곪음','so w')}`,
+ibs:`
+ <path d="M30 40 H280 Q300 40 300 70 Q300 96 270 96 H60 Q30 96 30 126 Q30 152 60 152 H270 Q300 152 300 182 Q300 206 270 206 H40" stroke="var(--tissue)" stroke-width="24" fill="none" stroke-linecap="round"/>
+ <path class="so a-flow-s" d="M30 40 H280 Q300 40 300 70 Q300 96 270 96 H60 Q30 96 30 126 Q30 152 60 152 H270" stroke="var(--muscle)" stroke-width="5" fill="none"/>
+ <g class="a-throb"><circle class="a-bubble" cx="90" cy="40" r="7" fill="var(--scene)" stroke="var(--tissue-d)"/></g>
+ <g class="a-throb d2"><circle class="a-bubble d2" cx="190" cy="96" r="8" fill="var(--scene)" stroke="var(--tissue-d)"/></g>
+ <g class="a-throb d3"><circle class="a-bubble d1" cx="130" cy="152" r="7" fill="var(--scene)" stroke="var(--tissue-d)"/></g>
+ ${sp(190,82)}${sp(240,152,'d2')}
+ ${T(30,22,'장(소장·대장)','k')}${T(60,122,'가스')}${T(120,124,'가스가 장벽을 늘리고 장이 경련','so w')}`,
+cramps:`
+ <path d="M30 70 Q60 40 100 64" stroke="var(--tissue-d)" stroke-width="6" fill="none"/><ellipse cx="26" cy="78" rx="14" ry="10" fill="var(--tissue)"/>
+ <path d="M290 70 Q260 40 220 64" stroke="var(--tissue-d)" stroke-width="6" fill="none"/><ellipse cx="294" cy="78" rx="14" ry="10" fill="var(--tissue)"/>
+ <g class="a-squeeze"><path d="M100 54 Q160 30 220 54 Q232 120 182 160 L182 196 L138 196 L138 160 Q88 120 100 54Z" fill="var(--tissue)" stroke="var(--muscle)" stroke-width="4"/>
+ <path d="M122 66 Q160 52 198 66 Q202 112 168 140 L152 140 Q118 112 122 66Z" fill="#c94f5d" opacity=".65"/></g>
+ ${[[90,110],[230,100],[110,160],[214,150],[160,22]].map((p,i)=>`<circle class="so a-spark d${i%4}" cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--nerve)"/>`).join('')}
+ <circle class="so a-drop" cx="160" cy="208" r="4" fill="#b6303c"/>
+ ${T(234,40,'난소')}${T(126,214,'자궁경부')}${T(232,130,'프로스타글란딘','so w')}${T(10,214,'자궁근육이 세게 수축','so w')}${T(226,190,'혈류↓ → 통증','so w')}${T(124,100,'내막','k')}`,
+cystitis:`
+ <path d="M90 60 Q160 20 230 60 Q250 130 196 160 L172 168 L148 168 L124 160 Q70 130 90 60Z" fill="#f4e8a8" stroke="var(--tissue-d)" stroke-width="8"/>
+ <path class="so a-blink" d="M90 60 Q160 20 230 60 Q250 130 196 160 L172 168 L148 168 L124 160 Q70 130 90 60Z" fill="none" stroke="var(--hot)" stroke-width="8" opacity=".6"/>
+ <path d="M160 168 V214" stroke="var(--tissue-d)" stroke-width="10"/>
+ ${bug(160,206)}${bug(160,186,'d1')}${bug(140,140,'d2')}${bug(186,120,'d3')}${bug(128,96,'d1')}
+ <path d="M60 30 C40 60 40 100 84 70 M260 30 C280 60 280 100 236 70" stroke="var(--urine)" stroke-width="5" fill="none"/>
+ ${T(146,90,'방광','k')}${T(176,212,'요도')}${T(10,200,'세균이 요도로 올라와','so w')}${T(10,214,'방광벽 염증 → 찌릿·자주 마려움','so w')}`,
+kstone:`
+ <path d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--kidney)"/>
+ <ellipse class="so a-throb" cx="68" cy="72" rx="16" ry="30" fill="var(--fluid)" opacity=".7"/>
+ <path id="ureter" d="M96 76 C140 84 156 120 158 200" stroke="var(--urine)" stroke-width="8" fill="none"/>
+ <path class="so a-flow-s" d="M96 76 C140 84 156 120 158 200" stroke="var(--muscle)" stroke-width="3" fill="none"/>
+ <ellipse cx="170" cy="212" rx="58" ry="14" fill="#f4e8a8" stroke="var(--tissue-d)" stroke-width="3"/>
+ <g class="so"><circle r="7" fill="#d9c27a" stroke="#8a7330" stroke-width="1.5"><animateMotion dur="4.5s" repeatCount="indefinite" path="M96 76 C140 84 156 120 158 196"/></circle></g>
+ ${sp(150,120)}${sp(158,170,'d2')}
+ ${T(14,148,'신장','k')}${T(170,110,'요관(지름 약 3~4mm)','k')}${T(170,150,'돌이 내려가며 요관이 경련','so w')}${T(10,170,'소변이 막혀 신장이 부음','so w')}${T(230,196,'방광')}`,
+pyelo:`
+ <path d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--kidney)"/>
+ <path class="so a-blink" d="M70 20 C24 20 20 120 70 126 C96 128 100 100 92 84 C86 70 104 58 98 38 C94 26 84 20 70 20Z" fill="var(--hot)" opacity=".45"/>
+ <path d="M96 76 C140 84 156 120 158 200" stroke="var(--urine)" stroke-width="8" fill="none"/>
+ <ellipse cx="170" cy="212" rx="58" ry="14" fill="#f4e8a8" stroke="var(--tissue-d)" stroke-width="3"/>
+ ${[0,1.2,2.4].map(d=>`<g class="so"><circle r="3.5" fill="#4d7a17"><animateMotion dur="3.6s" begin="${d}s" repeatCount="indefinite" path="M158 200 C156 120 140 84 96 76"/></circle></g>`).join('')}
+ ${bug(56,60)}${bug(70,96,'d2')}
+ <g class="so"><rect x="248" y="30" width="12" height="80" rx="6" fill="var(--panel)" stroke="var(--ink)"/><rect class="a-rise" x="251" y="50" width="6" height="58" rx="3" fill="var(--hot)"/><circle cx="254" cy="116" r="10" fill="var(--hot)"/></g>
+ ${T(14,148,'신장','k')}${T(170,110,'요관')}${T(150,150,'방광의 세균이 요관을 타고','so w')}${T(150,164,'신장까지 올라가 염증','so w')}${T(232,146,'38℃ 이상 발열','so w')}`,
+ldisc:`
+ <rect x="50" y="14" width="110" height="50" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="50" y="94" width="110" height="50" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <rect x="50" y="174" width="110" height="40" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <ellipse cx="105" cy="79" rx="56" ry="15" fill="#c9d6e6" stroke="#93a8c2" stroke-width="2"/>
+ <ellipse cx="105" cy="159" rx="56" ry="15" fill="#c9d6e6" stroke="#93a8c2" stroke-width="2"/>
+ <ellipse class="no" cx="105" cy="79" rx="20" ry="8" fill="var(--fluid)"/>
+ <ellipse class="so a-throb" cx="164" cy="80" rx="18" ry="10" fill="var(--fluid)"/>
+ <ellipse cx="105" cy="159" rx="20" ry="8" fill="var(--fluid)"/>
+ <rect x="176" y="6" width="22" height="210" rx="10" fill="var(--nerve)" opacity=".4"/>
+ <path d="M186 88 C220 110 250 150 290 214" stroke="var(--nerve)" stroke-width="6" fill="none"/>
+ <path class="so a-flow-s" d="M186 88 C220 110 250 150 290 214" stroke="#fff" stroke-width="3" fill="none"/>
+ ${sp(184,86)}${sp(236,134,'d1')}${sp(266,176,'d2')}${sp(286,208,'d3')}
+ ${T(54,10,'L4','k')}${T(54,90,'L5','k')}${T(54,170,'S1(천골)','k')}${T(206,60,'신경뿌리')}${T(200,100,'탈출한 수핵','so w')}${T(196,214,'엉덩이·다리로 저림','so w')}`,
+lstrain:`
+ <rect x="20" y="10" width="34" height="200" rx="8" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <g class="a-shake">${[0,1,2,3,4,5,6,7].map(i=>{const y=32+i*22;return `<path d="M60 ${y} Q170 ${y-8} 290 ${y+4}" stroke="var(--muscle)" stroke-width="6" fill="none" stroke-linecap="round"/>`}).join('')}</g>
+ <g class="so"><rect x="160" y="70" width="10" height="40" fill="var(--scene)"/><rect x="190" y="112" width="10" height="30" fill="var(--scene)"/></g>
+ <ellipse class="so a-blink" cx="180" cy="108" rx="44" ry="34" fill="var(--hot)" opacity=".28"/>
+ ${T(24,8,'')}${T(64,214,'척추 옆 근육(척추기립근)','k')}${T(200,30,'근섬유 미세 파열 + 경련','so w')}`,
+koa:`
+ <g class="a-grind"><path d="M100 0 L220 0 L224 90 Q220 128 186 124 Q160 120 134 124 Q100 128 96 90Z" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path class="thick thin-sick" d="M100 98 Q110 126 150 120 Q170 117 190 120 Q216 126 220 98" stroke="var(--cart)" stroke-width="9" fill="none"/></g>
+ <rect x="90" y="150" width="140" height="70" rx="6" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path class="thick thin-sick" d="M94 150 H226" stroke="var(--cart)" stroke-width="9"/>
+ <g class="so"><path d="M90 150 l-10 -6 l8 -6Z M230 150 l10 -6 l-8 -6Z" fill="var(--bone-line)"/></g>
+ <ellipse class="so a-blink" cx="160" cy="140" rx="96" ry="22" fill="var(--fluid)" opacity=".3"/>
+ ${sp(140,138)}${sp(180,140,'d2')}
+ ${T(236,40,'넙다리뼈','k')}${T(236,190,'정강이뼈','k')}${T(236,140,'연골')}${T(10,120,'연골이 닳아','so w')}${T(10,134,'뼈끼리 마찰','so w')}${T(10,170,'뼈 돌기(골극)','so w')}`,
+menis:`
+ <ellipse cx="160" cy="112" rx="140" ry="84" fill="var(--bone)" stroke="var(--bone-line)" stroke-width="2"/>
+ <path d="M150 50 Q50 48 46 112 Q50 176 150 174" stroke="var(--cart)" stroke-width="22" fill="none" stroke-linecap="round"/>
+ <path d="M170 56 Q268 52 272 112 Q268 172 170 168 Q180 112 170 56" stroke="var(--cart)" stroke-width="20" fill="none" stroke-linecap="round"/>
+ <polyline class="so" points="60,98 74,104 64,112 78,120" stroke="var(--hot)" stroke-width="3" fill="none"/>
+ <g class="so a-wiggle"><path d="M78 104 Q104 112 96 128" stroke="var(--cart)" stroke-width="10" fill="none" stroke-linecap="round"/></g>
+ ${sp(84,116)}
+ ${T(14,22,'위에서 본 정강이뼈 윗면','k')}${T(16,206,'안쪽 반월상연골')}${T(220,206,'바깥쪽')}${T(110,116,'찢어진 조각이 관절에 끼임','so w')}`
+};
+
+/* ---------- data: causes ---------- */
+const TIERS=[
+  ['clinic','의원','1차 · 동네 전문의원','약 30%'],
+  ['hosp','병원·전문병원','2차 · 입원·수술 가능','약 40%'],
+  ['general','종합병원','2차 · 여러 과 협진·응급실','약 50%'],
+  ['univ','상급종합병원','3차 · 대학병원 다수 · 진료의뢰서 필요','약 60%']
+];
+const C={
+tension:{n:'긴장성 두통',en:'Tension-type headache',tag:'흔함',feel:'머리 양쪽이 띠로 조이듯, 무겁게 누르는 통증. 일상생활은 대체로 가능.',
+ steps:['스트레스·피로·나쁜 자세로 이마·관자·목 뒤 근육이 오래 긴장합니다.','굳은 근육과 근막의 통증 수용체가 예민해집니다.','통증 신호를 걸러주는 뇌의 조절 기능이 떨어져 조이는 통증이 오래 갑니다.'],
+ ref:[['front',100,18,'이마'],['back',100,80,'목 뒤']],refText:'이마·관자놀이·뒷목까지 퍼질 수 있음',
+ flags:['갑자기 터지듯 생긴 인생 최악의 두통','열과 함께 목이 뻣뻣함','한쪽 팔다리 힘 빠짐·말 어눌함·시야 이상'],
+ care:{dept:['신경과','가정의학과','마취통증의학과'],start:'clinic',startWhy:'대부분 문진과 진찰만으로 진단합니다. 두통 일기를 들고 가면 좋습니다.',
+  t:{clinic:['문진·신경학적 진찰로 두통 유형 구분, 진통제·근이완제 처방, 약물과용 여부 확인','혈압계·신경학적 진찰'],
+   hosp:['통증의학과에서 목·어깨 근육 통증유발점 주사, 물리치료','초음파 유도 주사·물리치료 장비'],
+   general:['다른 원인(뇌출혈·종양 등) 감별이 필요할 때 영상 검사','뇌 CT·MRI'],
+   univ:['매일 오는 만성 두통, 약물과용두통의 집중 치료, 두통클리닉','두통클리닉·입원 약물 조정']},
+  tech:[['초음파 유도 통증유발점 주사','굳은 근육 위치를 화면으로 보며 정확히 주사','병원'],['바이오피드백·이완 훈련','근육 긴장을 수치로 보며 스스로 푸는 훈련','일부 병원'],['약물과용두통 프로그램','진통제를 너무 자주 먹어 생긴 두통을 끊는 계획','대학병원']]}},
+migraine:{n:'편두통',en:'Migraine',tag:'흔함',feel:'한쪽 머리가 욱신욱신 맥박 치듯 아프고, 빛·소리에 예민해지며 메스꺼움이 동반.',
+ steps:['뇌 신경이 과흥분하고, 일부에서는 시야에 번쩍임(조짐)이 먼저 나타납니다.','삼차신경이 CGRP 같은 물질을 내보내 뇌막 혈관이 넓어지고 염증이 생깁니다.','이 신호가 반복 전달되어 맥박 칠 때마다 욱신거립니다(4~72시간).'],
+ ref:[['front',80,32,'한쪽 관자'],['front',88,44,'눈 뒤']],refText:'한쪽 관자놀이·눈 뒤',
+ flags:['50세 이후 처음 생긴 두통','조짐(시야 이상)이 1시간 넘게 지속','팔다리 마비·말 어눌함 동반'],
+ care:{dept:['신경과'],start:'clinic',startWhy:'신경과 의원에서 진단과 급성기 약 처방이 가능합니다. 한 달에 4일 이상이면 예방 치료를 상의하세요.',
+  t:{clinic:['국제두통분류 기준 문진으로 진단, 트립탄 등 급성기 약과 예방약 처방','두통 일기·문진표'],
+   hosp:['반복되는 경우 예방약 조정, 필요 시 MRI','MRI(보유 병원)'],
+   general:['다른 질환 감별, 신경과 전문의 여럿이 협진','뇌 MRI·MRA'],
+   univ:['두통센터에서 난치성·만성 편두통 치료, 신약·임상시험 참여','두통센터·임상시험']},
+  tech:[['CGRP 표적 주사제','월 1회 맞는 예방 주사. 편두통을 일으키는 물질을 막음. 보험 적용 기준 확인 필요','종합·대학'],['만성 편두통 보툴리눔 톡신','한 달 15일 이상 두통일 때 머리·목 근육에 주사','일부 병원'],['MRI·MRA','뇌혈관 이상·종양 등 다른 원인 배제','종합 이상']]}},
+sinus:{n:'부비동염(축농증)',en:'Rhinosinusitis',tag:'흔함',feel:'광대·눈 밑·이마가 묵직하게 눌리고, 고개를 숙이면 더 아픔. 누런 콧물·코막힘.',
+ steps:['감기 등으로 코 점막이 붓습니다.','부비동(얼굴뼈 속 빈 공간)의 배출구가 막혀 분비물이 고입니다.','고인 분비물에 세균이 자라고 압력이 올라 얼굴이 묵직하게 아픕니다.'],
+ ref:[['front',88,50,'광대'],['front',100,24,'이마']],refText:'광대·눈 밑·이마·윗니',
+ flags:['눈 주위가 붓거나 시력이 변함','고열과 심한 두통','증상이 10일 넘게 지속되거나 좋아지다 다시 나빠짐'],
+ care:{dept:['이비인후과'],start:'clinic',startWhy:'이비인후과 의원에서 코 내시경으로 바로 확인할 수 있습니다.',
+  t:{clinic:['코 내시경으로 고름·부기 확인, 약물·코세척 지도','비내시경·부비동 X-ray'],
+   hosp:['반복·만성일 때 CT, 내시경 부비동 수술(이비인후과 전문병원 다수)','부비동 CT·내시경 수술 장비'],
+   general:['수술, 알레르기·천식 동반 시 협진','CT·알레르기 검사'],
+   univ:['비용종 동반 난치성, 재수술, 합병증 치료','네비게이션 수술·생물학적 제제']},
+  tech:[['내시경 부비동 수술 + 네비게이션','CT 영상과 연동해 수술 도구 위치를 실시간 확인','병원 이상'],['풍선 부비동 확장술','막힌 배출구를 풍선으로 넓힘. 적응증 제한','일부 병원'],['생물학적 제제 주사','비용종을 동반한 만성 부비동염에서 염증 물질 차단','대학병원']]}},
+neck:{n:'근막통·거북목 증후군',en:'Myofascial neck pain',tag:'흔함',feel:'목 뒤·어깨가 뻐근하고 뭉친 곳을 누르면 아프며 머리까지 퍼짐.',
+ steps:['머리가 앞으로 나오면 목 뒤 근육이 머리 무게를 계속 붙잡아야 합니다.','오래 버틴 근육에 단단한 뭉침(통증유발점)이 생깁니다.','뭉친 곳에서 통증이 어깨·뒷머리로 퍼집니다.'],
+ ref:[['back',100,62,'뒷머리'],['back',78,100,'어깨']],refText:'뒷머리·어깨·날개뼈 안쪽',
+ flags:['팔에 힘이 빠지거나 저림이 점점 심해짐','넘어짐·사고 후 생긴 통증','열·체중 감소 동반'],
+ care:{dept:['재활의학과','정형외과','마취통증의학과'],start:'clinic',startWhy:'의원에서 X-ray와 진찰로 충분한 경우가 대부분입니다.',
+  t:{clinic:['진찰·X-ray, 약물, 물리치료, 자세·운동 지도','X-ray·물리치료'],
+   hosp:['척추 전문병원: 주사 치료, 체외충격파, 도수치료(대부분 비급여)','초음파·체외충격파'],
+   general:['신경 증상이 있을 때 MRI·근전도','MRI·근전도'],
+   univ:['단순 근막통으로 갈 일은 드묾. 다른 질환이 의심될 때','—']},
+  tech:[['초음파 유도 주사','뭉친 근육·근막을 보며 정확히 주사','병원'],['체외충격파(ESWT)','충격파로 만성 근막·힘줄 통증 완화. 대부분 비급여','병원'],['운동치료 프로그램','깊은 목 굽힘근 강화가 재발 예방에 가장 근거가 많음','어디서나']]}},
+cdisc:{n:'목 디스크(경추 추간판 탈출)',en:'Cervical disc herniation',tag:'주의',feel:'목 통증과 함께 한쪽 팔·손가락이 저리고 찌릿함. 고개를 뒤로 젖히면 심해짐.',
+ steps:['나이·자세로 목뼈 사이 디스크가 약해집니다.','디스크 속 젤리 같은 수핵이 뒤로 튀어나옵니다.','튀어나온 수핵이 신경뿌리를 눌러 팔·손으로 저림이 퍼집니다.'],
+ ref:[['back',100,84,'목'],['back',38,170,'팔·손 저림']],refText:'어깨→팔→손가락(눌린 신경에 따라 위치가 다름)',
+ flags:['팔·손 힘이 빠져 물건을 떨어뜨림','걸음이 휘청이거나 손이 둔해짐(척수 압박)','대소변 조절 이상'],
+ care:{dept:['신경외과','정형외과(척추)','재활의학과'],start:'clinic',startWhy:'대부분 6~12주 보존 치료로 좋아집니다. 힘 빠짐이 있으면 바로 MRI가 가능한 병원으로 가세요.',
+  t:{clinic:['진찰·X-ray, 약물, 물리치료, 신경차단술(통증의학과)','X-ray·C-arm(투시 주사)'],
+   hosp:['척추 전문병원: MRI 진단, 경막외 주사, 내시경 수술','MRI·C-arm·척추 내시경'],
+   general:['근전도로 신경 손상 정도 평가, 수술','근전도·MRI'],
+   univ:['척수 압박(척수병증), 여러 마디 병변, 재수술','인공디스크·유합술·신경감시 장비']},
+  tech:[['경추 인공디스크 치환술','유합 대신 움직임을 살리는 수술. 적응증 제한','종합·대학'],['후방 내시경 경추 수술','작은 절개로 눌린 신경을 풀어줌','전문병원·대학'],['근전도·신경전도 검사','어느 신경이 얼마나 다쳤는지 수치로 확인','종합 이상']]}},
+angina:{n:'협심증',en:'Angina pectoris',tag:'응급 가능',feel:'가슴 한가운데가 누르거나 쥐어짜듯 답답함. 계단·운동 때 생기고 쉬면 수 분 안에 가라앉음.',
+ steps:['콜레스테롤이 관상동맥 벽에 쌓여 혈관이 좁아집니다.','운동하면 심장근육은 산소를 더 원하지만 좁은 혈관으로 피가 충분히 못 갑니다.','산소가 모자란 심장근육이 통증 신호를 보냅니다. 혈관이 완전히 막히면 심근경색입니다.'],
+ ref:[['front',100,120,'가슴'],['front',152,150,'왼팔'],['front',100,66,'턱']],refText:'왼쪽 어깨·팔 안쪽, 턱, 명치',
+ flags:['쉬어도 20분 넘게 가슴 통증이 지속 → 즉시 119','식은땀·호흡곤란·구역질·실신 동반','처음 생긴 가슴 통증, 또는 평소보다 쉽게·자주 생김'],
+ care:{dept:['순환기내과(심장내과)','흉부외과'],start:'general',startWhy:'운동 시 가슴 통증은 심장 검사가 가능한 종합병원 이상을 권합니다. 지속되는 통증은 119로 심혈관센터가 있는 응급실로 가세요.',
+  t:{clinic:['심전도·혈액검사(콜레스테롤·당), 위험인자 약 처방, 상급병원 의뢰','심전도·혈액검사'],
+   hosp:['심장초음파, 운동부하검사(보유 병원)','심장초음파·트레드밀'],
+   general:['관상동맥 CT, 운동부하검사, 심혈관조영술·스텐트(심혈관센터 보유 시), 24시간 응급','관상동맥 CT·심혈관조영실'],
+   univ:['복잡한 혈관 병변, 관상동맥 우회수술, 권역심뇌혈관질환센터','혈관내 영상·FFR·우회수술']},
+  tech:[['관상동맥 CT','주사 조영제로 혈관 좁아짐을 비침습적으로 확인','종합 이상'],['약물방출 스텐트(PCI)','손목·사타구니 혈관으로 들어가 좁은 곳을 넓히고 스텐트를 둠','종합·대학'],['혈관내 초음파(IVUS)·광간섭단층촬영(OCT)','혈관 안에서 찍어 스텐트 크기·위치를 정밀하게 맞춤','종합·대학'],['분획혈류예비력(FFR)','좁아진 곳이 실제 혈류를 얼마나 막는지 측정해 시술 여부 결정','대학병원']]}},
+gerd:{n:'역류성 식도염',en:'Gastroesophageal reflux disease',tag:'흔함',feel:'가슴뼈 뒤가 타는 듯 쓰리고 신물이 올라옴. 식후·누울 때 심해짐.',
+ steps:['위와 식도 사이의 괄약근이 느슨해집니다.','위산과 음식물이 식도로 거꾸로 올라옵니다.','산에 약한 식도 점막이 헐어 타는 듯한 통증이 생깁니다.'],
+ ref:[['front',100,124,'가슴뼈 뒤'],['front',100,80,'목']],refText:'가슴뼈 뒤, 목, 명치',
+ flags:['음식을 삼킬 때 걸리거나 아픔','이유 없는 체중 감소, 피를 토함, 검은 변','운동할 때 심해지는 가슴 통증(심장 먼저 확인)'],
+ care:{dept:['소화기내과'],start:'clinic',startWhy:'위내시경이 되는 내과 의원에서 진단·치료가 대부분 가능합니다.',
+  t:{clinic:['위내시경으로 식도염 확인, 위산억제제 처방, 생활습관 교정','위내시경'],
+   hosp:['반복·약 효과 부족 시 내시경 재평가','위내시경·조직검사'],
+   general:['24시간 식도 산도·임피던스 검사, 식도내압검사','pH-임피던스·식도내압계'],
+   univ:['약으로 조절 안 되는 경우 항역류 수술·내시경 시술','복강경·내시경 항역류 시술']},
+  tech:[['P-CAB 계열 위산억제제','기존 PPI보다 빨리 작용하는 위산억제제(국내 개발 신약 포함)','어디서나'],['24시간 식도 pH-임피던스','역류 횟수와 증상의 관계를 수치로 확인','종합 이상'],['고해상도 식도내압검사','괄약근과 식도 운동을 압력 지도로 봄','종합·대학'],['복강경 항역류 수술','위 윗부분으로 식도 끝을 감싸 역류를 막음','대학병원']]}},
+costo:{n:'늑연골염',en:'Costochondritis',tag:'흔함',feel:'가슴뼈 옆을 누르면 콕콕 아프고, 깊게 숨 쉬거나 몸을 돌리면 심해짐.',
+ steps:['기침·무리한 운동·자세로 갈비뼈와 가슴뼈를 잇는 연골에 부담이 갑니다.','연골 관절에 염증이 생깁니다.','숨 쉴 때마다 가슴이 움직여 관절이 당겨지며 아픕니다.'],
+ ref:[['front',90,118,'가슴뼈 옆']],refText:'가슴뼈 양옆(주로 2~5번 갈비뼈)',
+ flags:['식은땀·호흡곤란 동반 가슴 통증','운동할 때 심해짐(심장 확인 필요)','부위가 붉게 붓고 열이 남'],
+ care:{dept:['가정의학과','정형외과','재활의학과'],start:'clinic',startWhy:'누르면 아픈 것이 특징이지만, 가슴 통증은 심전도로 심장 원인을 먼저 배제하는 것이 원칙입니다.',
+  t:{clinic:['진찰(압통), 심전도로 심장 배제, 소염진통제','심전도'],
+   hosp:['X-ray·초음파, 필요 시 주사','X-ray·초음파'],
+   general:['심장·폐 질환 감별 검사','심장초음파·흉부 CT'],
+   univ:['대개 필요 없음','—']},
+  tech:[['초음파 유도 주사','통증이 오래가는 경우 염증 부위에 정확히 주사','병원'],['스트레칭·자세 교정','대부분 수 주~수개월 안에 저절로 좋아짐','어디서나']]}},
+ulcer:{n:'위염·위궤양',en:'Gastritis / peptic ulcer',tag:'흔함',feel:'명치가 쓰리고 공복에 아프거나 식후에 더부룩함.',
+ steps:['헬리코박터균이나 소염진통제가 위의 점액 보호막을 약하게 만듭니다.','위산이 드러난 위 점막을 공격합니다.','점막이 깊게 패이면 궤양이 되고, 더 깊어지면 출혈이나 천공이 생깁니다.'],
+ ref:[['front',100,160,'명치']],refText:'명치, 등 쪽으로 뻗기도 함',
+ flags:['검은 변(짜장 색) 또는 피를 토함','배 전체가 판자처럼 딱딱하고 극심하게 아픔(천공)','체중 감소·삼킴 곤란'],
+ care:{dept:['소화기내과'],start:'clinic',startWhy:'내과 의원 위내시경으로 진단하고 헬리코박터 검사까지 받을 수 있습니다.',
+  t:{clinic:['위내시경·헬리코박터 검사, 제균 치료와 위산억제제','위내시경·신속요소분해효소검사'],
+   hosp:['조직검사, 제균 확인 검사','요소호기검사'],
+   general:['출혈 시 응급 내시경 지혈, 24시간 내시경 당직','치료 내시경'],
+   univ:['재출혈·천공 수술, 위암 감별이 어려운 경우','중재시술·수술']},
+  tech:[['요소호기검사','숨만 불어 헬리코박터 제균 여부 확인','병원 이상'],['내시경 지혈술(클립·소작)','출혈하는 궤양을 내시경으로 바로 지혈','종합 이상'],['국가 위암검진','만 40세 이상 2년마다 위내시경','검진기관']]}},
+gall:{n:'담석(쓸개돌)',en:'Cholelithiasis / biliary colic',tag:'주의',feel:'기름진 식사 후 명치·오른쪽 갈비뼈 아래가 30분~수 시간 쥐어짜듯 아픔.',
+ steps:['담즙 속 콜레스테롤 등이 굳어 담낭 안에 돌이 생깁니다.','기름진 음식을 먹으면 담낭이 수축해 담즙을 짜냅니다.','돌이 출구(담관)를 막으면 담낭이 막힌 채 수축해 심한 통증이 옵니다.'],
+ ref:[['front',82,162,'오른쪽 윗배'],['back',130,112,'오른쪽 날개뼈']],refText:'오른쪽 윗배, 오른쪽 어깨·날개뼈 아래',
+ flags:['열·오한과 함께 눈 흰자가 노래짐(담관염)','통증이 6시간 넘게 지속','등까지 뻗는 극심한 윗배 통증과 구토(췌장염)'],
+ care:{dept:['소화기내과','외과(간담췌외과)'],start:'clinic',startWhy:'복부 초음파가 되는 내과에서 먼저 확인합니다. 열·황달이 있으면 응급실로.',
+  t:{clinic:['복부 초음파로 담석 확인, 진통제, 수술 병원 의뢰','복부 초음파'],
+   hosp:['복강경 담낭절제술(외과 병원 다수)','초음파·복강경 장비'],
+   general:['CT·MRCP로 담관 확인, 내시경 담석 제거, 응급 수술','CT·MRCP·ERCP'],
+   univ:['합병증(담관염·췌장염), 고위험 환자, 단일공·로봇 수술','EUS·로봇수술']},
+  tech:[['복강경 담낭절제술','배에 작은 구멍 3~4개로 담낭 제거. 표준 치료','병원 이상'],['단일공 복강경','배꼽 한 곳만 절개','종합·대학'],['ERCP','내시경으로 담관의 돌을 꺼냄','종합·대학'],['초음파 내시경(EUS)','작은 담관 돌까지 정밀하게 확인','대학병원']]}},
+appendix:{n:'충수염(맹장염)',en:'Acute appendicitis',tag:'응급 가능',feel:'처음엔 배꼽 주위가 막연히 아프다가 몇 시간 뒤 오른쪽 아랫배로 옮겨가 점점 심해짐. 걷거나 기침하면 울림.',
+ steps:['충수 입구가 변 덩어리나 림프조직 부기로 막힙니다.','안에 세균이 불어나고 충수가 부어오릅니다.','염증이 배 안쪽 막(복막)까지 닿으면 통증이 오른쪽 아랫배로 정확히 모입니다. 터지면 복막염.'],
+ ref:[['front',100,200,'처음: 배꼽'],['front',78,212,'나중: 오른쪽']],refText:'배꼽 주위 → 오른쪽 아랫배로 이동',
+ flags:['통증이 점점 심해지고 걸을 때 울림','열·구토 동반','배 전체가 딱딱하고 극심한 통증 → 응급실'],
+ care:{dept:['외과','응급의학과'],start:'general',startWhy:'의심되면 CT와 응급 수술이 가능한 종합병원 응급실이 가장 빠릅니다.',
+  t:{clinic:['진찰·혈액검사로 의심 시 바로 수술 가능한 병원 의뢰','혈액검사'],
+   hosp:['외과 병원에서 초음파·CT 후 수술(24시간 수술 가능 여부 확인)','초음파·CT'],
+   general:['응급실 CT, 복강경 충수절제술','CT·복강경'],
+   univ:['천공·고름주머니 등 복잡한 경우, 소아·임산부','경피적 배액·중재시술']},
+  tech:[['복강경 충수절제술','작은 구멍으로 충수 제거. 표준 치료','병원 이상'],['단일공 복강경','배꼽 한 곳 절개','종합·대학'],['항생제 치료 선택','일부 단순 충수염에서 수술 대신 항생제(재발 가능성 설명 필요)','종합·대학']]}},
+ibs:{n:'과민성 장증후군·가스',en:'Irritable bowel syndrome',tag:'흔함',feel:'배가 꾸르륵·빵빵하며 쥐어짜듯 아프고, 변을 보면 나아짐. 설사·변비 반복.',
+ steps:['장과 뇌를 잇는 신경이 예민해집니다.','가스나 음식으로 장이 조금만 늘어나도 통증으로 느낍니다.','장이 불규칙하게 경련해 설사·변비가 번갈아 나타납니다.'],
+ ref:[['front',100,214,'배 전체']],refText:'배 여기저기, 위치가 바뀜',
+ flags:['혈변·검은 변','이유 없는 체중 감소','밤에 자다 깰 만큼 아픔, 50세 이후 새로 생긴 변비·설사'],
+ care:{dept:['소화기내과','가정의학과'],start:'clinic',startWhy:'경고 증상이 없으면 의원에서 진단과 치료가 가능합니다.',
+  t:{clinic:['문진(로마 기준), 혈액·대변 검사, 약물·식이 지도','혈액·대변검사'],
+   hosp:['대장내시경(50세 이상·경고 증상)','대장내시경'],
+   general:['다른 질환(염증성 장질환 등) 감별, CT','CT·대장내시경'],
+   univ:['난치성, 신경위장 운동 클리닉','호기검사·장운동 검사']},
+  tech:[['저포드맵(Low-FODMAP) 식이','가스를 만드는 당류를 줄이는 근거 있는 식이요법','어디서나'],['수소·메탄 호기검사','소장 세균 과증식(SIBO) 확인','일부 병원'],['장-뇌 축 치료','신경조절 약물, 인지행동치료','대학병원']]}},
+cramps:{n:'생리통·자궁내막증',en:'Dysmenorrhea / endometriosis',tag:'흔함',feel:'생리 전후 아랫배가 쥐어짜듯 아프고 허리·허벅지로 퍼짐.',
+ steps:['생리 때 자궁내막에서 프로스타글란딘이 많이 나옵니다.','이 물질이 자궁근육을 세게 수축시켜 혈류가 줄어듭니다.','자궁내막증·자궁선근증이 있으면 통증이 점점 심해지고 진통제가 잘 안 듣습니다.'],
+ ref:[['front',104,238,'아랫배'],['back',100,226,'허리']],refText:'아랫배, 허리, 허벅지 안쪽',
+ flags:['진통제로 조절이 안 되거나 해마다 심해짐','생리 기간이 아닌데 통증·출혈','임신 가능성 + 한쪽 아랫배 극심한 통증(자궁외임신) → 응급실'],
+ care:{dept:['산부인과'],start:'clinic',startWhy:'산부인과 의원 초음파로 자궁근종·내막증 등을 확인할 수 있습니다.',
+  t:{clinic:['초음파, 소염진통제·호르몬 치료','경질·복부 초음파'],
+   hosp:['자궁근종·내막증 진단과 수술, 호르몬 자궁내장치','초음파·복강경'],
+   general:['MRI로 병변 범위 확인, 수술','MRI'],
+   univ:['깊은 자궁내막증, 난임 동반, 로봇 수술','로봇수술·난임센터']},
+  tech:[['레보노르게스트렐 자궁내장치','자궁 안에서 호르몬을 내보내 통증·출혈을 줄임','의원 이상'],['디에노게스트 등 호르몬제','자궁내막증 진행을 억제','의원 이상'],['단일공 복강경·로봇 수술','자궁을 보존하며 병변 제거','종합·대학'],['고강도 집속 초음파(HIFU)','절개 없이 근종·선근증을 태움. 대부분 비급여, 적응증 제한','일부 병원']]}},
+cystitis:{n:'방광염',en:'Cystitis (lower UTI)',tag:'흔함',feel:'아랫배가 묵직하고, 소변 볼 때 찌릿·화끈하며 자주 마려움.',
+ steps:['장 주변 세균이 요도를 타고 방광으로 올라옵니다.','세균이 방광벽에 달라붙어 불어납니다.','방광벽이 붓고 예민해져 조금만 차도 마렵고 아픕니다.'],
+ ref:[['front',104,240,'아랫배']],refText:'아랫배 가운데, 요도',
+ flags:['열·오한·옆구리 통증(신우신염으로 진행)','피가 섞인 소변이 계속됨','남성·임신 중·자주 재발'],
+ care:{dept:['비뇨의학과','내과','산부인과'],start:'clinic',startWhy:'소변검사로 바로 진단하고 항생제를 처방받을 수 있습니다.',
+  t:{clinic:['소변검사·배양, 항생제','소변검사기'],
+   hosp:['반복 시 초음파, 잔뇨 검사','초음파·잔뇨측정'],
+   general:['방광내시경, 원인 질환 확인','방광내시경·CT'],
+   univ:['다제내성균, 간질성 방광염 등 난치성','요역동학검사']},
+  tech:[['소변 배양·항생제 감수성검사','어떤 항생제가 듣는지 확인해 내성 방지','의원 이상'],['방광내시경','방광 안을 직접 봄','병원 이상']]}},
+kstone:{n:'요로결석',en:'Urolithiasis / renal colic',tag:'주의',feel:'옆구리에서 사타구니로 뻗치는, 몸을 비틀게 되는 극심한 통증이 파도처럼 옴.',
+ steps:['소변 속 칼슘 등이 뭉쳐 신장에 돌이 생깁니다.','돌이 지름 3~4mm 요관으로 내려오다 걸립니다.','요관이 돌을 밀어내려 경련하고, 막힌 소변에 신장이 부어 통증이 옵니다. 5mm 미만은 저절로 빠지는 경우가 많음.'],
+ ref:[['back',135,182,'옆구리'],['front',84,252,'사타구니']],refText:'옆구리 → 아랫배 → 사타구니·고환/음순',
+ flags:['열·오한 동반(막힌 신장 감염은 응급)','소변이 전혀 안 나옴','구토로 물도 못 마심, 신장이 하나뿐'],
+ care:{dept:['비뇨의학과','응급의학과'],start:'hosp',startWhy:'통증이 심하면 응급실, 진정되면 체외충격파가 되는 비뇨의학과 병원에서 치료합니다.',
+  t:{clinic:['소변검사·X-ray·초음파, 진통제, 작은 돌은 배출 약','X-ray·초음파'],
+   hosp:['체외충격파 쇄석술(비뇨의학과 병원 다수)','체외충격파 쇄석기'],
+   general:['비조영 CT, 요관내시경 레이저, 감염 시 배액','CT·요관내시경·레이저'],
+   univ:['2cm 이상 큰 돌, 경피적 신쇄석술, 반복 결석 대사 검사','경피적 신쇄석술 장비']},
+  tech:[['저선량 비조영 CT','방사선을 줄여 돌의 위치·크기를 가장 정확히 확인','종합 이상'],['체외충격파 쇄석술(ESWL)','몸 밖에서 충격파로 돌을 부숨','병원 이상'],['연성 요관내시경 + 레이저(RIRS)','휘어지는 내시경으로 신장까지 들어가 레이저로 분쇄','종합·대학'],['미니 경피적 신쇄석술','큰 돌을 옆구리 작은 구멍으로 제거','대학병원']]}},
+pyelo:{n:'신우신염',en:'Acute pyelonephritis',tag:'주의',feel:'한쪽 옆구리가 묵직하게 아프고 38℃ 이상 고열·오한. 등을 두드리면 울림.',
+ steps:['방광염 세균이 요관을 거슬러 신장으로 올라갑니다.','신장 조직에 염증이 퍼집니다.','세균이 혈액으로 들어가면 패혈증으로 진행할 수 있습니다.'],
+ ref:[['back',135,182,'옆구리']],refText:'옆구리·등 아래쪽',
+ flags:['고열과 오한','어지러움·의식 흐림·혈압 저하(패혈증)','구토로 약을 먹을 수 없음'],
+ care:{dept:['비뇨의학과','감염내과','응급의학과'],start:'general',startWhy:'고열이 있으면 혈액검사·입원 치료가 가능한 종합병원을 권합니다.',
+  t:{clinic:['소변검사, 경증이면 먹는 항생제','소변검사'],
+   hosp:['초음파, 입원 항생제','초음파'],
+   general:['혈액·소변 배양, 정맥 항생제 입원, CT로 막힘·고름 확인','CT·배양검사'],
+   univ:['패혈증 중환자 치료, 막힌 경우 스텐트·배액','중환자실·중재시술']},
+  tech:[['혈액·소변 배양','원인균과 맞는 항생제를 찾음','종합 이상'],['요관 스텐트·경피적 신루술','막힌 소변길을 뚫어 고름을 빼냄','종합·대학']]}},
+ldisc:{n:'허리 디스크(요추 추간판 탈출)',en:'Lumbar disc herniation',tag:'주의',feel:'허리 통증과 함께 엉덩이에서 다리 뒤쪽으로 전기 오듯 저림. 앉거나 기침할 때 심해짐.',
+ steps:['반복적인 숙임·들기로 디스크 바깥 섬유가 찢어집니다.','수핵이 뒤쪽으로 튀어나와 신경뿌리를 누릅니다(주로 L4–5, L5–S1).','눌린 신경과 염증 물질 때문에 좌골신경을 따라 다리까지 저립니다.'],
+ ref:[['back',100,216,'허리'],['back',82,262,'엉덩이'],['back',80,300,'허벅지 뒤'],['back',80,370,'종아리']],refText:'엉덩이 → 허벅지 뒤 → 종아리·발',
+ flags:['대소변 조절이 안 되거나 회음부 감각이 둔함(마미증후군 → 응급)','다리 힘이 점점 빠짐(발목이 안 들림)','열·암 병력과 함께 생긴 허리 통증'],
+ care:{dept:['신경외과','정형외과(척추)','재활의학과','마취통증의학과'],start:'clinic',startWhy:'90% 가까이는 6~12주 보존 치료로 좋아집니다. 시술·수술 권유가 과하지 않은지 확인하세요.',
+  t:{clinic:['진찰·X-ray, 약물, 물리치료, 신경차단술','X-ray·C-arm'],
+   hosp:['척추 전문병원: MRI, 경막외 주사, 내시경 디스크 제거','MRI·척추 내시경'],
+   general:['근전도, 수술, 다른 원인 감별','근전도·MRI'],
+   univ:['마미증후군 응급 수술, 재수술·척추 변형','신경감시·네비게이션']},
+  tech:[['양방향 척추내시경(UBE)','작은 구멍 두 개로 신경을 누르는 디스크·뼈를 제거','전문병원·대학'],['경피적 내시경 디스크 제거술','한 개 구멍으로 튀어나온 디스크만 제거','전문병원·대학'],['투시·초음파 유도 경막외 주사','염증을 가라앉혀 통증 완화','의원 이상'],['고주파 수핵성형술 등','적응증이 좁고 대부분 비급여. 근거와 필요성을 꼭 확인','일부 병원']]}},
+lstrain:{n:'요추 염좌(허리 삐끗)',en:'Lumbar strain',tag:'흔함',feel:'무거운 것을 들거나 갑자기 몸을 비튼 뒤 허리가 뻣뻣하게 아프고 움직이기 힘듦. 다리 저림은 없음.',
+ steps:['갑작스러운 힘에 허리 근육·인대가 늘어나거나 미세하게 찢어집니다.','다친 부위에 염증이 생깁니다.','보호하려고 주변 근육이 경련해 허리가 굳습니다. 대부분 2~6주 안에 회복.'],
+ ref:[['back',100,216,'허리']],refText:'허리 양옆, 엉덩이 위쪽',
+ flags:['넘어짐·사고 후 생긴 통증(골절 확인)','열·체중 감소, 밤에 누워도 심해짐','6주 넘게 낫지 않음'],
+ care:{dept:['정형외과','재활의학과'],start:'clinic',startWhy:'의원에서 진찰로 충분합니다. 가볍게 움직이는 것이 누워 있는 것보다 회복이 빠릅니다.',
+  t:{clinic:['진찰, 소염진통제·근이완제, 물리치료','X-ray(필요 시)·물리치료'],
+   hosp:['오래가면 운동치료·체외충격파','체외충격파·운동치료실'],
+   general:['골절·다른 질환이 의심될 때','CT·MRI'],
+   univ:['대개 필요 없음','—']},
+  tech:[['운동치료','코어 근육 강화가 재발 예방에 가장 근거가 많음','어디서나'],['체외충격파','만성화된 근막 통증에 사용, 대부분 비급여','병원']]}},
+koa:{n:'퇴행성 관절염',en:'Knee osteoarthritis',tag:'흔함',feel:'계단·오래 걷기 후 무릎이 시큰거리고, 아침에 잠깐 뻣뻣. 진행하면 휘고 부음.',
+ steps:['나이·체중·과사용으로 관절 연골이 닳습니다.','연골이 얇아져 뼈끼리 가까워지고 마찰합니다.','뼈 가장자리에 돌기(골극)가 자라고 관절액이 늘어 붓습니다.'],
+ ref:[['front',82,335,'무릎 안쪽']],refText:'무릎 안쪽, 무릎 앞',
+ flags:['갑자기 붉게 붓고 열이 남(감염·통풍)','다리에 체중을 전혀 못 실음','종아리가 붓고 아픔(혈전)'],
+ care:{dept:['정형외과','재활의학과'],start:'clinic',startWhy:'체중을 실은 X-ray로 진행 단계를 확인하고, 운동과 약으로 시작합니다.',
+  t:{clinic:['체중부하 X-ray, 약물, 히알루론산 주사, 운동 지도','X-ray·초음파'],
+   hosp:['관절 전문병원: 관절경, 휜 다리 교정(절골술), 인공관절','MRI·관절경·인공관절 수술실'],
+   general:['동반 질환이 많은 환자의 수술','MRI·마취·중환자 지원'],
+   univ:['재치환술, 고난도 변형, 연골재생 임상','로봇·임상시험']},
+  tech:[['로봇 보조 인공관절 수술','CT 기반 계획대로 뼈를 정밀하게 깎음','전문병원·대학'],['근위 경골 절골술','휜 다리를 바로 펴 연골이 덜 닳게 함(젊은 환자)','병원 이상'],['줄기세포 등 연골재생 치료','국내 허가 제품이 있으나 적응증이 제한되고 대부분 비급여','일부 병원'],['체중부하 X-ray·MRI','연골 두께와 손상 범위 확인','의원·병원']]}},
+menis:{n:'반월상연골 파열',en:'Meniscal tear',tag:'주의',feel:'비틀린 뒤 무릎 안쪽·바깥쪽이 아프고, 걸리거나 잠기는 느낌. 쪼그려 앉기 어려움.',
+ steps:['무릎을 굽힌 채 비틀면 뼈 사이 쿠션인 반월상연골이 끼어 찢어집니다.','찢어진 조각이 관절 안에서 움직입니다.','조각이 끼면 무릎이 걸리거나 펴지지 않고(잠김) 붓습니다.'],
+ ref:[['front',80,335,'무릎 안쪽']],refText:'무릎 관절선(안쪽 또는 바깥쪽)',
+ flags:['무릎이 잠겨 펴지지 않음','다친 직후 크게 붓거나 불안정함(인대 손상 동반 가능)','체중을 실을 수 없음'],
+ care:{dept:['정형외과(스포츠·관절)'],start:'hosp',startWhy:'진단에는 MRI가 필요해 MRI·관절경이 되는 관절 전문병원이 효율적입니다.',
+  t:{clinic:['진찰(맥머리 검사 등), X-ray, 보조기·약','X-ray'],
+   hosp:['MRI 진단, 관절경 봉합 또는 부분 절제','MRI·관절경'],
+   general:['인대 손상 동반 시 재건술','MRI·관절경'],
+   univ:['연골판 이식, 재파열·복합 손상','동종 연골판 이식']},
+  tech:[['관절경 봉합술','찢어진 연골판을 꿰매 보존. 가능하면 절제보다 우선','병원 이상'],['동종 반월상연골 이식','연골판을 많이 잃은 젊은 환자에게 이식','대학병원'],['MRI','연골판·인대 손상을 가장 정확히 확인','병원 이상']]}}
+};
+
+/* ---------- state & rendering ---------- */
+const $=s=>document.querySelector(s);
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S={view:'front',region:'rlq',cause:'appendix',sick:true,paused:reduce,tab:'inside'};
+
+function renderMap(){
+  const spots=SPOTS[S.view].map(([r,shape])=>`<g class="spot${r===S.region?' sel':''}" data-r="${r}" tabindex="0" role="button" aria-label="${REGIONS[r].name}"><g class="hit">${shape}</g></g>`).join('');
+  const refs=(C[S.cause].ref||[]).filter(f=>f[0]===S.view).map(([v,x,y,l])=>`<g class="ref"><circle cx="${x}" cy="${y}" r="9"/><circle class="core" cx="${x}" cy="${y}" r="3"/><text x="${x<100?x-11:x+11}" y="${y+3}" text-anchor="${x<100?'end':'start'}">${l}</text></g>`).join('');
+  const side=S.view==='front'?['오른쪽','왼쪽']:['왼쪽','오른쪽'];
+  $('#map').innerHTML=SIL+(S.view==='back'?BACKMARK:'')+spots+refs+
+    `<text class="maplabel" x="4" y="436">${side[0]}</text><text class="maplabel" x="176" y="436">${side[1]}</text><text class="maplabel" x="64" y="436">${S.view==='front'?'앞모습 · 본인 기준':'뒷모습 · 본인 기준'}</text>`;
+  $('#map').querySelectorAll('.spot').forEach(g=>{
+    const go=()=>pickRegion(g.dataset.r);
+    g.addEventListener('click',go);
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}});
+  });
+  $('#vFront').setAttribute('aria-pressed',S.view==='front');
+  $('#vBack').setAttribute('aria-pressed',S.view==='back');
+  $('#chips').innerHTML=Object.entries(REGIONS).map(([k,r])=>`<button class="chip" data-r="${k}" aria-pressed="${k===S.region}">${r.name}</button>`).join('');
+  $('#chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>pickRegion(b.dataset.r,true));
+}
+function viewFor(r){return SPOTS[S.view].some(s=>s[0]===r)?S.view:(SPOTS.front.some(s=>s[0]===r)?'front':'back')}
+function pickRegion(r,switchView){
+  S.region=r; S.cause=REGIONS[r].causes[0];
+  if(switchView) S.view=viewFor(r);
+  render();
+}
+function renderCauses(){
+  const R=REGIONS[S.region];
+  $('#rName').textContent=R.name+'이(가) 아플 때';
+  $('#rLatin').textContent=R.latin;
+  $('#causes').innerHTML=R.causes.map(id=>{const c=C[id];const cls=c.tag==='흔함'?'common':'care';
+    return `<button class="cause" data-c="${id}" aria-pressed="${id===S.cause}"><span>${c.n}<span class="tag ${cls}">${c.tag}</span></span><small>${c.en}</small></button>`}).join('');
+  $('#causes').querySelectorAll('.cause').forEach(b=>b.onclick=()=>{S.cause=b.dataset.c;render()});
+}
+function renderInside(){
+  const c=C[S.cause];
+  $('#stage').innerHTML=`<svg class="scene${S.sick?' is-sick':''}" viewBox="0 0 320 220" role="img" aria-label="${c.n} 몸속 모습">${SCENES[S.cause]}</svg>`;
+  $('#stage').classList.toggle('paused',S.paused);
+  const svg=$('#stage svg'); if(S.paused&&svg.pauseAnimations) svg.pauseAnimations();
+  $('#cName').textContent=c.n; $('#cEn').textContent=c.en;
+  $('#cFeel').innerHTML='<b>이런 느낌</b> · '+c.feel;
+  $('#cSteps').innerHTML=c.steps.map(s=>`<li>${s}</li>`).join('');
+  $('#cRef').textContent='함께 아플 수 있는 곳 → '+c.refText;
+  $('#cFlags').innerHTML=c.flags.map(s=>`<li>${s}</li>`).join('');
+  $('#sNormal').setAttribute('aria-pressed',!S.sick); $('#sSick').setAttribute('aria-pressed',S.sick);
+  $('#pause').textContent=S.paused?'재생':'일시정지';
+}
+function renderCare(){
+  const c=C[S.cause], k=c.care;
+  const tiers=TIERS.map(([key,name,sub,cost])=>{const [txt,eq]=k.t[key];const rec=key===k.start;
+    return `<div class="tier${rec?' rec':''}">${rec?'<span class="rec-badge">여기서 시작</span>':''}<div class="lvl"><h3>${name}</h3></div><span class="mono">${sub}</span><p>${txt}</p><div class="equip">${eq.split('·').filter(e=>e.trim()&&e.trim()!=='—').map(e=>`<span>${e.trim()}</span>`).join('')||'<span>—</span>'}</div><span class="cost">외래 본인부담 ${cost}</span></div>`}).join('');
+  $('#care').innerHTML=`
+    <div><div class="eyebrow">진료과</div><div class="depts" style="margin-top:6px">${k.dept.map((d,i)=>`<span class="dept${i===0?' main':''}">${d}</span>`).join('')}</div></div>
+    <div class="startbox"><div><b>${TIERS.find(t=>t[0]===k.start)[1]}부터</b> — ${k.startWhy}</div></div>
+    <div class="flags"><h3>응급 신호가 있으면 단계와 상관없이 응급실·119</h3><ul>${c.flags.slice(0,2).map(f=>`<li>${f}</li>`).join('')}</ul></div>
+    <div><h3 style="margin-bottom:8px">병원 단계별로 받을 수 있는 것</h3><div class="ladder">${tiers}</div>
+    <p class="mono" style="margin-top:8px">상급종합병원은 의원·병원의 진료의뢰서가 있어야 건강보험이 적용됩니다(응급·분만 등 예외).</p></div>
+    <div><h3 style="margin-bottom:8px">주요 검사·치료 기술</h3><div class="scroll"><table class="tech"><thead><tr><th>기술·장비</th><th>무엇을 하나</th><th>주로 어디서</th></tr></thead><tbody>
+      ${k.tech.map(([n,d,w])=>`<tr><td><b>${n}</b></td><td>${d}</td><td><span class="where">${w}</span></td></tr>`).join('')}</tbody></table></div></div>
+    <div class="links"><a href="https://www.hira.or.kr" target="_blank" rel="noopener">건강보험심사평가원 · 병원 찾기(진료과·보유 장비)</a><a href="https://www.e-gen.or.kr" target="_blank" rel="noopener">응급의료포털 · 지금 열린 응급실</a></div>`;
+}
+function renderTab(){
+  $('#tInside').setAttribute('aria-selected',S.tab==='inside'); $('#tCare').setAttribute('aria-selected',S.tab==='care');
+  $('#pInside').hidden=S.tab!=='inside'; $('#pCare').hidden=S.tab!=='care';
+}
+function render(){renderMap();renderCauses();renderInside();renderCare();renderTab()}
+
+$('#vFront').onclick=()=>{S.view='front';renderMap()};
+$('#vBack').onclick=()=>{S.view='back';renderMap()};
+$('#sNormal').onclick=()=>{S.sick=false;renderInside()};
+$('#sSick').onclick=()=>{S.sick=true;renderInside()};
+$('#pause').onclick=()=>{S.paused=!S.paused;const svg=$('#stage svg');if(svg){S.paused?svg.pauseAnimations():svg.unpauseAnimations()}renderInside()};
+$('#tInside').onclick=()=>{S.tab='inside';renderTab()};
+$('#tCare').onclick=()=>{S.tab='care';renderTab()};
+render();
+</script>
+</body><!--wrap-->
+</html><!--wrap-->
