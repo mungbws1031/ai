@@ -1,11 +1,13 @@
 // Muscle Planner service worker — offline app shell cache
-const CACHE = "muscle-planner-v1";
+const CACHE = "muscle-planner-v2";
 const ASSETS = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icon-192.png",
-  "./icon-512.png"
+  "./icon-512.png",
+  "./body-front.webp",
+  "./body-back.webp"
 ];
 
 self.addEventListener("install", e => {

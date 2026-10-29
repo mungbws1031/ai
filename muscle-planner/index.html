@@ -26,6 +26,7 @@
   --f-body:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --r:10px;
+  --ov0:#e9e1d6; --ov1:#ffd59a; --ov2:#ffa25e; --ov3:#f0663a; --ov4:#d2352a; --ov5:#9c1420; /* heat painted on the anatomy plate: same in both themes */
 }
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
   --bg:#0f1716; --surface:#172220; --surface2:#1c2927; --ink:#e4ecea; --muted:#9aaba8; --line:#2c3b38;
@@ -104,13 +105,19 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .maps{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .maps figure{margin:0; text-align:center}
 .maps figcaption{font-size:.78rem; color:var(--muted)}
-.maps svg{width:100%; max-width:230px; height:auto}
-.sil{fill:var(--body); stroke:var(--body-line); stroke-width:1}
-.mus{stroke:var(--body-line); stroke-width:.8; cursor:pointer; transition:fill .25s}
-.mus:hover,.mus.sel{stroke:var(--ink); stroke-width:1.6}
-.h0{fill:var(--heat0)} .h1{fill:var(--heat1)} .h2{fill:var(--heat2)} .h3{fill:var(--heat3)} .h4{fill:var(--heat4)} .h5{fill:var(--heat5)}
+.bodymap{position:relative; width:100%; max-width:270px; margin:0 auto; aspect-ratio:1 / 2}
+.bodymap img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 6px 14px rgba(0,0,0,.12))}
+.bodymap svg{position:absolute; inset:0; width:100%; height:100%}
+.heat{mix-blend-mode:multiply; pointer-events:none}
+.heat g{transition:fill .3s, fill-opacity .3s}
+.ov0{fill:transparent} .ov1{fill:var(--ov1); fill-opacity:.55} .ov2{fill:var(--ov2); fill-opacity:.65}
+.ov3{fill:var(--ov3); fill-opacity:.72} .ov4{fill:var(--ov4); fill-opacity:.8} .ov5{fill:var(--ov5); fill-opacity:.85}
+.mus{fill:transparent; stroke:transparent; stroke-width:2; cursor:pointer}
+.mus:hover{stroke:rgba(20,32,30,.45); stroke-dasharray:4 3}
+.mus.sel{stroke:#0e6b62; stroke-width:2.5}
+.mus:focus-visible{outline:none; stroke:#0e6b62; stroke-width:3}
 .legend{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:.75rem; color:var(--muted)}
-.legend i{display:inline-block; width:22px; height:10px; border-radius:2px}
+.legend i{display:inline-block; width:22px; height:10px; border-radius:2px; border:1px solid var(--line)}
 
 .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px}
 .stat{background:var(--surface2); border-radius:8px; padding:10px 12px}
@@ -162,7 +169,7 @@ input[type=range]{width:100%; accent-color:var(--accent)}
 .ref .cite{font-size:.86rem}
 .ref .use{font-size:.84rem; color:var(--muted)}
 .disclaimer{font-size:.82rem; color:var(--muted); border-top:1px solid var(--line); padding-top:12px; max-width:80ch}
-@media (prefers-reduced-motion: reduce){ .mus{transition:none} }
+@media (prefers-reduced-motion: reduce){ .heat g{transition:none} }
 </style>
 </head><!--shell-->
 <body><!--shell-->
@@ -236,10 +243,10 @@ input[type=range]{width:100%; accent-color:var(--accent)}
       <div class="panel">
         <header><h2>근육 자극 지도</h2><span class="eyebrow">주간 유효 세트</span></header>
         <div class="maps">
-          <figure><svg id="map-front" viewBox="0 0 200 380" role="img" aria-label="앞모습 근육 지도"></svg><figcaption>앞</figcaption></figure>
-          <figure><svg id="map-back" viewBox="0 0 200 380" role="img" aria-label="뒷모습 근육 지도"></svg><figcaption>뒤</figcaption></figure>
+          <figure><div class="bodymap"><img src="body-front.webp" alt="" width="400" height="800"><svg id="map-front" viewBox="0 0 400 800" role="img" aria-label="앞모습 근육 지도"></svg></div><figcaption>앞</figcaption></figure>
+          <figure><div class="bodymap"><img src="body-back.webp" alt="" width="400" height="800"><svg id="map-back" viewBox="0 0 400 800" role="img" aria-label="뒷모습 근육 지도"></svg></div><figcaption>뒤</figcaption></figure>
         </div>
-        <div class="legend"><span>0</span><i class="h0" style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><i style="background:var(--heat5)"></i><span>20+ 세트/주</span></div>
+        <div class="legend"><span>0</span><i style="background:var(--ov0)"></i><i style="background:var(--ov1)"></i><i style="background:var(--ov2)"></i><i style="background:var(--ov3)"></i><i style="background:var(--ov4)"></i><i style="background:var(--ov5)"></i><span>20+ 세트/주</span></div>
         <div id="m-detail" class="panel" style="background:var(--surface2); border:none"></div>
       </div>
     </div>
@@ -512,41 +519,36 @@ function leanMass(st, p){
 }
 
 /* ---------------- body map ---------------- */
-const SIL = `
-<circle class="sil" cx="100" cy="27" r="17"/>
-<rect class="sil" x="92" y="42" width="16" height="16" rx="4"/>
-<path class="sil" d="M62,60 Q100,52 138,60 L142,100 Q135,140 129,166 L71,166 Q65,140 58,100 Z"/>
-<path class="sil" d="M71,162 L129,162 Q135,184 131,204 L69,204 Q65,184 71,162 Z"/>
-<rect class="sil" x="40" y="62" width="18" height="70" rx="9"/><rect class="sil" x="142" y="62" width="18" height="70" rx="9"/>
-<rect class="sil" x="35" y="128" width="16" height="66" rx="8"/><rect class="sil" x="149" y="128" width="16" height="66" rx="8"/>
-<rect class="sil" x="71" y="196" width="28" height="112" rx="13"/><rect class="sil" x="101" y="196" width="28" height="112" rx="13"/>
-<rect class="sil" x="75" y="300" width="21" height="72" rx="10"/><rect class="sil" x="104" y="300" width="21" height="72" rx="10"/>`;
-const E = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`;
-const pair = (cx, cy, rx, ry) => E(cx, cy, rx, ry) + E(200 - cx, cy, rx, ry);
+// 해부도(body-front/back.webp, 400×800) 위에 근육 영역을 겹쳐 그림. 좌표는 이미지 픽셀 기준.
+const E = (cx, cy, rx, ry, rot = 0) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"${rot ? ` transform="rotate(${rot} ${cx} ${cy})"` : ""}/>`;
+const pair = (cx, cy, rx, ry, rot = 0) => E(cx, cy, rx, ry, rot) + E(400 - cx, cy, rx, ry, -rot);
 const SHAPES = {
   front:{
-    neck:`<rect x="93" y="44" width="14" height="12" rx="4"/>`,
-    fdelt:pair(64,73,9,11), sdelt:pair(52,77,5,11), chest:pair(83,86,16,11),
-    serratus:pair(68,112,5,9), biceps:pair(49,104,7,18), forearm:pair(43,158,6,20),
-    abs:`<rect x="89" y="100" width="22" height="60" rx="6"/>`, obliques:pair(75,140,7,16),
-    quads:pair(85,240,11,34), adductors:pair(95.5,214,3.5,15), gmed:pair(73,180,5,8)
+    neck:`<path d="M186,112 L198,112 L196,152 L182,150 Z M214,112 L202,112 L204,152 L218,150 Z"/>`,
+    fdelt:pair(128,172,14,22,-15), sdelt:pair(111,192,9,24,8), chest:pair(166,188,32,24,-8),
+    serratus:pair(146,238,9,17,-10), biceps:pair(117,246,13,32,10), forearm:pair(93,330,13,42,22),
+    abs:`<rect x="179" y="204" width="42" height="122" rx="16"/>`, obliques:pair(157,290,14,30,-6),
+    gmed:pair(146,376,10,17), quads:pair(169,452,25,70,4), adductors:pair(190,418,9,38,-4)
   },
   back:{
-    utrap:`<path d="M92,47 L108,47 L134,63 L66,63 Z"/>`, mtrap:`<rect x="86" y="66" width="28" height="22" rx="4"/>`,
-    ltrap:`<path d="M88,90 L112,90 L100,122 Z"/>`, rdelt:pair(64,73,9,11), sdelt:pair(52,77,5,11),
-    lats:pair(75,112,10,22), triceps:pair(49,104,7,18), forearm:pair(43,158,6,20),
-    erectors:`<rect x="90" y="124" width="8" height="40" rx="4"/><rect x="102" y="124" width="8" height="40" rx="4"/>`,
-    gmed:pair(77,172,8,8), gmax:pair(89,190,12,13), hams:pair(85,246,11,32), calves:pair(85,322,9,22)
+    utrap:`<path d="M186,104 L214,104 L222,140 L272,152 L200,172 L128,152 L178,140 Z"/>`,
+    mtrap:`<path d="M166,162 L234,162 L226,214 L200,226 L174,214 Z"/>`,
+    ltrap:`<path d="M176,214 L224,214 L200,292 Z"/>`,
+    rdelt:pair(124,170,15,20,-12), sdelt:pair(108,192,9,24,8),
+    lats:pair(160,252,24,46,14), triceps:pair(111,240,13,33,8), forearm:pair(88,328,12,42,20),
+    erectors:`<rect x="182" y="250" width="15" height="82" rx="7"/><rect x="203" y="250" width="15" height="82" rx="7"/>`,
+    gmed:pair(150,330,17,14,-10), gmax:pair(172,372,29,31), hams:pair(172,472,24,62,3), calves:pair(166,600,20,48,2)
   }
 };
 function drawMaps(st){
   for (const view of ["front","back"]){
-    const svg = $("map-" + view);
-    let h = SIL;
+    let heatL = "", hitL = "";
     for (const [m, shp] of Object.entries(SHAPES[view])){
-      h += `<g class="mus h${heat(st[m])}${S.sel === m ? " sel" : ""}" data-m="${m}" tabindex="0" role="button" aria-label="${MUSCLES[m].n} 주 ${fmt(st[m])}세트"><title>${MUSCLES[m].n}: 주 ${fmt(st[m])} 유효 세트</title>${shp}</g>`;
+      heatL += `<g class="ov${heat(st[m])}">${shp}</g>`;
+      hitL += `<g class="mus${S.sel === m ? " sel" : ""}" data-m="${m}" tabindex="0" role="button" aria-label="${MUSCLES[m].n} 주 ${fmt(st[m])}세트"><title>${MUSCLES[m].n}: 주 ${fmt(st[m])} 유효 세트</title>${shp}</g>`;
     }
-    svg.innerHTML = h;
+    $("map-" + view).innerHTML = `<defs><filter id="soft-${view}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="4"/></filter></defs>
+      <g class="heat" filter="url(#soft-${view})">${heatL}</g><g>${hitL}</g>`;
   }
 }
 document.addEventListener("click", ev => {
