@@ -1,0 +1,18 @@
+{
+  "name": "근육 자극 플래너",
+  "short_name": "근육 플래너",
+  "description": "운동별 근육 자극·근성장 추정, 목표 체형 플랜, 거북목·자세 교정, 팔 각도 가이드",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#eef2f1",
+  "theme_color": "#0e5f57",
+  "categories": ["health", "fitness", "education"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

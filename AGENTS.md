@@ -6,7 +6,8 @@ hosts standalone apps such as `frontend/` (Next.js IVDR workflow UI),
 `backend/` (Python), `ticketing/`, `site/`, `eddie/` (Next.js ADHD routine
 companion app), `scent-mixer/` (single-file PWA), `tina/` (정리 임팩트
 최적화 PWA — 사진 기반 티 점수 분석), and `miri/` (Vite + React PWA — ADHD
-워킹맘용 선제적 리마인더 & 역산 스케줄러, PRD-MIRI-MVP-v0.1).
+워킹맘용 선제적 리마인더 & 역산 스케줄러, PRD-MIRI-MVP-v0.1), and
+`muscle-planner/` (single-file PWA — 운동별 근육 자극·근성장 추정 & 자세 교정 플래너).
 
 ## Scope of rules
 

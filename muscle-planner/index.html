@@ -1,0 +1,949 @@
+<!doctype html><!--shell-->
+<html lang="ko"><!--shell-->
+<head><!--shell-->
+<meta charset="utf-8" /><!--shell-->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /><!--shell-->
+<link rel="manifest" href="manifest.webmanifest" /><!--shell-->
+<link rel="apple-touch-icon" href="icon-192.png" /><!--shell-->
+<meta name="apple-mobile-web-app-capable" content="yes" /><!--shell-->
+<meta name="apple-mobile-web-app-title" content="근육 플래너" /><!--shell-->
+<meta name="theme-color" content="#0e5f57" /><!--shell-->
+<title>근육 자극 플래너</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: lab-notebook tool — sticky tab bar, two-column workbench (inputs | body map), stacks to one column on phones */
+:root{
+  --bg:#eef2f1; --surface:#ffffff; --surface2:#f6f8f7; --ink:#13201e; --muted:#566664; --line:#d3dcda;
+  --accent:#0e6b62; --accent-ink:#ffffff; --accent-soft:#d6ebe7;
+  --body:#dfe5e3; --body-line:#b9c4c1;
+  --heat0:#e8ecea; --heat1:#f6dfb8; --heat2:#f2b77c; --heat3:#e58648; --heat4:#c9542a; --heat5:#8f2a1c;
+  --good:#1f7a4d; --warn:#a86400; --bad:#b3261e;
+  --c1:#2f6fb5; --c2:#c9542a; --c3:#7a4bb0; --c4:#1f8a6f; --c5:#b08900;
+  --f-display:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-body:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1716; --surface:#172220; --surface2:#1c2927; --ink:#e4ecea; --muted:#9aaba8; --line:#2c3b38;
+  --accent:#4fc1b2; --accent-ink:#06201c; --accent-soft:#183b37;
+  --body:#24302e; --body-line:#3a4a47;
+  --heat0:#26312f; --heat1:#6b5233; --heat2:#9a6a33; --heat3:#c77b3d; --heat4:#e0683a; --heat5:#ff8a65;
+  --good:#5cc993; --warn:#e6a74a; --bad:#ff7b72;
+  --c1:#6aa7ee; --c2:#ff8a65; --c3:#b48ce8; --c4:#4fc1a0; --c5:#e3c04a;
+  color-scheme:dark; }}
+:root[data-theme="dark"]{
+  --bg:#0f1716; --surface:#172220; --surface2:#1c2927; --ink:#e4ecea; --muted:#9aaba8; --line:#2c3b38;
+  --accent:#4fc1b2; --accent-ink:#06201c; --accent-soft:#183b37;
+  --body:#24302e; --body-line:#3a4a47;
+  --heat0:#26312f; --heat1:#6b5233; --heat2:#9a6a33; --heat3:#c77b3d; --heat4:#e0683a; --heat5:#ff8a65;
+  --good:#5cc993; --warn:#e6a74a; --bad:#ff7b72;
+  --c1:#6aa7ee; --c2:#ff8a65; --c3:#b48ce8; --c4:#4fc1a0; --c5:#e3c04a;
+  color-scheme:dark; }
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:var(--f-body); font-size:15px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); padding-block:0 48px}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--bg)}
+.wrap{max-width:1180px; margin:0 auto}
+h1,h2,h3{font-family:var(--f-display); text-wrap:balance; line-height:1.3; margin:0}
+h1{font-size:1.35rem; font-weight:700; letter-spacing:-.01em}
+h2{font-size:1.15rem; font-weight:700}
+h3{font-size:1rem; font-weight:700}
+p{margin:0}
+.mono,.num{font-family:var(--f-mono); font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.small{font-size:.85rem}
+a{color:var(--accent)}
+
+header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--bg); padding-block:14px 0; border-bottom:1px solid var(--line)}
+.brand{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.brand .tag{font-size:.8rem; color:var(--muted)}
+nav.tabs{display:flex; gap:4px; overflow-x:auto; margin-top:10px; scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs a{flex:none; text-decoration:none; color:var(--muted); padding:8px 12px; border-bottom:3px solid transparent; font-weight:500; font-size:.92rem; white-space:nowrap}
+nav.tabs a[aria-current="page"]{color:var(--ink); border-bottom-color:var(--accent)}
+nav.tabs a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+section.view{padding-top:20px; display:grid; gap:18px}
+.lead{max-width:68ch; color:var(--muted)}
+.grid2{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr); gap:18px; align-items:start}
+@media (max-width:860px){ .grid2{grid-template-columns:minmax(0,1fr)} }
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px; display:grid; gap:12px; min-width:0}
+.panel > header{display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap}
+.eyebrow{font-size:.74rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:500}
+
+label.f{display:grid; gap:4px; font-size:.82rem; color:var(--muted)}
+select,input[type=number],input[type=search]{font:inherit; color:var(--ink); background:var(--surface2); border:1px solid var(--line); border-radius:8px; padding:7px 9px; min-width:0}
+input[type=number]{width:64px}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:end}
+.fields{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px}
+button{font:inherit; cursor:pointer; border-radius:8px; border:1px solid var(--line); background:var(--surface2); color:var(--ink); padding:7px 12px}
+button.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:700}
+button.ghost{background:transparent}
+button.x{padding:4px 9px; color:var(--muted)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+
+.routine{display:grid; gap:6px}
+.rrow{display:grid; grid-template-columns:minmax(0,1fr) auto auto auto; gap:8px; align-items:center; padding:8px 10px; background:var(--surface2); border-radius:8px}
+.rrow .nm{min-width:0}
+.rrow .nm b{font-weight:500}
+.rrow .nm small{display:block; color:var(--muted); font-size:.76rem; line-height:1.4}
+@media (max-width:520px){ .rrow{grid-template-columns:auto minmax(0,1fr) auto} .rrow .nm{grid-column:1 / -1} }
+.banner{background:var(--accent-soft); border-radius:8px; padding:8px 12px; font-size:.86rem}
+
+.chips{display:flex; gap:6px; flex-wrap:wrap}
+.chip{border:1px solid var(--line); background:var(--surface2); border-radius:999px; padding:6px 12px; font-size:.86rem}
+.chip[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+
+.maps{display:grid; grid-template-columns:1fr 1fr; gap:6px}
+.maps figure{margin:0; text-align:center}
+.maps figcaption{font-size:.78rem; color:var(--muted)}
+.maps svg{width:100%; max-width:230px; height:auto}
+.sil{fill:var(--body); stroke:var(--body-line); stroke-width:1}
+.mus{stroke:var(--body-line); stroke-width:.8; cursor:pointer; transition:fill .25s}
+.mus:hover,.mus.sel{stroke:var(--ink); stroke-width:1.6}
+.h0{fill:var(--heat0)} .h1{fill:var(--heat1)} .h2{fill:var(--heat2)} .h3{fill:var(--heat3)} .h4{fill:var(--heat4)} .h5{fill:var(--heat5)}
+.legend{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:.75rem; color:var(--muted)}
+.legend i{display:inline-block; width:22px; height:10px; border-radius:2px}
+
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px}
+.stat{background:var(--surface2); border-radius:8px; padding:10px 12px}
+.stat .v{font-family:var(--f-mono); font-size:1.25rem; font-variant-numeric:tabular-nums}
+.stat .k{font-size:.78rem; color:var(--muted)}
+
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:.86rem}
+th,td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); white-space:nowrap}
+th{font-weight:500; color:var(--muted); font-size:.78rem}
+td.num,th.num{text-align:right}
+tr.clickable{cursor:pointer}
+tr.clickable:hover{background:var(--surface2)}
+.bar{height:8px; background:var(--heat0); border-radius:4px; position:relative; min-width:90px}
+.bar span{position:absolute; inset:0 auto 0 0; border-radius:4px; background:var(--heat3)}
+.bar .opt{position:absolute; top:-3px; bottom:-3px; border-left:1px dashed var(--muted); border-right:1px dashed var(--muted)}
+
+.pill{display:inline-block; font-size:.74rem; padding:1px 8px; border-radius:999px; border:1px solid currentColor; white-space:nowrap}
+.z-none{color:var(--muted)} .z-low{color:var(--warn)} .z-opt{color:var(--good)} .z-high{color:var(--bad)}
+.notes{display:grid; gap:6px; margin:0; padding:0; list-style:none}
+.notes li{padding:8px 10px; border-radius:8px; background:var(--surface2); font-size:.88rem; border-left:3px solid var(--line)}
+.notes li.warn{border-left-color:var(--warn)} .notes li.bad{border-left-color:var(--bad)} .notes li.good{border-left-color:var(--good)}
+
+.days{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px}
+.day{background:var(--surface2); border-radius:8px; padding:10px 12px}
+.day h3{font-size:.92rem; margin-bottom:6px}
+.day ul{margin:0; padding-left:18px; font-size:.86rem}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:14px; display:grid; gap:8px; align-content:start}
+.card ol,.card ul{margin:0; padding-left:20px; font-size:.88rem}
+.card li{margin-bottom:4px}
+.ev{font-size:.72rem; padding:1px 7px; border-radius:4px; background:var(--accent-soft); color:var(--ink)}
+
+input[type=range]{width:100%; accent-color:var(--accent)}
+.figbox{display:grid; grid-template-columns:minmax(0,220px) minmax(0,1fr); gap:16px; align-items:center}
+@media (max-width:620px){ .figbox{grid-template-columns:minmax(0,1fr)} .figbox > svg{max-width:240px; margin:0 auto} }
+.bignum{font-family:var(--f-mono); font-size:2rem; font-variant-numeric:tabular-nums; line-height:1.1}
+.chart svg{width:100%; height:auto; display:block}
+.chart text{fill:var(--muted); font-size:10px; font-family:var(--f-mono)}
+.chart .ax{stroke:var(--line)}
+
+.cva{display:grid; gap:10px}
+.cva canvas{max-width:100%; border-radius:8px; background:var(--surface2); touch-action:manipulation; cursor:crosshair}
+.drop{border:1.5px dashed var(--line); border-radius:8px; padding:18px; text-align:center; color:var(--muted); font-size:.88rem}
+
+.refs{display:grid; gap:10px}
+.ref{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; display:grid; gap:4px}
+.ref .cite{font-size:.86rem}
+.ref .use{font-size:.84rem; color:var(--muted)}
+.disclaimer{font-size:.82rem; color:var(--muted); border-top:1px solid var(--line); padding-top:12px; max-width:80ch}
+@media (prefers-reduced-motion: reduce){ .mus{transition:none} }
+</style>
+</head><!--shell-->
+<body><!--shell-->
+<div class="wrap">
+<header class="top">
+  <div class="brand">
+    <h1>근육 자극 플래너</h1>
+    <span class="tag">운동 → 어느 근육에 얼마나 자극 → 몇 주 뒤 얼마나 · 연구 기반 추정 시뮬레이터</span>
+  </div>
+  <nav class="tabs" aria-label="화면">
+    <a href="#sim" data-tab="sim">내 루틴 시뮬레이터</a>
+    <a href="#plan" data-tab="plan">목표 체형 플랜</a>
+    <a href="#posture" data-tab="posture">거북목·자세 교정</a>
+    <a href="#angle" data-tab="angle">팔 올리는 각도 (국민체조)</a>
+    <a href="#refs" data-tab="refs">근거 논문</a>
+  </nav>
+</header>
+
+<!-- ============ 1. SIMULATOR ============ -->
+<section class="view" id="v-sim">
+  <p class="lead">운동과 주간 세트 수를 넣으면 근육별 <b>유효 세트</b>(주동근 1, 협응근 0.5로 계산)와 그에 따른 <b>근두께 증가 추정 범위</b>를 보여줍니다. 몸 그림의 근육을 누르면 상세 정보와 그 근육에 좋은 운동이 나옵니다.</p>
+  <div class="grid2">
+    <div style="display:grid; gap:18px; min-width:0">
+      <div class="panel">
+        <header><h2>내 정보</h2><span class="eyebrow">결과 보정용</span></header>
+        <div class="fields">
+          <label class="f">운동 경력
+            <select id="p-level">
+              <option value="beg">초보 (1년 미만)</option>
+              <option value="int">중급 (1–3년)</option>
+              <option value="adv">상급 (3년+)</option>
+            </select></label>
+          <label class="f">성별
+            <select id="p-sex"><option value="F">여성</option><option value="M">남성</option></select></label>
+          <label class="f">나이
+            <input type="number" id="p-age" min="10" max="95" value="38" style="width:100%"></label>
+          <label class="f">식사
+            <select id="p-nutri">
+              <option value="surplus">약간 잉여 (증량)</option>
+              <option value="maint" selected>유지</option>
+              <option value="deficit">적자 (감량 중)</option>
+            </select></label>
+          <label class="f">단백질
+            <select id="p-protein">
+              <option value="hi">체중 1kg당 1.6g 이상</option>
+              <option value="lo" selected>그보다 적음 / 모름</option>
+            </select></label>
+          <label class="f">기간
+            <select id="p-weeks">
+              <option value="4">4주</option><option value="8">8주</option>
+              <option value="12" selected>12주</option><option value="24">24주</option>
+            </select></label>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h2>주간 루틴</h2><span class="muted small" id="r-total"></span></header>
+        <div class="banner" id="r-example" hidden>지금은 <b>예시 루틴</b>입니다. 운동을 바꾸거나 ‘목표 체형 플랜’에서 자동으로 만들 수 있어요.</div>
+        <div class="routine" id="routine"></div>
+        <div class="row">
+          <label class="f" style="flex:1 1 220px">운동 추가
+            <select id="add-ex"></select></label>
+          <button class="primary" id="add-btn">추가</button>
+          <button class="ghost" id="clear-btn">전부 지우기</button>
+        </div>
+        <p class="muted small">‘세트/주’는 일주일 동안 그 운동을 한 총 세트 수입니다 (예: 주 2회 × 3세트 = 6). 근성장에는 <b>실패 근처까지(2–3회 남김)</b> 하는 세트가 대부분의 효과를 냅니다.</p>
+      </div>
+    </div>
+
+    <div style="display:grid; gap:18px; min-width:0">
+      <div class="panel">
+        <header><h2>근육 자극 지도</h2><span class="eyebrow">주간 유효 세트</span></header>
+        <div class="maps">
+          <figure><svg id="map-front" viewBox="0 0 200 380" role="img" aria-label="앞모습 근육 지도"></svg><figcaption>앞</figcaption></figure>
+          <figure><svg id="map-back" viewBox="0 0 200 380" role="img" aria-label="뒷모습 근육 지도"></svg><figcaption>뒤</figcaption></figure>
+        </div>
+        <div class="legend"><span>0</span><i class="h0" style="background:var(--heat0)"></i><i style="background:var(--heat1)"></i><i style="background:var(--heat2)"></i><i style="background:var(--heat3)"></i><i style="background:var(--heat4)"></i><i style="background:var(--heat5)"></i><span>20+ 세트/주</span></div>
+        <div id="m-detail" class="panel" style="background:var(--surface2); border:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <header><h2>시뮬레이션 결과</h2><span class="muted small" id="res-sub"></span></header>
+    <div class="stats" id="stats"></div>
+    <ul class="notes" id="warnings"></ul>
+    <div class="tablewrap"><table id="mtable"></table></div>
+    <p class="muted small">근두께 증가(%)는 메타분석의 용량-반응 경향(주당 세트가 늘수록 효과가 커지지만 점점 둔화)을 단순화한 <b>추정 범위</b>입니다. 같은 운동을 해도 사람마다 성장량 차이가 매우 크므로(연구에서 0%에서 50% 이상까지) 가운데 값보다 범위를 보세요.</p>
+  </div>
+</section>
+
+<!-- ============ 2. PLAN ============ -->
+<section class="view" id="v-plan" hidden>
+  <p class="lead">원하는 체형을 고르면, 목표 근육은 <b>주 10–16세트</b>, 나머지는 <b>유지 볼륨(주 ~6세트)</b>이 되도록 운동과 세트를 자동으로 배분하고, 각 근육을 주 2회 이상 자극하도록 요일에 나눕니다.</p>
+  <div class="panel">
+    <header><h2>원하는 모습</h2><span class="muted small">여러 개 선택 가능</span></header>
+    <div class="chips" id="goals"></div>
+    <div class="fields">
+      <label class="f">주당 운동일
+        <select id="g-days"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
+      <label class="f">1회 운동 시간
+        <select id="g-min"><option value="20">20분</option><option value="30">30분</option><option value="45" selected>45분</option><option value="60">60분</option><option value="90">90분</option></select></label>
+    </div>
+    <div>
+      <div class="eyebrow" style="margin-bottom:6px">쓸 수 있는 도구</div>
+      <div class="chips" id="equip"></div>
+    </div>
+    <div class="row"><button class="primary" id="gen-btn">플랜 만들기</button><span class="muted small">경력·나이·식사 정보는 ‘내 루틴 시뮬레이터’의 ‘내 정보’를 사용합니다.</span></div>
+  </div>
+  <div id="plan-out" class="panel" hidden></div>
+</section>
+
+<!-- ============ 3. POSTURE ============ -->
+<section class="view" id="v-posture" hidden>
+  <p class="lead">거북목(전방 머리 자세)은 머리가 앞으로 나갈수록 목이 버텨야 하는 하중이 커집니다. 아래 슬라이더로 확인하고, 옆모습 사진으로 내 목 각도(CVA)를 재고, 근거가 있는 교정 운동을 루틴에 넣어보세요.</p>
+  <div class="grid2">
+    <div class="panel">
+      <header><h2>고개 숙임과 목 부담</h2><span class="eyebrow">Hansraj 2014 모델</span></header>
+      <div class="figbox">
+        <svg id="neck-fig" viewBox="0 0 220 240" role="img" aria-label="고개 각도에 따른 옆모습"></svg>
+        <div style="display:grid; gap:8px">
+          <div class="muted small">목에 걸리는 추정 하중</div>
+          <div class="bignum" id="neck-kg">5 kg</div>
+          <div class="small" id="neck-msg"></div>
+        </div>
+      </div>
+      <label class="f">고개 숙인 각도: <span class="mono" id="neck-deg">0°</span>
+        <input type="range" id="neck-range" min="0" max="60" step="1" value="0"></label>
+      <p class="muted small">머리 무게(약 4.5–5.4kg)가 앞으로 기울수록 지렛대처럼 하중이 커진다는 컴퓨터 모델 추정치입니다. 실제 측정값이 아니며, 짧은 시간 숙이는 것 자체가 해롭다는 뜻은 아닙니다. 오래 유지되는 자세가 문제입니다.</p>
+    </div>
+
+    <div class="panel cva">
+      <header><h2>사진으로 내 목 각도 재기</h2><span class="eyebrow">CVA · 두개척추각</span></header>
+      <p class="small">편하게 선 <b>옆모습 사진</b>을 올린 뒤 ① <b>귀 구슬(이주)</b> ② <b>목 뒤에서 가장 튀어나온 뼈(C7)</b> 순서로 누르세요. 사진은 기기 밖으로 전송되지 않습니다.</p>
+      <label class="drop" id="cva-drop">사진 선택 또는 여기에 끌어다 놓기
+        <input type="file" id="cva-file" accept="image/*" style="display:block; margin:8px auto 0"></label>
+      <canvas id="cva-canvas" width="600" height="400" hidden></canvas>
+      <div class="row"><button id="cva-reset" hidden>점 다시 찍기</button></div>
+      <div id="cva-out" class="small"></div>
+      <p class="muted small">CVA는 C7을 지나는 수평선과 C7→귀를 잇는 선 사이의 각도입니다. 각도가 작을수록 머리가 앞으로 나와 있습니다. 연구마다 기준이 다르지만 대략 48–50° 미만을 전방 머리 자세로 분류하는 경우가 많습니다. 사진 각도·카메라 높이에 따라 몇 도씩 달라질 수 있어요.</p>
+    </div>
+  </div>
+
+  <h2>교정 프로그램</h2>
+  <div class="cards" id="posture-cards"></div>
+</section>
+
+<!-- ============ 4. ANGLE ============ -->
+<section class="view" id="v-angle" hidden>
+  <p class="lead">국민체조처럼 팔을 옆으로 들어 올리는 동작은 <b>어디까지 올리느냐</b>에 따라 일하는 근육이 달라집니다. 어깨 높이(90°)까지는 주로 삼각근, 그 위부터는 <b>견갑골이 위로 회전</b>하면서 전거근과 하부 승모근이 크게 참여합니다. 슬라이더로 각도를 바꿔보세요.</p>
+  <div class="grid2">
+    <div class="panel">
+      <header><h2>팔 옆으로 들기 (외전)</h2><span class="mono" id="ang-deg">90°</span></header>
+      <div class="figbox">
+        <svg id="arm-fig" viewBox="0 0 220 220" role="img" aria-label="팔 각도 앞모습"></svg>
+        <div style="display:grid; gap:6px">
+          <div class="small">견갑골 상방회전 <b class="mono" id="ang-scap"></b></div>
+          <div class="small">어깨관절(상완골) <b class="mono" id="ang-gh"></b></div>
+          <div class="small muted">팔이 30° 넘게 올라가면 상완골:견갑골이 대략 2:1 비율로 함께 움직입니다.</div>
+        </div>
+      </div>
+      <input type="range" id="ang-range" min="0" max="180" step="1" value="90" aria-label="팔 각도">
+      <ul class="notes" id="ang-notes"></ul>
+    </div>
+    <div class="panel chart">
+      <header><h2>각도별 근육 활성</h2><span class="eyebrow">상대값 모식도</span></header>
+      <div id="ang-chart"></div>
+      <div class="legend" id="ang-legend"></div>
+      <p class="muted small">Wickham 2010(건강한 성인 어깨 외전 근전도)과 Ekstrom 2003의 경향을 단순화한 그림입니다. 근육마다 기준(최대 수의 수축 대비 %)이 달라 근육끼리의 높낮이보다 <b>각도에 따른 변화</b>를 보세요.</p>
+    </div>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <h3>국민체조에서 팔 올릴 때</h3>
+      <ul>
+        <li><b>귀 옆까지(약 160–180°)</b> 올리세요. 어깨 높이에서 멈추면 하부 승모근·전거근은 거의 쓰지 못합니다.</li>
+        <li>옆으로 들 때는 <b>엄지를 위로</b>(손바닥이 앞이나 위를 향하게). 팔이 바깥으로 돌아가 어깨 앞쪽이 덜 끼입니다.</li>
+        <li>올리면서 <b>어깨를 귀 쪽으로 으쓱하지 않기</b>. 목 옆(상부 승모근)만 쓰게 됩니다.</li>
+        <li>팔이 머리 위로 갈 때 <b>갈비뼈가 들리고 허리가 꺾이면</b> 그 지점이 지금 내 어깨 가동 범위입니다. 그 직전까지만 올리세요.</li>
+        <li>60–120° 사이에서 아프면(통증호) 무리하지 말고 전문가와 상의하세요.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>국민체조로 근육이 커질까?</h3>
+      <p class="small">맨몸·저강도 체조는 <b>가동성, 혈액순환, 자세 감각</b>에는 도움이 되지만, 근비대 자극은 작습니다. 근육은 가벼운 무게라도 <b>실패 근처까지</b> 반복해야 크게 자랍니다(Schoenfeld 2017). 이 툴에서 국민체조는 근성장 기여를 아주 낮게(×0.1) 계산합니다.</p>
+      <p class="small">체조의 팔 동작을 근력운동으로 바꾸려면: 엎드려 Y 들기(하부 승모근), 벽 슬라이드(전거근), 가벼운 덤벨 옆으로 들기(측면 삼각근)를 실패 2–3회 전까지.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. REFS ============ -->
+<section class="view" id="v-refs" hidden>
+  <p class="lead">이 툴의 계산 규칙과 각 규칙이 기대는 연구입니다. 근전도(EMG)가 높다고 반드시 더 크게 자라는 것은 아니며(Vigotsky 2018), 모든 수치는 <b>개인 차이가 큰 평균 경향의 단순화</b>입니다.</p>
+  <div class="refs" id="refs"></div>
+  <p class="disclaimer">이 툴은 교육·계획용 추정 도구이며 의학적 진단이나 처방이 아닙니다. 목·어깨·허리 통증, 저림, 수술 이력이 있다면 운동 전에 의사나 물리치료사와 상의하세요. 결과의 숫자는 물리적 측정이나 증명이 아니라 연구 평균을 단순화한 휴리스틱입니다.</p>
+</section>
+</div>
+
+<script>
+"use strict";
+/* ---------------- data ---------------- */
+const MUSCLES = {
+  neck:{n:"심부 목굴곡근", s:"목굴곡근", major:false},
+  utrap:{n:"상부 승모근", s:"상부승모", major:false},
+  mtrap:{n:"중부 승모근·능형근", s:"중부승모", major:true},
+  ltrap:{n:"하부 승모근", s:"하부승모", major:false},
+  fdelt:{n:"전면 삼각근", s:"전면삼각", major:true},
+  sdelt:{n:"측면 삼각근", s:"측면삼각", major:true},
+  rdelt:{n:"후면 삼각근", s:"후면삼각", major:true},
+  chest:{n:"대흉근 (가슴)", s:"가슴", major:true},
+  serratus:{n:"전거근", s:"전거근", major:false},
+  lats:{n:"광배근", s:"광배근", major:true},
+  biceps:{n:"이두근", s:"이두", major:true},
+  triceps:{n:"삼두근", s:"삼두", major:true},
+  forearm:{n:"전완근", s:"전완", major:false},
+  abs:{n:"복직근", s:"복직근", major:true},
+  obliques:{n:"복사근", s:"복사근", major:false},
+  erectors:{n:"척추기립근", s:"기립근", major:false},
+  gmax:{n:"대둔근 (엉덩이)", s:"대둔근", major:true},
+  gmed:{n:"중둔근 (옆 엉덩이)", s:"중둔근", major:false},
+  quads:{n:"대퇴사두근 (앞 허벅지)", s:"앞허벅지", major:true},
+  hams:{n:"햄스트링 (뒤 허벅지)", s:"햄스트링", major:true},
+  adductors:{n:"내전근 (안쪽 허벅지)", s:"내전근", major:false},
+  calves:{n:"종아리", s:"종아리", major:true}
+};
+
+// w: 1 = 주동근, 0.5 = 협응근, 0.25 = 보조. type: hyp(근력) | posture(저부하 근력·조절) | mobility | stretch
+// eff: 운동 자체 부하가 낮아 근비대 자극을 낮추는 계수
+const CATS = ["상체 밀기","상체 당기기","어깨","팔","하체","코어","자세·목","스트레칭·가동성","생활체조"];
+const EQ = {bw:"맨몸", band:"밴드", db:"덤벨", gym:"헬스장 기구"};
+const EX = [
+  {id:"pushup", n:"푸시업", c:"상체 밀기", eq:"bw", w:{chest:1,triceps:.5,fdelt:.5,serratus:.25,abs:.25}, cue:"가슴이 바닥 가까이 갈 때까지 내리기. 어려우면 무릎·벽 푸시업으로 실패 2–3회 전까지."},
+  {id:"bench", n:"벤치프레스", c:"상체 밀기", eq:"gym", w:{chest:1,triceps:.5,fdelt:.5}, cue:"바가 가슴에 닿을 만큼 내려 가슴이 늘어난 구간까지 쓰기."},
+  {id:"incline", n:"인클라인 덤벨 프레스", c:"상체 밀기", eq:"db", w:{chest:1,fdelt:.5,triceps:.5}, cue:"벤치 30° 전후. 윗가슴과 전면 삼각근 비중이 커짐."},
+  {id:"dips", n:"딥스", c:"상체 밀기", eq:"bw", w:{triceps:1,chest:.5,fdelt:.5}, cue:"어깨가 불편하면 깊이를 줄이거나 벤치 딥스로 대체."},
+  {id:"ohp", n:"덤벨 숄더 프레스", c:"어깨", eq:"db", w:{fdelt:1,sdelt:.5,triceps:.5,utrap:.25,serratus:.25}, cue:"팔꿈치를 살짝 앞으로, 머리 위로 끝까지 밀어 견갑골 상방회전까지."},
+  {id:"latraise", n:"사이드 레터럴 레이즈", c:"어깨", eq:"db", w:{sdelt:1,utrap:.25,fdelt:.25}, cue:"엄지 약간 위·팔꿈치 살짝 굽혀 어깨 높이 근처까지. 어깨 으쓱 금지. 넓은 어깨의 핵심."},
+  {id:"facepull", n:"페이스 풀", c:"어깨", eq:"band", w:{rdelt:1,mtrap:.5,ltrap:.25,utrap:.25}, cue:"줄을 얼굴 쪽으로 당기며 팔을 바깥으로 돌리기. 라운드숄더 교정에 자주 쓰임."},
+  {id:"reardelt", n:"리어 델트 플라이", c:"어깨", eq:"db", w:{rdelt:1,mtrap:.5}, cue:"상체를 숙이고 팔을 옆으로 벌리기. 견갑골은 살짝만 모으기."},
+  {id:"pullapart", n:"밴드 풀 어파트", c:"어깨", eq:"band", w:{rdelt:.5,mtrap:.5,ltrap:.25}, cue:"팔을 쭉 펴고 가슴 앞에서 밴드를 양옆으로. 책상 앞에서 틈틈이 가능."},
+  {id:"pullup", n:"풀업 / 턱걸이", c:"상체 당기기", eq:"bw", w:{lats:1,biceps:.5,ltrap:.5,mtrap:.25,rdelt:.25,forearm:.25}, cue:"매달린 상태에서 어깨부터 끌어내리기. 어려우면 밴드 보조나 네거티브."},
+  {id:"pulldown", n:"랫 풀다운", c:"상체 당기기", eq:"gym", w:{lats:1,biceps:.5,ltrap:.25,mtrap:.25}, cue:"팔이 끝까지 펴진 위치에서 광배근이 늘어나게, 쇄골 쪽으로 당기기."},
+  {id:"row", n:"덤벨 로우", c:"상체 당기기", eq:"db", w:{mtrap:1,lats:.5,rdelt:.5,biceps:.5}, cue:"팔꿈치를 엉덩이 쪽으로. 라운드숄더 교정에는 견갑골 모으기를 의식."},
+  {id:"invrow", n:"인버티드 로우 (테이블/봉)", c:"상체 당기기", eq:"bw", w:{mtrap:1,lats:.5,rdelt:.5,biceps:.5}, cue:"몸을 일직선으로, 가슴을 봉 쪽으로. 발을 가까이 둘수록 쉬워짐."},
+  {id:"curl", n:"덤벨 컬", c:"팔", eq:"db", w:{biceps:1,forearm:.5}, cue:"팔꿈치를 고정하고 끝까지 펴고 끝까지 굽히기."},
+  {id:"triext", n:"오버헤드 트라이셉스 익스텐션", c:"팔", eq:"db", w:{triceps:1}, cue:"팔을 머리 위로 둔 자세가 팔을 내린 자세보다 삼두근 성장이 컸다는 연구가 있음(Maeo 2023)."},
+  {id:"farmer", n:"파머스 워크", c:"팔", eq:"db", w:{forearm:1,utrap:.5,obliques:.25,abs:.25}, cue:"무거운 덤벨을 들고 바른 자세로 걷기. 악력·코어."},
+  {id:"shrug", n:"덤벨 슈러그", c:"어깨", eq:"db", w:{utrap:1,forearm:.25}, cue:"거북목·목 결림이 있으면 우선순위 낮게. 상부 승모근이 이미 과긴장인 경우가 많음."},
+  {id:"squat", n:"바벨 스쿼트", c:"하체", eq:"gym", w:{quads:1,gmax:.5,adductors:.5,erectors:.25}, cue:"허벅지가 바닥과 평행보다 깊게. 깊은 스쿼트가 얕은 스쿼트보다 엉덩이·내전근 성장이 컸음(Kubo 2019)."},
+  {id:"goblet", n:"고블릿 스쿼트", c:"하체", eq:"db", w:{quads:1,gmax:.5,adductors:.5,abs:.25}, cue:"덤벨을 가슴 앞에 들고 깊게 앉기. 초보에게 가장 배우기 쉬운 스쿼트."},
+  {id:"airsquat", n:"맨몸 스쿼트", c:"하체", eq:"bw", w:{quads:1,gmax:.5,adductors:.5}, cue:"맨몸은 쉬워서 20회 이상 반복하거나 천천히(3초 내려가기) 해야 실패 근처에 도달."},
+  {id:"bss", n:"불가리안 스플릿 스쿼트", c:"하체", eq:"db", w:{quads:1,gmax:.5,adductors:.5,gmed:.25}, cue:"뒷발을 의자에. 상체를 살짝 숙이면 엉덩이 비중 증가. 맨몸으로도 충분히 힘듦."},
+  {id:"lunge", n:"런지", c:"하체", eq:"bw", w:{quads:1,gmax:.5,adductors:.25,gmed:.25}, cue:"앞무릎은 발끝 방향, 뒷무릎은 바닥 가까이."},
+  {id:"rdl", n:"루마니안 데드리프트", c:"하체", eq:"db", w:{hams:1,gmax:.5,erectors:.5,forearm:.25}, cue:"무릎은 살짝만 굽히고 엉덩이를 뒤로 빼며 햄스트링이 당길 때까지. 허리는 중립."},
+  {id:"deadlift", n:"데드리프트", c:"하체", eq:"gym", w:{erectors:1,gmax:.5,hams:.5,quads:.5,forearm:.5,mtrap:.25}, cue:"전신 근력. 자세를 배운 뒤 진행."},
+  {id:"hipthrust", n:"힙 쓰러스트", c:"하체", eq:"db", w:{gmax:1,hams:.25,quads:.25}, cue:"등을 벤치에 대고 엉덩이를 끝까지 밀어 올리기. 스쿼트보다 대둔근 근전도가 높았음(Contreras 2015). 힙업 목표에 핵심."},
+  {id:"bridge", n:"글루트 브릿지", c:"하체", eq:"bw", w:{gmax:1,hams:.25}, cue:"바닥에 누워 엉덩이 들기. 쉬우면 한 다리로."},
+  {id:"sideabd", n:"옆으로 누워 다리 들기", c:"하체", eq:"bw", w:{gmed:1}, cue:"발끝을 살짝 아래로, 다리를 약간 뒤로. 옆 엉덩이(중둔근) 근전도가 높은 동작(Distefano 2009)."},
+  {id:"legcurl", n:"시티드 레그 컬", c:"하체", eq:"gym", w:{hams:1}, cue:"앉아서 하는 레그 컬이 누워서 하는 것보다 햄스트링 성장이 컸음(Maeo 2021)."},
+  {id:"legext", n:"레그 익스텐션", c:"하체", eq:"gym", w:{quads:1}, cue:"앞 허벅지 단독 운동."},
+  {id:"calf", n:"카프 레이즈", c:"하체", eq:"bw", w:{calves:1}, cue:"계단 끝에서 뒤꿈치를 충분히 내렸다가 끝까지 올리기."},
+  {id:"plank", n:"플랭크", c:"코어", eq:"bw", w:{abs:.5,obliques:.25}, eff:.6, cue:"30–60초 × 세트. 근비대보다 버티는 힘(지구력)에 가까움."},
+  {id:"deadbug", n:"데드버그", c:"코어", eq:"bw", w:{abs:.5,obliques:.25}, eff:.5, cue:"허리를 바닥에 붙인 채 반대 팔다리 뻗기. 허리 꺾임(골반 전방경사) 조절 연습."},
+  {id:"crunch", n:"크런치 / 케이블 크런치", c:"코어", eq:"bw", w:{abs:1}, cue:"복부를 동그랗게 말기. 복근을 키우지만 뱃살을 직접 빼지는 않음."},
+  {id:"sideplank", n:"사이드 플랭크", c:"코어", eq:"bw", w:{obliques:1,gmed:.25}, eff:.6, cue:"옆구리·옆 엉덩이 안정성."},
+  {id:"chintuck", n:"턱 당기기 (친 턱)", c:"자세·목", eq:"bw", w:{neck:1}, type:"posture", eff:.3, cue:"뒤통수를 벽에 대고 턱을 목 쪽으로 ‘이중턱’처럼 당겨 10초 유지 × 10회. 고개를 숙이는 게 아니라 뒤로 미는 느낌."},
+  {id:"dnf", n:"누워서 턱 당기고 머리 들기", c:"자세·목", eq:"bw", w:{neck:1}, type:"posture", eff:.5, cue:"누워서 턱을 당긴 채 머리를 바닥에서 1–2cm만 들어 유지. 심부 목굴곡근 강화(Jull 2009)."},
+  {id:"pronety", n:"엎드려 Y 들기", c:"자세·목", eq:"bw", w:{ltrap:1,mtrap:.5,rdelt:.25}, type:"posture", eff:.8, cue:"엎드려 팔을 머리 위 Y자로, 엄지를 위로 하여 들기. 하부 승모근 근전도가 가장 높은 축의 운동(Ekstrom 2003)."},
+  {id:"pronet", n:"엎드려 T 들기", c:"자세·목", eq:"bw", w:{mtrap:1,rdelt:.5,ltrap:.5}, type:"posture", eff:.8, cue:"엎드려 팔을 옆으로 벌려 엄지 위로 들기. 중부 승모근(Ekstrom 2003)."},
+  {id:"wallslide", n:"벽 슬라이드 / 월 엔젤", c:"자세·목", eq:"bw", w:{serratus:.5,ltrap:.5}, type:"posture", eff:.4, cue:"팔뚝을 벽에 대고 위로 미끄러뜨리며 견갑골을 위로 회전. 허리가 벽에서 뜨지 않게."},
+  {id:"doorway", n:"문틀 가슴 스트레칭", c:"스트레칭·가동성", eq:"bw", w:{}, type:"stretch", stretch:["chest"], cue:"한 팔씩 문틀에 대고 몸을 앞으로. 소흉근을 늘리는 데 효과적이었던 방법(Borstad 2006). 30초 × 3회."},
+  {id:"utrapstretch", n:"상부 승모근 스트레칭", c:"스트레칭·가동성", eq:"bw", w:{}, type:"stretch", stretch:["utrap"], cue:"한 손으로 의자를 잡고 반대쪽으로 고개를 기울이기. 30초 × 2–3회."},
+  {id:"thoracic", n:"폼롤러 흉추 펴기", c:"스트레칭·가동성", eq:"bw", w:{erectors:.1}, type:"mobility", cue:"폼롤러를 날개뼈 아래에 두고 등을 뒤로 젖히기. 굽은 등 가동성."},
+  {id:"hipflexor", n:"고관절 굴곡근 스트레칭", c:"스트레칭·가동성", eq:"bw", w:{}, type:"stretch", stretch:["quads"], cue:"한쪽 무릎을 꿇고 엉덩이를 앞으로 밀기(엉덩이에 힘 주기). 30초 × 2–3회."},
+  {id:"gukmin", n:"국민체조 1회 (약 4–5분)", c:"생활체조", eq:"bw", w:{sdelt:.25,fdelt:.25,abs:.15,obliques:.15,quads:.15,calves:.15,ltrap:.1,serratus:.1}, type:"mobility", unit:"회", cue:"근비대 자극은 작지만 관절 가동·순환에 좋음. 팔은 귀 옆까지 올리기(‘팔 올리는 각도’ 탭)."}
+];
+const EXM = Object.fromEntries(EX.map(e => [e.id, e]));
+
+const RIR = [
+  {v:"f0", n:"실패 직전 (0–1회 남김)", f:1.0},
+  {v:"f2", n:"2–3회 남김", f:0.9},
+  {v:"f4", n:"4–5회 남김", f:0.6},
+  {v:"easy", n:"여유 많음 (6회+)", f:0.3}
+];
+const RIRM = Object.fromEntries(RIR.map(r => [r.v, r]));
+
+const LEVEL = {beg:{n:"초보", g:1, kg:1}, int:{n:"중급", g:.55, kg:.5}, adv:{n:"상급", g:.3, kg:.25}};
+
+const EXAMPLE = [
+  {id:"pushup", sets:6, rir:"f2"}, {id:"invrow", sets:6, rir:"f2"}, {id:"goblet", sets:6, rir:"f2"},
+  {id:"bridge", sets:4, rir:"f2"}, {id:"pronety", sets:4, rir:"f2"}, {id:"chintuck", sets:5, rir:"f2"},
+  {id:"plank", sets:3, rir:"f2"}, {id:"gukmin", sets:5, rir:"easy"}
+];
+
+/* ---------------- state ---------------- */
+const KEY = "muscle-planner-v1";
+let S = {routine: EXAMPLE.map(r => ({...r})), isExample:true,
+  profile:{level:"beg", sex:"F", age:38, nutri:"maint", protein:"lo", weeks:12},
+  goals:["posture"], days:3, min:45, equip:["bw","band","db"], plan:null, sel:"chest"};
+try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && Array.isArray(s.routine)) S = {...S, ...s}; } catch(e) {}
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = (x, d=1) => (Math.round(x * 10**d) / 10**d).toFixed(d);
+
+/* ---------------- model ---------------- */
+// 근육별 주간 유효 세트: 세트 × 기여도(1/0.5/0.25) × 근접실패 계수 × 운동 부하 계수
+function stimulus(routine){
+  const s = Object.fromEntries(Object.keys(MUSCLES).map(m => [m, 0]));
+  const by = Object.fromEntries(Object.keys(MUSCLES).map(m => [m, []]));
+  for (const r of routine){
+    const e = EXM[r.id]; if (!e) continue;
+    const typeF = e.type === "mobility" ? .1 : e.type === "stretch" ? 0 : 1;
+    const f = (RIRM[r.rir]?.f ?? .9) * (e.eff ?? 1) * typeF;
+    for (const [m, w] of Object.entries(e.w)){
+      const v = r.sets * w * f; s[m] += v; if (v > 0) by[m].push({e, v});
+    }
+  }
+  return {s, by};
+}
+// 12주 근두께 증가율(%) 기준값: 초보 + 충분한 볼륨에서 ~10% 내외 (메타분석 범위 단순화), 볼륨에 대해 체감 증가
+function growth(sets, p){
+  const lv = LEVEL[p.level].g;
+  const age = p.age >= 65 ? .75 : p.age >= 50 ? .88 : 1;
+  const nut = {surplus:1.1, maint:1, deficit:.7}[p.nutri];
+  const prot = p.protein === "hi" ? 1 : .9;
+  const time = Math.pow(p.weeks / 12, .85);
+  return 12 * lv * age * nut * prot * (1 - Math.exp(-sets / 9)) * time;
+}
+function zone(sets){
+  if (sets < 3) return {k:"none", n:"거의 없음"};
+  if (sets < 10) return {k:"low", n:"성장 가능 (적음)"};
+  if (sets <= 20) return {k:"opt", n:"권장 범위"};
+  return {k:"high", n:"고볼륨 · 회복 확인"};
+}
+function heat(sets){ return sets <= 0.5 ? 0 : sets < 3 ? 1 : sets < 6 ? 2 : sets < 10 ? 3 : sets < 16 ? 4 : 5; }
+function leanMass(st, p){
+  const majors = Object.keys(MUSCLES).filter(m => MUSCLES[m].major);
+  const cov = majors.reduce((a, m) => a + (1 - Math.exp(-st[m] / 9)), 0) / majors.length;
+  const base = (p.sex === "M" ? .9 : .45) * LEVEL[p.level].kg;
+  const age = p.age >= 65 ? .7 : p.age >= 50 ? .85 : 1;
+  const nut = {surplus:1, maint:.6, deficit:.3}[p.nutri];
+  const prot = p.protein === "hi" ? 1 : .8;
+  const months = p.weeks / 4.345;
+  return {kg: base * cov * age * nut * prot * Math.pow(months, .9), cov};
+}
+
+/* ---------------- body map ---------------- */
+const SIL = `
+<circle class="sil" cx="100" cy="27" r="17"/>
+<rect class="sil" x="92" y="42" width="16" height="16" rx="4"/>
+<path class="sil" d="M62,60 Q100,52 138,60 L142,100 Q135,140 129,166 L71,166 Q65,140 58,100 Z"/>
+<path class="sil" d="M71,162 L129,162 Q135,184 131,204 L69,204 Q65,184 71,162 Z"/>
+<rect class="sil" x="40" y="62" width="18" height="70" rx="9"/><rect class="sil" x="142" y="62" width="18" height="70" rx="9"/>
+<rect class="sil" x="35" y="128" width="16" height="66" rx="8"/><rect class="sil" x="149" y="128" width="16" height="66" rx="8"/>
+<rect class="sil" x="71" y="196" width="28" height="112" rx="13"/><rect class="sil" x="101" y="196" width="28" height="112" rx="13"/>
+<rect class="sil" x="75" y="300" width="21" height="72" rx="10"/><rect class="sil" x="104" y="300" width="21" height="72" rx="10"/>`;
+const E = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/>`;
+const pair = (cx, cy, rx, ry) => E(cx, cy, rx, ry) + E(200 - cx, cy, rx, ry);
+const SHAPES = {
+  front:{
+    neck:`<rect x="93" y="44" width="14" height="12" rx="4"/>`,
+    fdelt:pair(64,73,9,11), sdelt:pair(52,77,5,11), chest:pair(83,86,16,11),
+    serratus:pair(68,112,5,9), biceps:pair(49,104,7,18), forearm:pair(43,158,6,20),
+    abs:`<rect x="89" y="100" width="22" height="60" rx="6"/>`, obliques:pair(75,140,7,16),
+    quads:pair(85,240,11,34), adductors:pair(95.5,214,3.5,15), gmed:pair(73,180,5,8)
+  },
+  back:{
+    utrap:`<path d="M92,47 L108,47 L134,63 L66,63 Z"/>`, mtrap:`<rect x="86" y="66" width="28" height="22" rx="4"/>`,
+    ltrap:`<path d="M88,90 L112,90 L100,122 Z"/>`, rdelt:pair(64,73,9,11), sdelt:pair(52,77,5,11),
+    lats:pair(75,112,10,22), triceps:pair(49,104,7,18), forearm:pair(43,158,6,20),
+    erectors:`<rect x="90" y="124" width="8" height="40" rx="4"/><rect x="102" y="124" width="8" height="40" rx="4"/>`,
+    gmed:pair(77,172,8,8), gmax:pair(89,190,12,13), hams:pair(85,246,11,32), calves:pair(85,322,9,22)
+  }
+};
+function drawMaps(st){
+  for (const view of ["front","back"]){
+    const svg = $("map-" + view);
+    let h = SIL;
+    for (const [m, shp] of Object.entries(SHAPES[view])){
+      h += `<g class="mus h${heat(st[m])}${S.sel === m ? " sel" : ""}" data-m="${m}" tabindex="0" role="button" aria-label="${MUSCLES[m].n} 주 ${fmt(st[m])}세트"><title>${MUSCLES[m].n}: 주 ${fmt(st[m])} 유효 세트</title>${shp}</g>`;
+    }
+    svg.innerHTML = h;
+  }
+}
+document.addEventListener("click", ev => {
+  const g = ev.target.closest(".mus, tr[data-m]"); if (g){ S.sel = g.dataset.m; renderSim(); }
+});
+document.addEventListener("keydown", ev => {
+  if ((ev.key === "Enter" || ev.key === " ") && ev.target.classList?.contains("mus")){ ev.preventDefault(); S.sel = ev.target.dataset.m; renderSim(); }
+});
+
+/* ---------------- simulator UI ---------------- */
+function fillAddSelect(){
+  const sel = $("add-ex");
+  sel.innerHTML = CATS.map(c => `<optgroup label="${c}">` +
+    EX.filter(e => e.c === c).map(e => `<option value="${e.id}">${esc(e.n)} · ${EQ[e.eq]}</option>`).join("") + `</optgroup>`).join("");
+}
+function renderRoutine(){
+  $("r-example").hidden = !S.isExample;
+  const box = $("routine");
+  if (!S.routine.length){ box.innerHTML = `<p class="muted small">루틴이 비어 있습니다. 아래에서 운동을 추가하세요.</p>`; }
+  else box.innerHTML = S.routine.map((r, i) => {
+    const e = EXM[r.id];
+    const tgt = Object.entries(e.w).filter(([,w]) => w >= .5).map(([m]) => MUSCLES[m].s).join("·") ||
+      (e.stretch ? "스트레칭: " + e.stretch.map(m => MUSCLES[m].s).join("·") : "가동성");
+    return `<div class="rrow">
+      <div class="nm"><b>${esc(e.n)}</b><small>${esc(tgt)}</small></div>
+      <label class="f" style="grid-template-columns:auto auto; align-items:center">${e.unit ? e.unit : "세트"}/주
+        <input type="number" min="0" max="40" value="${r.sets}" data-i="${i}" data-k="sets" id="rs-${i}"></label>
+      <select data-i="${i}" data-k="rir" id="rr-${i}" aria-label="강도">${RIR.map(o => `<option value="${o.v}"${o.v === r.rir ? " selected" : ""}>${o.n}</option>`).join("")}</select>
+      <button class="x" data-del="${i}" aria-label="${esc(e.n)} 삭제">✕</button></div>`;
+  }).join("");
+  const tot = S.routine.filter(r => EXM[r.id].type !== "stretch" && EXM[r.id].type !== "mobility").reduce((a, r) => a + (+r.sets || 0), 0);
+  $("r-total").textContent = `근력 운동 총 ${tot}세트/주`;
+}
+$("routine").addEventListener("input", ev => {
+  const i = ev.target.dataset.i; if (i === undefined) return;
+  const k = ev.target.dataset.k;
+  S.routine[i][k] = k === "sets" ? Math.max(0, Math.min(40, +ev.target.value || 0)) : ev.target.value;
+  S.isExample = false; save(); renderResults();
+});
+$("routine").addEventListener("click", ev => {
+  const d = ev.target.dataset.del; if (d === undefined) return;
+  S.routine.splice(+d, 1); S.isExample = false; save(); renderSim();
+});
+$("add-btn").addEventListener("click", () => {
+  const id = $("add-ex").value; const ex = S.routine.find(r => r.id === id);
+  if (ex) ex.sets += 3; else S.routine.push({id, sets: EXM[id].type === "stretch" ? 5 : 3, rir: EXM[id].type === "mobility" ? "easy" : "f2"});
+  S.isExample = false; save(); renderSim();
+});
+$("clear-btn").addEventListener("click", () => { S.routine = []; S.isExample = false; save(); renderSim(); });
+for (const k of ["level","sex","age","nutri","protein","weeks"]){
+  const el = $("p-" + k);
+  el.value = S.profile[k];
+  el.addEventListener("input", () => { S.profile[k] = (k === "age" || k === "weeks") ? (+el.value || 0) : el.value; save(); renderResults(); });
+}
+
+function renderDetail(st, by){
+  const m = S.sel, info = MUSCLES[m], z = zone(st[m]);
+  const g = growth(st[m], S.profile);
+  const contrib = by[m].sort((a, b) => b.v - a.v).slice(0, 4).map(x => `${esc(x.e.n)} <span class="mono">${fmt(x.v)}</span>`).join(", ") || "없음";
+  const best = EX.filter(e => (e.w[m] || 0) >= .5 && e.type !== "mobility").sort((a, b) => (b.w[m] - a.w[m]) || ((a.eff ?? 1) < (b.eff ?? 1) ? 1 : -1)).slice(0, 4);
+  const stretches = EX.filter(e => e.stretch?.includes(m));
+  $("m-detail").innerHTML = `
+    <header style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline">
+      <h3>${info.n}</h3><span class="pill z-${z.k}">${z.n}</span></header>
+    <div class="small">주간 유효 세트 <b class="mono">${fmt(st[m])}</b> · ${S.profile.weeks}주 뒤 근두께 <b class="mono">+${fmt(g * .5)}–${fmt(g * 1.5)}%</b> 추정</div>
+    <div class="small muted">기여한 운동: ${contrib}</div>
+    <div class="small"><b>이 근육에 좋은 운동</b></div>
+    <ul class="notes">${best.concat(stretches).map(e => `<li><b>${esc(e.n)}</b> <span class="muted">(${EQ[e.eq]})</span> — ${esc(e.cue)} <button class="x" data-addex="${e.id}">+ 루틴</button></li>`).join("")}</ul>`;
+}
+$("m-detail").addEventListener("click", ev => {
+  const id = ev.target.dataset.addex; if (!id) return;
+  const ex = S.routine.find(r => r.id === id);
+  if (ex) ex.sets += 3; else S.routine.push({id, sets: EXM[id].type === "stretch" ? 5 : 3, rir:"f2"});
+  S.isExample = false; save(); renderSim();
+});
+
+function warnings(st){
+  const w = [];
+  const push = st.chest + st.fdelt, pull = st.mtrap + st.rdelt + st.lats * .5;
+  if (push > 4 && push > pull * 1.5) w.push(["warn", `미는 운동(가슴·전면 삼각근 ${fmt(push)}) 대비 당기는 운동(등·후면 삼각근 ${fmt(pull)})이 적습니다. 라운드숄더가 걱정된다면 로우·페이스 풀을 늘려 1:1 이상을 권하는 경우가 많습니다(일반 권고, 직접 근거는 제한적).`]);
+  if (st.quads > 6 && st.hams < st.quads * .5) w.push(["warn", "앞 허벅지에 비해 햄스트링 자극이 적습니다. 루마니안 데드리프트나 레그 컬을 추가해 보세요."]);
+  for (const [m, v] of Object.entries(st)) if (v > 25) w.push(["bad", `${MUSCLES[m].n} 주 ${fmt(v)}세트: 매우 높은 볼륨입니다. 회복·관절 상태를 보며 조절하세요.`]);
+  const lowMajors = Object.keys(MUSCLES).filter(m => MUSCLES[m].major && st[m] < 3).map(m => MUSCLES[m].s);
+  if (lowMajors.length) w.push(["warn", `거의 자극이 없는 주요 근육: ${lowMajors.join(", ")}.`]);
+  const strength = S.routine.filter(r => !["mobility","stretch"].includes(EXM[r.id].type));
+  if (S.routine.length && !strength.length) w.push(["bad", "근력 운동 없이 체조·스트레칭만 있으면 근육은 거의 자라지 않습니다. 유연성과 순환에는 도움이 됩니다."]);
+  if (S.routine.some(r => r.rir === "easy" && EXM[r.id].type !== "mobility")) w.push(["warn", "‘여유 많음’ 세트는 근성장 효과가 크게 줄어듭니다. 마지막 세트는 2–3회 남기고 멈출 정도로 해보세요."]);
+  if (S.profile.nutri === "deficit") w.push(["", "감량 중에는 근육이 늘기 어렵지만, 근력운동과 충분한 단백질이 근손실을 막는 데 중요합니다."]);
+  if (!w.length) w.push(["good", "주요 근육이 고르게 자극되고 있습니다. 4–6주마다 무게나 반복을 조금씩 늘리세요(점진적 과부하)."]);
+  return w;
+}
+function renderResults(){
+  const {s: st, by} = stimulus(S.routine);
+  drawMaps(st); renderDetail(st, by);
+  const p = S.profile, lm = leanMass(st, p);
+  const top = Object.entries(st).sort((a, b) => b[1] - a[1]);
+  const opt = Object.values(st).filter(v => v >= 10).length;
+  $("res-sub").textContent = `${LEVEL[p.level].n} · ${p.sex === "M" ? "남성" : "여성"} · ${p.age}세 · ${p.weeks}주 기준`;
+  $("stats").innerHTML = `
+    <div class="stat"><div class="v">${lm.kg < .05 ? "≈0" : fmt(lm.kg * .6) + "–" + fmt(lm.kg * 1.4)} kg</div><div class="k">${p.weeks}주 제지방(근육) 증가 추정</div></div>
+    <div class="stat"><div class="v">${Math.round(lm.cov * 100)}%</div><div class="k">주요 근육 자극 커버리지</div></div>
+    <div class="stat"><div class="v">${opt} / ${Object.keys(MUSCLES).length}</div><div class="k">권장 범위(주 10–20세트) 근육 수</div></div>
+    <div class="stat"><div class="v">${esc(MUSCLES[top[0][0]].s)}</div><div class="k">가장 많이 자극되는 근육</div></div>`;
+  $("warnings").innerHTML = warnings(st).map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
+  const rows = Object.keys(MUSCLES).sort((a, b) => st[b] - st[a]);
+  $("mtable").innerHTML = `<thead><tr><th>근육</th><th class="num">유효 세트/주</th><th>볼륨 (점선 = 권장 10–20)</th><th>상태</th><th class="num">${p.weeks}주 근두께 변화</th></tr></thead><tbody>` +
+    rows.map(m => { const v = st[m], z = zone(v), g = growth(v, p);
+      return `<tr class="clickable" data-m="${m}"><td>${MUSCLES[m].n}</td><td class="num">${fmt(v)}</td>
+      <td><div class="bar"><span style="width:${Math.min(100, v / 25 * 100)}%"></span><i class="opt" style="left:40%; width:40%"></i></div></td>
+      <td><span class="pill z-${z.k}">${z.n}</span></td><td class="num">${v < .5 ? "–" : "+" + fmt(g * .5) + "–" + fmt(g * 1.5) + "%"}</td></tr>`; }).join("") + `</tbody>`;
+}
+function renderSim(){ renderRoutine(); renderResults(); }
+
+/* ---------------- plan generator ---------------- */
+const GOALS = [
+  {id:"shoulder", n:"넓은 어깨 · V라인", m:["sdelt","rdelt","lats"]},
+  {id:"chest", n:"탄탄한 가슴", m:["chest","fdelt","triceps"]},
+  {id:"arms", n:"굵은 팔", m:["biceps","triceps","forearm"]},
+  {id:"glutes", n:"힙업", m:["gmax","gmed","hams"]},
+  {id:"legs", n:"탄탄한 하체", m:["quads","hams","gmax","calves","adductors"]},
+  {id:"core", n:"코어 · 복부", m:["abs","obliques","erectors"]},
+  {id:"posture", n:"바른 자세 (거북목·라운드숄더)", m:["neck","ltrap","mtrap","rdelt","serratus"]},
+  {id:"balance", n:"전신 균형", m:["chest","lats","mtrap","sdelt","quads","hams","gmax"]}
+];
+function renderGoalChips(){
+  $("goals").innerHTML = GOALS.map(g => `<button class="chip" aria-pressed="${S.goals.includes(g.id)}" data-goal="${g.id}">${g.n}</button>`).join("");
+  $("equip").innerHTML = Object.entries(EQ).map(([k, n]) => `<button class="chip" aria-pressed="${S.equip.includes(k)}" data-eq="${k}">${n}</button>`).join("");
+  $("g-days").value = S.days; $("g-min").value = S.min;
+}
+$("goals").addEventListener("click", ev => { const g = ev.target.dataset.goal; if (!g) return;
+  S.goals = S.goals.includes(g) ? S.goals.filter(x => x !== g) : [...S.goals, g]; save(); renderGoalChips(); });
+$("equip").addEventListener("click", ev => { const k = ev.target.dataset.eq; if (!k) return;
+  S.equip = S.equip.includes(k) ? S.equip.filter(x => x !== k) : [...S.equip, k]; if (!S.equip.includes("bw")) S.equip.push("bw"); save(); renderGoalChips(); });
+$("g-days").addEventListener("input", e => { S.days = +e.target.value; save(); });
+$("g-min").addEventListener("input", e => { S.min = +e.target.value; save(); });
+
+function generatePlan(){
+  const lv = S.profile.level;
+  const focusT = {beg:10, int:14, adv:16}[lv];
+  const focus = new Set(S.goals.flatMap(g => GOALS.find(x => x.id === g).m));
+  if (!focus.size) GOALS.find(x => x.id === "balance").m.forEach(m => focus.add(m));
+  const target = {};
+  for (const m of Object.keys(MUSCLES)) target[m] = focus.has(m) ? focusT : (MUSCLES[m].major ? 6 : 0);
+  if (focus.has("neck")) target.neck = 3;  // 저부하 조절 운동이라 유효 세트가 낮게 계산됨
+  const target0 = {...target};
+  const budget = Math.floor(S.days * S.min / 3);  // 세트당 ~3분(휴식 포함)
+  const avail = EX.filter(e => S.equip.includes(e.eq) && (e.type === undefined || e.type === "posture"));
+  const sets = {}; const st = Object.fromEntries(Object.keys(MUSCLES).map(m => [m, 0]));
+  let used = 0, guard = 0;
+  while (used + 2 <= budget && guard++ < 200){
+    // 가장 부족한 근육 (목표 근육 우선)
+    let worst = null, wd = .5;
+    for (const m of Object.keys(target)){ const d = (target[m] - st[m]) * (focus.has(m) ? 1.3 : 1); if (d > wd){ wd = d; worst = m; } }
+    if (!worst) break;
+    let best = null, bs = -1;
+    for (const e of avail){
+      if ((e.w[worst] || 0) < .5 || (sets[e.id] || 0) >= (e.type === "posture" ? 6 : 10)) continue;
+      const f = .9 * (e.eff ?? 1);
+      let sc = e.w[worst] * f * 2;
+      for (const [m, w] of Object.entries(e.w)) if (m !== worst){
+        const gap = target[m] - st[m]; sc += gap > 0 ? w * f * .6 : (st[m] > target[m] + 4 ? -w * .8 : 0);
+      }
+      if (sets[e.id]) sc += .15; // 같은 운동 이어가기 (종목 수 줄이기)
+      if (sc > bs){ bs = sc; best = e; }
+    }
+    if (!best){ target[worst] = st[worst]; continue; }
+    sets[best.id] = (sets[best.id] || 0) + 2; used += 2;
+    for (const [m, w] of Object.entries(best.w)) st[m] += 2 * w * .9 * (best.eff ?? 1);
+  }
+  const routine = Object.entries(sets).map(([id, n]) => ({id, sets:n, rir:"f2"}));
+  const extras = [];
+  if (S.goals.includes("posture")) extras.push({id:"doorway", sets:5, rir:"f2"}, {id:"utrapstretch", sets:5, rir:"f2"}, {id:"thoracic", sets:3, rir:"easy"});
+  if (S.goals.includes("core")) extras.push({id:"deadbug", sets:3, rir:"f2"});
+  for (const x of extras) if (!routine.find(r => r.id === x.id)) routine.push(x);
+  // 요일 배분: 4세트 이상이면 2회 이상 나눠서 빈도 2회+
+  const days = Array.from({length:S.days}, () => ({items:[], n:0}));
+  const sorted = [...routine].sort((a, b) => b.sets - a.sets);
+  for (const r of sorted){
+    const e = EXM[r.id];
+    const light = e.type === "stretch" || e.type === "mobility";
+    const parts = light ? S.days : Math.min(S.days, r.sets >= 6 ? 3 : r.sets >= 4 ? 2 : 1);
+    const order = days.map((d, i) => i).sort((a, b) => days[a].n - days[b].n).slice(0, parts).sort((a, b) => a - b);
+    order.forEach((di, k) => {
+      const n = light ? r.sets : Math.floor(r.sets / parts) + (k < r.sets % parts ? 1 : 0);
+      days[di].items.push({e, n}); if (!light) days[di].n += n;
+    });
+  }
+  const rank = x => ({posture:1, mobility:2, stretch:3}[x.e.type] || 0);
+  S.plan = {routine, days: days.map(d => d.items.sort((a, b) => rank(a) - rank(b)).map(x => ({id:x.e.id, n:x.n}))), focus:[...focus], target: target0, budget, used};
+  save(); renderPlan();
+}
+function renderPlan(){
+  const out = $("plan-out"); const P = S.plan;
+  if (!P){ out.hidden = true; return; }
+  out.hidden = false;
+  const {s: st} = stimulus(P.routine);
+  const dn = ["월","화","수","목","금","토","일"];
+  const pick = {2:[0,3], 3:[0,2,4], 4:[0,1,3,4], 5:[0,1,2,4,5], 6:[0,1,2,3,4,5]}[P.days.length] || P.days.map((_, i) => i);
+  const notes = [];
+  if (S.goals.includes("core")) notes.push("복근 운동은 복근을 키우지만 뱃살만 골라 빼지는 못합니다(국소 감량 효과 없음: Vispute 2011). 복부가 드러나려면 식사로 체지방을 줄여야 합니다.");
+  if (S.goals.includes("posture")) notes.push("자세 교정 운동은 주 3–5회, 최소 8–10주 꾸준히 했을 때 머리 자세 개선이 보고되었습니다(Harman 2005; Sheikhhoseini 2018). 스트레칭은 매일 해도 좋습니다.");
+  if (P.used >= P.budget - 1) notes.push(`운동 시간이 빠듯해서 주 ${P.budget}세트 안에 맞췄습니다. 목표 근육 볼륨이 부족하면 운동일이나 시간을 늘려보세요.`);
+  notes.push("처음 2주는 목표 세트의 2/3 정도로 시작해 익숙해지면 늘리세요. 매주 무게나 반복을 조금씩 올리는 것이 핵심입니다(점진적 과부하).");
+  out.innerHTML = `
+    <header><h2>추천 주간 플랜</h2><span class="muted small">근력 운동 ${P.used}세트/주 · 세트당 약 3분(휴식 포함)</span></header>
+    <div class="days">${P.days.map((items, i) => `<div class="day"><h3>${dn[pick[i]] ?? (i + 1) + "일차"}요일</h3><ul>${items.map(x => `<li>${esc(EXM[x.id].n)} <span class="mono">${EXM[x.id].type === "stretch" ? "30초×3" : EXM[x.id].type === "mobility" ? "1–2분" : x.n + "세트"}</span></li>`).join("") || "<li class='muted'>휴식</li>"}</ul></div>`).join("")}</div>
+    <div class="tablewrap"><table><thead><tr><th>목표 근육</th><th class="num">목표 세트</th><th class="num">플랜 유효 세트</th><th>상태</th></tr></thead><tbody>
+      ${P.focus.map(m => `<tr><td>${MUSCLES[m].n}</td><td class="num">${P.target[m] ? Math.round(P.target[m]) : "–"}</td><td class="num">${fmt(st[m])}</td><td><span class="pill z-${zone(st[m]).k}">${zone(st[m]).n}</span></td></tr>`).join("")}
+    </tbody></table></div>
+    <ul class="notes">${notes.map(n => `<li>${n}</li>`).join("")}</ul>
+    <div class="row"><button class="primary" id="plan-apply">이 플랜을 시뮬레이터로 보내기</button><span class="muted small">현재 루틴을 이 플랜으로 바꾸고 근육 지도에서 확인합니다.</span></div>`;
+  $("plan-apply").onclick = () => { S.routine = P.routine.map(r => ({...r})); S.isExample = false; save(); location.hash = "#sim"; renderSim(); };
+}
+$("gen-btn").addEventListener("click", generatePlan);
+
+/* ---------------- posture ---------------- */
+const HANSRAJ = [[0,5],[15,12.25],[30,18.14],[45,22.23],[60,27.22]];
+function neckLoad(a){ for (let i = 1; i < HANSRAJ.length; i++){ const [a0, k0] = HANSRAJ[i-1], [a1, k1] = HANSRAJ[i]; if (a <= a1) return k0 + (k1 - k0) * (a - a0) / (a1 - a0); } return 27.22; }
+function renderNeck(){
+  const a = +$("neck-range").value, kg = neckLoad(a);
+  $("neck-deg").textContent = a + "°"; $("neck-kg").textContent = fmt(kg) + " kg";
+  $("neck-msg").innerHTML = a < 8 ? "중립 자세: 머리 무게 정도만 지탱합니다." : a < 25 ? `중립 대비 약 <b>${fmt(kg / 5, 1)}배</b>. 스마트폰을 내려다보는 흔한 각도입니다.` : `중립 대비 약 <b>${fmt(kg / 5, 1)}배</b>. 화면을 눈높이로 올리면 크게 줄어듭니다.`;
+  const r = a * Math.PI / 180, c7 = {x:90, y:110}, L = 38;
+  const hx = c7.x + Math.sin(r) * L, hy = c7.y - Math.cos(r) * L;
+  const hue = kg < 10 ? "var(--good)" : kg < 20 ? "var(--warn)" : "var(--bad)";
+  $("neck-fig").innerHTML = `
+    <line x1="90" y1="110" x2="86" y2="210" stroke="var(--muted)" stroke-width="10" stroke-linecap="round"/>
+    <line x1="90" y1="110" x2="${hx}" y2="${hy}" stroke="${hue}" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="${hx + Math.sin(r) * 18}" cy="${hy - Math.cos(r) * 18}" r="24" fill="var(--body)" stroke="var(--body-line)"/>
+    <circle cx="${hx + Math.sin(r) * 18 + Math.cos(r) * 14}" cy="${hy - Math.cos(r) * 18 + Math.sin(r) * 14}" r="2.5" fill="var(--ink)"/>
+    <line x1="90" y1="110" x2="90" y2="40" stroke="var(--line)" stroke-dasharray="3 3"/>
+    <text x="96" y="232" font-size="11" fill="var(--muted)" font-family="var(--f-mono)">${a}° · ${fmt(kg)}kg</text>`;
+}
+$("neck-range").addEventListener("input", renderNeck);
+
+// CVA photo tool
+let cva = {img:null, pts:[]};
+function cvaDraw(){
+  const cv = $("cva-canvas"), ctx = cv.getContext("2d");
+  if (!cva.img) return;
+  ctx.drawImage(cva.img, 0, 0, cv.width, cv.height);
+  const s = cv.width / 600;
+  ctx.lineWidth = 3 * s; ctx.font = `${16 * s}px sans-serif`;
+  cva.pts.forEach((p, i) => { ctx.fillStyle = i ? "#e0683a" : "#2f6fb5"; ctx.beginPath(); ctx.arc(p.x, p.y, 7 * s, 0, 7); ctx.fill();
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 3 * s; const t = i ? "C7" : "귀"; ctx.strokeText(t, p.x + 10 * s, p.y - 10 * s); ctx.fillText(t, p.x + 10 * s, p.y - 10 * s); });
+  if (cva.pts.length === 2){
+    const [t, c] = cva.pts;
+    ctx.strokeStyle = "#ffd54a"; ctx.setLineDash([8 * s, 6 * s]); ctx.beginPath(); ctx.moveTo(c.x - 160 * s * Math.sign(c.x - t.x || 1), c.y); ctx.lineTo(c.x + 40 * s * Math.sign(c.x - t.x || 1), c.y); ctx.stroke();
+    ctx.setLineDash([]); ctx.strokeStyle = "#e0683a"; ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    const ang = Math.atan2(c.y - t.y, Math.abs(t.x - c.x)) * 180 / Math.PI;
+    const cls = ang >= 53 ? ["good","양호한 편"] : ang >= 48 ? ["warn","경계 범위"] : ["bad","전방 머리 자세 경향"];
+    $("cva-out").innerHTML = `<div class="stat"><div class="v">${fmt(ang)}°</div><div class="k"><span class="pill z-${cls[0] === "good" ? "opt" : cls[0] === "warn" ? "low" : "high"}">${cls[1]}</span> 아래 ‘거북목’ 프로그램을 8–10주 하고 같은 조건으로 다시 찍어 비교해 보세요.</div></div>`;
+  } else $("cva-out").textContent = cva.pts.length ? "이제 목 뒤 C7(고개 숙이면 가장 튀어나오는 뼈)을 누르세요." : "귀 구슬(이주)을 누르세요.";
+}
+function cvaLoad(file){
+  if (!file || !file.type.startsWith("image/")) return;
+  const url = URL.createObjectURL(file), img = new Image();
+  img.onload = () => { const cv = $("cva-canvas"), w = Math.min(1200, img.naturalWidth);
+    cv.width = w; cv.height = Math.round(w * img.naturalHeight / img.naturalWidth);
+    cva = {img, pts:[]}; cv.hidden = false; $("cva-reset").hidden = false; cvaDraw(); };
+  img.src = url;
+}
+$("cva-file").addEventListener("change", e => cvaLoad(e.target.files[0]));
+$("cva-drop").addEventListener("dragover", e => e.preventDefault());
+$("cva-drop").addEventListener("drop", e => { e.preventDefault(); cvaLoad(e.dataTransfer.files[0]); });
+$("cva-canvas").addEventListener("click", e => {
+  const cv = e.currentTarget, b = cv.getBoundingClientRect();
+  if (cva.pts.length >= 2) cva.pts = [];
+  cva.pts.push({x:(e.clientX - b.left) * cv.width / b.width, y:(e.clientY - b.top) * cv.height / b.height}); cvaDraw();
+});
+$("cva-reset").addEventListener("click", () => { cva.pts = []; cvaDraw(); });
+
+const PROGRAMS = [
+  {n:"거북목 (전방 머리 자세)", ev:"근거 중간: RCT·메타분석",
+   why:"머리를 받치는 심부 목굴곡근이 약해지고, 가슴·목 뒤가 짧아진 패턴이 흔합니다. 목 앞쪽 깊은 근육 강화 + 등 위쪽 강화 + 가슴 스트레칭을 함께 한 프로그램에서 머리 자세가 개선되었습니다.",
+   steps:["턱 당기기 10초 × 10회, 매일 (심부 목굴곡근)","누워서 턱 당기고 머리 들기 10초 × 10회, 주 3–5회","엎드려 Y·T 들기 각 2–3세트 × 10–15회, 주 3회 (하부·중부 승모근)","문틀 가슴 스트레칭 30초 × 3회, 매일","모니터 위쪽 끝을 눈높이에, 스마트폰은 가슴 높이 이상으로"],
+   dose:"주 3–5회 · 8–10주 이상", cite:"Harman 2005; Sheikhhoseini 2018; Jull 2009",
+   add:[["chintuck",7],["dnf",4],["pronety",6],["pronet",6],["doorway",7],["utrapstretch",5]]},
+  {n:"라운드숄더 (굽은 어깨)", ev:"근거 낮음–중간",
+   why:"어깨가 앞으로 말린 자세는 소흉근이 짧고 견갑골을 뒤·아래로 잡는 근육(중·하부 승모근, 전거근)이 약한 패턴과 자주 연결됩니다. 상부 승모근은 덜 쓰고 중·하부 승모근을 쓰는 운동이 권장됩니다.",
+   steps:["페이스 풀 또는 밴드 풀 어파트 3세트 × 15회","덤벨/인버티드 로우 3세트 × 8–12회 (밀기 운동보다 많게)","벽 슬라이드 2세트 × 10회 (전거근·하부 승모근)","옆으로 누워 바깥 돌리기, 엎드려 T 들기: 상부 대비 중·하부 승모근 비율이 좋은 운동","문틀 가슴 스트레칭 (한 팔씩, 30초 × 3)"],
+   dose:"주 3회 · 8–12주", cite:"Cools 2007; Borstad 2006; Ekstrom 2003",
+   add:[["facepull",6],["row",6],["wallslide",4],["pronet",4],["doorway",7]]},
+  {n:"골반 전방경사 (허리 과하게 꺾임)", ev:"근거 낮음: 개인차 큼",
+   why:"어느 정도의 골반 전방경사는 정상이며, 운동으로 각도가 크게 바뀐다는 근거는 약합니다. 다만 엉덩이·복부 조절력을 키우면 허리를 덜 꺾고 서는 습관을 만드는 데 도움이 될 수 있습니다.",
+   steps:["데드버그 3세트 × 8회/쪽 (허리를 바닥에 붙인 채)","글루트 브릿지 또는 힙 쓰러스트 3세트 × 10–15회","고관절 굴곡근 스트레칭 30초 × 3회/쪽","플랭크 3 × 30–45초 (갈비뼈를 내리고 엉덩이에 힘)"],
+   dose:"주 3회 · 8주 후 재평가", cite:"일반 임상 권고 (직접 근거 제한적)",
+   add:[["deadbug",4],["bridge",6],["hipflexor",6],["plank",3]]}
+];
+function renderPrograms(){
+  $("posture-cards").innerHTML = PROGRAMS.map((p, i) => `<div class="card">
+    <header style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap"><h3>${p.n}</h3><span class="ev">${p.ev}</span></header>
+    <p class="small muted">${p.why}</p>
+    <ol>${p.steps.map(s => `<li>${s}</li>`).join("")}</ol>
+    <div class="small"><b>기간</b> ${p.dose} · <span class="muted">${p.cite}</span></div>
+    <div class="row"><button class="primary" data-prog="${i}">내 루틴에 추가</button><span class="small muted" id="prog-msg-${i}"></span></div></div>`).join("");
+}
+$("posture-cards").addEventListener("click", ev => {
+  const i = ev.target.dataset.prog; if (i === undefined) return;
+  for (const [id, n] of PROGRAMS[i].add){ const ex = S.routine.find(r => r.id === id); if (ex) ex.sets = Math.max(ex.sets, n); else S.routine.push({id, sets:n, rir:"f2"}); }
+  S.isExample = false; save(); renderSim(); $("prog-msg-" + i).textContent = "추가했습니다. ‘내 루틴 시뮬레이터’에서 확인하세요.";
+});
+
+/* ---------------- arm angle ---------------- */
+const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const CURVES = [
+  {n:"측면 삼각근", c:"--c1", f:a => 10 + 80 * ss(0, 100, a) - 8 * ss(140, 180, a)},
+  {n:"극상근 (회전근개)", c:"--c5", f:a => 20 + 55 * ss(0, 60, a) - 15 * ss(120, 180, a)},
+  {n:"상부 승모근", c:"--c3", f:a => 8 + 70 * ss(20, 160, a)},
+  {n:"전거근", c:"--c4", f:a => 8 + 82 * ss(40, 170, a)},
+  {n:"하부 승모근", c:"--c2", f:a => 5 + 72 * ss(90, 180, a)}
+];
+function renderAngle(){
+  const a = +$("ang-range").value;
+  const scap = Math.max(0, (a - 30) / 3), gh = a - scap;
+  $("ang-deg").textContent = a + "°"; $("ang-scap").textContent = fmt(scap, 0) + "°"; $("ang-gh").textContent = fmt(gh, 0) + "°";
+  // figure
+  const r = a * Math.PI / 180, sh = {x:78, y:78}, sh2 = {x:142, y:78}, L = 70;
+  const arm = (s, dir) => `<line x1="${s.x}" y1="${s.y}" x2="${s.x + dir * Math.sin(r) * L}" y2="${s.y + Math.cos(r) * L}" stroke="var(--accent)" stroke-width="9" stroke-linecap="round"/>`;
+  const shrugY = a > 120 ? -2 : 0;
+  $("arm-fig").innerHTML = `
+    <path d="M78 ${78 + shrugY} Q110 70 142 ${78 + shrugY} L136 150 L84 150 Z" fill="var(--body)" stroke="var(--body-line)"/>
+    <rect x="102" y="52" width="16" height="22" rx="5" fill="var(--body)" stroke="var(--body-line)"/>
+    <circle cx="110" cy="38" r="17" fill="var(--body)" stroke="var(--body-line)"/>
+    <rect x="86" y="150" width="20" height="62" rx="9" fill="var(--body)" stroke="var(--body-line)"/><rect x="114" y="150" width="20" height="62" rx="9" fill="var(--body)" stroke="var(--body-line)"/>
+    <path d="M${sh.x} ${sh.y} L${sh.x} ${sh.y + 40}" stroke="var(--line)" stroke-dasharray="3 3"/>
+    ${arm(sh, -1)}${arm(sh2, 1)}
+    <path d="M${sh.x} ${sh.y + 22} A22 22 0 0 ${a > 0 ? 1 : 0} ${sh.x - Math.sin(r) * 22} ${sh.y + Math.cos(r) * 22}" fill="none" stroke="var(--warn)" stroke-width="2"/>
+    <text x="8" y="214" font-size="11" fill="var(--muted)" font-family="var(--f-mono)">${a}°</text>`;
+  // chart
+  const W = 340, H = 190, ml = 30, mr = 10, mt = 10, mb = 26, x = v => ml + v / 180 * (W - ml - mr), y = v => mt + (1 - v / 100) * (H - mt - mb);
+  let g = "";
+  for (const t of [0,30,60,90,120,150,180]) g += `<line class="ax" x1="${x(t)}" y1="${mt}" x2="${x(t)}" y2="${H - mb}"/><text x="${x(t)}" y="${H - mb + 14}" text-anchor="middle">${t}°</text>`;
+  for (const t of [0,50,100]) g += `<text x="${ml - 4}" y="${y(t) + 3}" text-anchor="end">${t}</text>`;
+  g += `<rect x="${x(60)}" y="${mt}" width="${x(120) - x(60)}" height="${H - mt - mb}" fill="var(--warn)" opacity=".08"/>`;
+  for (const cv of CURVES){
+    let d = ""; for (let t = 0; t <= 180; t += 3) d += (t ? "L" : "M") + fmt(x(t), 1) + " " + fmt(y(cv.f(t)), 1);
+    g += `<path d="${d}" fill="none" stroke="var(${cv.c})" stroke-width="2"/><circle cx="${x(a)}" cy="${y(cv.f(a))}" r="3.5" fill="var(${cv.c})"/>`;
+  }
+  g += `<line x1="${x(a)}" y1="${mt}" x2="${x(a)}" y2="${H - mb}" stroke="var(--ink)" stroke-width="1"/>`;
+  $("ang-chart").innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="각도별 근육 활성 그래프">${g}</svg>`;
+  $("ang-legend").innerHTML = CURVES.map(cv => `<span><i style="background:var(${cv.c})"></i> ${cv.n} <b class="mono">${Math.round(cv.f(a))}</b></span>`).join(" ");
+  const notes = [];
+  if (a < 60) notes.push(["", "준비 구간: 팔 무게가 작게 걸리고, 주로 극상근·삼각근이 팔을 들기 시작합니다."]);
+  else if (a < 120) notes.push(["warn", "어깨 높이 구간: 측면 삼각근이 가장 열심히 일합니다. 이 구간(60–120°)에서 아프다면 ‘통증호’ 신호일 수 있어요. 엄지를 위로 돌려보세요."]);
+  else if (a < 160) notes.push(["good", "견갑골이 본격적으로 위로 회전합니다. 전거근·하부 승모근 참여가 크게 늘어납니다."]);
+  else notes.push(["good", "귀 옆까지: 하부 승모근·전거근이 가장 많이 참여합니다. 국민체조에서 목표로 할 높이입니다. 갈비뼈가 들리거나 허리가 꺾이지 않게 하세요."]);
+  if (a >= 90) notes.push(["", "거북목·라운드숄더가 있으면 팔이 끝까지 안 올라가고 허리로 보상하기 쉽습니다. 벽 슬라이드로 연습하면 좋아요."]);
+  $("ang-notes").innerHTML = notes.map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
+}
+$("ang-range").addEventListener("input", renderAngle);
+
+/* ---------------- references ---------------- */
+const REFS = [
+  {c:"Schoenfeld BJ, Ogborn D, Krieger JW. Dose-response relationship between weekly resistance training volume and increases in muscle mass: a systematic review and meta-analysis. J Sports Sci. 2017;35(11):1073–1082.", u:"주당 세트가 많을수록 근비대가 커지는 경향(10세트+ 그룹이 가장 큼) → ‘권장 범위 주 10–20세트’, 볼륨-성장 곡선.", e:"메타분석"},
+  {c:"Pelland JC, et al. The resistance training dose response: meta-regressions exploring the effects of weekly volume and frequency on muscle hypertrophy and strength gain. SportRxiv preprint 2024 (Sports Medicine 2025 게재).", u:"협응근 세트를 0.5로 세는 ‘분수 세트’ 방식, 볼륨이 늘수록 효과가 둔화되는 곡선 모양.", e:"메타회귀"},
+  {c:"Schoenfeld BJ, Grgic J, Ogborn D, Krieger JW. Strength and hypertrophy adaptations between low- vs. high-load resistance training: a systematic review and meta-analysis. J Strength Cond Res. 2017;31(12):3508–3523.", u:"가벼운 무게도 실패 근처까지 하면 근비대가 비슷 → 맨몸 운동 인정, 단 ‘여유 많은’ 세트는 낮게 계산.", e:"메타분석"},
+  {c:"Refalo MC, Helms ER, Trexler ET, Hamilton DL, Fyfe JJ. Influence of resistance training proximity-to-failure on skeletal muscle hypertrophy: a systematic review with meta-analysis. Sports Med. 2023;53(3):649–665.", u:"실패에 가까울수록 근비대가 커지는 경향 → 근접 실패 계수(1.0/0.9/0.6/0.3).", e:"메타분석"},
+  {c:"Schoenfeld BJ, Ogborn D, Krieger JW. Effects of resistance training frequency on measures of muscle hypertrophy: a systematic review and meta-analysis. Sports Med. 2016;46(11):1689–1697.", u:"근육당 주 2회 이상 → 플랜 생성 시 세트를 여러 요일로 나눔.", e:"메타분석"},
+  {c:"Morton RW, et al. A systematic review, meta-analysis and meta-regression of the effect of protein supplementation on resistance training-induced gains in muscle mass and strength in healthy adults. Br J Sports Med. 2018;52(6):376–384.", u:"단백질 약 1.6 g/kg/일 이상에서 효과가 대체로 포화 → 단백질 보정 계수.", e:"메타분석"},
+  {c:"Hubal MJ, et al. Variability in muscle size and strength gain after unilateral resistance training. Med Sci Sports Exerc. 2005;37(6):964–972.", u:"같은 12주 훈련에서도 근단면적 변화가 사람마다 매우 다름 → 결과를 범위(×0.5–1.5)로 표시.", e:"대규모 코호트"},
+  {c:"Vigotsky AD, Halperin I, Lehman GJ, Trajano GS, Vieira TM. Interpreting signal amplitudes in surface electromyography studies in sport and rehabilitation sciences. Front Physiol. 2018;8:985.", u:"EMG가 높다 = 더 많이 자란다가 아님 → 이 툴은 EMG 값 대신 주동/협응 기여도로 계산.", e:"방법론 리뷰"},
+  {c:"Contreras B, Vigotsky AD, Schoenfeld BJ, Beardsley C, Cronin J. A comparison of gluteus maximus, biceps femoris, and vastus lateralis EMG activity in the back squat and barbell hip thrust exercises. J Appl Biomech. 2015;31(6):452–458.", u:"힙 쓰러스트의 대둔근 활성이 스쿼트보다 높음 → 힙업 목표에서 우선 선택.", e:"EMG 연구"},
+  {c:"Kubo K, Ikebukuro T, Yata H. Effects of squat training with different depths on lower limb muscle volumes. Eur J Appl Physiol. 2019;119(9):1933–1942.", u:"깊은 스쿼트가 대둔근·내전근 성장에 유리 → 스쿼트 자세 안내.", e:"RCT"},
+  {c:"Maeo S, et al. Greater hamstrings muscle hypertrophy but similar damage protection after training at long versus short muscle lengths. Med Sci Sports Exerc. 2021;53(4):825–837.", u:"시티드 레그 컬 > 라잉 레그 컬 → 운동 설명.", e:"RCT"},
+  {c:"Maeo S, et al. Triceps brachii hypertrophy is substantially greater after elbow extension training performed in the overhead versus neutral arm position. Eur J Sport Sci. 2023;23(7):1240–1250.", u:"오버헤드 삼두 운동 우선 → 운동 설명.", e:"RCT"},
+  {c:"Distefano LJ, Blackburn JT, Marshall SW, Padua DA. Gluteal muscle activation during common therapeutic exercises. J Orthop Sports Phys Ther. 2009;39(7):532–540.", u:"옆으로 누워 다리 들기의 중둔근 활성이 높음.", e:"EMG 연구"},
+  {c:"Ekstrom RA, Donatelli RA, Soderberg GL. Surface electromyographic analysis of exercises for the trapezius and serratus anterior muscles. J Orthop Sports Phys Ther. 2003;33(5):247–258.", u:"엎드려 Y(하부 승모근), 엎드려 T(중부 승모근) 등 → 자세 교정 운동 선택, 팔 각도 그래프.", e:"EMG 연구"},
+  {c:"Wickham J, Pizzari T, Stansfeld K, Burnside A, Watson L. Quantifying ‘normal’ shoulder muscle activity during abduction. J Electromyogr Kinesiol. 2010;20(2):212–222.", u:"팔 외전 각도별 어깨 근육 활성 패턴 → ‘팔 올리는 각도’ 모식도.", e:"EMG 연구"},
+  {c:"Inman VT, Saunders JB, Abbott LC. Observations on the function of the shoulder joint. J Bone Joint Surg. 1944;26(1):1–30.", u:"견갑상완 리듬(약 2:1) → 견갑골·상완골 각도 계산.", e:"고전 연구"},
+  {c:"Cools AM, Dewitte V, Lanszweert F, et al. Rehabilitation of scapular muscle balance: which exercises to prescribe? Am J Sports Med. 2007;35(10):1744–1751.", u:"상부 승모근은 적게, 중·하부 승모근은 많이 쓰는 운동 → 라운드숄더 프로그램.", e:"EMG 연구"},
+  {c:"Borstad JD, Ludewig PM. Comparison of three stretches for the pectoralis minor muscle. J Shoulder Elbow Surg. 2006;15(3):324–330.", u:"한 팔 문틀(코너) 스트레칭이 소흉근 길이 증가에 효과적 → 가슴 스트레칭 방법.", e:"실험 연구"},
+  {c:"Hansraj KK. Assessment of stresses in the cervical spine caused by posture and position of the head. Surg Technol Int. 2014;25:277–279.", u:"고개 각도별 경추 하중 추정(0°≈4.5–5.4kg … 60°≈27kg) → 목 부담 슬라이더. 컴퓨터 모델 추정치임.", e:"모델링"},
+  {c:"Harman K, Hubley-Kozey CL, Butler H. Effectiveness of an exercise program to improve forward head posture in normal adults: a randomized, controlled 10-week trial. J Man Manip Ther. 2005;13(3):163–176.", u:"강화+스트레칭 10주 프로그램으로 머리 자세 개선 → 거북목 프로그램 구성·기간.", e:"RCT"},
+  {c:"Sheikhhoseini R, Shahrbanian S, Sayyadi P, O’Sullivan K. Effectiveness of therapeutic exercise on forward head posture: a systematic review and meta-analysis. J Manipulative Physiol Ther. 2018;41(6):530–539.", u:"치료적 운동이 CVA를 개선 → 거북목 프로그램 근거.", e:"메타분석"},
+  {c:"Jull GA, Falla D, Vicenzino B, Hodges PW. The effect of therapeutic exercise on activation of the deep cervical flexor muscles in people with chronic neck pain. Man Ther. 2009;14(6):696–701.", u:"두개경추 굴곡(턱 당기기) 훈련이 심부 목굴곡근 활성을 개선.", e:"RCT"},
+  {c:"Yip CHT, Chiu TTW, Poon ATK. The relationship between head posture and severity and disability of patients with neck pain. Man Ther. 2008;13(2):148–154.", u:"CVA가 작을수록 목 통증·장애와 관련 → 사진 CVA 측정 해석.", e:"관찰 연구"},
+  {c:"Vispute SS, Smith JD, LeCheminant JD, Hurley KS. The effect of abdominal exercise on abdominal fat. J Strength Cond Res. 2011;25(9):2559–2564.", u:"복근 운동만으로 복부 지방이 줄지 않음 → ‘국소 감량 불가’ 안내.", e:"RCT"}
+];
+function renderRefs(){
+  $("refs").innerHTML = REFS.map(r => `<div class="ref"><div class="cite">${esc(r.c)} <span class="ev">${r.e}</span></div><div class="use">이 툴에서: ${esc(r.u)}</div></div>`).join("");
+}
+
+/* ---------------- tabs ---------------- */
+const TABS = ["sim","plan","posture","angle","refs"];
+function route(){
+  const t = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "sim";
+  for (const id of TABS) $("v-" + id).hidden = id !== t;
+  document.querySelectorAll("nav.tabs a").forEach(a => { if (a.dataset.tab === t) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+}
+window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
+
+/* ---------------- boot ---------------- */
+fillAddSelect(); renderSim(); renderGoalChips(); renderPlan(); renderNeck(); renderPrograms(); renderAngle(); renderRefs(); route();
+if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !location.hostname.endsWith("claude.ai")){
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body><!--shell-->
+</html><!--shell-->
