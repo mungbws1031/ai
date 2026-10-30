@@ -70,6 +70,7 @@ button{font:inherit;color:inherit}
 .sw{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
 .sl input{width:100%;accent-color:var(--c)}
 .kcal{font-size:13px;color:var(--ink-2)}
+.meal-time{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
 .habit{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px}
 .habit-lbl{font-weight:600}
 .habit-time{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
@@ -295,7 +296,15 @@ button{font:inherit;color:inherit}
   <section class="panel meal" aria-label="식단 설정">
     <div class="meal-top">
       <div class="presets" id="presets"></div>
-      <div class="kcal">섭취 열량 약 <b id="kcalIn">0</b> kcal · 12:00 식사 기준</div>
+      <div class="meal-time">
+        <label class="habit-time" for="mealTime">식사 시각 <input type="time" id="mealTime" value="12:00" step="300"></label>
+        <div class="habit-freq" id="mealChips">
+          <button class="chip" type="button" data-t="07:30">아침 7:30</button>
+          <button class="chip" type="button" data-t="12:00">점심 12:00</button>
+          <button class="chip" type="button" data-t="19:00">저녁 19:00</button>
+        </div>
+        <div class="kcal">섭취 열량 약 <b id="kcalIn">0</b> kcal</div>
+      </div>
     </div>
     <div class="photo" id="photo">
       <label class="drop" id="drop" for="photoInput">
@@ -399,7 +408,7 @@ button{font:inherit;color:inherit}
       <section class="panel timeline" aria-label="시간">
         <div class="tl-row">
           <button class="play" id="play" type="button"><svg id="playIcon" viewBox="0 0 12 12"><path d="M2 1 L11 6 L2 11 Z"/></svg><span id="playLbl">재생</span></button>
-          <div class="clock"><strong id="tElapsed">식후 0분</strong><span id="tClock">낮 12:00</span></div>
+          <div class="clock"><strong id="tElapsed">식후 0분</strong><span id="tClock"></span></div>
           <div class="speed" role="group" aria-label="재생 속도">속도
             <button class="chip" type="button" data-speed="90">느리게</button>
             <button class="chip" type="button" data-speed="45" aria-pressed="true">보통</button>
@@ -524,7 +533,11 @@ const T = 72*60;                 // minutes simulated
 const NC = 10, NN = 8, STR = NC*NN;
 const MOUTH=0, STOM=1, DUO=2, JEJ=3, ILE=4, ASC=5, TRA=6, DES=7, REC=8, OUT=9;
 const CARB=0, PROT=1, FAT=2, SFIB=3, IFIB=4, ENDO=5, BACT=6, WATER=7;
-// bowel movements: viewer's habit, measured from a 12:00 meal
+// meal start time of day (minutes); everything else is measured from it
+const MEALT = {time:'12:00'};
+try { const v=JSON.parse(localStorage.getItem('digestion-meal')||'null'); if (v && /^\d\d:\d\d$/.test(v.time)) MEALT.time=v.time; } catch(e){}
+const mealMin=()=>{ const [h,m]=MEALT.time.split(':').map(Number); return h*60+m; };
+// bowel movements: viewer's habit, measured from the meal
 const BM = {time:'08:00', every:1440};
 const LIFE = {drink:1200, act:'mid'};
 try { const v=JSON.parse(localStorage.getItem('digestion-life')||'null'); if (v && v.drink>=0 && v.drink<=3000 && ['low','mid','high'].includes(v.act)) Object.assign(LIFE,v); } catch(e){}
@@ -532,7 +545,7 @@ try { const v=JSON.parse(localStorage.getItem('digestion-bm')||'null'); if (v &&
 let BM_TIMES = [];
 function computeBM(){
   const [h,m]=BM.time.split(':').map(Number);
-  let t0=((h*60+m-720)%1440+1440)%1440; if (t0===0) t0=1440;
+  let t0=((h*60+m-mealMin())%1440+1440)%1440; if (t0===0) t0=1440;
   if (BM.every===720) t0=((t0-1)%720)+1;
   BM_TIMES=[]; for (let t=t0;t<=T;t+=BM.every) BM_TIMES.push(t);
 }
@@ -678,7 +691,7 @@ function kcalAbs(R,i){
 const fmt=v=>{ const a=Math.abs(v); return a>=100?Math.round(v).toLocaleString('ko-KR'):a>=10?v.toFixed(0):a>=1?v.toFixed(1):a>0.05?v.toFixed(2):'0'; };
 function fmtDur(min){ if (min<60) return Math.round(min)+'분'; const h=Math.floor(min/60), mm=Math.round(min%60); return mm? `${h}시간 ${mm}분`:`${h}시간`; }
 function clockOf(min){
-  const tot=12*60+Math.round(min), day=Math.floor(tot/1440), mm=tot%1440, h=Math.floor(mm/60), m=mm%60;
+  const tot=mealMin()+Math.round(min), day=Math.floor(tot/1440), mm=tot%1440, h=Math.floor(mm/60), m=mm%60;
   const ap = h<6?'새벽':h<12?'오전':h<18?(h===12?'낮':'오후'):'저녁';
   const h12 = h%12===0?12:h%12;
   const d = ['','다음 날 ','이틀 뒤 ','사흘 뒤 '][day]||'';
@@ -912,7 +925,7 @@ const bmTime=document.getElementById('bmTime'), bmFreq=document.getElementById('
 function syncHabit(){
   bmTime.value=BM.time;
   for (const b of bmFreq.children) b.setAttribute('aria-pressed',String(+b.dataset.every===BM.every));
-  document.getElementById('bmDesc').textContent=`${bmDesc()} 배변 · 식사는 낮 12:00 기준 · 72시간 동안 ${BM_TIMES.length}번`;
+  document.getElementById('bmDesc').textContent=`${bmDesc()} 배변 · ${todClock(mealMin())} 식사 기준 · 72시간 동안 ${BM_TIMES.length}번`;
 }
 function habitChanged(){
   computeBM(); syncHabit(); drawTicks();
@@ -921,6 +934,11 @@ function habitChanged(){
 }
 bmTime.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(bmTime.value)){ BM.time=bmTime.value; habitChanged(); } });
 for (const b of bmFreq.children) b.addEventListener('click',()=>{ BM.every=+b.dataset.every; habitChanged(); });
+const mealTimeEl=document.getElementById('mealTime'), mealChips=document.getElementById('mealChips');
+function syncMealTime(){ mealTimeEl.value=MEALT.time; for (const b of mealChips.children) b.setAttribute('aria-pressed',String(b.dataset.t===MEALT.time)); }
+function mealTimeChanged(){ syncMealTime(); try { localStorage.setItem('digestion-meal',JSON.stringify(MEALT)); } catch(e){} habitChanged(); }
+mealTimeEl.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(mealTimeEl.value)){ MEALT.time=mealTimeEl.value; mealTimeChanged(); } });
+for (const b of mealChips.children) b.addEventListener('click',()=>{ MEALT.time=b.dataset.t; mealTimeChanged(); });
 const drinkEl=document.getElementById('drink'), actChips=document.getElementById('actChips');
 function syncLife(){
   drinkEl.value=LIFE.drink; document.getElementById('drinkOut').textContent=LIFE.drink.toLocaleString('ko-KR')+' mL';
@@ -1446,7 +1464,7 @@ async function analyzePhoto(file){
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-syncSliders(); markPreset(meal.id); syncHabit(); syncLife(); drawTicks();
+syncSliders(); markPreset(meal.id); syncMealTime(); syncHabit(); syncLife(); drawTicks();
 u=uOf(6);                // open mid-meal so the first view shows food going in
 recompute();
 moveDots();
