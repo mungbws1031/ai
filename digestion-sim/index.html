@@ -197,6 +197,20 @@ button{font:inherit;color:inherit}
 .grid-line{stroke:var(--rule);stroke-width:1}
 .cursor{stroke:var(--ink);stroke-width:1.2}
 .stool{display:grid;gap:16px}
+.transit{display:grid;gap:14px}
+.transit-lead{margin:6px 0 0;font-size:16px;line-height:1.6;max-width:80ch}
+.transit-lead b{font-family:var(--display);font-weight:800;font-size:20px;color:var(--accent)}
+.transit-chart{overflow-x:auto}
+.transit-chart svg{width:100%;min-width:640px;height:auto;display:block;cursor:crosshair}
+.lane-lbl{font-family:var(--body);font-size:13px;fill:var(--ink);font-weight:500}
+.ms-pin{font-family:var(--mono);font-size:11px;font-weight:600;fill:var(--sheet)}
+.bm-lbl{font-family:var(--mono);font-size:11px;fill:var(--ink)}
+.milestones{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px 18px}
+.milestones li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:8px;align-items:start;font-size:13px;cursor:pointer;padding:6px 8px;border-radius:8px}
+.milestones li:hover{background:var(--paper)}
+.milestones .n{width:20px;height:20px;border-radius:50%;background:var(--ink);color:var(--sheet);font-family:var(--mono);font-size:11px;display:grid;place-items:center;margin-top:1px}
+.milestones b{display:block;font-family:var(--mono);font-weight:500;font-size:14px}
+.milestones span.t{color:var(--ink-2)}
 .stages{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
 @media (max-width:1000px){.stages{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
 .stage{border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:8px;align-content:start;cursor:pointer;background:var(--sheet);text-align:left;font:inherit;color:inherit;width:100%}
@@ -364,6 +378,16 @@ button{font:inherit;color:inherit}
       </section>
     </div>
   </div>
+
+  <section class="panel transit" aria-label="소화 시간표">
+    <div>
+      <h3>먹고 몇 시간 뒤에 변이 될까</h3>
+      <p class="transit-lead" id="transitLead"></p>
+    </div>
+    <div class="transit-chart"><svg id="gantt" viewBox="0 0 1100 250"></svg></div>
+    <ol class="milestones" id="milestones"></ol>
+    <div class="chart-note">띠가 진할수록 그 시간에 그 장기에 이 식사의 내용물이 많다는 뜻입니다(장기마다 가장 많을 때를 가장 진하게 표시). 번호는 아래 시간표와 같고, 띠를 누르면 그 시각으로 이동합니다.</div>
+  </section>
 
   <div class="grid2">
     <section class="panel chart-panel">
@@ -819,6 +843,78 @@ function axes(svg,yMax,yFmt){
   return s;
 }
 const SAMPLES=(()=>{ const a=[]; for (let k=0;k<=360;k++){ const t=tOf(k/360); if (!a.length||a[a.length-1]!==t) a.push(t); } return a; })();
+// ---------- transit timetable ----------
+const nonWater=(i,cs)=>{ let s=0; for (const c of cs) for (let n=0;n<WATER;n++) s+=Lg(R,i,c,n); return s; };
+const firstAt=(fn,thr,from=0)=>{ for (let i=from;i<=T;i++) if (fn(i)>=thr) return i; return null; };
+function absMeal(i){ let a=0; for (let s=0;s<3;s++) for (const n of MEAL) a+=Ab(R,i,s,n); return a; }
+function computeMilestones(){
+  const S0=R.S0||1, ms=[];
+  const inUpper=i=>mealIn(R,i,[MOUTH,STOM])+uneaten(R,i);
+  const reachColon=i=>mealIn(R,i,[ASC,TRA,DES,REC,OUT])+MEAL.reduce((a,n)=>a+Fe(R,i,n),0);
+  const resid=i=>nonWater(i,[REC,OUT]);
+  const residTot=nonWater(T,[REC,OUT])+nonWater(T,[ASC,TRA,DES]);
+  ms.push({t:10, name:'식사를 마침', note:'10분 동안 먹었다고 가정'});
+  const g50=firstAt(i=>S0-inUpper(i),0.5*S0,10); if (g50!=null) ms.push({t:g50,name:'위가 절반 비워짐',note:`위 배출 반감기 약 ${fmtDur(R.th)}`});
+  const ca=firstAt(reachColon,0.5*reachColon(T)); if (ca!=null) ms.push({t:ca,name:'찌꺼기 절반이 대장에 도착',note:'입→맹장 통과 시간(보통 4–6시간)'});
+  const a90=firstAt(absMeal,0.9*absMeal(T)); if (a90!=null) ms.push({t:a90,name:'영양소 흡수 90% 끝',note:'이후는 대장에서 수분·발효만'});
+  const r50=residTot>0?firstAt(resid,0.5*residTot):null; if (r50!=null) ms.push({t:r50,name:'찌꺼기 절반이 직장에 도착',note:'장 통과 시간(입→직장)'});
+  const outTot=residTot;
+  let cum=0, firstBm=null, halfBm=null;
+  for (const b of R.bms){ const sol=b.comp.reduce((a,v,n)=>n===WATER?a:a+v,0); cum+=sol;
+    if (firstBm==null && sol>0.3) firstBm={...b,wet:b.comp.reduce((a,v)=>a+v,0)};
+    if (halfBm==null && cum>=0.5*outTot) halfBm={...b,wet:b.comp.reduce((a,v)=>a+v,0)}; }
+  if (firstBm) ms.push({t:firstBm.t,name:'처음 변으로 나옴',note:`${clockOf(firstBm.t)} 배변 · ${fmt(firstBm.wet)} g`,bm:true});
+  if (halfBm && halfBm.t!==firstBm?.t) ms.push({t:halfBm.t,name:'찌꺼기 절반 이상이 나옴',note:`${clockOf(halfBm.t)} 배변까지 누적`,bm:true});
+  ms.sort((a,b)=>a.t-b.t);
+  return {ms,r50,firstBm,halfBm};
+}
+const GX0=120, GX1=1084, gx=t=>GX0+uOf(t)*(GX1-GX0);
+function drawGantt(){
+  const svg=$('gantt');
+  const lanes=[
+    ['식사(입)','--loc-mouth',i=>mealIn(R,i,[MOUTH])+uneaten(R,i)],
+    ['위','--loc-stom',i=>mealIn(R,i,[STOM])],
+    ['소장','--loc-si',i=>mealIn(R,i,[DUO,JEJ,ILE])],
+    ['흡수 속도','--accent',i=>{ const k=Math.min(i,T-1)*5; return R.rate[k]+R.rate[k+1]+R.rate[k+2]; }],
+    ['대장','--loc-colon',i=>nonWater(i,[ASC,TRA,DES])],
+    ['직장','--loc-out',i=>nonWater(i,[REC])]
+  ];
+  const top=34, lh=30, gap=4;
+  let h='';
+  for (const hr of [0,1,2,4,8,12,24,48,72]){ const x=gx(hr*60); h+=`<line class="grid-line" x1="${x}" x2="${x}" y1="${top-6}" y2="${top+lanes.length*lh+lh}"/><text class="axis" x="${x}" y="${top+lanes.length*lh+lh+14}" text-anchor="middle">${hr}시간</text>`; }
+  lanes.forEach(([name,col,fn],k)=>{
+    const y=top+k*lh;
+    h+=`<text class="lane-lbl" x="${GX0-10}" y="${y+lh/2+4}" text-anchor="end">${name}</text>`;
+    h+=`<rect x="${GX0}" y="${y+gap/2}" width="${GX1-GX0}" height="${lh-gap}" rx="4" fill="var(--paper)"/>`;
+    const vals=SAMPLES.map(fn); const mx=Math.max(...vals)||1;
+    for (let q=0;q<SAMPLES.length-1;q++){ const v=vals[q]/mx; if (v<0.02) continue;
+      const x0=gx(SAMPLES[q]), x1=gx(SAMPLES[q+1]);
+      h+=`<rect x="${x0.toFixed(1)}" y="${y+gap/2}" width="${Math.max(0.6,x1-x0+0.4).toFixed(1)}" height="${lh-gap}" fill="var(${col})" opacity="${(0.12+0.88*v).toFixed(2)}"/>`; }
+  });
+  // bowel movements lane
+  const yb=top+lanes.length*lh;
+  h+=`<text class="lane-lbl" x="${GX0-10}" y="${yb+lh/2+4}" text-anchor="end">배변</text>`;
+  for (const b of R.bms){ const x=gx(b.t), wet=b.comp.reduce((a,v)=>a+v,0);
+    h+=`<line x1="${x}" x2="${x}" y1="${top-6}" y2="${yb+lh-4}" stroke="var(--loc-out)" stroke-dasharray="3 3"/>`;
+    h+=`<circle cx="${x}" cy="${yb+lh/2}" r="${(4+Math.sqrt(wet)*0.9).toFixed(1)}" fill="var(--loc-out)"/>`;
+    h+=`<text class="bm-lbl" x="${x>1030?x-12:x+12}" y="${yb+lh/2+4}" text-anchor="${x>1030?'end':'start'}">${fmt(wet)} g</text>`; }
+  // milestone pins
+  const M=computeMilestones();
+  let lastX=-99, row=0;
+  M.ms.forEach((m,k)=>{ const x=gx(m.t); row = x-lastX<22 ? (row+1)%2 : 0; lastX=x; const y=12+row*0;
+    h+=`<line x1="${x}" x2="${x}" y1="${y+8}" y2="${top+lanes.length*lh}" stroke="var(--ink)" stroke-width="1" opacity=".35"/>`;
+    h+=`<g transform="translate(${x},${y - (row?0:0)})"><circle r="9" cy="${row?-0:0}" fill="var(--ink)" transform="translate(${row?14:0},0)"/><text class="ms-pin" x="${row?14:0}" y="4" text-anchor="middle">${k+1}</text></g>`; });
+  h+=`<line id="curG" class="cursor" y1="${top-6}" y2="${yb+lh}"/>`;
+  svg.innerHTML=h;
+  $('milestones').innerHTML=M.ms.map((m,k)=>`<li data-t="${m.t}"><span class="n">${k+1}</span><span>${m.name}<b>식후 ${fmtDur(m.t)}</b><span class="t">${clockOf(m.t)} · ${m.note}</span></span></li>`).join('');
+  for (const li of $('milestones').children) li.addEventListener('click',()=>{ u=uOf(+li.dataset.t); if (playing) togglePlay(false); render(); });
+  const lead=[];
+  if (M.r50!=null) lead.push(`먹은 음식의 찌꺼기는 약 <b>${Math.round(M.r50/60)}시간</b> 뒤면 대부분 직장에 도착해 변이 될 준비를 마칩니다.`);
+  if (M.firstBm) lead.push(`매일 오전 8시에 배변한다고 하면 <b>식후 ${Math.round(M.firstBm.t/60)}시간</b>(${clockOf(M.firstBm.t)})에 처음 나오고`);
+  if (M.halfBm) lead.push(`${M.halfBm.t===M.firstBm?.t?'그때 절반 이상이 나옵니다.':`식후 ${Math.round(M.halfBm.t/60)}시간(${clockOf(M.halfBm.t)}) 배변까지 절반 이상이 나옵니다.`}`);
+  $('transitLead').innerHTML=lead.join(' ')+' <span class="muted" style="font-size:13px">보통 사람의 입에서 항문까지 통과 시간은 24–72시간입니다.</span>';
+}
+{ const svg=document.getElementById('gantt'); svg.addEventListener('click',e=>{ const r=svg.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*1100; u=clamp((x-GX0)/(GX1-GX0),0,1); if (playing) togglePlay(false); render(); }); }
 function drawCharts(){
   // A: stacked share of meal solids
   const svgA=document.getElementById('chartA');
@@ -860,7 +956,7 @@ function recompute(){
   R=simulate(meal);
   const kin=4*meal.carb+4*meal.prot+9*meal.fat+2*meal.fib;
   $('kcalIn').textContent=Math.round(kin).toLocaleString('ko-KR');
-  drawCharts(); render(true);
+  drawCharts(); drawGantt(); render(true);
 }
 function autoOrgan(i){
   let best='stomach', bv=-1;
@@ -881,6 +977,7 @@ function render(force){
   $('whereLegend').innerHTML=loc.filter(l=>l.v>0.05).map(l=>`<span><i style="background:var(${l.col})"></i>${l.name} <b>${fmt(l.v)} g</b></span>`).join('');
   // cursors
   for (const id of ['curA','curB']){ const c=$(id); if (c){ c.setAttribute('x1',cx(i)); c.setAttribute('x2',cx(i)); } }
+  { const c=$('curG'); if (c){ c.setAttribute('x1',gx(i)); c.setAttribute('x2',gx(i)); } }
   // organ
   const key = sel || autoOrgan(i);
   for (const k of ORDER){ organEls[k].classList.toggle('sel',k===key); }
