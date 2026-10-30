@@ -35,6 +35,7 @@
   --warn:#ff8f84; --warn-soft:#3b1f1c; --ok:#7ed3a0; --ok-soft:#173326; color-scheme:dark }
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
 .wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
@@ -95,6 +96,9 @@ button:focus-visible,.spot:focus-visible,.chip:focus-visible{outline:2px solid v
 @media (max-width:1000px){.inside{grid-template-columns:minmax(0,1fr)}}
 .stage{background:var(--scene);overflow:hidden;border:1px solid var(--line);border-radius:8px;padding:8px;position:relative}
 .stage svg{width:100%;height:auto;display:block}
+.stage img{width:100%;height:auto;display:block;border-radius:4px;aspect-ratio:3/2;object-fit:cover;background:var(--bg)}
+.viewseg{margin-bottom:8px}
+.caption{margin-top:6px;font-size:11px}
 .stagebar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .ghost{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:5px 12px;border-radius:999px;cursor:pointer}
 .facts{display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -227,8 +231,13 @@ table.tech th{font-size:12px;color:var(--muted);font-weight:600}
       <div id="pInside" role="tabpanel">
         <div class="inside">
           <div>
+            <div class="seg viewseg" role="group" aria-label="보기 방식">
+              <button id="mPhoto" aria-pressed="true">해부 일러스트</button>
+              <button id="mAnim" aria-pressed="false">움직이는 그림</button>
+            </div>
             <div class="stage" id="stage"></div>
-            <div class="stagebar">
+            <p class="mono caption" id="cap"></p>
+            <div class="stagebar" id="stagebar">
               <div class="seg" role="group" aria-label="상태">
                 <button id="sNormal" aria-pressed="false">정상일 때</button>
                 <button id="sSick" aria-pressed="true">아플 때</button>
@@ -1067,7 +1076,7 @@ gout:{n:'통풍',en:'Gout',tag:'흔함',feel:'밤사이 엄지발가락 관절�
 /* ---------- state & rendering ---------- */
 const $=s=>document.querySelector(s);
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-const S={view:'front',region:'rlq',cause:'appendix',sick:true,paused:reduce,tab:'inside',loc:loadLoc(),coords:null,geoMsg:''};
+const S={mode:'photo',view:'front',region:'rlq',cause:'appendix',sick:true,paused:reduce,tab:'inside',loc:loadLoc(),coords:null,geoMsg:''};
 
 function renderMap(){
   const spots=SPOTS[S.view].map(([r,shape])=>`<g class="spot${r===S.region?' sel':''}" data-r="${r}" tabindex="0" role="button" aria-label="${REGIONS[r].name}"><g class="hit">${shape}</g></g>`).join('');
@@ -1102,10 +1111,18 @@ function renderCauses(){
 }
 function renderInside(){
   const c=C[S.cause];
+  const photo=S.mode==='photo';
+  $('#mPhoto').setAttribute('aria-pressed',photo); $('#mAnim').setAttribute('aria-pressed',!photo);
+  $('#stagebar').hidden=photo;
+  $('#cap').textContent=photo?'AI 생성 해부 일러스트(GPT 이미지) · 이해를 돕는 참고 그림이며 실제 해부·영상과 다를 수 있습니다':'정상일 때와 아플 때를 바꿔 보세요';
+  if(photo){
+    $('#stage').innerHTML=`<img src="img/${S.cause}.jpg" alt="${c.n} 해부 일러스트" loading="lazy">`;
+  }else{
   $('#stage').innerHTML=`<svg class="scene${S.sick?' is-sick':''}" viewBox="0 0 320 220" role="img" aria-label="${c.n} 몸속 모습">${SCENES[S.cause]}</svg>`;
   realize($('#stage svg'),'s',{bg:true});
+  }
   $('#stage').classList.toggle('paused',S.paused);
-  const svg=$('#stage svg'); if(S.paused&&svg.pauseAnimations) svg.pauseAnimations();
+  const svg=$('#stage svg'); if(svg&&S.paused&&svg.pauseAnimations) svg.pauseAnimations();
   $('#cName').textContent=c.n; $('#cEn').textContent=c.en;
   $('#cFeel').innerHTML='<b>이런 느낌</b> · '+c.feel;
   $('#cSteps').innerHTML=c.steps.map(s=>`<li>${s}</li>`).join('');
@@ -1170,6 +1187,8 @@ function render(){renderMap();renderCauses();renderInside();renderCare();renderT
 
 $('#vFront').onclick=()=>{S.view='front';renderMap()};
 $('#vBack').onclick=()=>{S.view='back';renderMap()};
+$('#mPhoto').onclick=()=>{S.mode='photo';renderInside()};
+$('#mAnim').onclick=()=>{S.mode='anim';renderInside()};
 $('#sNormal').onclick=()=>{S.sick=false;renderInside()};
 $('#sSick').onclick=()=>{S.sick=true;renderInside()};
 $('#pause').onclick=()=>{S.paused=!S.paused;const svg=$('#stage svg');if(svg){S.paused?svg.pauseAnimations():svg.unpauseAnimations()}renderInside()};
