@@ -14,7 +14,7 @@
   --portal:#9A2B4A; --lymph:#C99512;
   --loc-mouth:#EBD8CB; --loc-stom:#E2A68E; --loc-si:#C66F5E; --loc-colon:#8A5240; --loc-ferm:#8DB060; --loc-out:#4E3F33;
   --skin-1:#F7F0EB; --skin-2:#EADDD4; --stom-1:#F8C9BA; --stom-2:#D47F6A; --si-1:#F4C7B9; --si-2:#C77D6B; --colon-1:#EBC6A9; --colon-2:#B57F60;
-  --liv-1:#BC5E4C; --liv-2:#7A3127; --gb-1:#A9BF6C; --gb-2:#5E7A2F; --pan-1:#F3D7AC; --pan-2:#C99962; --spl-1:#B0697F; --spl-2:#6E3550; --lung-1:#F6E1E3; --lung-2:#E9C4C9; --sheen:.32;
+  --liv-1:#BC5E4C; --liv-2:#7A3127; --gb-1:#A9BF6C; --gb-2:#5E7A2F; --pan-1:#F3D7AC; --pan-2:#C99962; --spl-1:#B0697F; --spl-2:#6E3550; --lung-1:#F6E1E3; --lung-2:#E9C4C9; --sheen:.32; --good:#2E7D4F; --warn:#B7790F; --bad:#B9382F; --loose:#2F74B5;
   --display:"Nanum Myeongjo","Noto Serif KR",serif;
   --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",monospace;
@@ -27,7 +27,7 @@
   --portal:#E2617F; --lymph:#EDC24B;
   --loc-mouth:#4A3E37; --loc-stom:#8C5A4A; --loc-si:#B1604F; --loc-colon:#C48A6A; --loc-ferm:#7FA552; --loc-out:#D9C7B5;
   --skin-1:#28322F; --skin-2:#1D2523; --stom-1:#C9826F; --stom-2:#87483A; --si-1:#BC7C6C; --si-2:#82463A; --colon-1:#B88E70; --colon-2:#7A5340;
-  --liv-1:#A04E3F; --liv-2:#5A221A; --gb-1:#869F4F; --gb-2:#4B6324; --pan-1:#CBAA7A; --pan-2:#8C6A42; --spl-1:#905068; --spl-2:#53283B; --lung-1:#3B3335; --lung-2:#4A3C3F; --sheen:.14;
+  --liv-1:#A04E3F; --liv-2:#5A221A; --gb-1:#869F4F; --gb-2:#4B6324; --pan-1:#CBAA7A; --pan-2:#8C6A42; --spl-1:#905068; --spl-2:#53283B; --lung-1:#3B3335; --lung-2:#4A3C3F; --sheen:.14; --good:#5CC48A; --warn:#E8B04A; --bad:#EF7468; --loose:#6AA8E6;
   color-scheme:dark}}
 :root[data-theme="dark"]{
   --paper:#111716; --sheet:#182120; --ink:#E4ECE9; --ink-2:#A1AFAB; --rule:#2C3836;
@@ -37,7 +37,7 @@
   --portal:#E2617F; --lymph:#EDC24B;
   --loc-mouth:#4A3E37; --loc-stom:#8C5A4A; --loc-si:#B1604F; --loc-colon:#C48A6A; --loc-ferm:#7FA552; --loc-out:#D9C7B5;
   --skin-1:#28322F; --skin-2:#1D2523; --stom-1:#C9826F; --stom-2:#87483A; --si-1:#BC7C6C; --si-2:#82463A; --colon-1:#B88E70; --colon-2:#7A5340;
-  --liv-1:#A04E3F; --liv-2:#5A221A; --gb-1:#869F4F; --gb-2:#4B6324; --pan-1:#CBAA7A; --pan-2:#8C6A42; --spl-1:#905068; --spl-2:#53283B; --lung-1:#3B3335; --lung-2:#4A3C3F; --sheen:.14;
+  --liv-1:#A04E3F; --liv-2:#5A221A; --gb-1:#869F4F; --gb-2:#4B6324; --pan-1:#CBAA7A; --pan-2:#8C6A42; --spl-1:#905068; --spl-2:#53283B; --lung-1:#3B3335; --lung-2:#4A3C3F; --sheen:.14; --good:#5CC48A; --warn:#E8B04A; --bad:#EF7468; --loose:#6AA8E6;
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -204,6 +204,27 @@ button{font:inherit;color:inherit}
 .grid-line{stroke:var(--rule);stroke-width:1}
 .cursor{stroke:var(--ink);stroke-width:1.2}
 .stool{display:grid;gap:16px}
+.verdict{display:grid;gap:18px}
+.v-top{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:14px 22px;align-items:center}
+@media (max-width:760px){.v-top{grid-template-columns:minmax(0,1fr)}}
+.v-badge{display:flex;align-items:center;gap:14px;padding:12px 18px 12px 12px;border-radius:12px;background:color-mix(in srgb,var(--vc) 12%,var(--sheet));color:var(--vc);border:1px solid color-mix(in srgb,var(--vc) 35%,transparent)}
+.v-badge>span:last-child{display:grid;gap:1px}
+.v-badge strong{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.2}
+.v-badge span#vShape{font-size:13px;color:var(--ink)}
+.v-art{width:120px;height:46px;display:block;background:var(--sheet);border-radius:8px;flex:none}
+.v-art svg{width:100%;height:100%}
+.v-lead{margin:0;font-size:15px;line-height:1.65;max-width:70ch}
+.v-grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+@media (max-width:880px){.v-grid{grid-template-columns:minmax(0,1fr)}}
+.v-factors{display:grid;gap:10px}
+.vf{display:grid;grid-template-columns:96px minmax(0,1fr) 168px;gap:4px 12px;align-items:center;font-size:13px}
+.vf .nm{font-weight:600}
+.vf .bar{position:relative;height:8px;border-radius:4px;background:var(--rule)}
+.vf .bar span{position:absolute;left:0;top:0;bottom:0;border-radius:4px}
+.vf .bar i{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}
+.vf .sub{grid-column:2 / 4;color:var(--ink-2);font-size:12px}
+.pill{justify-self:end;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:999px;color:var(--pc);background:color-mix(in srgb,var(--pc) 14%,transparent);white-space:nowrap}
+.v-recs{display:grid;gap:8px;align-content:start}
 .transit{display:grid;gap:14px}
 .transit-lead{margin:6px 0 0;font-size:16px;line-height:1.6;max-width:80ch}
 .transit-lead b{font-family:var(--display);font-weight:800;font-size:20px;color:var(--accent)}
@@ -289,6 +310,16 @@ button{font:inherit;color:inherit}
       </div>
     </div>
     <div class="sliders" id="sliders"></div>
+    <div class="habit" role="group" aria-labelledby="lifeLbl">
+      <span class="habit-lbl" id="lifeLbl">생활 습관</span>
+      <label class="habit-time" for="drink">하루에 마시는 물 <input type="range" id="drink" min="0" max="3000" step="100" value="1200" style="accent-color:var(--water);width:140px"> <output class="mono" id="drinkOut">1,200 mL</output></label>
+      <div class="habit-freq" id="actChips" aria-label="활동량">
+        <span class="muted" style="align-self:center">활동량</span>
+        <button class="chip" type="button" data-act="low">적음(주로 앉아 있음)</button>
+        <button class="chip" type="button" data-act="mid" aria-pressed="true">보통</button>
+        <button class="chip" type="button" data-act="high">많음(매일 30분 이상 운동)</button>
+      </div>
+    </div>
     <div class="habit" role="group" aria-labelledby="habitLbl">
       <span class="habit-lbl" id="habitLbl">배변 습관</span>
       <label class="habit-time" for="bmTime">시각 <input type="time" id="bmTime" value="08:00" step="900"></label>
@@ -426,6 +457,18 @@ button{font:inherit;color:inherit}
     </section>
   </div>
 
+  <section class="panel verdict" aria-label="변 상태 예측">
+    <div class="v-top">
+      <div class="v-badge" id="vBadge"><span class="v-art" id="vArt"></span><span><span class="eyebrow" style="color:inherit">변 상태 예측</span><strong id="vTitle"></strong><span id="vShape"></span></span></div>
+      <p class="v-lead" id="vLead"></p>
+    </div>
+    <div class="v-grid">
+      <div class="v-factors" id="vFactors"></div>
+      <div class="v-recs"><h3>이렇게 해 보세요</h3><ul class="facts" id="vRecs"></ul></div>
+    </div>
+    <div class="chart-note">이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다. 예측 모양은 시뮬레이션에서 배변 때 변의 수분 비율로 정한 것이고, 판정은 교과서 권장량(식이섬유 하루 25 g 이상, 음식 수분 포함 물 2 L 이상, 주 3회 이상 배변)과 비교한 간단한 규칙입니다. 의학적 진단이 아니며, 변비나 설사가 3주 넘게 이어지거나 피가 섞이거나 체중이 빠지면 진료를 받으세요.</div>
+  </section>
+
   <section class="panel stool" aria-label="변이 만들어지는 과정">
     <div class="stool-head">
       <div>
@@ -483,6 +526,8 @@ const MOUTH=0, STOM=1, DUO=2, JEJ=3, ILE=4, ASC=5, TRA=6, DES=7, REC=8, OUT=9;
 const CARB=0, PROT=1, FAT=2, SFIB=3, IFIB=4, ENDO=5, BACT=6, WATER=7;
 // bowel movements: viewer's habit, measured from a 12:00 meal
 const BM = {time:'08:00', every:1440};
+const LIFE = {drink:1200, act:'mid'};
+try { const v=JSON.parse(localStorage.getItem('digestion-life')||'null'); if (v && v.drink>=0 && v.drink<=3000 && ['low','mid','high'].includes(v.act)) Object.assign(LIFE,v); } catch(e){}
 try { const v=JSON.parse(localStorage.getItem('digestion-bm')||'null'); if (v && /^\d\d:\d\d$/.test(v.time) && [720,1440,2880].includes(v.every)) Object.assign(BM,v); } catch(e){}
 let BM_TIMES = [];
 function computeBM(){
@@ -525,10 +570,14 @@ function simulate(meal){
   const S0 = meal.carb+meal.prot+meal.fat+meal.fib;
   const th = clamp(40 + 1.1*meal.fat + 0.45*meal.prot + 0.25*meal.carb + 0.6*meal.fib, 35, 260);
   const kge = Math.LN2/th, kw = Math.LN2/15;
+  // daily context: this meal three times a day plus what is drunk
+  const totalW = LIFE.drink + meal.water*3, fibDay = meal.fib*3;
+  const hyd = clamp(0.55 + 0.45*totalW/2000, 0.7, 1.1);          // dehydration -> colon keeps more water back
+  const tauMul = (fibDay<15?1.15:fibDay>=25?0.88:1) * ({low:1.2,mid:1,high:0.85}[LIFE.act]);
   const L = new Float64Array(STR);
   const absSite = new Float64Array(4*NN), ferm = new Float64Array(NN), sec = new Float64Array(5);
   const bmSet=new Set(BM_TIMES);
-  const R = { S0, th, meal:m,
+  const R = { S0, th, meal:m, ctx:{totalW,fibDay,hyd,tauMul},
     L:new Float32Array((T+1)*STR), abs:new Float32Array((T+1)*4*NN), ferm:new Float32Array((T+1)*NN),
     sec:new Float32Array((T+1)*5), rate:new Float32Array((T+1)*5), bms:[] };
   const I=(c,n)=>c*NN+n;
@@ -538,7 +587,7 @@ function simulate(meal){
     const rt=[0,0,0,0,0];
     // colon, last segment first so material moves one segment per minute at most
     for (let s=2;s>=0;s--){
-      const c=ASC+s, nx=c+1, k=1/CO_TAU[s];
+      const c=ASC+s, nx=c+1, k=1/(CO_TAU[s]*tauMul);
       let f=0;
       for (let n=0;n<NN;n++){
         const v=L[I(c,n)]; if (v<=1e-9) continue;
@@ -553,11 +602,11 @@ function simulate(meal){
     for (let c=ASC;c<=REC;c++){
       let sol=0, fib=0; for (let n=0;n<WATER;n++) sol+=L[I(c,n)]; fib=L[I(c,SFIB)]+L[I(c,IFIB)];
       if (sol<1e-6) continue;
-      const hold=1+0.6*fib/sol, w=L[I(c,WATER)];
+      const hold=(1+0.6*fib/sol)*hyd, w=L[I(c,WATER)];
       let ab=0;
       if (c<REC){ const tgt=CO_RATIO[c-ASC]*hold*sol; if (w>tgt) ab=(w-tgt)*0.03; }
       else { const hi=REC_HI*hold*sol, lo=REC_LO*hold*sol;     // held stool keeps drying slowly
-        ab = w>hi ? w-hi : w>lo ? (w-lo)*0.0015 : 0; }
+        ab = w>hi ? w-hi : w>lo ? (w-lo)*0.0025 : 0; }
       L[I(c,WATER)]-=ab; absSite[3*NN+WATER]+=ab;
     }
     // small intestine
@@ -872,6 +921,14 @@ function habitChanged(){
 }
 bmTime.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(bmTime.value)){ BM.time=bmTime.value; habitChanged(); } });
 for (const b of bmFreq.children) b.addEventListener('click',()=>{ BM.every=+b.dataset.every; habitChanged(); });
+const drinkEl=document.getElementById('drink'), actChips=document.getElementById('actChips');
+function syncLife(){
+  drinkEl.value=LIFE.drink; document.getElementById('drinkOut').textContent=LIFE.drink.toLocaleString('ko-KR')+' mL';
+  for (const b of actChips.querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.act===LIFE.act));
+}
+function lifeChanged(){ syncLife(); try { localStorage.setItem('digestion-life',JSON.stringify(LIFE)); } catch(e){} recompute(); }
+drinkEl.addEventListener('input',()=>{ LIFE.drink=+drinkEl.value; lifeChanged(); });
+for (const b of actChips.querySelectorAll('button')) b.addEventListener('click',()=>{ LIFE.act=b.dataset.act; lifeChanged(); });
 const playBtn=document.getElementById('play');
 playBtn.addEventListener('click',()=>togglePlay());
 function togglePlay(force){
@@ -1009,7 +1066,7 @@ function recompute(){
   R=simulate(meal);
   const kin=4*meal.carb+4*meal.prot+9*meal.fat+2*meal.fib;
   $('kcalIn').textContent=Math.round(kin).toLocaleString('ko-KR');
-  drawCharts(); drawGantt(); render(true);
+  drawCharts(); drawGantt(); renderVerdict(); render(true);
 }
 function autoOrgan(i){
   let best='stomach', bv=-1;
@@ -1162,6 +1219,59 @@ function renderStool(i,key){
     b.querySelector('.stack').innerHTML = empty ? '' : [[water,'--water'],[bact,'--bact'],[fib,'--fib'],[endo,'--ink-2'],[rest,'--carb']].map(([v,c])=>`<span style="width:${(v/wet*100).toFixed(1)}%;background:var(${c})"></span>`).join('');
   });
   for (const el of $('bristolRow').children) el.classList.toggle('on', +el.dataset.t===recType);
+}
+function assess(){
+  const c=R.ctx, bms=R.bms.map(b=>{ const wet=b.comp.reduce((a,v)=>a+v,0), sol=wet-b.comp[WATER]; return {t:b.t,wet,sol,pct:wet>0?b.comp[WATER]/wet*100:0}; }).filter(b=>b.sol>0.3);
+  const main=bms.reduce((a,b)=>!a||b.sol>a.sol?b:a,null);
+  const avgPct=bms.length? bms.reduce((a,b)=>a+b.pct*b.sol,0)/bms.reduce((a,b)=>a+b.sol,0) : null;
+  const type=avgPct==null?null:bristolOf(avgPct).t;
+  const wetMeal=totalOut(T)+[ASC,TRA,DES,REC].reduce((a,cc)=>{ for (let n=0;n<NN;n++) a+=Lg(R,T,cc,n); return a; },0);
+  const stoolDay=wetMeal*3;
+  const perWeek=7*1440/BM.every;
+  let pts=0;
+  const F=[];
+  const st=(lvl)=>({good:['좋음','--good'],mid:['보통','--warn'],bad:['부족','--bad']}[lvl]);
+  { const lvl=c.fibDay>=25?'good':c.fibDay>=15?'mid':'bad'; pts+=lvl==='bad'?2:lvl==='mid'?1:0;
+    F.push({nm:'식이섬유',val:`하루 약 ${fmt(c.fibDay)} g`,frac:c.fibDay/40,mark:25/40,col:'--fib',lvl,sub:'권장 25 g 이상 · 한 끼 섬유 × 3'}); }
+  { const lvl=c.totalW>=2000?'good':c.totalW>=1500?'mid':'bad'; pts+=lvl==='bad'?2:lvl==='mid'?1:0;
+    F.push({nm:'수분',val:`하루 약 ${(c.totalW/1000).toFixed(1)} L`,frac:c.totalW/3500,mark:2000/3500,col:'--water',lvl,sub:`마신 물 ${LIFE.drink.toLocaleString('ko-KR')} mL + 음식 속 수분 ${(meal.water*3).toLocaleString('ko-KR')} mL · 권장 2 L 이상`}); }
+  { const lvl=LIFE.act==='high'?'good':LIFE.act==='mid'?'mid':'bad'; pts+=lvl==='bad'?1:0;
+    F.push({nm:'활동량',val:{low:'적음',mid:'보통',high:'많음'}[LIFE.act],frac:{low:.25,mid:.6,high:.95}[LIFE.act],mark:.6,col:'--accent',lvl,sub:`대장 통과 속도 ${c.tauMul>1?'느려짐':c.tauMul<1?'빨라짐':'보통'} (×${(1/c.tauMul).toFixed(2)})`}); }
+  { const lvl=perWeek>=7?'good':perWeek>=3?'mid':'bad'; pts+=perWeek<7?1:0;
+    F.push({nm:'배변 간격',val:`주 ${perWeek.toFixed(perWeek%1?1:0)}회`,frac:Math.min(1,perWeek/14),mark:3/14,col:'--loc-out',lvl,sub:'주 3회 미만이면 변비 기준에 해당'}); }
+  { const lvl=stoolDay>=100?'good':stoolDay>=70?'mid':'bad'; pts+=lvl==='bad'?1:0;
+    F.push({nm:'하루 변 무게',val:`약 ${fmt(stoolDay)} g`,frac:Math.min(1,stoolDay/250),mark:100/250,col:'--loc-colon',lvl,sub:'보통 100–200 g · 섬유가 많을수록 무거워짐'}); }
+  if (type!=null){ pts += type<=1?3:type===2?2:type===3?0.5:0; }
+  const fatHeavy = meal.fat*9 > 0.35*(4*meal.carb+4*meal.prot+9*meal.fat+1);
+  let verdict;
+  if (type!=null && type>=6) verdict={k:'loose',title:'묽은 변 경향',col:'--loose'};
+  else if ((type!=null && type<=2) || pts>=5) verdict={k:'high',title:'변비 위험 높음',col:'--bad'};
+  else if (pts>=2) verdict={k:'warn',title:'변비 주의',col:'--warn'};
+  else verdict={k:'ok',title:'정상 변',col:'--good'};
+  // advice
+  const recs=[];
+  if (c.fibDay<25){ const need=Math.ceil((25-c.fibDay)/3); recs.push(`식이섬유를 한 끼에 약 ${need} g 더 드세요. 흰쌀밥을 현미·잡곡밥으로 바꾸면 한 공기에 약 +2.5 g, 나물 반찬 한 접시 +2–3 g, 껍질째 먹는 사과 1개 +4 g, 고구마 1개 +3.5 g입니다.`); }
+  if (c.totalW<2000){ const need=Math.ceil((2000-c.totalW)/100)*100; recs.push(`물을 하루 ${need.toLocaleString('ko-KR')} mL(컵 약 ${Math.ceil(need/200)}잔) 더 마셔 보세요. 수분이 부족하면 대장이 변에서 물을 더 빼앗아 딱딱해집니다.`); }
+  if (LIFE.act==='low') recs.push('식후 20–30분 걷기만 해도 대장 운동이 활발해집니다.');
+  if (perWeek<7) recs.push('아침 식사 뒤 위-대장 반사가 강할 때 화장실에 가는 습관을 들이면 변이 대장에 오래 머물지 않아 덜 딱딱해집니다.');
+  if (fatHeavy && c.fibDay<20) recs.push('지방과 고기 비중이 높고 채소가 적은 식사입니다. 쌈 채소나 버섯, 해조류를 곁들이면 좋습니다.');
+  if (verdict.k==='loose') recs.push('물 같은 변이 잦다면 기름진 음식·당·유제품(유당) 과다나 장염 가능성이 있습니다. 수분과 전해질을 보충하고, 이틀 넘게 이어지면 진료를 받으세요.');
+  if (!recs.length) recs.push('지금 식사와 습관이 변을 만들기에 좋은 조건입니다. 그대로 유지하세요.');
+  return {type,avgPct,main,stoolDay,F,verdict,recs,pts};
+}
+function renderVerdict(){
+  const A=assess(), v=A.verdict;
+  const badge=$('vBadge'); badge.style.setProperty('--vc',`var(${v.col})`);
+  $('vTitle').textContent=v.title;
+  const shapeCol=A.type==null?'#8E6431':A.type<=2?'#4E331C':A.type<=4?'#6A4524':'#8E6431';
+  $('vArt').innerHTML=A.type==null?'':stoolArt(A.type,shapeCol);
+  $('vShape').textContent=A.type==null?'72시간 안에 배변 없음':`예상 모양 ${A.type}형 · ${bristolOf(A.avgPct).name} · 수분 ${A.avgPct.toFixed(0)}%`;
+  const lead={ok:'이 식사와 생활 습관이라면 적당히 촉촉하고 형태가 잡힌 변이 예상됩니다.',warn:'변이 조금 딱딱해지거나 배변 간격이 길어질 수 있습니다.',high:'변이 딱딱하고 양이 적어 변비가 생기기 쉬운 조건입니다.',loose:'변에 수분이 많아 묽게 나올 수 있습니다.'}[v.k];
+  const weak=A.F.filter(f=>f.lvl==='bad').map(f=>f.nm);
+  $('vLead').textContent=lead+(weak.length?` 특히 ${weak.join(', ')} 쪽이 아쉽습니다.`:'');
+  $('vFactors').innerHTML=A.F.map(f=>{ const [lbl,pc]=({good:['좋음','--good'],mid:['보통','--warn'],bad:[f.nm==='배변 간격'?'긺':'부족','--bad']})[f.lvl];
+    return `<div class="vf"><span class="nm">${f.nm}</span><div class="bar"><span style="width:${(Math.min(1,f.frac)*100).toFixed(1)}%;background:var(${f.col})"></span><i style="left:${(f.mark*100).toFixed(1)}%"></i></div><span class="pill" style="--pc:var(${pc})">${f.val} · ${lbl}</span><span class="sub">${f.sub}</span></div>`; }).join('');
+  $('vRecs').innerHTML=A.recs.map(r=>`<li>${r}</li>`).join('');
 }
 function renderBowl(i){
   const left=R.S0>0?uneaten(R,i)/R.S0:0;
@@ -1336,7 +1446,7 @@ async function analyzePhoto(file){
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-syncSliders(); markPreset(meal.id); syncHabit(); drawTicks();
+syncSliders(); markPreset(meal.id); syncHabit(); syncLife(); drawTicks();
 u=uOf(6);                // open mid-meal so the first view shows food going in
 recompute();
 moveDots();
