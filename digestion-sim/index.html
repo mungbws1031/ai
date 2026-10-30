@@ -66,6 +66,19 @@ button{font:inherit;color:inherit}
 .kcal{font-size:13px;color:var(--ink-2)}
 .kcal b{color:var(--ink);font-family:var(--mono);font-weight:500}
 
+.photo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px 20px;align-items:start}
+@media (max-width:760px){.photo{grid-template-columns:minmax(0,1fr)}}
+.drop{display:flex;gap:14px;align-items:center;border:1.5px dashed var(--rule);border-radius:10px;padding:12px 14px;cursor:pointer;min-height:76px;background:var(--paper)}
+.drop:hover,.drop.over{border-color:var(--accent)}
+.drop.off{cursor:not-allowed;opacity:.65}
+.drop img{width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none}
+.drop-txt{display:grid;gap:2px;font-size:13px;color:var(--ink-2);min-width:0}
+.drop-txt b{color:var(--ink);font-size:14px}
+.photo-out{display:grid;gap:8px;min-width:0}
+.photo-status{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600}
+.photo-status .chip{font-size:12px;padding:2px 10px;font-weight:400}
+.list li small{color:var(--ink-2);font-size:11.5px;margin-left:4px}
+
 /* main */
 .main{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:24px;align-items:start}
 @media (max-width:880px){.main{grid-template-columns:minmax(0,1fr)}}
@@ -179,6 +192,18 @@ button{font:inherit;color:inherit}
     <div class="meal-top">
       <div class="presets" id="presets"></div>
       <div class="kcal">섭취 열량 약 <b id="kcalIn">0</b> kcal · 12:00 식사 기준</div>
+    </div>
+    <div class="photo" id="photo">
+      <label class="drop" id="drop" for="photoInput">
+        <img id="photoPrev" alt="" hidden>
+        <span class="drop-txt"><b>음식 사진으로 입력</b><span id="dropHint">사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 영양성분을 추정해 아래 값을 채웁니다.</span></span>
+      </label>
+      <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      <div class="photo-out" id="photoOut" hidden>
+        <div class="photo-status"><span id="photoStatus"></span><button class="chip" type="button" id="photoStop" hidden>중지</button></div>
+        <ul class="list" id="photoItems"></ul>
+        <div class="note" id="photoNote"></div>
+      </div>
     </div>
     <div class="sliders" id="sliders"></div>
   </section>
@@ -557,11 +582,11 @@ const PRESETS=[
   {id:'oat', name:'그릭요거트 + 귀리 + 베리', carb:50, prot:22, fat:8, fib:9, water:250, sol:0.5}
 ];
 const SLIDERS=[
-  {k:'carb',name:'탄수화물',unit:'g',max:200,col:'--carb'},
-  {k:'prot',name:'단백질',unit:'g',max:120,col:'--prot'},
-  {k:'fat',name:'지방',unit:'g',max:120,col:'--fat'},
-  {k:'fib',name:'식이섬유',unit:'g',max:40,col:'--fib'},
-  {k:'water',name:'물·국물',unit:'mL',max:1000,col:'--water',step:10}
+  {k:'carb',name:'탄수화물',unit:'g',max:300,col:'--carb'},
+  {k:'prot',name:'단백질',unit:'g',max:150,col:'--prot'},
+  {k:'fat',name:'지방',unit:'g',max:150,col:'--fat'},
+  {k:'fib',name:'식이섬유',unit:'g',max:50,col:'--fib'},
+  {k:'water',name:'물·국물',unit:'mL',max:1500,col:'--water',step:10}
 ];
 const meal={...PRESETS[0]};
 let R=null, u=0, playing=false, playSecs=45, sel=null, lastI=-1;
@@ -836,6 +861,69 @@ function frame(ts){
   moveDots();
   requestAnimationFrame(frame);
 }
+// ---------- photo → nutrients (asks Claude through the viewer) ----------
+const PHOTO_PROMPT = `이 사진은 사용자가 먹으려는 한 끼 식사입니다. 사진 속 음식을 하나씩 알아보고, 보이는 양(그릇 크기, 개수)을 기준으로 한 사람이 먹는 양의 영양성분을 추정하세요.
+한국 음식이면 한국 식품영양성분 데이터베이스의 일반적인 값을 기준으로 삼으세요. 국·찌개·음료의 물도 water_ml에 넣으세요.
+다른 텍스트 없이 아래 형식의 JSON 객체 하나로만 답하세요. 숫자는 g 단위(물은 mL)의 숫자입니다.
+{"items":[{"name":"음식 이름(한국어)","portion":"추정 분량, 예: 1공기(210 g)","carb_g":0,"protein_g":0,"fat_g":0,"fiber_g":0,"soluble_fiber_share":0.3,"water_ml":0}],"confidence":"high|medium|low","note":"추정에 영향을 준 점 한 문장(한국어)"}
+사진에 음식이 없으면 {"items":[],"confidence":"low","note":"음식이 보이지 않는 이유"} 로 답하세요.`;
+const drop=$('drop'), photoInput=$('photoInput');
+let sampleFn=null, photoCtl=null, photoBusy=false;
+function photoOff(msg){ drop.classList.add('off'); photoInput.disabled=true; $('dropHint').textContent=msg; }
+photoOff('사진 분석은 claude.ai에서 이 페이지를 열었을 때 사용할 수 있습니다. 연결을 확인하는 중…');
+(async()=>{
+  try {
+    const s = window.claude ? await window.claude.use('sample') : null;
+    const lim = s ? await s.limits().catch(()=>null) : null;
+    if (!s || !lim || !lim.images){ photoOff('이 화면에서는 사진 분석을 쓸 수 없습니다. 아래 예시 식단이나 슬라이더로 입력하세요.'); return; }
+    sampleFn=s; drop.classList.remove('off'); photoInput.disabled=false;
+    photoInput.accept=lim.images.mediaTypes.join(',');
+    $('dropHint').textContent='사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 영양성분을 추정해 아래 값을 채웁니다.';
+  } catch(e){ photoOff('이 화면에서는 사진 분석을 쓸 수 없습니다. 아래 예시 식단이나 슬라이더로 입력하세요.'); }
+})();
+photoInput.addEventListener('change',()=>{ const f=photoInput.files&&photoInput.files[0]; photoInput.value=''; if (f) analyzePhoto(f); });
+drop.addEventListener('dragover',e=>{ e.preventDefault(); if (sampleFn) drop.classList.add('over'); });
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{ e.preventDefault(); drop.classList.remove('over'); const f=[...(e.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/')); if (f) analyzePhoto(f); });
+document.addEventListener('paste',e=>{ const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/')); if (f){ e.preventDefault(); analyzePhoto(f); } });
+$('photoStop').addEventListener('click',()=>photoCtl?.abort());
+const num=v=>{ const n=Number(v); return Number.isFinite(n)&&n>0?n:0; };
+const PHOTO_ERR={not_granted:'Claude 사용을 허용하지 않아 사진을 분석할 수 없습니다. 슬라이더로 직접 입력하세요.',sampling_disabled:'이 계정에서는 Claude를 쓸 수 없습니다.',
+  rate_limited:'요청이 많아 잠시 쉬어야 합니다. 조금 뒤에 다시 올려 주세요.',session_expired:'다시 로그인한 뒤 사진을 올려 주세요.',image_rejected:'이 이미지는 읽을 수 없습니다. JPEG·PNG·WebP 사진(20 MB 이하)으로 다시 올려 주세요.',
+  refused:'이 사진은 분석할 수 없습니다. 다른 사진을 올려 주세요.',invalid_json:'분석 결과를 읽지 못했습니다. 같은 사진을 한 번 더 올려 보세요.',images_unavailable:'이 화면에서는 사진을 보낼 수 없습니다.'};
+async function analyzePhoto(file){
+  if (!sampleFn || photoBusy) return;
+  photoBusy=true; photoCtl=new AbortController();
+  const prev=$('photoPrev'); if (prev.src) URL.revokeObjectURL(prev.src); prev.src=URL.createObjectURL(file); prev.hidden=false;
+  $('photoOut').hidden=false; $('photoStatus').textContent='사진 속 음식을 분석하는 중…'; $('photoStop').hidden=false;
+  $('photoItems').innerHTML=''; $('photoNote').textContent='';
+  try {
+    const r = await sampleFn.json(PHOTO_PROMPT,{images:file,signal:photoCtl.signal});
+    const items = Array.isArray(r?.items) ? r.items : [];
+    if (!items.length){ $('photoStatus').textContent='음식을 찾지 못했습니다'; $('photoNote').textContent=String(r?.note||'다른 사진을 올려 주세요.'); return; }
+    const t={carb:0,prot:0,fat:0,fib:0,water:0,solW:0};
+    for (const it of items){ const fb=num(it.fiber_g); t.carb+=num(it.carb_g); t.prot+=num(it.protein_g); t.fat+=num(it.fat_g); t.fib+=fb; t.water+=num(it.water_ml); t.solW+=fb*clamp(num(it.soluble_fiber_share)||0.3,0,1); }
+    let capped=false;
+    const put=(k,v)=>{ const s=SLIDERS.find(s=>s.k===k); const r=k==='water'?Math.round(v/10)*10:Math.round(v); if (r>s.max) capped=true; meal[k]=Math.min(s.max,r); };
+    put('carb',t.carb); put('prot',t.prot); put('fat',t.fat); put('fib',t.fib); put('water',t.water);
+    meal.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; meal.id='photo';
+    syncSliders(); markPreset('photo'); u=uOf(150); recompute();
+    const conf={high:'높음',medium:'보통',low:'낮음'}[r.confidence]||'보통';
+    $('photoStatus').textContent=`사진에서 ${items.length}가지 음식을 찾았습니다 · 추정 신뢰도 ${conf}`;
+    $('photoItems').innerHTML=items.map(it=>{ const k=4*num(it.carb_g)+4*num(it.protein_g)+9*num(it.fat_g)+2*num(it.fiber_g);
+      return `<li><span>${esc(it.name||'음식')}<small>${esc(it.portion||'')}</small></span><span class="mono">${Math.round(k)} kcal</span></li>`; }).join('');
+    $('photoNote').textContent=[r.note?String(r.note):'', '사진만 보고 추정한 값이라 실제와 다를 수 있습니다. 아래 슬라이더로 고칠 수 있어요.', capped?'일부 값이 슬라이더 최대치를 넘어 최대치로 맞췄습니다.':''].filter(Boolean).join(' ');
+  } catch(e){
+    if (e && e.code==='cancelled'){ $('photoStatus').textContent='분석을 멈췄습니다.'; }
+    else {
+      $('photoStatus').textContent='분석하지 못했습니다';
+      $('photoNote').textContent=PHOTO_ERR[e&&e.code]||'연결에 문제가 있었습니다. 잠시 뒤 다시 올려 주세요.';
+      if (e && ['not_granted','sampling_disabled','images_unavailable','capability_disabled','not_declared','capability_removed'].includes(e.code)){ sampleFn=null; photoOff(PHOTO_ERR[e.code]||'이 화면에서는 사진 분석을 쓸 수 없습니다.'); }
+    }
+  } finally { photoBusy=false; $('photoStop').hidden=true; }
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
 syncSliders(); markPreset(meal.id);
 u=uOf(150);              // open at 2.5 h after the meal so the first view already shows digestion
 recompute();
