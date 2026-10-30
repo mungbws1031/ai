@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
-import type { Reminder } from '../types';
+import type { Chore, Reminder } from '../types';
+import { choreCopy, choreNotifyAt } from './chores';
 import { toneByStage } from './tone';
 
 export function isNative(): boolean {
@@ -18,7 +19,7 @@ function hashId(s: string): number {
  * 앱이 닫혀 있어도 fireAt에 알림이 뜬다. 완료/스누즈 변화를 반영하려고
  * 매번 전체 재동기화(취소 후 재예약)한다. 웹에서는 아무 동작도 하지 않는다.
  */
-export async function syncNativeNotifications(reminders: Reminder[]): Promise<void> {
+export async function syncNativeNotifications(reminders: Reminder[], chores: Chore[] = []): Promise<void> {
   if (!isNative()) return;
   const { LocalNotifications } = await import('@capacitor/local-notifications');
 
@@ -38,6 +39,16 @@ export async function syncNativeNotifications(reminders: Reminder[]): Promise<vo
     // smallIcon 미지정 → Capacitor가 앱 기본 아이콘 사용 (없는 drawable 참조 방지)
     schedule: { at: new Date(at), allowWhileIdle: true },
   }));
+
+  // D. 집안일: 차례가 되는 날 오전 9시에 한 번
+  for (const { c, at } of selectChoreNotifications(chores, Date.now())) {
+    toSchedule.push({
+      id: hashId(`chore-${c.id}`),
+      title: '미리',
+      body: choreCopy(c, new Date(at)),
+      schedule: { at: new Date(at), allowWhileIdle: true },
+    });
+  }
 
   if (toSchedule.length) {
     await LocalNotifications.schedule({ notifications: toSchedule });
@@ -63,6 +74,19 @@ export function selectNotifications(
   return reminders
     .map((r) => ({ r, at: fireTimeOf(r) }))
     .filter((x): x is { r: Reminder; at: number } => x.at !== null && x.at > now)
+    .sort((a, b) => a.at - b.at)
+    .slice(0, cap);
+}
+
+/** 집안일 알림: 미래 시각만, 빠른 순, cap까지 */
+export function selectChoreNotifications(
+  chores: Chore[],
+  now: number,
+  cap = 30,
+): { c: Chore; at: number }[] {
+  return chores
+    .map((c) => ({ c, at: choreNotifyAt(c, new Date(now)) }))
+    .filter((x): x is { c: Chore; at: number } => x.at !== null)
     .sort((a, b) => a.at - b.at)
     .slice(0, cap);
 }

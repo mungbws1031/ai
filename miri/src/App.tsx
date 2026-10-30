@@ -4,6 +4,7 @@ import { TabBar, type Tab } from './components/TabBar';
 import { Home } from './components/Home';
 import { CalendarView } from './components/CalendarView';
 import { SomedayBox } from './components/SomedayBox';
+import { ChoreBoard } from './components/ChoreBoard';
 import { QuickAdd } from './components/QuickAdd';
 import { Settings } from './components/Settings';
 import { InstallPrompt } from './components/InstallPrompt';
@@ -18,6 +19,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const reminders = useStore((s) => s.reminders);
+  const chores = useStore((s) => s.chores);
 
   // §8.2 / §8.4: appOpen 루프 — 도달한 리마인더/seed 승격 후 로드
   useEffect(() => {
@@ -29,8 +31,8 @@ export default function App() {
 
   // 네이티브(Capacitor) 환경에선 리마인더를 OS 로컬 알림으로 동기화 (FR-A07)
   useEffect(() => {
-    if (loaded) void syncNativeNotifications(reminders);
-  }, [loaded, reminders]);
+    if (loaded) void syncNativeNotifications(reminders, chores);
+  }, [loaded, reminders, chores]);
 
   return (
     <div className="mx-auto flex min-h-full max-w-md flex-col">
@@ -41,6 +43,8 @@ export default function App() {
           <Home onSeeCalendar={() => setTab('calendar')} />
         ) : tab === 'calendar' ? (
           <CalendarView />
+        ) : tab === 'chores' ? (
+          <ChoreBoard />
         ) : (
           <SomedayBox />
         )}

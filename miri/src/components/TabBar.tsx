@@ -1,8 +1,9 @@
-export type Tab = 'home' | 'calendar' | 'someday';
+export type Tab = 'home' | 'calendar' | 'chores' | 'someday';
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'home', label: '홈', icon: '🏠' },
   { id: 'calendar', label: '캘린더', icon: '🗓️' },
+  { id: 'chores', label: '집안일', icon: '🧺' },
   { id: 'someday', label: '보관함', icon: '🫧' },
 ];
 

@@ -15,9 +15,10 @@ export function Home({ onSeeCalendar }: { onSeeCalendar?: () => void } = {}) {
   // buildHomeCards는 store 상태에서 파생 — 상태 변경 시 자동 리렌더
   const reminders = useStore((s) => s.reminders);
   const seeds = useStore((s) => s.seeds);
+  const chores = useStore((s) => s.chores);
   const tasks = useStore((s) => s.tasks);
   const subtasks = useStore((s) => s.subtasks);
-  const list = useMemo(() => cards, [reminders, seeds]); // eslint-disable-line react-hooks/exhaustive-deps
+  const list = useMemo(() => cards, [reminders, seeds, chores]); // eslint-disable-line react-hooks/exhaustive-deps
   // 곧 다가올 항목(아직 리마인더로 안 뜬 가까운 미래) — 선제성 빈 화면 해소
   const upcoming = useMemo(
     () => upcomingItems(tasks, subtasks),
@@ -88,11 +89,14 @@ export function Home({ onSeeCalendar }: { onSeeCalendar?: () => void } = {}) {
 }
 
 function cardKey(card: HomeCard): string {
-  return card.kind === 'reminder' ? `r-${card.reminder.id}` : `s-${card.seed.id}`;
+  if (card.kind === 'reminder') return `r-${card.reminder.id}`;
+  if (card.kind === 'chore') return `c-${card.chore.id}`;
+  return `s-${card.seed.id}`;
 }
 
 function CardView({ card }: { card: HomeCard }) {
   if (card.kind === 'reminder') return <ReminderCard card={card} />;
+  if (card.kind === 'chore') return <ChoreCard card={card} />;
   return <SeedCard card={card} />;
 }
 
@@ -118,6 +122,38 @@ function ReminderCard({ card }: { card: Extract<HomeCard, { kind: 'reminder' }> 
         </button>
         <button
           onClick={() => snooze(card.reminder.id)}
+          className="rounded-xl border border-soft px-4 py-2.5 text-sm font-medium text-muted"
+        >
+          오늘은 패스
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function ChoreCard({ card }: { card: Extract<HomeCard, { kind: 'chore' }> }) {
+  const complete = useStore((s) => s.completeChore);
+  const snooze = useStore((s) => s.snoozeChore);
+  const { chore } = card;
+  return (
+    <article className="rounded-card bg-white p-4 shadow-card">
+      <div className="mb-2 flex items-center gap-2">
+        <span className="rounded-full bg-sage/15 px-2 py-0.5 text-xs font-semibold text-sage">집안일</span>
+        <span className="truncate text-sm font-semibold text-ink">
+          {chore.emoji ? `${chore.emoji} ` : ''}
+          {chore.title}
+        </span>
+      </div>
+      <p className="mb-3 text-[15px] leading-relaxed text-ink">{card.copy}</p>
+      <div className="flex gap-2">
+        <button
+          onClick={() => complete(chore.id)}
+          className="flex-1 rounded-xl bg-sage py-2.5 text-sm font-semibold text-white"
+        >
+          ✓ 했어요
+        </button>
+        <button
+          onClick={() => snooze(chore.id)}
           className="rounded-xl border border-soft px-4 py-2.5 text-sm font-medium text-muted"
         >
           오늘은 패스

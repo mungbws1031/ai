@@ -49,7 +49,24 @@ export interface SomedaySeed {
   createdAt: string;
 }
 
-// 홈 큐 카드 (리마인더 + Someday 프롬프트 통합)
+// D. 집안일 주기 — "할 일 목록"이 아니라 "마지막으로 한 날" 기록.
+// 밀려도 쌓이지 않는다: '했어요' 한 번이면 그날부터 다시 센다.
+export interface Chore {
+  id: string;
+  title: string;
+  emoji?: string;
+  intervalDays: number; // 주기 (일)
+  hint?: string; // 착수 장벽을 낮추는 아주 작은 첫 동작
+  lastDoneAt?: string; // yyyy-MM-dd, 아직 기록 없으면 undefined
+  history: string[]; // 최근 수행일 (yyyy-MM-dd, 최신이 끝). 되돌리기용
+  snoozedUntil?: string; // yyyy-MM-dd, '오늘은 패스' 시 홈 카드 숨김 기한
+  createdAt: string;
+}
+
+export type ChoreState = 'never' | 'overdue' | 'due' | 'soon' | 'ok';
+
+// 홈 큐 카드 (리마인더 + Someday 프롬프트 + 집안일 통합)
 export type HomeCard =
   | { kind: 'reminder'; reminder: Reminder; copy: string; taskTitle: string }
-  | { kind: 'seed'; seed: SomedaySeed; copy: string };
+  | { kind: 'seed'; seed: SomedaySeed; copy: string }
+  | { kind: 'chore'; chore: Chore; copy: string };

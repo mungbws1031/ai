@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db } from './db';
 import type {
+  Chore,
   HomeCard,
   Reminder,
   Season,
@@ -16,6 +17,9 @@ import { isLLMEnabled, llmDecompose } from './lib/llm';
 import { dueSeeds, estimateRevisitAt } from './lib/someday';
 import { seedPromptCopy, toneByStage } from './lib/tone';
 import { uid } from './lib/id';
+import { choreCopy, dueChores, markDone, undoDone } from './lib/chores';
+import { toDateStr } from './lib/dates';
+import { addDays } from 'date-fns';
 
 // FR-A02: 일정 유형별 기본 리마인더 프리셋
 export const DEFAULT_REMINDER_CONFIG: Record<TaskType, number[]> = {
@@ -34,11 +38,20 @@ export interface NewTaskInput {
   sourceSeedId?: string;
 }
 
+export interface NewChoreInput {
+  title: string;
+  intervalDays: number;
+  emoji?: string;
+  hint?: string;
+  lastDoneAt?: string; // yyyy-MM-dd — "사실 지난주에 했어"
+}
+
 interface MiriState {
   tasks: Task[];
   subtasks: Subtask[];
   reminders: Reminder[];
   seeds: SomedaySeed[];
+  chores: Chore[];
   loaded: boolean;
 
   load: () => Promise<void>;
@@ -57,6 +70,14 @@ interface MiriState {
   snoozeSeed: (seedId: string) => Promise<void>;
   dismissSeed: (seedId: string) => Promise<void>;
 
+  // D. 집안일 주기
+  createChore: (input: NewChoreInput) => Promise<Chore>;
+  updateChore: (id: string, patch: Partial<Pick<Chore, 'title' | 'emoji' | 'intervalDays' | 'hint'>>) => Promise<void>;
+  completeChore: (id: string, date?: string) => Promise<void>;
+  undoChore: (id: string) => Promise<void>;
+  snoozeChore: (id: string) => Promise<void>;
+  deleteChore: (id: string) => Promise<void>;
+
   // 홈 큐
   buildHomeCards: (now?: Date) => HomeCard[];
 }
@@ -66,16 +87,18 @@ export const useStore = create<MiriState>((set, get) => ({
   subtasks: [],
   reminders: [],
   seeds: [],
+  chores: [],
   loaded: false,
 
   load: async () => {
-    const [tasks, subtasks, reminders, seeds] = await Promise.all([
+    const [tasks, subtasks, reminders, seeds, chores] = await Promise.all([
       db.tasks.toArray(),
       db.subtasks.toArray(),
       db.reminders.toArray(),
       db.seeds.toArray(),
+      db.chores.toArray(),
     ]);
-    set({ tasks, subtasks, reminders, seeds, loaded: true });
+    set({ tasks, subtasks, reminders, seeds, chores, loaded: true });
   },
 
   createTask: async (input) => {
@@ -230,8 +253,67 @@ export const useStore = create<MiriState>((set, get) => ({
     await get().load();
   },
 
+  createChore: async (input) => {
+    const title = input.title.trim();
+    if (!title) throw new Error('이름이 필요해요');
+    const intervalDays = Math.round(input.intervalDays);
+    if (!(intervalDays >= 1)) throw new Error('주기는 1일 이상이어야 해요');
+    const chore: Chore = {
+      id: uid(),
+      title,
+      emoji: input.emoji,
+      hint: input.hint?.trim() || undefined,
+      intervalDays,
+      lastDoneAt: input.lastDoneAt || undefined,
+      history: input.lastDoneAt ? [input.lastDoneAt] : [],
+      createdAt: new Date().toISOString(),
+    };
+    await db.chores.put(chore);
+    await get().load();
+    return chore;
+  },
+
+  updateChore: async (id, patch) => {
+    const next = { ...patch };
+    if (next.title !== undefined) {
+      next.title = next.title.trim();
+      if (!next.title) throw new Error('이름이 필요해요');
+    }
+    if (next.intervalDays !== undefined) {
+      next.intervalDays = Math.round(next.intervalDays);
+      if (!(next.intervalDays >= 1)) throw new Error('주기는 1일 이상이어야 해요');
+    }
+    await db.chores.update(id, next);
+    await get().load();
+  },
+
+  completeChore: async (id, date = toDateStr(new Date())) => {
+    const chore = await db.chores.get(id);
+    if (!chore) return;
+    await db.chores.put(markDone(chore, date));
+    await get().load();
+  },
+
+  undoChore: async (id) => {
+    const chore = await db.chores.get(id);
+    if (!chore || chore.history.length === 0) return;
+    await db.chores.put(undoDone(chore));
+    await get().load();
+  },
+
+  snoozeChore: async (id) => {
+    // '오늘은 패스' — 내일 다시 홈에 꺼낸다. 기록(lastDoneAt)은 건드리지 않는다.
+    await db.chores.update(id, { snoozedUntil: toDateStr(addDays(new Date(), 1)) });
+    await get().load();
+  },
+
+  deleteChore: async (id) => {
+    await db.chores.delete(id);
+    await get().load();
+  },
+
   buildHomeCards: (now = new Date()) => {
-    const { reminders, seeds, tasks } = get();
+    const { reminders, seeds, tasks, chores } = get();
     const cards: HomeCard[] = [];
 
     for (const r of dueReminders(reminders, now)) {
@@ -242,6 +324,10 @@ export const useStore = create<MiriState>((set, get) => ({
 
     for (const s of dueSeeds(seeds, now)) {
       cards.push({ kind: 'seed', seed: s, copy: seedPromptCopy(s.text) });
+    }
+
+    for (const c of dueChores(chores, now)) {
+      cards.push({ kind: 'chore', chore: c, copy: choreCopy(c, now) });
     }
 
     return cards;

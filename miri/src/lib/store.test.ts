@@ -7,7 +7,7 @@ import { useStore } from '../store';
 const due = (offset: number) => format(addDays(new Date(), offset), 'yyyy-MM-dd');
 
 async function reset() {
-  await Promise.all([db.tasks.clear(), db.subtasks.clear(), db.reminders.clear(), db.seeds.clear()]);
+  await Promise.all([db.tasks.clear(), db.subtasks.clear(), db.reminders.clear(), db.seeds.clear(), db.chores.clear()]);
   await useStore.getState().load();
 }
 
@@ -82,5 +82,39 @@ describe('서브태스크 완료 시 리마인더 동기화', () => {
 
     const rs = useStore.getState().reminders.filter((r) => r.subtaskId === sub.id);
     expect(rs.every((r) => r.status === 'pending')).toBe(true);
+  });
+});
+
+describe('D. 집안일 주기', () => {
+  it('했어요 → lastDoneAt 기록, 되돌리기 → 이전 기록 복원', async () => {
+    const { createChore, completeChore, undoChore } = useStore.getState();
+    const c = await createChore({ title: '이불 빨래', intervalDays: 14, lastDoneAt: due(-20) });
+    await completeChore(c.id);
+    expect(useStore.getState().chores[0].lastDoneAt).toBe(due(0));
+    await undoChore(c.id);
+    expect(useStore.getState().chores[0].lastDoneAt).toBe(due(-20));
+  });
+
+  it('차례가 지난 집안일은 홈 카드로 뜨고, 했어요 하면 사라진다', async () => {
+    const { createChore, completeChore } = useStore.getState();
+    const c = await createChore({ title: '화장실 청소', intervalDays: 7, lastDoneAt: due(-9) });
+    expect(useStore.getState().buildHomeCards().some((k) => k.kind === 'chore')).toBe(true);
+    await completeChore(c.id);
+    expect(useStore.getState().buildHomeCards().some((k) => k.kind === 'chore')).toBe(false);
+  });
+
+  it('오늘은 패스 → 오늘 홈에서 숨김, 기록은 그대로', async () => {
+    const { createChore, snoozeChore } = useStore.getState();
+    const c = await createChore({ title: '분리수거', intervalDays: 7, lastDoneAt: due(-8) });
+    await snoozeChore(c.id);
+    expect(useStore.getState().buildHomeCards().some((k) => k.kind === 'chore')).toBe(false);
+    expect(useStore.getState().chores[0].lastDoneAt).toBe(due(-8));
+  });
+
+  it('빈 이름·0일 주기는 거부한다', async () => {
+    const { createChore } = useStore.getState();
+    await expect(createChore({ title: ' ', intervalDays: 7 })).rejects.toThrow();
+    await expect(createChore({ title: '청소', intervalDays: 0 })).rejects.toThrow();
+    expect(useStore.getState().chores).toHaveLength(0);
   });
 });

@@ -7,9 +7,9 @@ const d = (offset: number) => format(addDays(new Date(), offset), 'yyyy-MM-dd');
 // PRD §4.1 시나리오 S1·S2·S3를 오늘 기준으로 재현한 샘플 데이터.
 export async function seedDemoData(): Promise<void> {
   // 초기화
-  await Promise.all([db.tasks.clear(), db.subtasks.clear(), db.reminders.clear(), db.seeds.clear()]);
+  await Promise.all([db.tasks.clear(), db.subtasks.clear(), db.reminders.clear(), db.seeds.clear(), db.chores.clear()]);
 
-  const { createTask, createSeed } = useStore.getState();
+  const { createTask, createSeed, createChore } = useStore.getState();
 
   // S1: 어린이집 학부모 상담 (모레) — D-1 리마인더가 오늘 떠야 함
   await createTask({ title: '어린이집 학부모 상담', type: 'appointment', dueDate: d(2) });
@@ -31,4 +31,21 @@ export async function seedDemoData(): Promise<void> {
 
   // 아직 잠들어 있는 seed
   await createSeed({ text: '주말에 등산 다시 시작하기', season: 'fall' });
+
+  // D. 집안일 주기 — 이불은 이틀 지남(홈에 뜸), 냉장고는 내일 차례, 화장실은 기록 없음
+  await createChore({
+    title: '이불·베개커버 빨래',
+    emoji: '🛏️',
+    intervalDays: 14,
+    hint: '이불 커버만 벗겨서 세탁기에 넣기',
+    lastDoneAt: d(-16),
+  });
+  await createChore({
+    title: '냉장고 유통기한 점검',
+    emoji: '🧊',
+    intervalDays: 7,
+    hint: '"먼저 먹기" 칸만 열어보기',
+    lastDoneAt: d(-6),
+  });
+  await createChore({ title: '화장실 청소', emoji: '🚽', intervalDays: 7, hint: '변기만 솔로 30초' });
 }

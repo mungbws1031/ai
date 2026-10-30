@@ -1,5 +1,5 @@
 import { db } from '../db';
-import type { Reminder, SomedaySeed, Subtask, Task } from '../types';
+import type { Chore, Reminder, SomedaySeed, Subtask, Task } from '../types';
 
 // NFR-D-01: 데이터 export/import (JSON)
 export interface BackupShape {
@@ -10,28 +10,37 @@ export interface BackupShape {
   subtasks: Subtask[];
   reminders: Reminder[];
   seeds: SomedaySeed[];
+  chores?: Chore[]; // v2에서 추가 — 예전 백업엔 없을 수 있다
 }
 
 export async function exportAll(): Promise<BackupShape> {
-  const [tasks, subtasks, reminders, seeds] = await Promise.all([
+  const [tasks, subtasks, reminders, seeds, chores] = await Promise.all([
     db.tasks.toArray(),
     db.subtasks.toArray(),
     db.reminders.toArray(),
     db.seeds.toArray(),
+    db.chores.toArray(),
   ]);
-  return { app: 'miri', version: 1, exportedAt: new Date().toISOString(), tasks, subtasks, reminders, seeds };
+  return { app: 'miri', version: 1, exportedAt: new Date().toISOString(), tasks, subtasks, reminders, seeds, chores };
 }
 
 export async function importAll(data: BackupShape, mode: 'replace' | 'merge' = 'replace'): Promise<void> {
   if (data.app !== 'miri') throw new Error('미리 백업 파일이 아니에요.');
-  await db.transaction('rw', db.tasks, db.subtasks, db.reminders, db.seeds, async () => {
+  await db.transaction('rw', [db.tasks, db.subtasks, db.reminders, db.seeds, db.chores], async () => {
     if (mode === 'replace') {
-      await Promise.all([db.tasks.clear(), db.subtasks.clear(), db.reminders.clear(), db.seeds.clear()]);
+      await Promise.all([
+        db.tasks.clear(),
+        db.subtasks.clear(),
+        db.reminders.clear(),
+        db.seeds.clear(),
+        db.chores.clear(),
+      ]);
     }
     await db.tasks.bulkPut(data.tasks ?? []);
     await db.subtasks.bulkPut(data.subtasks ?? []);
     await db.reminders.bulkPut(data.reminders ?? []);
     await db.seeds.bulkPut(data.seeds ?? []);
+    await db.chores.bulkPut(data.chores ?? []);
   });
 }
 
