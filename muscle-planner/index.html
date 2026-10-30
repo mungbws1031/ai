@@ -101,6 +101,17 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .chips{display:flex; gap:6px; flex-wrap:wrap}
 .chip{border:1px solid var(--line); background:var(--surface2); border-radius:999px; padding:6px 12px; font-size:.86rem}
 .chip[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+.goalgrid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+@media (max-width:720px){ .goalgrid{grid-template-columns:repeat(2,minmax(0,1fr))} }
+.goal{position:relative; display:grid; padding:0; overflow:hidden; text-align:left; background:var(--surface); border:2px solid var(--line); border-radius:12px; transition:border-color .15s, transform .15s}
+.goal img{width:100%; height:auto; aspect-ratio:1; object-fit:cover; display:block; background:#fff}
+.goal .gl{display:grid; gap:2px; padding:8px 10px 10px}
+.goal .gl b{font-size:.9rem; font-weight:700; line-height:1.3}
+.goal .gl small{font-size:.74rem; color:var(--muted); line-height:1.35}
+.goal:hover{border-color:var(--muted); transform:translateY(-1px)}
+.goal[aria-pressed="true"]{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft)}
+.goal[aria-pressed="true"]::after{content:"✓"; position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-weight:700; font-size:.9rem}
+@media (prefers-reduced-motion: reduce){ .goal{transition:none} .goal:hover{transform:none} }
 
 .maps{display:grid; grid-template-columns:1fr 1fr; gap:6px}
 .maps figure{margin:0; text-align:center}
@@ -265,8 +276,8 @@ input[type=range]{width:100%; accent-color:var(--accent)}
 <section class="view" id="v-plan" hidden>
   <p class="lead">원하는 체형을 고르면, 목표 근육은 <b>주 10–16세트</b>, 나머지는 <b>유지 볼륨(주 ~6세트)</b>이 되도록 운동과 세트를 자동으로 배분하고, 각 근육을 주 2회 이상 자극하도록 요일에 나눕니다.</p>
   <div class="panel">
-    <header><h2>원하는 모습</h2><span class="muted small">여러 개 선택 가능</span></header>
-    <div class="chips" id="goals"></div>
+    <header><h2>원하는 모습</h2><span class="muted small">사진을 눌러 고르세요 · 여러 개 선택 가능 · 붉은 부분이 집중 근육</span></header>
+    <div class="goalgrid" id="goals"></div>
     <div class="fields">
       <label class="f">주당 운동일
         <select id="g-days"><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option></select></label>
@@ -674,11 +685,13 @@ const GOALS = [
   {id:"balance", n:"전신 균형", m:["chest","lats","mtrap","sdelt","quads","hams","gmax"]}
 ];
 function renderGoalChips(){
-  $("goals").innerHTML = GOALS.map(g => `<button class="chip" aria-pressed="${S.goals.includes(g.id)}" data-goal="${g.id}">${g.n}</button>`).join("");
+  $("goals").innerHTML = GOALS.map(g => `<button class="goal" aria-pressed="${S.goals.includes(g.id)}" data-goal="${g.id}">
+    <img src="goals/${g.id}.webp" alt="" width="384" height="384" loading="lazy">
+    <span class="gl"><b>${g.n}</b><small>${g.m.map(m => MUSCLES[m].s).join(" · ")}</small></span></button>`).join("");
   $("equip").innerHTML = Object.entries(EQ).map(([k, n]) => `<button class="chip" aria-pressed="${S.equip.includes(k)}" data-eq="${k}">${n}</button>`).join("");
   $("g-days").value = S.days; $("g-min").value = S.min;
 }
-$("goals").addEventListener("click", ev => { const g = ev.target.dataset.goal; if (!g) return;
+$("goals").addEventListener("click", ev => { const g = ev.target.closest("[data-goal]")?.dataset.goal; if (!g) return;
   S.goals = S.goals.includes(g) ? S.goals.filter(x => x !== g) : [...S.goals, g]; save(); renderGoalChips(); });
 $("equip").addEventListener("click", ev => { const k = ev.target.dataset.eq; if (!k) return;
   S.equip = S.equip.includes(k) ? S.equip.filter(x => x !== k) : [...S.equip, k]; if (!S.equip.includes("bw")) S.equip.push("bw"); save(); renderGoalChips(); });
