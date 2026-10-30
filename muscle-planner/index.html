@@ -96,6 +96,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .rrow .nm b{font-weight:500}
 .rrow .nm small{display:block; color:var(--muted); font-size:.76rem; line-height:1.4}
 @media (max-width:520px){ .rrow{grid-template-columns:auto minmax(0,1fr) auto} .rrow .nm{grid-column:1 / -1} }
+.inl{display:inline-flex; align-items:center; gap:4px; font-size:.82rem; color:var(--muted); white-space:nowrap}
 .banner{background:var(--accent-soft); border-radius:8px; padding:8px 12px; font-size:.86rem}
 
 .chips{display:flex; gap:6px; flex-wrap:wrap}
@@ -164,8 +165,12 @@ tr.clickable:hover{background:var(--surface2)}
 .ev{font-size:.72rem; padding:1px 7px; border-radius:4px; background:var(--accent-soft); color:var(--ink)}
 
 input[type=range]{width:100%; accent-color:var(--accent)}
-.figbox{display:grid; grid-template-columns:minmax(0,220px) minmax(0,1fr); gap:16px; align-items:center}
-@media (max-width:620px){ .figbox{grid-template-columns:minmax(0,1fr)} .figbox > svg{max-width:240px; margin:0 auto} }
+.figbox{display:grid; grid-template-columns:minmax(0,260px) minmax(0,1fr); gap:16px; align-items:center}
+.frames{position:relative; width:100%; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#fff; border:1px solid var(--line)}
+.frames img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .25s}
+.frames img.on{opacity:1}
+.frames .flabel{position:absolute; left:8px; bottom:8px; background:rgba(255,255,255,.88); color:#13201e; border-radius:6px; padding:1px 7px; font-size:.8rem}
+@media (max-width:620px){ .figbox{grid-template-columns:minmax(0,1fr)} .figbox > .frames{max-width:300px; margin:0 auto} }
 .bignum{font-family:var(--f-mono); font-size:2rem; font-variant-numeric:tabular-nums; line-height:1.1}
 .chart svg{width:100%; height:auto; display:block}
 .chart text{fill:var(--muted); font-size:10px; font-family:var(--f-mono)}
@@ -175,12 +180,18 @@ input[type=range]{width:100%; accent-color:var(--accent)}
 .cva canvas{max-width:100%; border-radius:8px; background:var(--surface2); touch-action:manipulation; cursor:crosshair}
 .drop{border:1.5px dashed var(--line); border-radius:8px; padding:18px; text-align:center; color:var(--muted); font-size:.88rem}
 
+.flow{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; counter-reset:f}
+.flow li{position:relative; background:var(--surface2); border-radius:8px; padding:10px 12px 10px 40px; display:grid; gap:2px; font-size:.86rem; counter-increment:f}
+.flow li::before{content:counter(f); position:absolute; left:10px; top:10px; width:22px; height:22px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-size:.78rem; font-weight:700}
+.flow li b{font-size:.92rem}
+.flow li span{color:var(--muted)}
+@media (max-width:760px){ .flow{grid-template-columns:minmax(0,1fr)} }
 .refs{display:grid; gap:10px}
 .ref{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:12px 14px; display:grid; gap:4px}
 .ref .cite{font-size:.86rem}
 .ref .use{font-size:.84rem; color:var(--muted)}
 .disclaimer{font-size:.82rem; color:var(--muted); border-top:1px solid var(--line); padding-top:12px; max-width:80ch}
-@media (prefers-reduced-motion: reduce){ .heat g{transition:none} }
+@media (prefers-reduced-motion: reduce){ .heat g, .frames img{transition:none} }
 </style>
 </head><!--shell-->
 <body><!--shell-->
@@ -195,6 +206,7 @@ input[type=range]{width:100%; accent-color:var(--accent)}
     <a href="#plan" data-tab="plan">목표 체형 플랜</a>
     <a href="#posture" data-tab="posture">거북목·자세 교정</a>
     <a href="#angle" data-tab="angle">팔 올리는 각도 (국민체조)</a>
+    <a href="#why" data-tab="why">운동 원리</a>
     <a href="#refs" data-tab="refs">근거 논문</a>
   </nav>
 </header>
@@ -217,6 +229,8 @@ input[type=range]{width:100%; accent-color:var(--accent)}
             <select id="p-sex"><option value="F">여성</option><option value="M">남성</option></select></label>
           <label class="f">나이
             <input type="number" id="p-age" min="10" max="95" value="38" style="width:100%"></label>
+          <label class="f">체중 (kg)
+            <input type="number" id="p-kg" min="30" max="200" value="60" style="width:100%"></label>
           <label class="f">식사
             <select id="p-nutri">
               <option value="surplus">약간 잉여 (증량)</option>
@@ -246,7 +260,7 @@ input[type=range]{width:100%; accent-color:var(--accent)}
           <button class="primary" id="add-btn">추가</button>
           <button class="ghost" id="clear-btn">전부 지우기</button>
         </div>
-        <p class="muted small">‘세트/주’는 일주일 동안 그 운동을 한 총 세트 수입니다 (예: 주 2회 × 3세트 = 6). 근성장에는 <b>실패 근처까지(2–3회 남김)</b> 하는 세트가 대부분의 효과를 냅니다.</p>
+        <p class="muted small">‘세트/주’는 일주일 동안 그 운동을 한 총 세트 수입니다 (예: 주 2회 × 3세트 = 6). 유산소는 ‘주 몇 회 × 몇 분’으로 넣으면 아래 ‘이렇게 하면’에서 칼로리·체지방·심폐 변화를 볼 수 있어요. 근성장에는 <b>실패 근처까지(2–3회 남김)</b> 하는 세트가 대부분의 효과를 냅니다.</p>
       </div>
     </div>
 
@@ -266,6 +280,7 @@ input[type=range]{width:100%; accent-color:var(--accent)}
   <div class="panel">
     <header><h2>시뮬레이션 결과</h2><span class="muted small" id="res-sub"></span></header>
     <div class="stats" id="stats"></div>
+    <div class="panel" id="outcome" style="background:var(--surface2); border:none"></div>
     <ul class="notes" id="warnings"></ul>
     <div class="tablewrap"><table id="mtable"></table></div>
     <p class="muted small">근두께 증가(%)는 메타분석의 용량-반응 경향(주당 세트가 늘수록 효과가 커지지만 점점 둔화)을 단순화한 <b>추정 범위</b>입니다. 같은 운동을 해도 사람마다 성장량 차이가 매우 크므로(연구에서 0%에서 50% 이상까지) 가운데 값보다 범위를 보세요.</p>
@@ -300,7 +315,7 @@ input[type=range]{width:100%; accent-color:var(--accent)}
     <div class="panel">
       <header><h2>고개 숙임과 목 부담</h2><span class="eyebrow">Hansraj 2014 모델</span></header>
       <div class="figbox">
-        <svg id="neck-fig" viewBox="0 0 220 240" role="img" aria-label="고개 각도에 따른 옆모습"></svg>
+        <div class="frames" id="neck-fig" role="img" aria-label="고개 각도에 따른 옆모습 해부도"></div>
         <div style="display:grid; gap:8px">
           <div class="muted small">목에 걸리는 추정 하중</div>
           <div class="bignum" id="neck-kg">5 kg</div>
@@ -335,7 +350,7 @@ input[type=range]{width:100%; accent-color:var(--accent)}
     <div class="panel">
       <header><h2>팔 옆으로 들기 (외전)</h2><span class="mono" id="ang-deg">90°</span></header>
       <div class="figbox">
-        <svg id="arm-fig" viewBox="0 0 220 220" role="img" aria-label="팔 각도 앞모습"></svg>
+        <div class="frames" id="arm-fig" role="img" aria-label="팔 각도에 따른 뒷모습 해부도"></div>
         <div style="display:grid; gap:6px">
           <div class="small">견갑골 상방회전 <b class="mono" id="ang-scap"></b></div>
           <div class="small">어깨관절(상완골) <b class="mono" id="ang-gh"></b></div>
@@ -371,7 +386,18 @@ input[type=range]{width:100%; accent-color:var(--accent)}
   </div>
 </section>
 
-<!-- ============ 5. REFS ============ -->
+<!-- ============ 5. PRINCIPLES ============ -->
+<section class="view" id="v-why" hidden>
+  <p class="lead">이 툴의 계산은 아래 원리를 숫자로 바꾼 것입니다. 원리를 알면 시뮬레이터 결과가 왜 그렇게 나오는지, 운동을 어떻게 바꿔야 하는지 스스로 판단할 수 있어요.</p>
+  <div class="panel">
+    <header><h2>근육이 커지는 과정</h2><span class="eyebrow">한 번의 운동 이후</span></header>
+    <ol class="flow" id="flow"></ol>
+    <p class="muted small">운동 자체는 근육을 일시적으로 지치게 하고, 실제로 커지는 것은 <b>쉬는 동안</b>입니다. 그래서 같은 근육은 보통 48–72시간 간격으로 주 2회 정도 자극하는 것이 효율적입니다.</p>
+  </div>
+  <div class="cards" id="principles"></div>
+</section>
+
+<!-- ============ 6. REFS ============ -->
 <section class="view" id="v-refs" hidden>
   <p class="lead">이 툴의 계산 규칙과 각 규칙이 기대는 연구입니다. 근전도(EMG)가 높다고 반드시 더 크게 자라는 것은 아니며(Vigotsky 2018), 모든 수치는 <b>개인 차이가 큰 평균 경향의 단순화</b>입니다.</p>
   <div class="refs" id="refs"></div>
@@ -409,7 +435,7 @@ const MUSCLES = {
 
 // w: 1 = 주동근, 0.5 = 협응근, 0.25 = 보조. type: hyp(근력) | posture(저부하 근력·조절) | mobility | stretch
 // eff: 운동 자체 부하가 낮아 근비대 자극을 낮추는 계수
-const CATS = ["상체 밀기","상체 당기기","어깨","팔","하체","코어","자세·목","스트레칭·가동성","생활체조"];
+const CATS = ["상체 밀기","상체 당기기","어깨","팔","하체","코어","자세·목","스트레칭·가동성","생활체조","유산소"];
 const EQ = {bw:"맨몸", band:"밴드", db:"덤벨", gym:"헬스장 기구"};
 const EX = [
   {id:"pushup", n:"푸시업", c:"상체 밀기", eq:"bw", w:{chest:1,triceps:.5,fdelt:.5,serratus:.25,abs:.25}, cue:"가슴이 바닥 가까이 갈 때까지 내리기. 어려우면 무릎·벽 푸시업으로 실패 2–3회 전까지."},
@@ -455,9 +481,19 @@ const EX = [
   {id:"utrapstretch", n:"상부 승모근 스트레칭", c:"스트레칭·가동성", eq:"bw", w:{}, type:"stretch", stretch:["utrap"], cue:"한 손으로 의자를 잡고 반대쪽으로 고개를 기울이기. 30초 × 2–3회."},
   {id:"thoracic", n:"폼롤러 흉추 펴기", c:"스트레칭·가동성", eq:"bw", w:{erectors:.1}, type:"mobility", cue:"폼롤러를 날개뼈 아래에 두고 등을 뒤로 젖히기. 굽은 등 가동성."},
   {id:"hipflexor", n:"고관절 굴곡근 스트레칭", c:"스트레칭·가동성", eq:"bw", w:{}, type:"stretch", stretch:["quads"], cue:"한쪽 무릎을 꿇고 엉덩이를 앞으로 밀기(엉덩이에 힘 주기). 30초 × 2–3회."},
-  {id:"gukmin", n:"국민체조 1회 (약 4–5분)", c:"생활체조", eq:"bw", w:{sdelt:.25,fdelt:.25,abs:.15,obliques:.15,quads:.15,calves:.15,ltrap:.1,serratus:.1}, type:"mobility", unit:"회", cue:"근비대 자극은 작지만 관절 가동·순환에 좋음. 팔은 귀 옆까지 올리기(‘팔 올리는 각도’ 탭)."}
+  {id:"gukmin", n:"국민체조 1회 (약 4–5분)", c:"생활체조", eq:"bw", w:{sdelt:.25,fdelt:.25,abs:.15,obliques:.15,quads:.15,calves:.15,ltrap:.1,serratus:.1}, type:"mobility", unit:"회", cue:"근비대 자극은 작지만 관절 가동·순환에 좋음. 팔은 귀 옆까지 올리기(‘팔 올리는 각도’ 탭)."},
+  // 유산소: 단위 = 분/주, w = 10분당 유효 세트(근비대 기여는 작음), mod = WHO 중강도 환산 배수(고강도 1분 = 중강도 2분)
+  {id:"walk", n:"빠르게 걷기", c:"유산소", eq:"bw", w:{calves:.1,quads:.05,gmax:.05}, type:"cardio", unit:"분", per:10, mod:1, met:4.3, lvl:"중강도",
+   cue:"숨이 조금 차지만 대화는 가능한 속도(약 시속 5–6km). 근육은 거의 키우지 않지만 심폐·혈당·기분에 좋고 회복을 방해하지 않음. 주 150분이 WHO 최소 권장량."},
+  {id:"zumba", n:"줌바 댄스", c:"유산소", eq:"bw", w:{quads:.15,gmax:.15,calves:.2,gmed:.1,abs:.1,obliques:.15,sdelt:.05}, type:"cardio", unit:"분", per:10, mod:1.5, met:6.5, lvl:"중–고강도",
+   cue:"수업 평균 심박이 최대의 약 79%로 중–고강도에 해당(Luettgen 2012). 옆구리·종아리·엉덩이를 고루 쓰지만 근비대 자극은 작음. 60분 수업 = 중강도 약 90분으로 계산."},
+  {id:"run", n:"달리기 (조깅)", c:"유산소", eq:"bw", w:{quads:.25,hams:.15,gmax:.15,calves:.4,gmed:.1}, type:"cardio", unit:"분", per:10, mod:2, met:8.3, lvl:"고강도",
+   cue:"시속 약 8km(대화가 힘든 속도). 심폐지구력 향상 효과가 크지만 근비대 자극은 작음. 처음엔 걷기와 번갈아 하고, 주간 거리는 한 번에 10% 이상 늘리지 않기."},
+  {id:"interval", n:"인터벌 달리기", c:"유산소", eq:"bw", w:{quads:.8,hams:.8,gmax:.6,calves:.6,gmed:.2}, type:"cardio", unit:"분", per:10, mod:2, met:8, lvl:"고강도",
+   cue:"예: 30초 전력 질주 + 90초 걷기 × 8–10회(워밍업 별도). 짧은 전력 구간은 하체 근육에 약간의 근비대 자극을 줌. 하체 근력운동과 같은 날 하면 서로 방해할 수 있어 다른 날이나 근력운동 뒤로(Wilson 2012)."}
 ];
 const EXM = Object.fromEntries(EX.map(e => [e.id, e]));
+const DEF_FD = {walk:[5,30], zumba:[3,60], run:[3,30], interval:[2,20]};  // 추가할 때 기본 [회/주, 분/회]
 
 const RIR = [
   {v:"f0", n:"실패 직전 (0–1회 남김)", f:1.0},
@@ -472,15 +508,21 @@ const LEVEL = {beg:{n:"초보", g:1, kg:1}, int:{n:"중급", g:.55, kg:.5}, adv:
 const EXAMPLE = [
   {id:"pushup", sets:6, rir:"f2"}, {id:"invrow", sets:6, rir:"f2"}, {id:"goblet", sets:6, rir:"f2"},
   {id:"bridge", sets:4, rir:"f2"}, {id:"pronety", sets:4, rir:"f2"}, {id:"chintuck", sets:5, rir:"f2"},
-  {id:"plank", sets:3, rir:"f2"}, {id:"gukmin", sets:5, rir:"easy"}
+  {id:"plank", sets:3, rir:"f2"}, {id:"gukmin", sets:5, rir:"easy"}, {id:"walk", freq:5, dur:30, sets:150, rir:"f2"}
 ];
 
 /* ---------------- state ---------------- */
 const KEY = "muscle-planner-v1";
 let S = {routine: EXAMPLE.map(r => ({...r})), isExample:true,
-  profile:{level:"beg", sex:"F", age:38, nutri:"maint", protein:"lo", weeks:12},
+  profile:{level:"beg", sex:"F", age:38, kg:60, nutri:"maint", protein:"lo", weeks:12},
   goals:["posture"], days:3, min:45, equip:["bw","band","db"], plan:null, sel:"chest"};
-try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && Array.isArray(s.routine)) S = {...S, ...s}; } catch(e) {}
+try { const s = JSON.parse(localStorage.getItem(KEY) || "null"); if (s && Array.isArray(s.routine)) S = {...S, ...s, profile:{...S.profile, ...s.profile}}; } catch(e) {}
+function fixCardio(r){
+  if (EXM[r.id]?.type !== "cardio") return r;
+  if (!r.freq){ r.freq = 3; r.dur = Math.max(10, Math.round((r.sets || 90) / 3)); }
+  r.sets = r.freq * r.dur; return r;
+}
+S.routine.forEach(fixCardio);
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
 
 const $ = id => document.getElementById(id);
@@ -495,7 +537,7 @@ function stimulus(routine){
   for (const r of routine){
     const e = EXM[r.id]; if (!e) continue;
     const typeF = e.type === "mobility" ? .1 : e.type === "stretch" ? 0 : 1;
-    const f = (RIRM[r.rir]?.f ?? .9) * (e.eff ?? 1) * typeF;
+    const f = (e.type === "cardio" ? 1 / e.per : (RIRM[r.rir]?.f ?? .9)) * (e.eff ?? 1) * typeF;
     for (const [m, w] of Object.entries(e.w)){
       const v = r.sets * w * f; s[m] += v; if (v > 0) by[m].push({e, v});
     }
@@ -582,22 +624,31 @@ function renderRoutine(){
   else box.innerHTML = S.routine.map((r, i) => {
     const e = EXM[r.id];
     const tgt = Object.entries(e.w).filter(([,w]) => w >= .5).map(([m]) => MUSCLES[m].s).join("·") ||
-      (e.stretch ? "스트레칭: " + e.stretch.map(m => MUSCLES[m].s).join("·") : "가동성");
+      (e.stretch ? "스트레칭: " + e.stretch.map(m => MUSCLES[m].s).join("·") : e.type === "cardio" ? "유산소 · " + Object.keys(e.w).slice(0, 3).map(m => MUSCLES[m].s).join("·") : "가동성");
     return `<div class="rrow">
       <div class="nm"><b>${esc(e.n)}</b><small>${esc(tgt)}</small></div>
-      <label class="f" style="grid-template-columns:auto auto; align-items:center">${e.unit ? e.unit : "세트"}/주
-        <input type="number" min="0" max="40" value="${r.sets}" data-i="${i}" data-k="sets" id="rs-${i}"></label>
-      <select data-i="${i}" data-k="rir" id="rr-${i}" aria-label="강도">${RIR.map(o => `<option value="${o.v}"${o.v === r.rir ? " selected" : ""}>${o.n}</option>`).join("")}</select>
+      ${e.type === "cardio" ? `<span class="row" style="gap:6px; align-items:center; flex-wrap:nowrap">
+        <label class="inl">주 <input type="number" min="0" max="14" value="${r.freq}" data-i="${i}" data-k="freq" id="rf-${i}" style="width:52px"> 회</label>
+        <label class="inl">× <input type="number" min="0" max="240" step="5" value="${r.dur}" data-i="${i}" data-k="dur" id="rd-${i}" style="width:60px"> 분</label></span>`
+      : `<label class="f" style="grid-template-columns:auto auto; align-items:center">${e.unit ? e.unit : "세트"}/주
+        <input type="number" min="0" max="40" value="${r.sets}" data-i="${i}" data-k="sets" id="rs-${i}"></label>`}
+      ${e.type === "cardio" ? `<span class="pill z-none">${e.lvl}</span>` : `<select data-i="${i}" data-k="rir" id="rr-${i}" aria-label="강도">${RIR.map(o => `<option value="${o.v}"${o.v === r.rir ? " selected" : ""}>${o.n}</option>`).join("")}</select>`}
       <button class="x" data-del="${i}" aria-label="${esc(e.n)} 삭제">✕</button></div>`;
   }).join("");
-  const tot = S.routine.filter(r => EXM[r.id].type !== "stretch" && EXM[r.id].type !== "mobility").reduce((a, r) => a + (+r.sets || 0), 0);
-  $("r-total").textContent = `근력 운동 총 ${tot}세트/주`;
+  updTotal();
+}
+function updTotal(){
+  const tot = S.routine.filter(r => !["stretch","mobility","cardio"].includes(EXM[r.id].type)).reduce((a, r) => a + (+r.sets || 0), 0);
+  const cmin = S.routine.filter(r => EXM[r.id].type === "cardio").reduce((a, r) => a + (+r.sets || 0), 0);
+  $("r-total").textContent = `근력 운동 ${tot}세트/주` + (cmin ? ` · 유산소 ${cmin}분/주` : "");
 }
 $("routine").addEventListener("input", ev => {
   const i = ev.target.dataset.i; if (i === undefined) return;
   const k = ev.target.dataset.k;
-  S.routine[i][k] = k === "sets" ? Math.max(0, Math.min(40, +ev.target.value || 0)) : ev.target.value;
-  S.isExample = false; save(); renderResults();
+  const lim = {sets:40, freq:14, dur:240}[k];
+  S.routine[i][k] = lim ? Math.max(0, Math.min(lim, +ev.target.value || 0)) : ev.target.value;
+  fixCardio(S.routine[i]);
+  S.isExample = false; save(); updTotal(); renderResults();
 });
 $("routine").addEventListener("click", ev => {
   const d = ev.target.dataset.del; if (d === undefined) return;
@@ -605,14 +656,14 @@ $("routine").addEventListener("click", ev => {
 });
 $("add-btn").addEventListener("click", () => {
   const id = $("add-ex").value; const ex = S.routine.find(r => r.id === id);
-  if (ex) ex.sets += 3; else S.routine.push({id, sets: EXM[id].type === "stretch" ? 5 : 3, rir: EXM[id].type === "mobility" ? "easy" : "f2"});
+  if (ex){ if (EXM[id].type === "cardio"){ ex.freq += 1; fixCardio(ex); } else ex.sets += 3; } else if (EXM[id].type === "cardio") S.routine.push(fixCardio({id, freq:DEF_FD[id][0], dur:DEF_FD[id][1], rir:"f2"})); else S.routine.push({id, sets: (EXM[id].type === "stretch" ? 5 : 3), rir: EXM[id].type === "mobility" ? "easy" : "f2"});
   S.isExample = false; save(); renderSim();
 });
 $("clear-btn").addEventListener("click", () => { S.routine = []; S.isExample = false; save(); renderSim(); });
-for (const k of ["level","sex","age","nutri","protein","weeks"]){
+for (const k of ["level","sex","age","kg","nutri","protein","weeks"]){
   const el = $("p-" + k);
   el.value = S.profile[k];
-  el.addEventListener("input", () => { S.profile[k] = (k === "age" || k === "weeks") ? (+el.value || 0) : el.value; save(); renderResults(); });
+  el.addEventListener("input", () => { S.profile[k] = (k === "age" || k === "weeks" || k === "kg") ? (+el.value || 0) : el.value; save(); renderResults(); });
 }
 
 function renderDetail(st, by){
@@ -632,10 +683,43 @@ function renderDetail(st, by){
 $("m-detail").addEventListener("click", ev => {
   const id = ev.target.dataset.addex; if (!id) return;
   const ex = S.routine.find(r => r.id === id);
-  if (ex) ex.sets += 3; else S.routine.push({id, sets: EXM[id].type === "stretch" ? 5 : 3, rir:"f2"});
+  if (ex){ if (EXM[id].type === "cardio"){ ex.freq += 1; fixCardio(ex); } else ex.sets += 3; } else if (EXM[id].type === "cardio") S.routine.push(fixCardio({id, freq:DEF_FD[id][0], dur:DEF_FD[id][1], rir:"f2"})); else S.routine.push({id, sets: (EXM[id].type === "stretch" ? 5 : 3), rir:"f2"});
   S.isExample = false; save(); renderSim();
 });
 
+function cardioMin(){
+  return S.routine.filter(r => EXM[r.id].type === "cardio").reduce((a, r) => a + (+r.sets || 0) * EXM[r.id].mod, 0);
+}
+// 이렇게 하면? — 칼로리(MET), 체지방(식사 그대로일 때), 심폐지구력(VO2max) 추정
+function outcome(st){
+  const p = S.profile, kg = p.kg || 60, wk = p.weeks;
+  let kcal = 0;
+  const lines = [];
+  for (const r of S.routine){
+    const e = EXM[r.id];
+    const min = e.type === "cardio" ? r.sets : e.type === "stretch" ? 0 : e.type === "mobility" ? (e.unit === "회" ? r.sets * 5 : r.sets * 2) : r.sets * 3;
+    const met = e.met ?? (e.type === "mobility" ? 3.5 : e.type === "stretch" ? 2.3 : 5);
+    const k = Math.max(0, met - 1) * kg * min / 60;   // 안정 시 소모(1 MET)를 뺀 순 소모량
+    kcal += k;
+    if (e.type === "cardio") lines.push(`${esc(e.n)} 주 ${r.freq}회 × ${r.dur}분 ≈ <b class="mono">${Math.round(k)}</b> kcal/주`);
+  }
+  const fatKg = kcal * wk / 7700;
+  const modMin = cardioMin();
+  const lv = {beg:1, int:.6, adv:.35}[p.level], age = p.age >= 60 ? .8 : 1;
+  const vo2 = 15 * lv * age * (1 - Math.exp(-modMin / 150)) * Math.min(1.25, Math.pow(wk / 12, .6));
+  const strengthSets = S.routine.filter(r => !["stretch","mobility","cardio"].includes(EXM[r.id].type)).reduce((a, r) => a + r.sets, 0);
+  const strengthPct = 25 * lv * (1 - Math.exp(-strengthSets / 25)) * Math.min(1.3, Math.pow(wk / 12, .6));
+  $("outcome").innerHTML = `
+    <header style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; align-items:baseline"><h3>이렇게 하면 ${wk}주 뒤</h3><span class="muted small">체중 ${kg}kg · 식사량은 그대로라고 가정</span></header>
+    <div class="stats">
+      <div class="stat"><div class="v">${Math.round(kcal).toLocaleString()} kcal</div><div class="k">주당 운동 소모 칼로리 (순 소모)</div></div>
+      <div class="stat"><div class="v">${fatKg < .1 ? "≈0" : fmt(fatKg * .3) + "–" + fmt(fatKg * .6)} kg</div><div class="k">${wk}주 체지방 감소 추정 (계산상 ${fmt(fatKg)}kg 중 실제로는 약 30–60%)</div></div>
+      <div class="stat"><div class="v">${modMin < 10 ? "≈0" : "+" + fmt(vo2 * .5, 0) + "–" + fmt(vo2 * 1.5, 0) + "%"}</div><div class="k">심폐지구력(최대산소섭취량) 향상</div></div>
+      <div class="stat"><div class="v">${strengthSets < 1 ? "≈0" : "+" + fmt(strengthPct * .5, 0) + "–" + fmt(strengthPct * 1.5, 0) + "%"}</div><div class="k">근력 향상 (주요 운동 기준)</div></div>
+    </div>
+    ${lines.length ? `<ul class="notes">${lines.map(l => `<li>${l}</li>`).join("")}</ul>` : `<p class="muted small">‘운동 추가 → 유산소’에서 걷기·달리기·줌바 등을 주 몇 회 × 몇 분으로 넣으면 칼로리·체지방·심폐 변화가 계산됩니다.</p>`}
+    <p class="muted small">칼로리 = (운동 강도 MET − 1) × 체중 × 시간. 운동만 늘리면 식욕·일상 활동이 보상적으로 변해 계산한 만큼 다 빠지지 않는 경우가 많아(Thomas 2012) 범위로 보여줍니다. 식사를 함께 조절하면 더 빠집니다.</p>`;
+}
 function warnings(st){
   const w = [];
   const push = st.chest + st.fdelt, pull = st.mtrap + st.rdelt + st.lats * .5;
@@ -644,8 +728,13 @@ function warnings(st){
   for (const [m, v] of Object.entries(st)) if (v > 25) w.push(["bad", `${MUSCLES[m].n} 주 ${fmt(v)}세트: 매우 높은 볼륨입니다. 회복·관절 상태를 보며 조절하세요.`]);
   const lowMajors = Object.keys(MUSCLES).filter(m => MUSCLES[m].major && st[m] < 3).map(m => MUSCLES[m].s);
   if (lowMajors.length) w.push(["warn", `거의 자극이 없는 주요 근육: ${lowMajors.join(", ")}.`]);
-  const strength = S.routine.filter(r => !["mobility","stretch"].includes(EXM[r.id].type));
-  if (S.routine.length && !strength.length) w.push(["bad", "근력 운동 없이 체조·스트레칭만 있으면 근육은 거의 자라지 않습니다. 유연성과 순환에는 도움이 됩니다."]);
+  const cm = cardioMin(), hasCardio = S.routine.some(r => EXM[r.id].type === "cardio");
+  if (hasCardio && cm < 150) w.push(["warn", `유산소가 중강도 환산 주 ${Math.round(cm)}분입니다. WHO 권장은 주 150–300분(고강도는 그 절반)입니다.`]);
+  if (hasCardio && cm >= 150) w.push(["good", `유산소 중강도 환산 주 ${Math.round(cm)}분: WHO 권장(150–300분)을 ${cm >= 300 ? "넘게 " : ""}채웠습니다.`]);
+  const run = S.routine.find(r => r.id === "interval");
+  if (run && run.sets > 60 && st.quads > 8) w.push(["warn", "고강도 달리기가 많고 하체 근력운동도 많습니다. 같은 날 연달아 하면 하체 근성장을 방해할 수 있으니 다른 날로 나누세요(Wilson 2012)."]);
+  const strength = S.routine.filter(r => !["mobility","stretch","cardio"].includes(EXM[r.id].type));
+  if (S.routine.length && !strength.length) w.push(["bad", "근력 운동 없이 체조·스트레칭·유산소만 있으면 근육은 거의 자라지 않습니다. 심폐·유연성·순환에는 도움이 됩니다."]);
   if (S.routine.some(r => r.rir === "easy" && EXM[r.id].type !== "mobility")) w.push(["warn", "‘여유 많음’ 세트는 근성장 효과가 크게 줄어듭니다. 마지막 세트는 2–3회 남기고 멈출 정도로 해보세요."]);
   if (S.profile.nutri === "deficit") w.push(["", "감량 중에는 근육이 늘기 어렵지만, 근력운동과 충분한 단백질이 근손실을 막는 데 중요합니다."]);
   if (!w.length) w.push(["good", "주요 근육이 고르게 자극되고 있습니다. 4–6주마다 무게나 반복을 조금씩 늘리세요(점진적 과부하)."]);
@@ -653,7 +742,7 @@ function warnings(st){
 }
 function renderResults(){
   const {s: st, by} = stimulus(S.routine);
-  drawMaps(st); renderDetail(st, by);
+  drawMaps(st); renderDetail(st, by); outcome(st);
   const p = S.profile, lm = leanMass(st, p);
   const top = Object.entries(st).sort((a, b) => b[1] - a[1]);
   const opt = Object.values(st).filter(v => v >= 10).length;
@@ -662,6 +751,7 @@ function renderResults(){
     <div class="stat"><div class="v">${lm.kg < .05 ? "≈0" : fmt(lm.kg * .6) + "–" + fmt(lm.kg * 1.4)} kg</div><div class="k">${p.weeks}주 제지방(근육) 증가 추정</div></div>
     <div class="stat"><div class="v">${Math.round(lm.cov * 100)}%</div><div class="k">주요 근육 자극 커버리지</div></div>
     <div class="stat"><div class="v">${opt} / ${Object.keys(MUSCLES).length}</div><div class="k">권장 범위(주 10–20세트) 근육 수</div></div>
+    <div class="stat"><div class="v">${Math.round(cardioMin())}분</div><div class="k">유산소 (중강도 환산) · WHO 권장 150–300분/주</div></div>
     <div class="stat"><div class="v">${esc(MUSCLES[top[0][0]].s)}</div><div class="k">가장 많이 자극되는 근육</div></div>`;
   $("warnings").innerHTML = warnings(st).map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
   const rows = Object.keys(MUSCLES).sort((a, b) => st[b] - st[a]);
@@ -764,6 +854,7 @@ function renderPlan(){
   if (S.goals.includes("core")) notes.push("복근 운동은 복근을 키우지만 뱃살만 골라 빼지는 못합니다(국소 감량 효과 없음: Vispute 2011). 복부가 드러나려면 식사로 체지방을 줄여야 합니다.");
   if (S.goals.includes("posture")) notes.push("자세 교정 운동은 주 3–5회, 최소 8–10주 꾸준히 했을 때 머리 자세 개선이 보고되었습니다(Harman 2005; Sheikhhoseini 2018). 스트레칭은 매일 해도 좋습니다.");
   if (P.used >= P.budget - 1) notes.push(`운동 시간이 빠듯해서 주 ${P.budget}세트 안에 맞췄습니다. 목표 근육 볼륨이 부족하면 운동일이나 시간을 늘려보세요.`);
+  notes.push("유산소(빠르게 걷기·줌바·인터벌 달리기)는 근력 플랜과 별도로 주 150–300분(중강도 환산)을 권장합니다. 시뮬레이터의 ‘운동 추가 → 유산소’에서 넣으세요.");
   notes.push("처음 2주는 목표 세트의 2/3 정도로 시작해 익숙해지면 늘리세요. 매주 무게나 반복을 조금씩 올리는 것이 핵심입니다(점진적 과부하).");
   out.innerHTML = `
     <header><h2>추천 주간 플랜</h2><span class="muted small">근력 운동 ${P.used}세트/주 · 세트당 약 3분(휴식 포함)</span></header>
@@ -778,22 +869,26 @@ function renderPlan(){
 $("gen-btn").addEventListener("click", generatePlan);
 
 /* ---------------- posture ---------------- */
+// GPT Image 2로 만든 키프레임(해부도). 슬라이더 값에 가장 가까운 프레임을 크로스페이드로 보여줌
+const ARM_FRAMES = [0, 90, 150, 180].map(d => [d, `frames/arm-${d}.webp`]);
+const NECK_FRAMES = [0, 15, 30, 45, 60].map(d => [d, `frames/neck-${d}.webp`]);
+function showFrame(id, frames, val, label){
+  const box = $(id);
+  if (!box.dataset.ready){
+    box.innerHTML = frames.map(([d, src]) => `<img src="${src}" alt="" width="512" height="512" data-d="${d}">`).join("") + `<span class="flabel mono"></span>`;
+    box.dataset.ready = "1";
+  }
+  const near = frames.reduce((b, f) => Math.abs(f[0] - val) < Math.abs(b[0] - val) ? f : b)[0];
+  box.querySelectorAll("img").forEach(im => im.classList.toggle("on", +im.dataset.d === near));
+  box.querySelector(".flabel").textContent = label;
+}
 const HANSRAJ = [[0,5],[15,12.25],[30,18.14],[45,22.23],[60,27.22]];
 function neckLoad(a){ for (let i = 1; i < HANSRAJ.length; i++){ const [a0, k0] = HANSRAJ[i-1], [a1, k1] = HANSRAJ[i]; if (a <= a1) return k0 + (k1 - k0) * (a - a0) / (a1 - a0); } return 27.22; }
 function renderNeck(){
   const a = +$("neck-range").value, kg = neckLoad(a);
   $("neck-deg").textContent = a + "°"; $("neck-kg").textContent = fmt(kg) + " kg";
   $("neck-msg").innerHTML = a < 8 ? "중립 자세: 머리 무게 정도만 지탱합니다." : a < 25 ? `중립 대비 약 <b>${fmt(kg / 5, 1)}배</b>. 스마트폰을 내려다보는 흔한 각도입니다.` : `중립 대비 약 <b>${fmt(kg / 5, 1)}배</b>. 화면을 눈높이로 올리면 크게 줄어듭니다.`;
-  const r = a * Math.PI / 180, c7 = {x:90, y:110}, L = 38;
-  const hx = c7.x + Math.sin(r) * L, hy = c7.y - Math.cos(r) * L;
-  const hue = kg < 10 ? "var(--good)" : kg < 20 ? "var(--warn)" : "var(--bad)";
-  $("neck-fig").innerHTML = `
-    <line x1="90" y1="110" x2="86" y2="210" stroke="var(--muted)" stroke-width="10" stroke-linecap="round"/>
-    <line x1="90" y1="110" x2="${hx}" y2="${hy}" stroke="${hue}" stroke-width="7" stroke-linecap="round"/>
-    <circle cx="${hx + Math.sin(r) * 18}" cy="${hy - Math.cos(r) * 18}" r="24" fill="var(--body)" stroke="var(--body-line)"/>
-    <circle cx="${hx + Math.sin(r) * 18 + Math.cos(r) * 14}" cy="${hy - Math.cos(r) * 18 + Math.sin(r) * 14}" r="2.5" fill="var(--ink)"/>
-    <line x1="90" y1="110" x2="90" y2="40" stroke="var(--line)" stroke-dasharray="3 3"/>
-    <text x="96" y="232" font-size="11" fill="var(--muted)" font-family="var(--f-mono)">${a}° · ${fmt(kg)}kg</text>`;
+  showFrame("neck-fig", NECK_FRAMES, a, `${a}° · ${fmt(kg)}kg`);
 }
 $("neck-range").addEventListener("input", renderNeck);
 
@@ -878,19 +973,7 @@ function renderAngle(){
   const a = +$("ang-range").value;
   const scap = Math.max(0, (a - 30) / 3), gh = a - scap;
   $("ang-deg").textContent = a + "°"; $("ang-scap").textContent = fmt(scap, 0) + "°"; $("ang-gh").textContent = fmt(gh, 0) + "°";
-  // figure
-  const r = a * Math.PI / 180, sh = {x:78, y:78}, sh2 = {x:142, y:78}, L = 70;
-  const arm = (s, dir) => `<line x1="${s.x}" y1="${s.y}" x2="${s.x + dir * Math.sin(r) * L}" y2="${s.y + Math.cos(r) * L}" stroke="var(--accent)" stroke-width="9" stroke-linecap="round"/>`;
-  const shrugY = a > 120 ? -2 : 0;
-  $("arm-fig").innerHTML = `
-    <path d="M78 ${78 + shrugY} Q110 70 142 ${78 + shrugY} L136 150 L84 150 Z" fill="var(--body)" stroke="var(--body-line)"/>
-    <rect x="102" y="52" width="16" height="22" rx="5" fill="var(--body)" stroke="var(--body-line)"/>
-    <circle cx="110" cy="38" r="17" fill="var(--body)" stroke="var(--body-line)"/>
-    <rect x="86" y="150" width="20" height="62" rx="9" fill="var(--body)" stroke="var(--body-line)"/><rect x="114" y="150" width="20" height="62" rx="9" fill="var(--body)" stroke="var(--body-line)"/>
-    <path d="M${sh.x} ${sh.y} L${sh.x} ${sh.y + 40}" stroke="var(--line)" stroke-dasharray="3 3"/>
-    ${arm(sh, -1)}${arm(sh2, 1)}
-    <path d="M${sh.x} ${sh.y + 22} A22 22 0 0 ${a > 0 ? 1 : 0} ${sh.x - Math.sin(r) * 22} ${sh.y + Math.cos(r) * 22}" fill="none" stroke="var(--warn)" stroke-width="2"/>
-    <text x="8" y="214" font-size="11" fill="var(--muted)" font-family="var(--f-mono)">${a}°</text>`;
+  showFrame("arm-fig", ARM_FRAMES, a, `${a}°`);
   // chart
   const W = 340, H = 190, ml = 30, mr = 10, mt = 10, mb = 26, x = v => ml + v / 180 * (W - ml - mr), y = v => mt + (1 - v / 100) * (H - mt - mb);
   let g = "";
@@ -913,6 +996,36 @@ function renderAngle(){
   $("ang-notes").innerHTML = notes.map(([c, t]) => `<li class="${c}">${t}</li>`).join("");
 }
 $("ang-range").addEventListener("input", renderAngle);
+
+/* ---------------- principles ---------------- */
+const FLOW = [
+  ["자극", "무게를 들어 근섬유에 강한 장력(기계적 장력)이 걸림"],
+  ["신호", "장력을 감지한 근세포가 단백질 합성 스위치(mTOR 경로)를 켬"],
+  ["합성", "운동 후 24–48시간 동안 근단백질 합성이 분해보다 많아짐 (단백질 섭취가 재료)"],
+  ["회복·적응", "근섬유가 조금 더 굵어짐 → 이것이 몇 주·몇 달 쌓여 눈에 보이는 근비대"]
+];
+const PRINCIPLES = [
+  {t:"기계적 장력이 핵심", tag:"근비대", b:"근육을 키우는 가장 중요한 신호는 근섬유가 강하게 당겨지는 힘입니다. 무거운 무게든 가벼운 무게든, 근육이 ‘거의 더 못 들겠다’ 싶은 지점까지 가면 큰 장력을 받는 근섬유가 많아집니다.", how:"그래서 세트를 ‘실패 근처’까지 했는지가 계산에 크게 반영됩니다(여유 많음 ×0.3).", src:"Schoenfeld 2017(저부하 vs 고부하)"},
+  {t:"크기의 원리 (운동단위 동원)", tag:"신경", b:"근육은 작은 운동단위부터 순서대로 동원하고, 힘이 더 필요할수록 크고 강한 운동단위(성장 잠재력이 큰 섬유)를 씁니다. 가벼운 무게도 지칠 때까지 반복하면 마지막 몇 회에서 큰 운동단위가 동원됩니다.", how:"맨몸 스쿼트·푸시업도 실패 2–3회 전까지 하면 근성장 운동으로 인정합니다. 반대로 국민체조처럼 여유 있는 동작은 ×0.1로 계산합니다.", src:"Henneman 크기 원리; Refalo 2023"},
+  {t:"볼륨: 주간 세트 수", tag:"용량", b:"근육별 일주일 총 ‘힘든 세트’ 수가 많을수록 성장이 커지지만, 늘릴수록 추가 효과는 점점 줄어듭니다. 대부분의 사람은 근육당 주 10–20세트에서 효율이 좋습니다.", how:"근육 지도 색과 근두께 추정이 이 곡선(체감 증가)을 따릅니다. 주동근 1세트, 협응근 0.5세트로 셉니다.", src:"Schoenfeld 2017; Pelland 2024"},
+  {t:"점진적 과부하", tag:"진행", b:"몸은 받은 자극에 적응하므로, 같은 무게·같은 횟수만 계속하면 성장이 멈춥니다. 무게, 반복 수, 세트 수, 동작 난도 중 하나를 조금씩 올려야 합니다.", how:"시뮬레이션은 ‘매주 조금씩 진행한다’는 가정의 추정입니다. 같은 루틴을 그대로 반복하면 실제 결과는 아래쪽 범위에 가깝습니다.", src:"ACSM 진행 원칙"},
+  {t:"빈도와 회복", tag:"휴식", b:"근단백질 합성은 운동 후 1–2일이면 거의 원래대로 돌아옵니다. 그래서 같은 근육을 주 1회 몰아서 하기보다 주 2회 이상 나누면 성장 신호를 더 자주 켤 수 있습니다. 수면 부족은 회복을 방해합니다.", how:"플랜 생성 시 4세트 이상인 운동은 2–3일로 나눠 배치합니다.", src:"Schoenfeld 2016(빈도 메타분석)"},
+  {t:"늘어난 위치가 중요", tag:"가동범위", b:"근육이 길게 늘어난 상태에서 힘을 쓰는 구간이 성장에 특히 유리하다는 연구가 늘고 있습니다. 깊은 스쿼트, 머리 위 삼두 운동, 앉아서 하는 레그 컬이 예입니다.", how:"운동 설명(근육 지도에서 근육 선택 → 추천 운동)에 깊이·자세 팁으로 반영했습니다.", src:"Kubo 2019; Maeo 2021, 2023"},
+  {t:"재료와 에너지: 단백질·식사", tag:"영양", b:"근육을 새로 만들려면 재료(단백질)와 에너지가 필요합니다. 체중 1kg당 하루 약 1.6g의 단백질에서 효과가 대체로 최대가 되고, 칼로리가 크게 부족하면 근육은 잘 늘지 않습니다.", how:"‘내 정보’의 식사·단백질 선택이 근성장 추정에 곱해집니다(적자 ×0.7, 단백질 부족 ×0.9).", src:"Morton 2018"},
+  {t:"유산소의 원리", tag:"심폐", b:"걷기·줌바·달리기는 심장이 한 번에 내보내는 혈액량을 늘리고, 근육 속 미토콘드리아와 모세혈관을 늘려 오래 움직이는 능력을 키웁니다. 근육을 크게 하진 않지만 혈압·혈당·기분·수명과 강하게 연결됩니다. 고강도 1분은 중강도 2분과 같은 효과로 봅니다.", how:"유산소는 분 단위로 입력하고 WHO 기준(중강도 환산 주 150–300분)과 비교합니다. 근비대 기여는 아주 작게 계산합니다.", src:"WHO 2020; Luettgen 2012"},
+  {t:"간섭 효과 (유산소 + 근력)", tag:"조합", b:"달리기를 많이 하면 같은 부위(하체)의 근력·근비대 효과가 조금 줄 수 있습니다. 걷기처럼 가벼운 유산소는 거의 영향이 없고, 근력운동과 다른 날 하거나 근력운동 뒤에 하면 줄일 수 있습니다.", how:"인터벌 달리기가 많고 하체 볼륨도 높으면 경고를 띄웁니다.", src:"Wilson 2012"},
+  {t:"자세 교정의 원리", tag:"자세", b:"자세는 근육 길이·근력의 균형과 ‘습관(운동 조절)’이 함께 만듭니다. 약한 근육(심부 목굴곡근, 중·하부 승모근)은 강화하고, 짧아진 근육(가슴)은 늘리고, 바른 위치를 자주 연습해야 몸이 기억합니다. 수 주 단위로 천천히 바뀝니다.", how:"거북목 프로그램 = 강화 + 스트레칭 + 환경(모니터 높이). 효과 판단은 8–10주 뒤 같은 조건의 사진(CVA)으로.", src:"Harman 2005; Sheikhhoseini 2018"},
+  {t:"국소 감량은 안 된다", tag:"지방", b:"복근 운동을 해도 배의 지방이 먼저 빠지지는 않습니다. 지방은 전체 에너지 수지(먹는 양 < 쓰는 양)에 따라 온몸에서 빠지고, 어디부터 빠질지는 유전·성별 영향이 큽니다. 근육 운동은 ‘빠진 뒤 드러날 모양’을 만듭니다.", how:"코어 목표를 고르면 이 안내가 플랜에 함께 표시됩니다.", src:"Vispute 2011"},
+  {t:"개인차가 크다", tag:"현실", b:"같은 프로그램을 해도 몇 달 뒤 근육 증가량은 사람마다 몇 배씩 차이 납니다. 유전, 나이, 수면, 스트레스, 운동 경력이 모두 영향을 줍니다. 초보일수록 빨리 늘고, 경력이 쌓일수록 느려집니다.", how:"결과를 한 숫자가 아니라 범위(×0.5–1.5)로 보여주고, 경력에 따라 성장 계수를 낮춥니다(중급 ×0.55, 상급 ×0.3).", src:"Hubal 2005"}
+];
+function renderPrinciples(){
+  $("flow").innerHTML = FLOW.map(([t, d]) => `<li><b>${t}</b><span>${d}</span></li>`).join("");
+  $("principles").innerHTML = PRINCIPLES.map(p => `<div class="card">
+    <header style="display:flex; justify-content:space-between; gap:8px; align-items:baseline"><h3>${p.t}</h3><span class="ev">${p.tag}</span></header>
+    <p class="small">${p.b}</p>
+    <p class="small muted"><b>이 툴에서:</b> ${p.how}</p>
+    <p class="small muted">근거: ${p.src}</p></div>`).join("");
+}
 
 /* ---------------- references ---------------- */
 const REFS = [
@@ -939,6 +1052,12 @@ const REFS = [
   {c:"Sheikhhoseini R, Shahrbanian S, Sayyadi P, O’Sullivan K. Effectiveness of therapeutic exercise on forward head posture: a systematic review and meta-analysis. J Manipulative Physiol Ther. 2018;41(6):530–539.", u:"치료적 운동이 CVA를 개선 → 거북목 프로그램 근거.", e:"메타분석"},
   {c:"Jull GA, Falla D, Vicenzino B, Hodges PW. The effect of therapeutic exercise on activation of the deep cervical flexor muscles in people with chronic neck pain. Man Ther. 2009;14(6):696–701.", u:"두개경추 굴곡(턱 당기기) 훈련이 심부 목굴곡근 활성을 개선.", e:"RCT"},
   {c:"Yip CHT, Chiu TTW, Poon ATK. The relationship between head posture and severity and disability of patients with neck pain. Man Ther. 2008;13(2):148–154.", u:"CVA가 작을수록 목 통증·장애와 관련 → 사진 CVA 측정 해석.", e:"관찰 연구"},
+  {c:"Bull FC, Al-Ansari SS, Biddle S, et al. World Health Organization 2020 guidelines on physical activity and sedentary behaviour. Br J Sports Med. 2020;54(24):1451–1462.", u:"성인 주 150–300분 중강도 또는 75–150분 고강도 유산소(고강도 1분 = 중강도 2분) → 유산소 환산·권장량 표시.", e:"국제 가이드라인"},
+  {c:"Luettgen M, Foster C, Doberstein S, Mikat R, Porcari J. ZUMBA®: is the ‘fitness-party’ a good workout? J Sports Sci Med. 2012;11(2):357–358.", u:"줌바 수업 평균 심박 ≈ 최대의 79% → 중–고강도(×1.5)로 환산.", e:"실험 연구"},
+  {c:"Wilson JM, Marin PJ, Rhea MR, Wilson SM, Loenneke JP, Anderson JC. Concurrent training: a meta-analysis examining interference of aerobic and resistance exercises. J Strength Cond Res. 2012;26(8):2293–2307.", u:"달리기를 많이 하면 근력운동 효과를 다소 방해할 수 있음 → 고강도 달리기 + 하체 고볼륨 경고.", e:"메타분석"},
+  {c:"Ainsworth BE, Haskell WL, Herrmann SD, et al. 2011 Compendium of Physical Activities: a second update of codes and MET values. Med Sci Sports Exerc. 2011;43(8):1575–1581.", u:"걷기 4.3, 줌바(에어로빅 댄스) 6.5, 조깅 8.3, 근력운동 5 MET → 소모 칼로리 계산.", e:"표준 자료"},
+  {c:"Thomas DM, Bouchard C, Church T, et al. Why do individuals not lose more weight from an exercise intervention at a defined dose? An energy balance analysis. Obes Rev. 2012;13(10):835–847.", u:"운동만으로는 계산한 에너지 소모만큼 체중이 줄지 않음(보상 작용) → 체지방 감소를 계산값의 30–60% 범위로 표시.", e:"분석 리뷰"},
+  {c:"Milanović Z, Sporiš G, Weston M. Effectiveness of high-intensity interval training (HIT) and continuous endurance training for VO2max improvements: a systematic review and meta-analysis of controlled trials. Sports Med. 2015;45(10):1469–1481.", u:"지구력·인터벌 훈련 모두 최대산소섭취량을 의미 있게 향상(인터벌이 약간 더 큼) → 심폐지구력 향상 추정(고강도 시간 가중).", e:"메타분석"},
   {c:"Vispute SS, Smith JD, LeCheminant JD, Hurley KS. The effect of abdominal exercise on abdominal fat. J Strength Cond Res. 2011;25(9):2559–2564.", u:"복근 운동만으로 복부 지방이 줄지 않음 → ‘국소 감량 불가’ 안내.", e:"RCT"}
 ];
 function renderRefs(){
@@ -946,7 +1065,7 @@ function renderRefs(){
 }
 
 /* ---------------- tabs ---------------- */
-const TABS = ["sim","plan","posture","angle","refs"];
+const TABS = ["sim","plan","posture","angle","why","refs"];
 function route(){
   const t = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "sim";
   for (const id of TABS) $("v-" + id).hidden = id !== t;
@@ -955,7 +1074,7 @@ function route(){
 window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
 
 /* ---------------- boot ---------------- */
-fillAddSelect(); renderSim(); renderGoalChips(); renderPlan(); renderNeck(); renderPrograms(); renderAngle(); renderRefs(); route();
+fillAddSelect(); renderSim(); renderGoalChips(); renderPlan(); renderNeck(); renderPrograms(); renderAngle(); renderPrinciples(); renderRefs(); route();
 if ("serviceWorker" in navigator && location.protocol.startsWith("http") && !location.hostname.endsWith("claude.ai")){
   window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 }
