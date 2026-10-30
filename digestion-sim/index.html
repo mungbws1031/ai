@@ -70,6 +70,13 @@ button{font:inherit;color:inherit}
 .sw{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
 .sl input{width:100%;accent-color:var(--c)}
 .kcal{font-size:13px;color:var(--ink-2)}
+.habit{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px}
+.habit-lbl{font-weight:600}
+.habit-time{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
+.habit-time input{font:inherit;font-family:var(--mono);color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:3px 8px}
+.habit-freq{display:flex;flex-wrap:wrap;gap:6px}
+.habit-freq .chip{font-size:12px;padding:3px 10px}
+.habit-desc{font-size:12.5px}
 .kcal b{color:var(--ink);font-family:var(--mono);font-weight:500}
 
 .photo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px 20px;align-items:start}
@@ -282,6 +289,16 @@ button{font:inherit;color:inherit}
       </div>
     </div>
     <div class="sliders" id="sliders"></div>
+    <div class="habit" role="group" aria-labelledby="habitLbl">
+      <span class="habit-lbl" id="habitLbl">배변 습관</span>
+      <label class="habit-time" for="bmTime">시각 <input type="time" id="bmTime" value="08:00" step="900"></label>
+      <div class="habit-freq" id="bmFreq">
+        <button class="chip" type="button" data-every="1440" aria-pressed="true">하루 1번</button>
+        <button class="chip" type="button" data-every="720">하루 2번 (12시간 간격)</button>
+        <button class="chip" type="button" data-every="2880">이틀에 1번</button>
+      </div>
+      <span class="habit-desc muted" id="bmDesc"></span>
+    </div>
   </section>
 
   <div class="main">
@@ -453,7 +470,7 @@ button{font:inherit;color:inherit}
     </section>
   </div>
 
-  <p class="note"><strong>이 시뮬레이션은 교육용 근사 모델입니다.</strong> 위 배출 반감기(지방·단백질이 많을수록 길어짐), 소장 구간별 체류(십이지장 약 12분, 공장 약 100분, 회장 약 120분), 대장 체류(약 28시간), 영양소별 소화율(탄수화물 약 96%, 단백질 약 92%, 지방 약 95%), 대장 발효율(수용성 섬유 약 90%, 불용성 섬유 약 30%)을 교과서 범위의 평균값으로 넣은 구획 모델이며, 실제 값은 사람·음식 조리 상태·장내세균·건강 상태에 따라 크게 달라집니다. 대장은 구간마다 정해 둔 수분 비율(상행 약 90%, 횡행 약 85%, 하행 약 78%, 직장 약 75%, 섬유가 많으면 조금 더 촉촉)까지 물을 되흡수하고, 직장에 오래 머물면 조금씩 더 마르도록 했습니다. 브리스톨 척도는 수분 비율로 대략 환산한 것입니다. 한 끼에서 나온 몫만 계산하므로 하루 실제 배변량(보통 100–200 g)보다 작게 나옵니다. 진단이나 식단 처방 용도로 쓰지 마세요. 배변 시각은 매일 오전 8시로 가정했습니다.</p>
+  <p class="note"><strong>이 시뮬레이션은 교육용 근사 모델입니다.</strong> 위 배출 반감기(지방·단백질이 많을수록 길어짐), 소장 구간별 체류(십이지장 약 12분, 공장 약 100분, 회장 약 120분), 대장 체류(약 28시간), 영양소별 소화율(탄수화물 약 96%, 단백질 약 92%, 지방 약 95%), 대장 발효율(수용성 섬유 약 90%, 불용성 섬유 약 30%)을 교과서 범위의 평균값으로 넣은 구획 모델이며, 실제 값은 사람·음식 조리 상태·장내세균·건강 상태에 따라 크게 달라집니다. 대장은 구간마다 정해 둔 수분 비율(상행 약 90%, 횡행 약 85%, 하행 약 78%, 직장 약 75%, 섬유가 많으면 조금 더 촉촉)까지 물을 되흡수하고, 직장에 오래 머물면 조금씩 더 마르도록 했습니다. 브리스톨 척도는 수분 비율로 대략 환산한 것입니다. 한 끼에서 나온 몫만 계산하므로 하루 실제 배변량(보통 100–200 g)보다 작게 나옵니다. 진단이나 식단 처방 용도로 쓰지 마세요. 배변 시각과 횟수는 직접 정할 수 있으며 기본값은 매일 오전 8시입니다.</p>
 </div>
 
 <script>
@@ -464,7 +481,24 @@ const T = 72*60;                 // minutes simulated
 const NC = 10, NN = 8, STR = NC*NN;
 const MOUTH=0, STOM=1, DUO=2, JEJ=3, ILE=4, ASC=5, TRA=6, DES=7, REC=8, OUT=9;
 const CARB=0, PROT=1, FAT=2, SFIB=3, IFIB=4, ENDO=5, BACT=6, WATER=7;
-const BM_TIMES = [20*60, 44*60, 68*60];  // 08:00 next mornings for a 12:00 meal
+// bowel movements: viewer's habit, measured from a 12:00 meal
+const BM = {time:'08:00', every:1440};
+try { const v=JSON.parse(localStorage.getItem('digestion-bm')||'null'); if (v && /^\d\d:\d\d$/.test(v.time) && [720,1440,2880].includes(v.every)) Object.assign(BM,v); } catch(e){}
+let BM_TIMES = [];
+function computeBM(){
+  const [h,m]=BM.time.split(':').map(Number);
+  let t0=((h*60+m-720)%1440+1440)%1440; if (t0===0) t0=1440;
+  if (BM.every===720) t0=((t0-1)%720)+1;
+  BM_TIMES=[]; for (let t=t0;t<=T;t+=BM.every) BM_TIMES.push(t);
+}
+function todClock(min){ const h=Math.floor(min/60)%24, m=min%60, ap=h<6?'새벽':h<12?'오전':h<18?(h===12?'낮':'오후'):'저녁'; return `${ap} ${h%12===0?12:h%12}:${String(m).padStart(2,'0')}`; }
+function bmDesc(){
+  const [h,m]=BM.time.split(':').map(Number), a=h*60+m;
+  if (BM.every===720) return `매일 ${todClock(a)} · ${todClock((a+720)%1440)}에`;
+  if (BM.every===2880) return `이틀에 한 번 ${todClock(a)}에`;
+  return `매일 ${todClock(a)}에`;
+}
+computeBM();
 const SI_TAU=[12,100,120], SI_W=[0.5,1,0.6];
 const CO_TAU=[480,600,600], CO_W=[1,0.6,0.3];
 // fraction that escapes each region unabsorbed / unfermented
@@ -493,6 +527,7 @@ function simulate(meal){
   const kge = Math.LN2/th, kw = Math.LN2/15;
   const L = new Float64Array(STR);
   const absSite = new Float64Array(4*NN), ferm = new Float64Array(NN), sec = new Float64Array(5);
+  const bmSet=new Set(BM_TIMES);
   const R = { S0, th, meal:m,
     L:new Float32Array((T+1)*STR), abs:new Float32Array((T+1)*4*NN), ferm:new Float32Array((T+1)*NN),
     sec:new Float32Array((T+1)*5), rate:new Float32Array((T+1)*5), bms:[] };
@@ -554,7 +589,7 @@ function simulate(meal){
     if (i<10) for (let n=0;n<NN;n++) L[I(MOUTH,n)]+=m[n]/10;   // eating takes ~10 min
     if (i<12){ L[I(MOUTH,WATER)]+=15; sec[0]+=15; }            // saliva
     // bowel movement
-    if (BM_TIMES.includes(i+1)){
+    if (bmSet.has(i+1)){
       const bm=new Float64Array(NN);
       for (let n=0;n<NN;n++){ bm[n]=L[I(REC,n)]; L[I(OUT,n)]+=bm[n]; L[I(REC,n)]=0; }
       R.bms.push({t:i+1, comp:bm});
@@ -638,7 +673,7 @@ const INFO = {
   rectum:{title:'직장', meta:'길이 약 12–15 cm · 배출 전 저장',
     facts:['변이 차서 벽이 늘어나면 배변 반사가 일어납니다.',
       '변은 약 75%가 수분이고, 고형분의 25–55%는 세균 덩어리입니다. 나머지는 섬유, 떨어져 나온 점막 세포, 소량의 지방과 단백질입니다.',
-      '이 시뮬레이션은 매일 오전 8시에 배변한다고 가정합니다.']},
+      '배변 시각과 횟수는 식단 아래 \'배변 습관\'에서 바꿀 수 있습니다.']},
   liver:{title:'간', meta:'무게 약 1.5 kg · 간문맥 혈류가 전체 혈류의 약 75%',
     facts:['간문맥으로 들어온 포도당을 글리코겐으로 저장합니다(최대 약 100 g). 넘치는 몫은 근육 글리코겐, 뇌·적혈구 연료로 쓰이거나 지방으로 바뀝니다.',
       '아미노산으로 알부민·응고인자 같은 혈장 단백질을 만들고, 쓰고 남은 아미노기는 요소로 바꿔 소변으로 내보냅니다.',
@@ -818,8 +853,25 @@ const uOf=t=>Math.sqrt(t/T);
 const scrub=document.getElementById('scrub');
 scrub.addEventListener('input',()=>{ u=scrub.value/1000; if (playing) togglePlay(false); render(); });
 const ticksEl=document.getElementById('ticks');
-for (const h of [0,1,2,4,8,12,24,48,72]){ const s=document.createElement('span'); s.style.left=(uOf(h*60)*100)+'%'; s.textContent=h+'h'; ticksEl.appendChild(s); }
-BM_TIMES.forEach((t,ix)=>{ const s=document.createElement('span'); s.className='bm'; s.style.left=(uOf(t)*100)+'%'; s.textContent='배변'+(ix+1); ticksEl.appendChild(s); });
+function drawTicks(){
+  ticksEl.innerHTML='';
+  for (const h of [0,1,2,4,8,12,24,48,72]){ const s=document.createElement('span'); s.style.left=(uOf(h*60)*100)+'%'; s.textContent=h+'h'; ticksEl.appendChild(s); }
+  BM_TIMES.forEach((t,ix)=>{ const s=document.createElement('span'); s.className='bm'; s.style.left=(uOf(t)*100)+'%'; s.textContent=BM_TIMES.length>4?String(ix+1):'배변'+(ix+1); ticksEl.appendChild(s); });
+}
+// habit controls
+const bmTime=document.getElementById('bmTime'), bmFreq=document.getElementById('bmFreq');
+function syncHabit(){
+  bmTime.value=BM.time;
+  for (const b of bmFreq.children) b.setAttribute('aria-pressed',String(+b.dataset.every===BM.every));
+  document.getElementById('bmDesc').textContent=`${bmDesc()} 배변 · 식사는 낮 12:00 기준 · 72시간 동안 ${BM_TIMES.length}번`;
+}
+function habitChanged(){
+  computeBM(); syncHabit(); drawTicks();
+  try { localStorage.setItem('digestion-bm',JSON.stringify(BM)); } catch(e){}
+  recompute();
+}
+bmTime.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(bmTime.value)){ BM.time=bmTime.value; habitChanged(); } });
+for (const b of bmFreq.children) b.addEventListener('click',()=>{ BM.every=+b.dataset.every; habitChanged(); });
 const playBtn=document.getElementById('play');
 playBtn.addEventListener('click',()=>togglePlay());
 function togglePlay(force){
@@ -910,7 +962,8 @@ function drawGantt(){
   for (const li of $('milestones').children) li.addEventListener('click',()=>{ u=uOf(+li.dataset.t); if (playing) togglePlay(false); render(); });
   const lead=[];
   if (M.r50!=null) lead.push(`먹은 음식의 찌꺼기는 약 <b>${Math.round(M.r50/60)}시간</b> 뒤면 대부분 직장에 도착해 변이 될 준비를 마칩니다.`);
-  if (M.firstBm) lead.push(`매일 오전 8시에 배변한다고 하면 <b>식후 ${Math.round(M.firstBm.t/60)}시간</b>(${clockOf(M.firstBm.t)})에 처음 나오고`);
+  if (M.firstBm) lead.push(`${bmDesc()} 배변한다고 하면 <b>식후 ${Math.round(M.firstBm.t/60)}시간</b>(${clockOf(M.firstBm.t)})에 처음 나오고`);
+  if (!M.firstBm) lead.push('이 배변 습관이라면 72시간 안에는 이 식사의 찌꺼기가 아직 나오지 않습니다.');
   if (M.halfBm) lead.push(`${M.halfBm.t===M.firstBm?.t?'그때 절반 이상이 나옵니다.':`식후 ${Math.round(M.halfBm.t/60)}시간(${clockOf(M.halfBm.t)}) 배변까지 절반 이상이 나옵니다.`}`);
   $('transitLead').innerHTML=lead.join(' ')+' <span class="muted" style="font-size:13px">보통 사람의 입에서 항문까지 통과 시간은 24–72시간입니다.</span>';
 }
@@ -1283,7 +1336,7 @@ async function analyzePhoto(file){
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-syncSliders(); markPreset(meal.id);
+syncSliders(); markPreset(meal.id); syncHabit(); drawTicks();
 u=uOf(6);                // open mid-meal so the first view shows food going in
 recompute();
 moveDots();
