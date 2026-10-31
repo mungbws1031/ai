@@ -75,8 +75,15 @@ button{font:inherit;color:inherit}
 .seg{display:inline-flex;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:3px;gap:2px}
 .seg button{border:0;background:transparent;padding:6px 14px;border-radius:8px;font-size:13.5px;cursor:pointer;color:var(--ink-2)}
 .seg button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.day-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-@media (max-width:760px){.day-cards{grid-template-columns:minmax(0,1fr)}}
+.day-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.preset-lbl{font-size:12px;color:var(--ink-2);font-weight:600;align-self:center;margin-left:4px}
+.preset-lbl:not(:first-child){margin-left:10px;padding-left:12px;border-left:1px solid var(--rule)}
+.dc.snack{background:var(--paper)}
+.dc-del{border:0;background:transparent;color:var(--ink-2);font-size:12px;cursor:pointer;padding:2px 6px;border-radius:6px}
+.dc-del:hover{color:var(--bad);background:var(--sheet)}
+.dc-add{border:1.5px dashed var(--rule);border-radius:10px;background:transparent;color:var(--ink-2);font-size:14px;cursor:pointer;min-height:96px;display:grid;place-items:center;gap:2px;padding:12px}
+.dc-add:hover{border-color:var(--accent);color:var(--accent)}
+.dc-add small{font-size:12px}
 .dc{border:1px solid var(--rule);border-radius:10px;padding:12px 14px;display:grid;gap:8px;cursor:pointer;background:var(--sheet);min-width:0}
 .dc:hover{border-color:var(--ink-2)}
 .dc.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
@@ -318,7 +325,7 @@ button{font:inherit;color:inherit}
     <div class="mode-row">
       <div class="seg" id="modeSeg" role="group" aria-label="입력 방식">
         <button type="button" data-mode="single">한 끼만</button>
-        <button type="button" data-mode="day">하루 세 끼 한꺼번에</button>
+        <button type="button" data-mode="day">하루 세 끼 + 간식</button>
       </div>
       <div class="kcal" id="kcalWrap">섭취 열량 약 <b id="kcalIn">0</b> kcal</div>
     </div>
@@ -572,8 +579,9 @@ const DAY = { mode:'single', active:1, meals:[
   {label:'점심', time:'12:30', on:true, id:'bibim', name:'비빔밥 한 그릇', carb:85, prot:20, fat:15, fib:6, water:350, sol:0.3},
   {label:'저녁', time:'19:00', on:true, id:'brown', name:'현미밥 + 된장찌개 + 나물', carb:75, prot:22, fat:10, fib:11, water:420, sol:0.3}]};
 try { const v=JSON.parse(localStorage.getItem('digestion-day')||'null');
-  if (v && ['single','day'].includes(v.mode) && Array.isArray(v.meals) && v.meals.length===3 && v.meals.every(x=>/^\d\d:\d\d$/.test(x.time) && ['carb','prot','fat','fib','water'].every(k=>Number.isFinite(x[k]))))
-    { DAY.mode=v.mode; DAY.active=[0,1,2].includes(v.active)?v.active:1; DAY.meals=v.meals.map((x,k)=>({...DAY.meals[k],...x,label:DAY.meals[k].label})); } } catch(e){}
+  if (v && ['single','day'].includes(v.mode) && Array.isArray(v.meals) && v.meals.length>=3 && v.meals.length<=6 && v.meals.every(x=>/^\d\d:\d\d$/.test(x.time) && ['carb','prot','fat','fib','water'].every(k=>Number.isFinite(x[k]))))
+    { DAY.mode=v.mode; DAY.meals=v.meals.map((x,k)=>k<3?{...DAY.meals[k],...x,label:DAY.meals[k].label,snack:false}:{...x,snack:true,on:true}); DAY.active=(v.active>=0&&v.active<DAY.meals.length)?v.active:1; relabelSnacks(); } } catch(e){}
+function relabelSnacks(){ DAY.meals.filter(x=>x.snack).sort((a,b)=>toMin(a.time)-toMin(b.time)).forEach((x,k)=>{ x.label='간식 '+(k+1); }); }
 const dayList=()=>DAY.meals.filter(x=>x.on).slice().sort((a,b)=>toMin(a.time)-toMin(b.time));
 const mealMin=()=> DAY.mode==='day' ? toMin(dayList()[0].time) : toMin(MEALT.time);
 // bowel movements: viewer's habit, measured from the meal
@@ -622,7 +630,7 @@ function simulate(list){
     const v=new Float64Array(NN);
     v[CARB]=x.carb; v[PROT]=x.prot; v[FAT]=x.fat; v[SFIB]=x.fib*x.sol; v[IFIB]=x.fib*(1-x.sol); v[WATER]=x.water;
     const th=clamp(40 + 1.1*x.fat + 0.45*x.prot + 0.25*x.carb + 0.6*x.fib, 35, 260);
-    return {label:x.label, start:x.tmin-t0, m:v, S:x.carb+x.prot+x.fat+x.fib, th, kge:Math.LN2/th, pool:new Float64Array(NN)};
+    return {label:x.label, snack:!!x.snack, start:x.tmin-t0, m:v, S:x.carb+x.prot+x.fat+x.fib, th, kge:Math.LN2/th, pool:new Float64Array(NN)};
   });
   const m=new Float64Array(NN); for (const M of meals) for (let n=0;n<NN;n++) m[n]+=M.m[n];
   const S0=meals.reduce((a,M)=>a+M.S,0), th=meals[0].th, multi=meals.length>1;
@@ -936,6 +944,15 @@ const PRESETS=[
   {id:'brown', name:'현미밥 + 된장찌개 + 나물', carb:75, prot:22, fat:10, fib:11, water:420, sol:0.3},
   {id:'oat', name:'그릭요거트 + 귀리 + 베리', carb:50, prot:22, fat:8, fib:9, water:250, sol:0.5}
 ];
+const SNACKS=[
+  {id:'apple', name:'사과 1개', carb:28, prot:1, fat:0, fib:4.5, water:170, sol:0.35},
+  {id:'banana', name:'바나나 1개', carb:27, prot:1, fat:0, fib:3, water:90, sol:0.3},
+  {id:'nuts', name:'견과류 한 줌', carb:6, prot:6, fat:15, fib:3, water:0, sol:0.2},
+  {id:'milk', name:'우유 1잔', carb:10, prot:6, fat:7, fib:0, water:175, sol:0.3},
+  {id:'chips', name:'감자칩 한 봉지', carb:32, prot:4, fat:21, fib:2, water:0, sol:0.2},
+  {id:'icecream', name:'아이스크림 1개', carb:30, prot:4, fat:12, fib:0, water:60, sol:0.3},
+  {id:'coffee', name:'아메리카노 + 쿠키 2개', carb:20, prot:2, fat:8, fib:1, water:300, sol:0.3}
+];
 const SLIDERS=[
   {k:'carb',name:'탄수화물',unit:'g',max:300,col:'--carb'},
   {k:'prot',name:'단백질',unit:'g',max:150,col:'--prot'},
@@ -948,12 +965,15 @@ let meal = DAY.mode==='day' ? DAY.meals[DAY.active] : singleMeal;
 let R=null, u=0, playing=false, playSecs=45, sel=null, lastI=-1;
 
 const presetsEl=document.getElementById('presets');
-for (const p of PRESETS){
-  const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=p.name; b.dataset.id=p.id;
-  b.addEventListener('click',()=>{ Object.assign(meal,p); syncSliders(); markPreset(p.id); saveDay(); recompute(); });
-  presetsEl.appendChild(b);
+for (const [title,list] of [['식사',PRESETS],['간식',SNACKS]]){
+  const lb=document.createElement('span'); lb.className='preset-lbl'; lb.textContent=title; presetsEl.appendChild(lb);
+  for (const p of list){
+    const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=p.name; b.dataset.id=p.id;
+    b.addEventListener('click',()=>{ Object.assign(meal,p); syncSliders(); markPreset(p.id); saveDay(); recompute(); });
+    presetsEl.appendChild(b);
+  }
 }
-function markPreset(id){ for (const b of presetsEl.children) b.setAttribute('aria-pressed', String(b.dataset.id===id)); }
+function markPreset(id){ for (const b of presetsEl.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.id===id)); }
 const slidersEl=document.getElementById('sliders'), sliderEls={};
 for (const s of SLIDERS){
   const w=document.createElement('div'); w.className='sl'; w.style.setProperty('--c',`var(${s.col})`);
@@ -1006,37 +1026,54 @@ const dayCardsEl=document.getElementById('dayCards'), modeSeg=document.getElemen
 function saveDay(){ try { localStorage.setItem('digestion-day',JSON.stringify(DAY)); } catch(e){} }
 function renderDayCards(){
   dayCardsEl.innerHTML='';
-  DAY.meals.forEach((x,k)=>{
+  DAY.meals.map((x,k)=>[x,k]).sort((a,b)=>toMin(a[0].time)-toMin(b[0].time)).forEach(([x,k])=>{
     const d=document.createElement('div'); d.className='dc'+(k===DAY.active?' on':'')+(x.on?'':' off'); d.tabIndex=0; d.setAttribute('role','button');
     d.setAttribute('aria-label',`${x.label} 고치기`);
     const kc=4*x.carb+4*x.prot+9*x.fat+2*x.fib, tot=x.carb+x.prot+x.fat+x.fib||1;
-    d.innerHTML=`<div class="dc-head"><b>${x.label}</b><label><input type="checkbox" ${x.on?'checked':''}> 먹음</label></div>
+    if (x.snack) d.classList.add('snack');
+    d.innerHTML=`<div class="dc-head"><b>${x.label}</b>${x.snack?`<button type="button" class="dc-del" aria-label="${x.label} 지우기">✕ 지우기</button>`:`<label><input type="checkbox" ${x.on?'checked':''}> 먹음</label>`}</div>
       <input type="time" value="${x.time}" step="300" aria-label="${x.label} 시각">
       <div class="dc-name">${esc(x.name||'직접 입력')}</div>
       <div class="dc-bar"><span style="width:${x.carb/tot*100}%;background:var(--carb)"></span><span style="width:${x.prot/tot*100}%;background:var(--prot)"></span><span style="width:${x.fat/tot*100}%;background:var(--fat)"></span><span style="width:${x.fib/tot*100}%;background:var(--fib)"></span></div>
       <div class="dc-kcal">약 ${Math.round(kc)} kcal · 섬유 ${x.fib} g · 물 ${x.water} mL</div>`;
-    const cb=d.querySelector('input[type=checkbox]'), tm=d.querySelector('input[type=time]');
-    cb.addEventListener('click',e=>e.stopPropagation());
-    cb.addEventListener('change',()=>{ if (!cb.checked && DAY.meals.filter(m=>m.on).length===1){ cb.checked=true; return; } x.on=cb.checked; saveDay(); dayChanged(); });
+    const cb=d.querySelector('input[type=checkbox]'), tm=d.querySelector('input[type=time]'), del=d.querySelector('.dc-del');
+    if (cb){ cb.addEventListener('click',e=>e.stopPropagation());
+      cb.addEventListener('change',()=>{ if (!cb.checked && DAY.meals.filter(m=>m.on).length===1){ cb.checked=true; return; } x.on=cb.checked; saveDay(); dayChanged(); }); }
+    if (del) del.addEventListener('click',e=>{ e.stopPropagation();
+      DAY.meals.splice(k,1); relabelSnacks();
+      if (DAY.active===k) DAY.active=1; else if (DAY.active>k) DAY.active--;
+      meal=DAY.meals[DAY.active]; saveDay(); syncSliders(); markPreset(meal.id); syncEditing(); dayChanged(); });
     tm.addEventListener('click',e=>e.stopPropagation());
-    tm.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(tm.value)){ x.time=tm.value; saveDay(); dayChanged(); } });
+    tm.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(tm.value)){ x.time=tm.value; relabelSnacks(); saveDay(); syncEditing(); dayChanged(); } });
     const pick=()=>{ if (DAY.active===k) return; DAY.active=k; meal=DAY.meals[k]; saveDay(); syncSliders(); markPreset(meal.id); syncEditing(); renderDayCards(); };
     d.addEventListener('click',pick);
     d.addEventListener('keydown',e=>{ if (e.target===d && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); pick(); } });
     dayCardsEl.appendChild(d);
   });
+  if (DAY.meals.filter(x=>x.snack).length<3){
+    const add=document.createElement('button'); add.type='button'; add.className='dc-add';
+    add.innerHTML='<span>+ 간식 추가</span><small>최대 3개</small>';
+    add.addEventListener('click',()=>{
+      const used=new Set(DAY.meals.map(x=>x.time));
+      const time=['15:30','10:30','21:00','16:30','22:00'].find(t=>!used.has(t))||'15:00';
+      DAY.meals.push({...SNACKS[0], time, on:true, snack:true, label:''}); relabelSnacks();
+      DAY.active=DAY.meals.length-1; meal=DAY.meals[DAY.active];
+      saveDay(); syncSliders(); markPreset(meal.id); syncEditing(); dayChanged();
+    });
+    dayCardsEl.appendChild(add);
+  }
 }
 function syncEditing(){
   const ed=document.getElementById('editing');
   ed.hidden = DAY.mode!=='day';
-  if (DAY.mode==='day') ed.innerHTML=`지금 고치는 끼니: <b>${DAY.meals[DAY.active].label}</b> · 아래 예시 식단, 사진, 슬라이더가 이 끼니에 적용됩니다. 다른 끼니를 고치려면 카드를 누르세요.`;
+  if (DAY.mode==='day') ed.innerHTML=`지금 고치는 끼니: <b>${DAY.meals[DAY.active].label}</b> · 아래 예시 식단, 사진, 슬라이더가 이 끼니에 적용됩니다. 다른 끼니를 고치려면 카드를 누르세요.${DAY.meals[DAY.active].snack?' 간식은 아래 \'간식\' 예시에서 고르면 편합니다.':''}`;
 }
 function syncMode(){
   for (const b of modeSeg.children) b.setAttribute('aria-pressed',String(b.dataset.mode===DAY.mode));
   dayCardsEl.hidden = DAY.mode!=='day';
   document.getElementById('singleTime').hidden = DAY.mode==='day';
   document.getElementById('kcalWrap').firstChild.textContent = DAY.mode==='day' ? '하루 섭취 열량 약 ' : '섭취 열량 약 ';
-  document.querySelector('header h1').textContent = DAY.mode==='day' ? '하루 세 끼의 소화 여정' : '한 끼의 소화 여정';
+  document.querySelector('header h1').textContent = DAY.mode==='day' ? '하루 식사의 소화 여정' : '한 끼의 소화 여정';
   syncEditing();
 }
 function dayChanged(){ computeBM(); syncHabit(); drawTicks(); u=uOf(6); recompute(); }
@@ -1086,7 +1123,7 @@ function computeMilestones(){
   const reachColon=i=>mealIn(R,i,[ASC,TRA,DES,REC,OUT])+MEAL.reduce((a,n)=>a+Fe(R,i,n),0);
   const resid=i=>nonWater(i,[REC,OUT]);
   const residTot=nonWater(T,[REC,OUT])+nonWater(T,[ASC,TRA,DES]);
-  if (R.multi) for (const M of R.meals) ms.push({t:M.start+10, name:`${M.label} 식사를 마침`, note:`${fmt(M.S)} g · 10분 동안 먹었다고 가정`});
+  if (R.multi) for (const M of R.meals) ms.push({t:M.start+10, name:M.snack?`${M.label} 먹음`:`${M.label} 식사를 마침`, note:`${fmt(M.S)} g · 10분 동안 먹었다고 가정`});
   else ms.push({t:10, name:'식사를 마침', note:'10분 동안 먹었다고 가정'});
   const g50=firstAt(i=>S0-inUpper(i),0.5*S0,10); if (g50!=null) ms.push({t:g50,name:R.multi?'하루 음식 절반이 위를 통과':'위가 절반 비워짐',note:R.multi?'세 끼를 합친 기준':`위 배출 반감기 약 ${fmtDur(R.th)}`});
   const ca=firstAt(reachColon,0.5*reachColon(T)); if (ca!=null) ms.push({t:ca,name:'찌꺼기 절반이 대장에 도착',note:'입→맹장 통과 시간(보통 4–6시간)'});
@@ -1393,7 +1430,7 @@ function assess(){
 }
 function renderVerdict(){
   const A=assess(), v=A.verdict;
-  $('vBasis').textContent = R.multi ? `입력한 ${R.meals.length}끼를 하루 섭취량으로 보고 계산했습니다.` : '이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다.';
+  $('vBasis').textContent = R.multi ? `입력한 ${R.meals.filter(M=>!M.snack).length}끼${R.meals.some(M=>M.snack)?`와 간식 ${R.meals.filter(M=>M.snack).length}번을`:'를'} 하루 섭취량으로 보고 계산했습니다.` : '이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다.';
   const badge=$('vBadge'); badge.style.setProperty('--vc',`var(${v.col})`);
   $('vTitle').textContent=v.title;
   const shapeCol=A.type==null?'#8E6431':A.type<=2?'#4E331C':A.type<=4?'#6A4524':'#8E6431';
