@@ -41,6 +41,7 @@
   color-scheme:dark}
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
 .wrap{max-width:1180px;margin:0 auto;display:grid;gap:24px}
@@ -70,6 +71,26 @@ button{font:inherit;color:inherit}
 .sw{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
 .sl input{width:100%;accent-color:var(--c)}
 .kcal{font-size:13px;color:var(--ink-2)}
+.mode-row{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;background:var(--paper);border:1px solid var(--rule);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 14px;border-radius:8px;font-size:13.5px;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--sheet);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.day-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:760px){.day-cards{grid-template-columns:minmax(0,1fr)}}
+.dc{border:1px solid var(--rule);border-radius:10px;padding:12px 14px;display:grid;gap:8px;cursor:pointer;background:var(--sheet);min-width:0}
+.dc:hover{border-color:var(--ink-2)}
+.dc.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.dc.off{opacity:.55}
+.dc-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dc-head b{font-size:15px}
+.dc-head label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-2);cursor:pointer}
+.dc input[type=time]{font:inherit;font-family:var(--mono);font-size:13px;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:2px 6px;justify-self:start}
+.dc-name{font-size:13px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dc-kcal{font-family:var(--mono);font-size:12px;color:var(--ink-2)}
+.dc-bar{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--rule)}
+.dc-bar span{height:100%}
+.editing{font-size:13px;color:var(--ink-2);background:var(--paper);border-radius:8px;padding:8px 12px}
+.editing b{color:var(--accent)}
 .meal-time{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
 .habit{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px}
 .habit-lbl{font-weight:600}
@@ -294,16 +315,24 @@ button{font:inherit;color:inherit}
   </header>
 
   <section class="panel meal" aria-label="식단 설정">
+    <div class="mode-row">
+      <div class="seg" id="modeSeg" role="group" aria-label="입력 방식">
+        <button type="button" data-mode="single">한 끼만</button>
+        <button type="button" data-mode="day">하루 세 끼 한꺼번에</button>
+      </div>
+      <div class="kcal" id="kcalWrap">섭취 열량 약 <b id="kcalIn">0</b> kcal</div>
+    </div>
+    <div class="day-cards" id="dayCards" hidden></div>
+    <div class="editing" id="editing" hidden></div>
     <div class="meal-top">
       <div class="presets" id="presets"></div>
-      <div class="meal-time">
+      <div class="meal-time" id="singleTime">
         <label class="habit-time" for="mealTime">식사 시각 <input type="time" id="mealTime" value="12:00" step="300"></label>
         <div class="habit-freq" id="mealChips">
           <button class="chip" type="button" data-t="07:30">아침 7:30</button>
           <button class="chip" type="button" data-t="12:00">점심 12:00</button>
           <button class="chip" type="button" data-t="19:00">저녁 19:00</button>
         </div>
-        <div class="kcal">섭취 열량 약 <b id="kcalIn">0</b> kcal</div>
       </div>
     </div>
     <div class="photo" id="photo">
@@ -443,7 +472,7 @@ button{font:inherit;color:inherit}
     </div>
     <div class="transit-chart"><svg id="gantt" viewBox="0 0 1100 250"></svg></div>
     <ol class="milestones" id="milestones"></ol>
-    <div class="chart-note">띠가 진할수록 그 시간에 그 장기에 이 식사의 내용물이 많다는 뜻입니다(장기마다 가장 많을 때를 가장 진하게 표시). 번호는 아래 시간표와 같고, 띠를 누르면 그 시각으로 이동합니다.</div>
+    <div class="chart-note">띠가 진할수록 그 시간에 그 장기에 먹은 음식의 내용물이 많다는 뜻입니다(장기마다 가장 많을 때를 가장 진하게 표시). 번호는 아래 시간표와 같고, 띠를 누르면 그 시각으로 이동합니다.</div>
   </section>
 
   <div class="grid2">
@@ -475,7 +504,7 @@ button{font:inherit;color:inherit}
       <div class="v-factors" id="vFactors"></div>
       <div class="v-recs"><h3>이렇게 해 보세요</h3><ul class="facts" id="vRecs"></ul></div>
     </div>
-    <div class="chart-note">이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다. 예측 모양은 시뮬레이션에서 배변 때 변의 수분 비율로 정한 것이고, 판정은 교과서 권장량(식이섬유 하루 25 g 이상, 음식 수분 포함 물 2 L 이상, 주 3회 이상 배변)과 비교한 간단한 규칙입니다. 의학적 진단이 아니며, 변비나 설사가 3주 넘게 이어지거나 피가 섞이거나 체중이 빠지면 진료를 받으세요.</div>
+    <div class="chart-note"><span id="vBasis">이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다.</span> 예측 모양은 시뮬레이션에서 배변 때 변의 수분 비율로 정한 것이고, 판정은 교과서 권장량(식이섬유 하루 25 g 이상, 음식 수분 포함 물 2 L 이상, 주 3회 이상 배변)과 비교한 간단한 규칙입니다. 의학적 진단이 아니며, 변비나 설사가 3주 넘게 이어지거나 피가 섞이거나 체중이 빠지면 진료를 받으세요.</div>
   </section>
 
   <section class="panel stool" aria-label="변이 만들어지는 과정">
@@ -536,7 +565,17 @@ const CARB=0, PROT=1, FAT=2, SFIB=3, IFIB=4, ENDO=5, BACT=6, WATER=7;
 // meal start time of day (minutes); everything else is measured from it
 const MEALT = {time:'12:00'};
 try { const v=JSON.parse(localStorage.getItem('digestion-meal')||'null'); if (v && /^\d\d:\d\d$/.test(v.time)) MEALT.time=v.time; } catch(e){}
-const mealMin=()=>{ const [h,m]=MEALT.time.split(':').map(Number); return h*60+m; };
+const toMin=t=>{ const [h,m]=t.split(':').map(Number); return h*60+m; };
+// day mode: three meals entered together
+const DAY = { mode:'single', active:1, meals:[
+  {label:'아침', time:'07:30', on:true, id:'oat', name:'그릭요거트 + 귀리 + 베리', carb:50, prot:22, fat:8, fib:9, water:250, sol:0.5},
+  {label:'점심', time:'12:30', on:true, id:'bibim', name:'비빔밥 한 그릇', carb:85, prot:20, fat:15, fib:6, water:350, sol:0.3},
+  {label:'저녁', time:'19:00', on:true, id:'brown', name:'현미밥 + 된장찌개 + 나물', carb:75, prot:22, fat:10, fib:11, water:420, sol:0.3}]};
+try { const v=JSON.parse(localStorage.getItem('digestion-day')||'null');
+  if (v && ['single','day'].includes(v.mode) && Array.isArray(v.meals) && v.meals.length===3 && v.meals.every(x=>/^\d\d:\d\d$/.test(x.time) && ['carb','prot','fat','fib','water'].every(k=>Number.isFinite(x[k]))))
+    { DAY.mode=v.mode; DAY.active=[0,1,2].includes(v.active)?v.active:1; DAY.meals=v.meals.map((x,k)=>({...DAY.meals[k],...x,label:DAY.meals[k].label})); } } catch(e){}
+const dayList=()=>DAY.meals.filter(x=>x.on).slice().sort((a,b)=>toMin(a.time)-toMin(b.time));
+const mealMin=()=> DAY.mode==='day' ? toMin(dayList()[0].time) : toMin(MEALT.time);
 // bowel movements: viewer's habit, measured from the meal
 const BM = {time:'08:00', every:1440};
 const LIFE = {drink:1200, act:'mid'};
@@ -576,21 +615,27 @@ const SI_A = SI_ESC.map(e=>solveRate(SI_TAU,SI_W,e));
 const CO_F = CO_ESC.map(e=>solveRate(CO_TAU,CO_W,e));
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
-function simulate(meal){
-  const m = new Float64Array(NN);
-  m[CARB]=meal.carb; m[PROT]=meal.prot; m[FAT]=meal.fat;
-  m[SFIB]=meal.fib*meal.sol; m[IFIB]=meal.fib*(1-meal.sol); m[WATER]=meal.water;
-  const S0 = meal.carb+meal.prot+meal.fat+meal.fib;
-  const th = clamp(40 + 1.1*meal.fat + 0.45*meal.prot + 0.25*meal.carb + 0.6*meal.fib, 35, 260);
-  const kge = Math.LN2/th, kw = Math.LN2/15;
-  // daily context: this meal three times a day plus what is drunk
-  const totalW = LIFE.drink + meal.water*3, fibDay = meal.fib*3;
+// list: [{label,tmin,carb,prot,fat,fib,water,sol}] sorted by time; t=0 is the first meal
+function simulate(list){
+  const t0=list[0].tmin, kw = Math.LN2/15;
+  const meals=list.map(x=>{
+    const v=new Float64Array(NN);
+    v[CARB]=x.carb; v[PROT]=x.prot; v[FAT]=x.fat; v[SFIB]=x.fib*x.sol; v[IFIB]=x.fib*(1-x.sol); v[WATER]=x.water;
+    const th=clamp(40 + 1.1*x.fat + 0.45*x.prot + 0.25*x.carb + 0.6*x.fib, 35, 260);
+    return {label:x.label, start:x.tmin-t0, m:v, S:x.carb+x.prot+x.fat+x.fib, th, kge:Math.LN2/th, pool:new Float64Array(NN)};
+  });
+  const m=new Float64Array(NN); for (const M of meals) for (let n=0;n<NN;n++) m[n]+=M.m[n];
+  const S0=meals.reduce((a,M)=>a+M.S,0), th=meals[0].th, multi=meals.length>1;
+  // daily context: one meal counts as three a day; a full day counts as itself
+  const sumK=k=>list.reduce((a,x)=>a+x[k],0);
+  const foodW = multi ? sumK('water') : list[0].water*3, fibDay = multi ? sumK('fib') : list[0].fib*3;
+  const totalW = LIFE.drink + foodW;
   const hyd = clamp(0.55 + 0.45*totalW/2000, 0.7, 1.1);          // dehydration -> colon keeps more water back
   const tauMul = (fibDay<15?1.15:fibDay>=25?0.88:1) * ({low:1.2,mid:1,high:0.85}[LIFE.act]);
   const L = new Float64Array(STR);
   const absSite = new Float64Array(4*NN), ferm = new Float64Array(NN), sec = new Float64Array(5);
   const bmSet=new Set(BM_TIMES);
-  const R = { S0, th, meal:m, ctx:{totalW,fibDay,hyd,tauMul},
+  const R = { S0, th, meal:m, meals, multi, ctx:{totalW,foodW,fibDay,hyd,tauMul},
     L:new Float32Array((T+1)*STR), abs:new Float32Array((T+1)*4*NN), ferm:new Float32Array((T+1)*NN),
     sec:new Float32Array((T+1)*5), rate:new Float32Array((T+1)*5), bms:[] };
   const I=(c,n)=>c*NN+n;
@@ -632,24 +677,35 @@ function simulate(meal){
         if (n<3) rt[n]+=ab;
       }
     }
-    // stomach: solids empty after a short lag, liquids fast
-    const kS = kge*Math.min(1,(i+1)/20);
+    // stomach: each meal empties at its own pace (fat and protein slow it), solids after a short lag
     let emptied=0;
-    for (let n=0;n<NN;n++){
-      const v=L[I(STOM,n)]; if (v<=1e-9) continue;
-      const out=v*(1-Math.exp(-(n===WATER?kw:kS)));
-      L[I(STOM,n)]-=out; L[I(DUO,n)]+=out; if (n!==WATER) emptied+=out;
+    for (const M of meals){
+      if (i<M.start) continue;
+      const kS=M.kge*Math.min(1,(i-M.start+1)/20);
+      let e=0;
+      for (let n=0;n<NN;n++){
+        const v=M.pool[n]; if (v<=1e-9) continue;
+        const out=v*(1-Math.exp(-(n===WATER?kw:kS)));
+        M.pool[n]-=out; L[I(DUO,n)]+=out; if (n!==WATER) e+=out;
+      }
+      M.pool[WATER]+=600*(S0>1?e/S0:0);                     // gastric juice
+      emptied+=e;
     }
     const f = S0>1 ? emptied/S0 : 0;
-    L[I(STOM,WATER)]+=600*f; sec[1]+=600*f;                 // gastric juice
+    sec[1]+=600*f;
     L[I(DUO,WATER)]+=750*f; sec[2]+=500*f; sec[3]+=250*f;   // pancreatic juice + bile
     L[I(JEJ,WATER)]+=500*f; sec[4]+=500*f;                  // intestinal juice
     L[I(JEJ,ENDO)]+=2.5*f;                                  // shed cells and mucus
     rt[4] = 250*f;                                          // bile flow, for the duct animation
     // mouth -> esophagus -> stomach
-    for (let n=0;n<NN;n++){ const v=L[I(MOUTH,n)]; if (v<=1e-9) continue; const out=v*0.74; L[I(MOUTH,n)]-=out; L[I(STOM,n)]+=out; }
-    if (i<10) for (let n=0;n<NN;n++) L[I(MOUTH,n)]+=m[n]/10;   // eating takes ~10 min
-    if (i<12){ L[I(MOUTH,WATER)]+=15; sec[0]+=15; }            // saliva
+    let cur=meals[0]; for (const M of meals) if (M.start<=i) cur=M;
+    for (let n=0;n<NN;n++){ const v=L[I(MOUTH,n)]; if (v<=1e-9) continue; const out=v*0.74; L[I(MOUTH,n)]-=out; cur.pool[n]+=out; }
+    for (const M of meals){
+      const k=i-M.start;
+      if (k>=0 && k<10) for (let n=0;n<NN;n++) L[I(MOUTH,n)]+=M.m[n]/10;   // eating takes ~10 min
+      if (k>=0 && k<12){ L[I(MOUTH,WATER)]+=15; sec[0]+=15; }             // saliva
+    }
+    for (let n=0;n<NN;n++){ let v=0; for (const M of meals) v+=M.pool[n]; L[I(STOM,n)]=v; }
     // bowel movement
     if (bmSet.has(i+1)){
       const bm=new Float64Array(NN);
@@ -670,12 +726,16 @@ const Ab=(R,i,site,n)=>R.abs[i*4*NN+site*NN+n];
 const Fe=(R,i,n)=>R.ferm[i*NN+n];
 const MEAL=[CARB,PROT,FAT,SFIB,IFIB];
 function mealIn(R,i,cs){ let s=0; for (const c of cs) for (const n of MEAL) s+=Lg(R,i,c,n); return s; }
-function uneaten(R,i){ return R.S0*Math.max(0,1-i/10); }
+function uneaten(R,i){ return R.meals.reduce((a,M)=>a+M.S*clamp(1-(i-M.start)/10,0,1),0); }
+// food on the plate of a meal already started (excludes meals later in the day)
+function eatingLeft(R,i){ return R.meals.reduce((a,M)=>a+(i>=M.start?M.S*Math.max(0,1-(i-M.start)/10):0),0); }
+const eatingNow=(R,i)=>R.meals.find(M=>i>=M.start && i<M.start+10)||null;
 function locations(R,i){
   let absd=0, fer=0, out=0;
   for (const n of MEAL){ absd+=Ab(R,i,0,n)+Ab(R,i,1,n)+Ab(R,i,2,n); fer+=Fe(R,i,n); out+=Lg(R,i,OUT,n); }
   return [
-    {k:'mouth', name:'입·식사 중', v:mealIn(R,i,[MOUTH])+uneaten(R,i), col:'--loc-mouth'},
+    ...(R.multi?[{k:'later', name:'아직 먹기 전', v:uneaten(R,i)-eatingLeft(R,i), col:'--rule'}]:[]),
+    {k:'mouth', name:'입·식사 중', v:mealIn(R,i,[MOUTH])+eatingLeft(R,i), col:'--loc-mouth'},
     {k:'stom',  name:'위',        v:mealIn(R,i,[STOM]), col:'--loc-stom'},
     {k:'si',    name:'소장',      v:mealIn(R,i,[DUO,JEJ,ILE]), col:'--loc-si'},
     {k:'colon', name:'대장·직장', v:mealIn(R,i,[ASC,TRA,DES,REC]), col:'--loc-colon'},
@@ -684,6 +744,7 @@ function locations(R,i){
     {k:'out',   name:'배출됨',    v:out, col:'--loc-out'}
   ];
 }
+const kcalOf=v=>4*v[CARB]+4*v[PROT]+9*v[FAT]+2*(v[SFIB]+v[IFIB]);
 function kcalAbs(R,i){
   let a=0; for (let s=0;s<3;s++){ a+=4*Ab(R,i,s,CARB)+4*Ab(R,i,s,PROT)+9*Ab(R,i,s,FAT); }
   return a + 2*(Fe(R,i,CARB)+Fe(R,i,SFIB)+Fe(R,i,IFIB));
@@ -882,13 +943,14 @@ const SLIDERS=[
   {k:'fib',name:'식이섬유',unit:'g',max:50,col:'--fib'},
   {k:'water',name:'물·국물',unit:'mL',max:1500,col:'--water',step:10}
 ];
-const meal={...PRESETS[0]};
+let singleMeal={...PRESETS[0]};
+let meal = DAY.mode==='day' ? DAY.meals[DAY.active] : singleMeal;
 let R=null, u=0, playing=false, playSecs=45, sel=null, lastI=-1;
 
 const presetsEl=document.getElementById('presets');
 for (const p of PRESETS){
   const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=p.name; b.dataset.id=p.id;
-  b.addEventListener('click',()=>{ Object.assign(meal,p); syncSliders(); markPreset(p.id); recompute(); });
+  b.addEventListener('click',()=>{ Object.assign(meal,p); syncSliders(); markPreset(p.id); saveDay(); recompute(); });
   presetsEl.appendChild(b);
 }
 function markPreset(id){ for (const b of presetsEl.children) b.setAttribute('aria-pressed', String(b.dataset.id===id)); }
@@ -898,7 +960,7 @@ for (const s of SLIDERS){
   w.innerHTML=`<label for="sl-${s.k}"><span><i class="sw"></i>${s.name}</span><output class="mono" id="out-${s.k}"></output></label><input type="range" id="sl-${s.k}" min="0" max="${s.max}" step="${s.step||1}">`;
   slidersEl.appendChild(w);
   const inp=w.querySelector('input'); sliderEls[s.k]={inp,out:w.querySelector('output'),unit:s.unit};
-  inp.addEventListener('input',()=>{ meal[s.k]=+inp.value; meal.id='custom'; markPreset('custom'); sliderEls[s.k].out.textContent=inp.value+' '+s.unit; recompute(); });
+  inp.addEventListener('input',()=>{ meal[s.k]=+inp.value; meal.id='custom'; meal.name='직접 입력'; markPreset('custom'); saveDay(); sliderEls[s.k].out.textContent=inp.value+' '+s.unit; recompute(); });
 }
 function syncSliders(){ for (const s of SLIDERS){ const o=sliderEls[s.k]; o.inp.value=meal[s.k]; o.out.textContent=meal[s.k]+' '+o.unit; } }
 const organChips=document.getElementById('organChips');
@@ -925,7 +987,7 @@ const bmTime=document.getElementById('bmTime'), bmFreq=document.getElementById('
 function syncHabit(){
   bmTime.value=BM.time;
   for (const b of bmFreq.children) b.setAttribute('aria-pressed',String(+b.dataset.every===BM.every));
-  document.getElementById('bmDesc').textContent=`${bmDesc()} 배변 · ${todClock(mealMin())} 식사 기준 · 72시간 동안 ${BM_TIMES.length}번`;
+  document.getElementById('bmDesc').textContent=`${bmDesc()} 배변 · ${DAY.mode==='day'?'첫 식사('+todClock(mealMin())+')':todClock(mealMin())+' 식사'} 기준 · 72시간 동안 ${BM_TIMES.length}번`;
 }
 function habitChanged(){
   computeBM(); syncHabit(); drawTicks();
@@ -939,6 +1001,50 @@ function syncMealTime(){ mealTimeEl.value=MEALT.time; for (const b of mealChips.
 function mealTimeChanged(){ syncMealTime(); try { localStorage.setItem('digestion-meal',JSON.stringify(MEALT)); } catch(e){} habitChanged(); }
 mealTimeEl.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(mealTimeEl.value)){ MEALT.time=mealTimeEl.value; mealTimeChanged(); } });
 for (const b of mealChips.children) b.addEventListener('click',()=>{ MEALT.time=b.dataset.t; mealTimeChanged(); });
+// ----- one meal vs. a whole day -----
+const dayCardsEl=document.getElementById('dayCards'), modeSeg=document.getElementById('modeSeg');
+function saveDay(){ try { localStorage.setItem('digestion-day',JSON.stringify(DAY)); } catch(e){} }
+function renderDayCards(){
+  dayCardsEl.innerHTML='';
+  DAY.meals.forEach((x,k)=>{
+    const d=document.createElement('div'); d.className='dc'+(k===DAY.active?' on':'')+(x.on?'':' off'); d.tabIndex=0; d.setAttribute('role','button');
+    d.setAttribute('aria-label',`${x.label} 고치기`);
+    const kc=4*x.carb+4*x.prot+9*x.fat+2*x.fib, tot=x.carb+x.prot+x.fat+x.fib||1;
+    d.innerHTML=`<div class="dc-head"><b>${x.label}</b><label><input type="checkbox" ${x.on?'checked':''}> 먹음</label></div>
+      <input type="time" value="${x.time}" step="300" aria-label="${x.label} 시각">
+      <div class="dc-name">${esc(x.name||'직접 입력')}</div>
+      <div class="dc-bar"><span style="width:${x.carb/tot*100}%;background:var(--carb)"></span><span style="width:${x.prot/tot*100}%;background:var(--prot)"></span><span style="width:${x.fat/tot*100}%;background:var(--fat)"></span><span style="width:${x.fib/tot*100}%;background:var(--fib)"></span></div>
+      <div class="dc-kcal">약 ${Math.round(kc)} kcal · 섬유 ${x.fib} g · 물 ${x.water} mL</div>`;
+    const cb=d.querySelector('input[type=checkbox]'), tm=d.querySelector('input[type=time]');
+    cb.addEventListener('click',e=>e.stopPropagation());
+    cb.addEventListener('change',()=>{ if (!cb.checked && DAY.meals.filter(m=>m.on).length===1){ cb.checked=true; return; } x.on=cb.checked; saveDay(); dayChanged(); });
+    tm.addEventListener('click',e=>e.stopPropagation());
+    tm.addEventListener('change',()=>{ if (/^\d\d:\d\d$/.test(tm.value)){ x.time=tm.value; saveDay(); dayChanged(); } });
+    const pick=()=>{ if (DAY.active===k) return; DAY.active=k; meal=DAY.meals[k]; saveDay(); syncSliders(); markPreset(meal.id); syncEditing(); renderDayCards(); };
+    d.addEventListener('click',pick);
+    d.addEventListener('keydown',e=>{ if (e.target===d && (e.key==='Enter'||e.key===' ')){ e.preventDefault(); pick(); } });
+    dayCardsEl.appendChild(d);
+  });
+}
+function syncEditing(){
+  const ed=document.getElementById('editing');
+  ed.hidden = DAY.mode!=='day';
+  if (DAY.mode==='day') ed.innerHTML=`지금 고치는 끼니: <b>${DAY.meals[DAY.active].label}</b> · 아래 예시 식단, 사진, 슬라이더가 이 끼니에 적용됩니다. 다른 끼니를 고치려면 카드를 누르세요.`;
+}
+function syncMode(){
+  for (const b of modeSeg.children) b.setAttribute('aria-pressed',String(b.dataset.mode===DAY.mode));
+  dayCardsEl.hidden = DAY.mode!=='day';
+  document.getElementById('singleTime').hidden = DAY.mode==='day';
+  document.getElementById('kcalWrap').firstChild.textContent = DAY.mode==='day' ? '하루 섭취 열량 약 ' : '섭취 열량 약 ';
+  document.querySelector('header h1').textContent = DAY.mode==='day' ? '하루 세 끼의 소화 여정' : '한 끼의 소화 여정';
+  syncEditing();
+}
+function dayChanged(){ computeBM(); syncHabit(); drawTicks(); u=uOf(6); recompute(); }
+for (const b of modeSeg.children) b.addEventListener('click',()=>{
+  if (DAY.mode===b.dataset.mode) return;
+  DAY.mode=b.dataset.mode; meal = DAY.mode==='day' ? DAY.meals[DAY.active] : singleMeal;
+  saveDay(); syncMode(); syncSliders(); markPreset(meal.id); dayChanged();
+});
 const drinkEl=document.getElementById('drink'), actChips=document.getElementById('actChips');
 function syncLife(){
   drinkEl.value=LIFE.drink; document.getElementById('drinkOut').textContent=LIFE.drink.toLocaleString('ko-KR')+' mL';
@@ -980,8 +1086,9 @@ function computeMilestones(){
   const reachColon=i=>mealIn(R,i,[ASC,TRA,DES,REC,OUT])+MEAL.reduce((a,n)=>a+Fe(R,i,n),0);
   const resid=i=>nonWater(i,[REC,OUT]);
   const residTot=nonWater(T,[REC,OUT])+nonWater(T,[ASC,TRA,DES]);
-  ms.push({t:10, name:'식사를 마침', note:'10분 동안 먹었다고 가정'});
-  const g50=firstAt(i=>S0-inUpper(i),0.5*S0,10); if (g50!=null) ms.push({t:g50,name:'위가 절반 비워짐',note:`위 배출 반감기 약 ${fmtDur(R.th)}`});
+  if (R.multi) for (const M of R.meals) ms.push({t:M.start+10, name:`${M.label} 식사를 마침`, note:`${fmt(M.S)} g · 10분 동안 먹었다고 가정`});
+  else ms.push({t:10, name:'식사를 마침', note:'10분 동안 먹었다고 가정'});
+  const g50=firstAt(i=>S0-inUpper(i),0.5*S0,10); if (g50!=null) ms.push({t:g50,name:R.multi?'하루 음식 절반이 위를 통과':'위가 절반 비워짐',note:R.multi?'세 끼를 합친 기준':`위 배출 반감기 약 ${fmtDur(R.th)}`});
   const ca=firstAt(reachColon,0.5*reachColon(T)); if (ca!=null) ms.push({t:ca,name:'찌꺼기 절반이 대장에 도착',note:'입→맹장 통과 시간(보통 4–6시간)'});
   const a90=firstAt(absMeal,0.9*absMeal(T)); if (a90!=null) ms.push({t:a90,name:'영양소 흡수 90% 끝',note:'이후는 대장에서 수분·발효만'});
   const r50=residTot>0?firstAt(resid,0.5*residTot):null; if (r50!=null) ms.push({t:r50,name:'찌꺼기 절반이 직장에 도착',note:'장 통과 시간(입→직장)'});
@@ -999,7 +1106,7 @@ const GX0=120, GX1=1084, gx=t=>GX0+uOf(t)*(GX1-GX0);
 function drawGantt(){
   const svg=$('gantt');
   const lanes=[
-    ['식사(입)','--loc-mouth',i=>mealIn(R,i,[MOUTH])+uneaten(R,i)],
+    ['식사(입)','--loc-mouth',i=>mealIn(R,i,[MOUTH])+eatingLeft(R,i)],
     ['위','--loc-stom',i=>mealIn(R,i,[STOM])],
     ['소장','--loc-si',i=>mealIn(R,i,[DUO,JEJ,ILE])],
     ['흡수 속도','--accent',i=>{ const k=Math.min(i,T-1)*5; return R.rate[k]+R.rate[k+1]+R.rate[k+2]; }],
@@ -1021,7 +1128,7 @@ function drawGantt(){
   // bowel movements lane
   const yb=top+lanes.length*lh;
   h+=`<text class="lane-lbl" x="${GX0-10}" y="${yb+lh/2+4}" text-anchor="end">배변</text>`;
-  for (const b of R.bms){ const x=gx(b.t), wet=b.comp.reduce((a,v)=>a+v,0);
+  for (const b of R.bms){ const x=gx(b.t), wet=b.comp.reduce((a,v)=>a+v,0); if (wet<0.05) continue;
     h+=`<line x1="${x}" x2="${x}" y1="${top-6}" y2="${yb+lh-4}" stroke="var(--loc-out)" stroke-dasharray="3 3"/>`;
     h+=`<circle cx="${x}" cy="${yb+lh/2}" r="${(4+Math.sqrt(wet)*0.9).toFixed(1)}" fill="var(--loc-out)"/>`;
     h+=`<text class="bm-lbl" x="${x>1030?x-12:x+12}" y="${yb+lh/2+4}" text-anchor="${x>1030?'end':'start'}">${fmt(wet)} g</text>`; }
@@ -1033,13 +1140,13 @@ function drawGantt(){
     h+=`<g transform="translate(${x},${y - (row?0:0)})"><circle r="9" cy="${row?-0:0}" fill="var(--ink)" transform="translate(${row?14:0},0)"/><text class="ms-pin" x="${row?14:0}" y="4" text-anchor="middle">${k+1}</text></g>`; });
   h+=`<line id="curG" class="cursor" y1="${top-6}" y2="${yb+lh}"/>`;
   svg.innerHTML=h;
-  $('milestones').innerHTML=M.ms.map((m,k)=>`<li data-t="${m.t}"><span class="n">${k+1}</span><span>${m.name}<b>식후 ${fmtDur(m.t)}</b><span class="t">${clockOf(m.t)} · ${m.note}</span></span></li>`).join('');
+  $('milestones').innerHTML=M.ms.map((m,k)=>`<li data-t="${m.t}"><span class="n">${k+1}</span><span>${m.name}<b>${AFTER()}${fmtDur(m.t)}</b><span class="t">${clockOf(m.t)} · ${m.note}</span></span></li>`).join('');
   for (const li of $('milestones').children) li.addEventListener('click',()=>{ u=uOf(+li.dataset.t); if (playing) togglePlay(false); render(); });
   const lead=[];
   if (M.r50!=null) lead.push(`먹은 음식의 찌꺼기는 약 <b>${Math.round(M.r50/60)}시간</b> 뒤면 대부분 직장에 도착해 변이 될 준비를 마칩니다.`);
-  if (M.firstBm) lead.push(`${bmDesc()} 배변한다고 하면 <b>식후 ${Math.round(M.firstBm.t/60)}시간</b>(${clockOf(M.firstBm.t)})에 처음 나오고`);
+  if (M.firstBm) lead.push(`${bmDesc()} 배변한다고 하면 <b>${AFTER()}${Math.round(M.firstBm.t/60)}시간</b>(${clockOf(M.firstBm.t)})에 처음 나오고`);
   if (!M.firstBm) lead.push('이 배변 습관이라면 72시간 안에는 이 식사의 찌꺼기가 아직 나오지 않습니다.');
-  if (M.halfBm) lead.push(`${M.halfBm.t===M.firstBm?.t?'그때 절반 이상이 나옵니다.':`식후 ${Math.round(M.halfBm.t/60)}시간(${clockOf(M.halfBm.t)}) 배변까지 절반 이상이 나옵니다.`}`);
+  if (M.halfBm) lead.push(`${M.halfBm.t===M.firstBm?.t?'그때 절반 이상이 나옵니다.':`${AFTER()}${Math.round(M.halfBm.t/60)}시간(${clockOf(M.halfBm.t)}) 배변까지 절반 이상이 나옵니다.`}`);
   $('transitLead').innerHTML=lead.join(' ')+' <span class="muted" style="font-size:13px">보통 사람의 입에서 항문까지 통과 시간은 24–72시간입니다.</span>';
 }
 { const svg=document.getElementById('gantt'); svg.addEventListener('click',e=>{ const r=svg.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*1100; u=clamp((x-GX0)/(GX1-GX0),0,1); if (playing) togglePlay(false); render(); }); }
@@ -1080,15 +1187,21 @@ for (const id of ['chartA','chartB']){
 // ---------- render ----------
 const $=id=>document.getElementById(id);
 const sw=col=>`<i class="sw" style="background:var(${col})"></i>`;
+function simList(){
+  if (DAY.mode==='day') return dayList().map(x=>({...x,tmin:toMin(x.time)}));
+  return [{...singleMeal,label:'',tmin:toMin(MEALT.time)}];
+}
+const AFTER=()=>R&&R.multi?'첫 식사 후 ':'식후 ';
 function recompute(){
-  R=simulate(meal);
-  const kin=4*meal.carb+4*meal.prot+9*meal.fat+2*meal.fib;
+  R=simulate(simList());
+  if (DAY.mode==='day') renderDayCards();
+  const kin=kcalOf(R.meal);
   $('kcalIn').textContent=Math.round(kin).toLocaleString('ko-KR');
   drawCharts(); drawGantt(); renderVerdict(); render(true);
 }
 function autoOrgan(i){
   let best='stomach', bv=-1;
-  for (const key of ['mouth','stomach','duo','jej','ile','colon','rectum']){ let v=mealIn(R,i,LUMEN[key]); if (key==='mouth') v+=uneaten(R,i); if (v>bv){bv=v;best=key;} }
+  for (const key of ['mouth','stomach','duo','jej','ile','colon','rectum']){ let v=mealIn(R,i,LUMEN[key]); if (key==='mouth') v+=eatingLeft(R,i); if (v>bv){bv=v;best=key;} }
   if (bv<0.05) best='rectum';
   return best;
 }
@@ -1097,7 +1210,7 @@ function render(force){
   if (!force && i===lastI) return;
   lastI=i;
   scrub.value=Math.round(u*1000);
-  $('tElapsed').textContent='식후 '+fmtDur(i);
+  $('tElapsed').textContent=AFTER()+fmtDur(i);
   $('tClock').textContent=clockOf(i)+(BM_TIMES.some(t=>t<=i)?` · 배변 ${BM_TIMES.filter(t=>t<=i).length}회 지남`:'');
   // where bar
   const loc=locations(R,i), S0=R.S0||1;
@@ -1143,8 +1256,9 @@ function organNow(key,i){
   if (LUMEN[key]){
     const cs=LUMEN[key], rows=nutrientRows(i,cs);
     let extra='';
-    if (key==='mouth' && i<10) extra=`<div>식사 중입니다. 아직 먹지 않은 음식 <b class="mono">${fmt(uneaten(R,i))} g</b></div>`;
-    if (key==='stomach') extra=`<div>이 식단의 위 배출 반감기 약 <b class="mono">${fmtDur(R.th)}</b> (지방 ${meal.fat} g·단백질 ${meal.prot} g 반영)</div>`;
+    { const M=eatingNow(R,i); if (key==='mouth' && M) extra=`<div>${R.multi?M.label+' ':''}식사 중입니다. 아직 먹지 않은 음식 <b class="mono">${fmt(eatingLeft(R,i))} g</b></div>`; }
+    if (key==='stomach') extra = R.multi ? `<div>끼니별 위 배출 반감기: ${R.meals.map(M=>`${M.label} <b class="mono">${fmtDur(M.th)}</b>`).join(' · ')} (지방·단백질이 많을수록 길어짐)</div>`
+      : `<div>이 식단의 위 배출 반감기 약 <b class="mono">${fmtDur(R.th)}</b> (지방 ${fmt(R.meal[FAT])} g·단백질 ${fmt(R.meal[PROT])} g 반영)</div>`;
     if (key==='duo'||key==='jej'||key==='ile'){
       const s=key==='duo'?0:key==='jej'?1:2, d=n=>(Ab(R,ip+1,s,n)-Ab(R,ip,s,n))*60;
       extra=`<div>이 구간 흡수 속도: 당 <b class="mono">${fmt(d(CARB))}</b> · 아미노산 <b class="mono">${fmt(d(PROT))}</b> · 지방 <b class="mono">${fmt(d(FAT))}</b> g/시간</div>
@@ -1217,7 +1331,7 @@ STAGES.forEach((st,k)=>{
 });
 $('bristolRow').innerHTML=BRISTOL.map(b=>`<div class="bt" data-t="${b.t}">${stoolArt(b.t,b.t<=2?'#4E331C':b.t<=4?'#6A4524':'#8E6431')}<b>${b.t}형</b><span>${b.name}</span></div>`).join('');
 function renderStool(i,key){
-  $('stoolTime').textContent=`· 식후 ${fmtDur(i)}`;
+  $('stoolTime').textContent=`· ${AFTER()}${fmtDur(i)}`;
   const btns=stagesEl.querySelectorAll('.stage');
   let recType=null;
   STAGES.forEach((st,k)=>{
@@ -1244,15 +1358,15 @@ function assess(){
   const avgPct=bms.length? bms.reduce((a,b)=>a+b.pct*b.sol,0)/bms.reduce((a,b)=>a+b.sol,0) : null;
   const type=avgPct==null?null:bristolOf(avgPct).t;
   const wetMeal=totalOut(T)+[ASC,TRA,DES,REC].reduce((a,cc)=>{ for (let n=0;n<NN;n++) a+=Lg(R,T,cc,n); return a; },0);
-  const stoolDay=wetMeal*3;
+  const stoolDay=R.multi?wetMeal:wetMeal*3;
   const perWeek=7*1440/BM.every;
   let pts=0;
   const F=[];
   const st=(lvl)=>({good:['좋음','--good'],mid:['보통','--warn'],bad:['부족','--bad']}[lvl]);
   { const lvl=c.fibDay>=25?'good':c.fibDay>=15?'mid':'bad'; pts+=lvl==='bad'?2:lvl==='mid'?1:0;
-    F.push({nm:'식이섬유',val:`하루 약 ${fmt(c.fibDay)} g`,frac:c.fibDay/40,mark:25/40,col:'--fib',lvl,sub:'권장 25 g 이상 · 한 끼 섬유 × 3'}); }
+    F.push({nm:'식이섬유',val:`하루 약 ${fmt(c.fibDay)} g`,frac:c.fibDay/40,mark:25/40,col:'--fib',lvl,sub:R.multi?'권장 25 g 이상 · 세 끼 합계':'권장 25 g 이상 · 한 끼 섬유 × 3'}); }
   { const lvl=c.totalW>=2000?'good':c.totalW>=1500?'mid':'bad'; pts+=lvl==='bad'?2:lvl==='mid'?1:0;
-    F.push({nm:'수분',val:`하루 약 ${(c.totalW/1000).toFixed(1)} L`,frac:c.totalW/3500,mark:2000/3500,col:'--water',lvl,sub:`마신 물 ${LIFE.drink.toLocaleString('ko-KR')} mL + 음식 속 수분 ${(meal.water*3).toLocaleString('ko-KR')} mL · 권장 2 L 이상`}); }
+    F.push({nm:'수분',val:`하루 약 ${(c.totalW/1000).toFixed(1)} L`,frac:c.totalW/3500,mark:2000/3500,col:'--water',lvl,sub:`마신 물 ${LIFE.drink.toLocaleString('ko-KR')} mL + 음식 속 수분 ${Math.round(c.foodW).toLocaleString('ko-KR')} mL · 권장 2 L 이상`}); }
   { const lvl=LIFE.act==='high'?'good':LIFE.act==='mid'?'mid':'bad'; pts+=lvl==='bad'?1:0;
     F.push({nm:'활동량',val:{low:'적음',mid:'보통',high:'많음'}[LIFE.act],frac:{low:.25,mid:.6,high:.95}[LIFE.act],mark:.6,col:'--accent',lvl,sub:`대장 통과 속도 ${c.tauMul>1?'느려짐':c.tauMul<1?'빨라짐':'보통'} (×${(1/c.tauMul).toFixed(2)})`}); }
   { const lvl=perWeek>=7?'good':perWeek>=3?'mid':'bad'; pts+=perWeek<7?1:0;
@@ -1260,7 +1374,7 @@ function assess(){
   { const lvl=stoolDay>=100?'good':stoolDay>=70?'mid':'bad'; pts+=lvl==='bad'?1:0;
     F.push({nm:'하루 변 무게',val:`약 ${fmt(stoolDay)} g`,frac:Math.min(1,stoolDay/250),mark:100/250,col:'--loc-colon',lvl,sub:'보통 100–200 g · 섬유가 많을수록 무거워짐'}); }
   if (type!=null){ pts += type<=1?3:type===2?2:type===3?0.5:0; }
-  const fatHeavy = meal.fat*9 > 0.35*(4*meal.carb+4*meal.prot+9*meal.fat+1);
+  const fatHeavy = R.meal[FAT]*9 > 0.35*(kcalOf(R.meal)+1);
   let verdict;
   if (type!=null && type>=6) verdict={k:'loose',title:'묽은 변 경향',col:'--loose'};
   else if ((type!=null && type<=2) || pts>=5) verdict={k:'high',title:'변비 위험 높음',col:'--bad'};
@@ -1268,7 +1382,7 @@ function assess(){
   else verdict={k:'ok',title:'정상 변',col:'--good'};
   // advice
   const recs=[];
-  if (c.fibDay<25){ const need=Math.ceil((25-c.fibDay)/3); recs.push(`식이섬유를 한 끼에 약 ${need} g 더 드세요. 흰쌀밥을 현미·잡곡밥으로 바꾸면 한 공기에 약 +2.5 g, 나물 반찬 한 접시 +2–3 g, 껍질째 먹는 사과 1개 +4 g, 고구마 1개 +3.5 g입니다.`); }
+  if (c.fibDay<25){ const need=Math.ceil((25-c.fibDay)/3); recs.push(`식이섬유를 끼니마다 약 ${need} g 더 드세요. 흰쌀밥을 현미·잡곡밥으로 바꾸면 한 공기에 약 +2.5 g, 나물 반찬 한 접시 +2–3 g, 껍질째 먹는 사과 1개 +4 g, 고구마 1개 +3.5 g입니다.`); }
   if (c.totalW<2000){ const need=Math.ceil((2000-c.totalW)/100)*100; recs.push(`물을 하루 ${need.toLocaleString('ko-KR')} mL(컵 약 ${Math.ceil(need/200)}잔) 더 마셔 보세요. 수분이 부족하면 대장이 변에서 물을 더 빼앗아 딱딱해집니다.`); }
   if (LIFE.act==='low') recs.push('식후 20–30분 걷기만 해도 대장 운동이 활발해집니다.');
   if (perWeek<7) recs.push('아침 식사 뒤 위-대장 반사가 강할 때 화장실에 가는 습관을 들이면 변이 대장에 오래 머물지 않아 덜 딱딱해집니다.');
@@ -1279,6 +1393,7 @@ function assess(){
 }
 function renderVerdict(){
   const A=assess(), v=A.verdict;
+  $('vBasis').textContent = R.multi ? `입력한 ${R.meals.length}끼를 하루 섭취량으로 보고 계산했습니다.` : '이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다.';
   const badge=$('vBadge'); badge.style.setProperty('--vc',`var(${v.col})`);
   $('vTitle').textContent=v.title;
   const shapeCol=A.type==null?'#8E6431':A.type<=2?'#4E331C':A.type<=4?'#6A4524':'#8E6431';
@@ -1292,22 +1407,25 @@ function renderVerdict(){
   $('vRecs').innerHTML=A.recs.map(r=>`<li>${r}</li>`).join('');
 }
 function renderBowl(i){
-  const left=R.S0>0?uneaten(R,i)/R.S0:0;
+  // the meal being eaten, else the next one, else the last one
+  const Mb=eatingNow(R,i)||R.meals.find(M=>M.start>i)||R.meals[R.meals.length-1];
+  const src=Mb.m, left=Mb.S>0?clamp(1-(i-Mb.start)/10,0,1):0;
   const kinds=[[CARB,'--carb'],[PROT,'--prot'],[FAT,'--fat'],[SFIB,'--fib']];
   let h='';
   if (left>0.01){
     const n=Math.round(18*left); let k=0;
-    const tot=kinds.reduce((a,[x])=>a+R.meal[x]+(x===SFIB?R.meal[IFIB]:0),0)||1;
-    const seq=[]; for (const [x,col] of kinds){ const c=Math.round(n*(R.meal[x]+(x===SFIB?R.meal[IFIB]:0))/tot); for (let q=0;q<c;q++) seq.push(col); }
+    const tot=kinds.reduce((a,[x])=>a+src[x]+(x===SFIB?src[IFIB]:0),0)||1;
+    const seq=[]; for (const [x,col] of kinds){ const c=Math.round(n*(src[x]+(x===SFIB?src[IFIB]:0))/tot); for (let q=0;q<c;q++) seq.push(col); }
     seq.forEach((col,q)=>{ const row=Math.floor(q/7), x=106+((q%7)*6.5)+row*3, y=33-row*4.5-Math.sin(q)*0.8;
       h+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" style="fill:var(${col});stroke:var(--sheet);stroke-width:.6"/>`; });
   }
   $('heap').innerHTML=h;
-  $('bowlLbl').textContent = i<10 ? `먹는 중 ${i}/10분` : '다 먹음';
+  const pre=R.multi?Mb.label+' ':'';
+  $('bowlLbl').textContent = i<Mb.start ? `${pre}${clockOf(Mb.start).replace(/^(다음 날|이틀 뒤|사흘 뒤) /,'')} 예정` : i<Mb.start+10 ? `${pre}먹는 중 ${i-Mb.start}/10분` : (R.multi?'오늘 식사 끝':'다 먹음');
 }
 function totalOut(i){ let s=0; for (let n=0;n<NN;n++) s+=Lg(R,i,OUT,n); return s; }
 function renderResults(i){
-  $('fateTime').textContent=`· 식후 ${fmtDur(i)}`;
+  $('fateTime').textContent=`· ${AFTER()}${fmtDur(i)}`;
   const rows=[['탄수화물',[CARB],R.meal[CARB]],['단백질',[PROT],R.meal[PROT]],['지방',[FAT],R.meal[FAT]],['식이섬유',[SFIB,IFIB],R.meal[SFIB]+R.meal[IFIB]]];
   $('fateRows').innerHTML=rows.map(([name,ns,tot])=>{
     if (tot<=0) return `<div class="fate-row"><span>${name}</span><div class="bar"></div><span class="pct">0 g</span></div>`;
@@ -1322,7 +1440,7 @@ function renderResults(i){
   // absorbed
   const sum=n=>Ab(R,i,0,n)+Ab(R,i,1,n)+Ab(R,i,2,n);
   const fer=MEAL.reduce((a,n)=>a+Fe(R,i,n),0);
-  const kin=4*meal.carb+4*meal.prot+9*meal.fat+2*meal.fib;
+  const kin=kcalOf(R.meal);
   const ka=kcalAbs(R,i);
   $('absKcal').innerHTML=`${Math.round(ka).toLocaleString('ko-KR')}<small>kcal 흡수 · 섭취의 ${kin>0?Math.round(ka/kin*100):0}%</small>`;
   $('absList').innerHTML=`
@@ -1348,14 +1466,14 @@ function renderResults(i){
     <li><span>${sw('--bact')}떨어진 점막 세포·점액</span><span class="mono">${fmt(comp(ENDO))} g</span></li>
     <li><span>${sw('--fat')}흡수 안 된 지방</span><span class="mono">${fmt(comp(FAT))} g</span></li>
     <li><span>${sw('--prot')}흡수 안 된 단백질·탄수화물</span><span class="mono">${fmt(comp(PROT)+comp(CARB))} g</span></li>`;
-  const bmTxt=R.bms.map((b,ix)=>`${ix+1}회차(${clockOf(b.t).replace(/^(다음 날|이틀 뒤|사흘 뒤) /,'$1 ')}) ${fmt(b.comp.reduce((a,v)=>a+v,0))} g`).join(', ');
+  const bmTxt=R.bms.filter(b=>b.comp.reduce((a,v)=>a+v,0)>=0.05).map((b,ix)=>`${ix+1}회차(${clockOf(b.t).replace(/^(다음 날|이틀 뒤|사흘 뒤) /,'$1 ')}) ${fmt(b.comp.reduce((a,v)=>a+v,0))} g`).join(', ');
   const solidShare = solidsFin>0 ? Math.round(comp(BACT)/solidsFin*100) : 0;
   $('fecesNote').textContent=`지금까지 배출 ${fmt(outNow)} g. 배변별: ${bmTxt}. 72시간 뒤에도 대장에 ${fmt(left)} g이 남습니다. 고형분 중 세균 비율 약 ${solidShare}%.`;
 }
 function layoutDots(i){
   for (const cs in pools){
     const c=+cs, pool=pools[c];
-    const mass=n=> c===EAT ? (i<10 ? R.meal[n]*0.1 : 0) : c===ESO ? Lg(R,i,MOUTH,n)*0.9 : Lg(R,i,c,n);
+    const mass=n=> c===EAT ? ((M=>M?M.m[n]*0.1:0)(eatingNow(R,i))) : c===ESO ? Lg(R,i,MOUTH,n)*0.9 : Lg(R,i,c,n);
     const counts=DOTKINDS.map(([cls,ns])=>ns.reduce((a,n)=>a+mass(n),0)/UNIT);
     let tot=counts.reduce((a,b)=>a+b,0);
     const scale = tot>pool.length ? pool.length/tot : 1;
@@ -1446,7 +1564,7 @@ async function analyzePhoto(file){
     let capped=false;
     const put=(k,v)=>{ const s=SLIDERS.find(s=>s.k===k); const r=k==='water'?Math.round(v/10)*10:Math.round(v); if (r>s.max) capped=true; meal[k]=Math.min(s.max,r); };
     put('carb',t.carb); put('prot',t.prot); put('fat',t.fat); put('fib',t.fib); put('water',t.water);
-    meal.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; meal.id='photo';
+    meal.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; meal.id='photo'; meal.name='사진: '+items.map(it=>String(it.name||'')).filter(Boolean).slice(0,3).join(', '); saveDay();
     syncSliders(); markPreset('photo'); u=uOf(6); recompute();
     const conf={high:'높음',medium:'보통',low:'낮음'}[r.confidence]||'보통';
     $('photoStatus').textContent=`사진에서 ${items.length}가지 음식을 찾았습니다 · 추정 신뢰도 ${conf}`;
@@ -1464,7 +1582,7 @@ async function analyzePhoto(file){
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
-syncSliders(); markPreset(meal.id); syncMealTime(); syncHabit(); syncLife(); drawTicks();
+syncMode(); syncSliders(); markPreset(meal.id); syncMealTime(); syncHabit(); syncLife(); drawTicks();
 u=uOf(6);                // open mid-meal so the first view shows food going in
 recompute();
 moveDots();
