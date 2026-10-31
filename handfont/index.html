@@ -1,0 +1,829 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>손글씨 폰트 공방</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 연습장 한 장 — 왼쪽 글자 목록(원고지 칸), 가운데 큰 필기 칸, 오른쪽 조판 미리보기. 좁으면 한 줄로 쌓임. */
+:root {
+  --paper: #f6f8fb;
+  --sheet: #ffffff;
+  --ink: #18202e;
+  --muted: #5d6b82;
+  --rule: #b8c9e2;
+  --rule-soft: #dfe7f2;
+  --nib: #2450d6;
+  --nib-soft: #e4ebfd;
+  --baseline: #d0473f;
+  --ghost: rgba(24, 32, 46, .09);
+  --done: #1f8a5b;
+  --f-display: "Nanum Pen Script", "Segoe Print", cursive;
+  --f-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #10141c; --sheet: #171d28; --ink: #e6ebf3; --muted: #94a2b8;
+    --rule: #34435c; --rule-soft: #232d3d; --nib: #7c9cff; --nib-soft: #1f2a46;
+    --baseline: #ef6b62; --ghost: rgba(230, 235, 243, .08); --done: #4cc28c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #10141c; --sheet: #171d28; --ink: #e6ebf3; --muted: #94a2b8;
+  --rule: #34435c; --rule-soft: #232d3d; --nib: #7c9cff; --nib-soft: #1f2a46;
+  --baseline: #ef6b62; --ghost: rgba(230, 235, 243, .08); --done: #4cc28c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink);
+  font: 15px/1.55 var(--f-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 40px;
+}
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--nib); outline-offset: 2px; }
+
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24px; max-width: 1360px; margin: 0 auto 16px; }
+.brand h1 { font: 400 46px/1 var(--f-display); margin: 0; letter-spacing: .5px; text-wrap: balance; }
+.brand p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.fontname { display: flex; gap: 8px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+.fontname label { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.fontname input { width: 13em; max-width: 100%; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--sheet); }
+
+.workspace { display: grid; gap: 18px; max-width: 1360px; margin: 0 auto;
+  grid-template-columns: minmax(230px, 300px) minmax(0, 1fr) minmax(260px, 360px); align-items: start; }
+@media (max-width: 1080px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--sheet); border: 1px solid var(--rule-soft); border-radius: var(--radius); padding: 14px; min-width: 0; }
+.panel h2 { font-size: 12px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.panel h2 b { font: 500 12px var(--f-mono); color: var(--ink); letter-spacing: 0; text-transform: none; }
+
+/* 글자 목록 */
+.progress { height: 4px; background: var(--rule-soft); border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+.progress i { display: block; height: 100%; width: 0; background: var(--done); transition: width .3s; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; max-height: 420px; overflow-y: auto; padding: 2px; }
+@media (max-width: 1080px) { .grid { max-height: 180px; } }
+.tile { position: relative; aspect-ratio: 1; border: 1px solid var(--rule-soft); border-radius: 6px; background: var(--paper); cursor: pointer; padding: 0; overflow: hidden; }
+.tile canvas { width: 100%; height: 100%; display: block; }
+.tile span { position: absolute; left: 3px; top: 1px; font: 10px var(--f-mono); color: var(--muted); }
+.tile.done { border-color: color-mix(in srgb, var(--done) 45%, transparent); }
+.tile.done span { color: var(--done); }
+.tile.active { border-color: var(--nib); box-shadow: 0 0 0 2px var(--nib-soft); }
+.charset { margin-top: 14px; display: grid; gap: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--rule); background: transparent; border-radius: 999px; padding: 3px 10px; font-size: 13px; cursor: pointer; }
+.chip:hover { border-color: var(--nib); color: var(--nib); }
+.addrow { display: flex; gap: 6px; }
+.addrow input { flex: 1; width: 0; min-width: 0; padding: 7px 9px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+/* 필기 칸 */
+.padwrap { display: grid; gap: 12px; justify-items: center; }
+.padhead { width: 100%; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.cur { display: flex; align-items: baseline; gap: 10px; }
+.cur strong { font: 400 44px/1 var(--f-display); min-width: 1ch; }
+.cur code { font: 12px var(--f-mono); color: var(--muted); }
+.nav { margin-left: auto; display: flex; gap: 6px; }
+.pad { position: relative; width: min(100%, 560px); aspect-ratio: 1; max-width: 100%; }
+.pad canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: var(--radius); touch-action: none; cursor: crosshair; background: var(--sheet); border: 1px solid var(--rule); }
+.tools { width: min(100%, 560px); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.tools label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.tools input[type=range] { width: 110px; accent-color: var(--nib); }
+.tools output { font: 12px var(--f-mono); color: var(--ink); min-width: 3ch; }
+.btn { border: 1px solid var(--rule); background: var(--sheet); border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 14px; white-space: nowrap; }
+.btn:hover:not(:disabled) { border-color: var(--nib); color: var(--nib); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--nib); border-color: var(--nib); color: #fff; font-weight: 500; }
+.btn.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.08); }
+.btn.ghost { border-color: transparent; }
+.legend { width: min(100%, 560px); display: flex; flex-wrap: wrap; gap: 4px 16px; font: 11.5px var(--f-mono); color: var(--muted); }
+.legend i { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 6px; }
+
+/* 미리보기 */
+.side { display: grid; gap: 18px; }
+#preview { min-height: 150px; font-size: 40px; line-height: 1.25; word-break: break-all; padding: 10px 4px; border-top: 1px dashed var(--rule); border-bottom: 1px dashed var(--rule); outline: none; }
+.sizes { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+.missing { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; min-height: 1.5em; }
+.missing b { color: var(--baseline); font-weight: 500; }
+.settings { display: grid; gap: 10px; }
+.settings label { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; font-size: 13px; align-items: center; }
+.settings label input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: var(--nib); }
+.settings output { font: 12px var(--f-mono); }
+.settings select { padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); grid-column: 1 / -1; }
+.actions { display: grid; gap: 8px; }
+.actions .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions .row .btn { flex: 1; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: calc(100% - 32px); }
+.toast.show { opacity: 1; }
+.confirm { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header class="top">
+  <div class="brand">
+    <h1>손글씨 폰트 공방</h1>
+    <p>한 글자씩 써 넣으면 내 글씨로 된 TrueType 폰트(.ttf)가 만들어집니다.</p>
+  </div>
+  <div class="fontname">
+    <label for="fontName">폰트 이름</label>
+    <input id="fontName" value="My Handwriting" maxlength="40" autocomplete="off">
+  </div>
+</header>
+
+<main class="workspace">
+  <!-- 글자 목록 -->
+  <section class="panel" aria-labelledby="h-chars">
+    <h2 id="h-chars">글자 목록 <b id="countLabel">0 / 0</b></h2>
+    <div class="progress"><i id="progressBar"></i></div>
+    <div class="grid" id="grid" role="listbox" aria-label="쓸 글자"></div>
+    <div class="charset">
+      <div class="chips" id="presets"></div>
+      <div class="addrow">
+        <input id="addInput" placeholder="문장을 넣으면 글자를 추가해요" aria-label="추가할 글자">
+        <button class="btn" id="addBtn" type="button">추가</button>
+      </div>
+      <p class="hint">한글은 완성형이라 쓸 글자만 골라 넣으세요. 이름, 자주 쓰는 문장부터 시작하면 좋아요.</p>
+    </div>
+  </section>
+
+  <!-- 필기 칸 -->
+  <section class="panel padwrap" aria-labelledby="h-pad">
+    <h2 id="h-pad" style="width:100%;margin:0">필기 칸</h2>
+    <div class="padhead">
+      <div class="cur"><strong id="curChar">A</strong><code id="curCode">U+0041</code></div>
+      <div class="nav">
+        <button class="btn" id="prevBtn" type="button" title="이전 글자 (←)">← 이전</button>
+        <button class="btn primary" id="nextBtn" type="button" title="다음 글자 (→ 또는 Enter)">다음 →</button>
+      </div>
+    </div>
+    <div class="pad"><canvas id="pad" aria-label="여기에 글자를 쓰세요"></canvas></div>
+    <div class="tools">
+      <label>펜 굵기 <input type="range" id="penWidth" min="16" max="160" value="62"><output id="penOut">62</output></label>
+      <label>떨림 보정 <input type="range" id="smooth" min="0" max="4" value="2"><output id="smoothOut">2</output></label>
+      <label><input type="checkbox" id="ghostToggle" checked> 밑글씨</label>
+      <span style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn" id="undoBtn" type="button" title="되돌리기 (Ctrl+Z)">되돌리기</button>
+        <button class="btn" id="clearBtn" type="button">지우기</button>
+      </span>
+    </div>
+    <div class="legend">
+      <span><i style="color:var(--rule)"></i>대문자 높이 700</span>
+      <span><i style="color:var(--nib)"></i>x높이 500</span>
+      <span><i style="color:var(--baseline)"></i>기준선 0</span>
+      <span>단위: 1000 / em</span>
+    </div>
+    <p class="hint" style="width:min(100%,560px)">애플펜슬·S펜으로 쓰면 필압이 굵기에 반영됩니다. 빨간 기준선에 글자 바닥을 맞추세요.</p>
+  </section>
+
+  <!-- 미리보기 + 내보내기 -->
+  <aside class="side">
+    <section class="panel">
+      <h2>미리보기 <b id="buildInfo">—</b></h2>
+      <div class="sizes" id="sizes"></div>
+      <div id="preview" contenteditable="true" spellcheck="false" aria-label="미리보기 문장 (직접 고칠 수 있어요)">Hello World 안녕하세요</div>
+      <p class="missing" id="missing"></p>
+    </section>
+    <section class="panel settings">
+      <h2>폰트 설정</h2>
+      <label for="spacing">글자 양옆 여백 <output id="spacingOut">60</output><input type="range" id="spacing" min="0" max="200" value="60"></label>
+      <label for="spaceWidth">띄어쓰기 폭 <output id="spaceOut">300</output><input type="range" id="spaceWidth" min="100" max="700" value="300"></label>
+      <label for="widthMode">글자 폭
+        <select id="widthMode">
+          <option value="auto">자동: 영문은 잉크에 맞춤, 한글·한자는 정사각</option>
+          <option value="prop">모두 잉크 폭에 맞춤 (비례폭)</option>
+          <option value="mono">모두 정사각 1000 (그린 위치 그대로)</option>
+        </select>
+      </label>
+    </section>
+    <section class="panel actions">
+      <h2>내보내기</h2>
+      <button class="btn primary" id="downloadBtn" type="button">TTF 폰트 내려받기</button>
+      <div class="row">
+        <button class="btn" id="exportBtn" type="button">작업 저장(.json)</button>
+        <button class="btn" id="importBtn" type="button">작업 불러오기</button>
+        <input type="file" id="importFile" accept=".json,application/json" hidden>
+      </div>
+      <div class="row" id="resetRow">
+        <button class="btn ghost" id="resetBtn" type="button">전체 새로 시작</button>
+      </div>
+      <p class="hint">작업은 이 브라우저에 자동 저장됩니다. 받은 .ttf는 더블클릭해 설치하면 워드·한글·포토샵에서 쓸 수 있어요.</p>
+    </section>
+  </aside>
+</main>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* ============================================================
+ * 좌표계: 폰트 단위(unitsPerEm 1000). 필기 칸 위쪽 = 800(ascender), 아래쪽 = -200(descender).
+ * 획(stroke)은 [[x, y, w], ...] 로 저장(w = 그 지점의 펜 지름, 폰트 단위).
+ * ============================================================ */
+const UPM = 1000, ASC = 800, DESC = -200, CAP = 700, XH = 500;
+const STORE_KEY = "handfont.v1";
+
+const PRESETS = [
+  ["대문자", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"],
+  ["소문자", "abcdefghijklmnopqrstuvwxyz"],
+  ["숫자", "0123456789"],
+  ["문장부호", ".,!?'\"-:;()&@#%/"],
+  ["한글 가~하", "가나다라마바사아자차카타파하"],
+  ["자주 쓰는 한글 50", "이의가는을에하고를다지한기도서사리로자대수일어시아나그만해정게요것들적사주보면오우전부있없했습니니다감사합안녕세"],
+];
+
+const state = {
+  name: "My Handwriting",
+  chars: [...("Hello World 안녕하세요".replace(/\s/g, ""))].filter((c, i, a) => a.indexOf(c) === i),
+  glyphs: {},          // char -> strokes
+  spacing: 60, spaceWidth: 300, widthMode: "auto",
+  pen: 62, smooth: 2, ghost: true,
+};
+let cur = 0;
+const history = {};   // char -> 이전 스냅샷 배열 (되돌리기)
+
+/* ---------- 저장 ---------- */
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* 저장소 없음: 무시 */ }
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s && Array.isArray(s.chars) && s.glyphs) Object.assign(state, s);
+  } catch (e) { /* 무시 */ }
+}
+
+/* ---------- 획 처리: 떨림 보정 + 단순화 ---------- */
+function smoothPts(pts, passes) {
+  let p = pts;
+  for (let k = 0; k < passes; k++) {
+    if (p.length < 3) break;
+    const q = [p[0]];
+    for (let i = 1; i < p.length - 1; i++) {
+      q.push([(p[i - 1][0] + 2 * p[i][0] + p[i + 1][0]) / 4,
+              (p[i - 1][1] + 2 * p[i][1] + p[i + 1][1]) / 4,
+              (p[i - 1][2] + 2 * p[i][2] + p[i + 1][2]) / 4]);
+    }
+    q.push(p[p.length - 1]);
+    p = q;
+  }
+  return p;
+}
+// Ramer–Douglas–Peucker (x, y, 굵기 함께 고려)
+function simplify(pts, tol) {
+  if (pts.length < 3) return pts.slice();
+  const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1;
+  const stack = [[0, pts.length - 1]];
+  while (stack.length) {
+    const [a, b] = stack.pop();
+    const A = pts[a], B = pts[b];
+    const dx = B[0] - A[0], dy = B[1] - A[1], L2 = dx * dx + dy * dy;
+    let best = -1, bi = -1;
+    for (let i = a + 1; i < b; i++) {
+      const P = pts[i];
+      let t = L2 ? ((P[0] - A[0]) * dx + (P[1] - A[1]) * dy) / L2 : 0;
+      t = Math.max(0, Math.min(1, t));
+      const ex = A[0] + t * dx - P[0], ey = A[1] + t * dy - P[1];
+      const ew = (A[2] + t * (B[2] - A[2]) - P[2]) * 0.5;
+      const d = Math.sqrt(ex * ex + ey * ey + ew * ew);
+      if (d > best) { best = d; bi = i; }
+    }
+    if (best > tol) { keep[bi] = 1; stack.push([a, bi], [bi, b]); }
+  }
+  return pts.filter((_, i) => keep[i]);
+}
+function finishStroke(raw) {
+  const p = simplify(smoothPts(raw, state.smooth), 1.6);
+  return p.map(([x, y, w]) => [Math.round(x), Math.round(y), Math.max(4, Math.round(w))]);
+}
+
+/* ---------- 획 -> 외곽선(TrueType 2차 곡선) ----------
+ * 각 꼭짓점에 원, 각 구간에 사다리꼴. 모두 시계 방향(채움)으로 통일해
+ * 겹쳐도 nonzero 규칙으로 빈틈없이 칠해진다. */
+const C8 = 1 / Math.cos(Math.PI / 8);
+function circleContour(cx, cy, r) {
+  const pts = [];
+  for (let k = 0; k < 8; k++) {           // 시계 방향 = 각도 감소
+    const a = -k * Math.PI / 4 + Math.PI / 8;
+    pts.push({ x: cx + Math.cos(a) * r * C8, y: cy + Math.sin(a) * r * C8, on: false });
+  }
+  return pts;
+}
+function area(c) {
+  let s = 0;
+  for (let i = 0; i < c.length; i++) { const a = c[i], b = c[(i + 1) % c.length]; s += a.x * b.y - b.x * a.y; }
+  return s / 2;
+}
+function strokeContours(stroke) {
+  const out = [];
+  for (const [x, y, w] of stroke) out.push(circleContour(x, y, w / 2));
+  for (let i = 1; i < stroke.length; i++) {
+    const [x0, y0, w0] = stroke[i - 1], [x1, y1, w1] = stroke[i];
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 1) continue;
+    const nx = -dy / L, ny = dx / L, r0 = w0 / 2, r1 = w1 / 2;
+    let q = [
+      { x: x0 + nx * r0, y: y0 + ny * r0, on: true }, { x: x1 + nx * r1, y: y1 + ny * r1, on: true },
+      { x: x1 - nx * r1, y: y1 - ny * r1, on: true }, { x: x0 - nx * r0, y: y0 - ny * r0, on: true },
+    ];
+    if (area(q) > 0) q.reverse();
+    out.push(q);
+  }
+  return out;
+}
+
+/* ---------- TrueType 작성기 ---------- */
+class W {
+  constructor() { this.b = []; }
+  u8(v) { this.b.push(v & 255); return this; }
+  u16(v) { this.b.push((v >> 8) & 255, v & 255); return this; }
+  i16(v) { return this.u16(v < 0 ? v + 65536 : v); }
+  u32(v) { this.b.push((v >>> 24) & 255, (v >>> 16) & 255, (v >>> 8) & 255, v & 255); return this; }
+  tag(s) { for (let i = 0; i < 4; i++) this.u8(s.charCodeAt(i) || 32); return this; }
+  bytes(a) { for (const x of a) this.b.push(x); return this; }
+  pad4() { while (this.b.length % 4) this.b.push(0); return this; }
+  get length() { return this.b.length; }
+}
+function checksum(bytes) {
+  let s = 0;
+  for (let i = 0; i < bytes.length; i += 4)
+    s = (s + (((bytes[i] << 24) | ((bytes[i + 1] || 0) << 16) | ((bytes[i + 2] || 0) << 8) | (bytes[i + 3] || 0)) >>> 0)) >>> 0;
+  return s;
+}
+function utf16be(str) { const a = []; for (let i = 0; i < str.length; i++) { const c = str.charCodeAt(i); a.push(c >> 8, c & 255); } return a; }
+const clamp16 = v => Math.max(-32768, Math.min(32767, Math.round(v)));
+
+function encodeGlyph(contours) {
+  if (!contours.length) return { data: [], xMin: 0, yMin: 0, xMax: 0, yMax: 0, n: 0 };
+  let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity, n = 0;
+  const cs = contours.map(c => c.map(p => ({ x: clamp16(p.x), y: clamp16(p.y), on: p.on })));
+  for (const c of cs) for (const p of c) {
+    xMin = Math.min(xMin, p.x); yMin = Math.min(yMin, p.y); xMax = Math.max(xMax, p.x); yMax = Math.max(yMax, p.y); n++;
+  }
+  // 2차 곡선 경계상자는 제어점 상자 안에 있으므로 제어점 기준으로 충분
+  const w = new W();
+  w.i16(cs.length).i16(xMin).i16(yMin).i16(xMax).i16(yMax);
+  let end = -1; for (const c of cs) { end += c.length; w.u16(end); }
+  w.u16(0); // 힌팅 명령 없음
+  for (const c of cs) for (const p of c) w.u8(p.on ? 1 : 0);
+  let px = 0; for (const c of cs) for (const p of c) { w.i16(p.x - px); px = p.x; }
+  let py = 0; for (const c of cs) for (const p of c) { w.i16(p.y - py); py = p.y; }
+  return { data: w.b, xMin, yMin, xMax, yMax, n };
+}
+
+function isWide(ch) {
+  const c = ch.codePointAt(0);
+  return (c >= 0x1100 && c <= 0x11FF) || (c >= 0x2E80 && c <= 0x9FFF) || (c >= 0xAC00 && c <= 0xD7AF) || (c >= 0xF900 && c <= 0xFAFF) || (c >= 0xFF00 && c <= 0xFFEF);
+}
+
+function psName(name) {
+  const s = name.normalize("NFKD").replace(/[^A-Za-z0-9-]/g, "");
+  return (s || "HandFont").slice(0, 60) + "-Regular";
+}
+
+function buildFont() {
+  // 1) 글리프 모으기 (BMP만, 코드포인트 순서 = glyph id 순서)
+  const items = [];
+  for (const ch of Object.keys(state.glyphs)) {
+    const strokes = state.glyphs[ch];
+    const cp = ch.codePointAt(0);
+    if (!strokes || !strokes.length || cp > 0xFFFF || cp === 32) continue;
+    items.push({ ch, cp, strokes });
+  }
+  items.sort((a, b) => a.cp - b.cp);
+  const glyphs = [];
+  // .notdef: 속이 빈 상자
+  glyphs.push({ advance: 500, contours: [
+    [{ x: 60, y: 0, on: true }, { x: 60, y: 700, on: true }, { x: 440, y: 700, on: true }, { x: 440, y: 0, on: true }],
+    [{ x: 110, y: 50, on: true }, { x: 390, y: 50, on: true }, { x: 390, y: 650, on: true }, { x: 110, y: 650, on: true }],
+  ] });
+  glyphs.push({ cp: 32, advance: state.spaceWidth, contours: [] });
+  for (const it of items) {
+    let contours = [];
+    for (const s of it.strokes) contours = contours.concat(strokeContours(s));
+    let minX = Infinity, maxX = -Infinity;
+    for (const c of contours) for (const p of c) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); }
+    const mode = state.widthMode === "auto" ? (isWide(it.ch) ? "mono" : "prop") : state.widthMode;
+    let advance;
+    if (mode === "prop") {
+      const shift = state.spacing - minX;
+      contours = contours.map(c => c.map(p => ({ x: p.x + shift, y: p.y, on: p.on })));
+      advance = Math.round(maxX - minX + 2 * state.spacing);
+    } else {
+      advance = UPM + Math.round(state.spacing - 60) * 2; // 기본 여백 60을 기준으로 가감
+      const shift = Math.round(state.spacing - 60);
+      contours = contours.map(c => c.map(p => ({ x: p.x + shift, y: p.y, on: p.on })));
+    }
+    glyphs.push({ cp: it.cp, advance: Math.max(50, advance), contours });
+  }
+  // glyph id 1(space)이 32보다 큰 cp 앞에 오도록 정렬 유지: space(32)는 가장 작은 인쇄 문자 이하
+  const coded = glyphs.slice(1).sort((a, b) => a.cp - b.cp);
+  const all = [glyphs[0], ...coded];
+  const enc = all.map(g => encodeGlyph(g.contours));
+  const numGlyphs = all.length;
+
+  // 2) glyf + loca
+  const glyf = new W(); const loca = new W();
+  for (const e of enc) { loca.u32(glyf.length); glyf.bytes(e.data); glyf.pad4(); }
+  loca.u32(glyf.length);
+
+  // 전체 지표
+  let gxMin = 0, gyMin = DESC, gxMax = 0, gyMax = ASC, maxPts = 0, maxCts = 0, advMax = 0, minLsb = 32767, minRsb = 32767, maxExt = 0, sumAdv = 0;
+  all.forEach((g, i) => {
+    const e = enc[i];
+    advMax = Math.max(advMax, g.advance); sumAdv += g.advance;
+    if (e.n) {
+      gxMin = Math.min(gxMin, e.xMin); gyMin = Math.min(gyMin, e.yMin); gxMax = Math.max(gxMax, e.xMax); gyMax = Math.max(gyMax, e.yMax);
+      minLsb = Math.min(minLsb, e.xMin); minRsb = Math.min(minRsb, g.advance - e.xMax); maxExt = Math.max(maxExt, e.xMax);
+    }
+    maxPts = Math.max(maxPts, e.n); maxCts = Math.max(maxCts, g.contours.length);
+  });
+  if (minLsb === 32767) { minLsb = 0; minRsb = 0; }
+
+  // 3) head
+  const now = Math.floor(Date.now() / 1000) + 2082844800; // 1904 기준 초
+  const head = new W();
+  head.u32(0x00010000).u32(0x00010000).u32(0).u32(0x5F0F3CF5).u16(0x000B).u16(UPM)
+      .u32(Math.floor(now / 4294967296)).u32(now >>> 0).u32(Math.floor(now / 4294967296)).u32(now >>> 0)
+      .i16(gxMin).i16(gyMin).i16(gxMax).i16(gyMax).u16(0).u16(8).i16(2).i16(1).i16(0);
+
+  const winAsc = Math.max(ASC, gyMax), winDesc = Math.max(-DESC, -gyMin);
+  const hhea = new W();
+  hhea.u32(0x00010000).i16(winAsc).i16(-winDesc).i16(0).u16(advMax).i16(minLsb).i16(minRsb).i16(maxExt)
+      .i16(1).i16(0).i16(0).i16(0).i16(0).i16(0).i16(0).i16(0).u16(numGlyphs);
+
+  const hmtx = new W();
+  all.forEach((g, i) => { hmtx.u16(g.advance).i16(enc[i].n ? enc[i].xMin : 0); });
+
+  const maxp = new W();
+  maxp.u32(0x00010000).u16(numGlyphs).u16(maxPts).u16(maxCts).u16(0).u16(0).u16(2)
+      .u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0);
+
+  // 4) cmap (format 4)
+  const map = all.map((g, gid) => ({ cp: g.cp, gid })).filter(m => m.cp !== undefined);
+  const segs = [];
+  for (const m of map) {
+    const last = segs[segs.length - 1];
+    if (last && m.cp === last.end + 1 && m.gid === last.gid0 + (m.cp - last.start)) last.end = m.cp;
+    else segs.push({ start: m.cp, end: m.cp, gid0: m.gid });
+  }
+  segs.push({ start: 0xFFFF, end: 0xFFFF, gid0: 0, last: true });
+  const segX2 = segs.length * 2, es = Math.floor(Math.log2(segs.length)), sr = 2 * Math.pow(2, es);
+  const sub = new W();
+  sub.u16(4).u16(16 + 8 * segs.length).u16(0).u16(segX2).u16(sr).u16(es).u16(segX2 - sr);
+  segs.forEach(s => sub.u16(s.end)); sub.u16(0);
+  segs.forEach(s => sub.u16(s.start));
+  segs.forEach(s => sub.u16(s.last ? 1 : ((s.gid0 - s.start) + 65536) % 65536));
+  segs.forEach(() => sub.u16(0));
+  const cmap = new W();
+  cmap.u16(0).u16(2).u16(0).u16(3).u32(20).u16(3).u16(1).u32(20).bytes(sub.b);
+
+  // 5) OS/2 (v4)
+  const cps = map.map(m => m.cp);
+  const hasHangul = cps.some(c => c >= 0xAC00 && c <= 0xD7AF);
+  const os2 = new W();
+  os2.u16(4).i16(Math.round(sumAdv / numGlyphs)).u16(400).u16(5).u16(0)
+     .i16(650).i16(600).i16(0).i16(75).i16(650).i16(600).i16(0).i16(350).i16(50).i16(300).i16(0)
+     .bytes([2, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+     .u32(1).u32(hasHangul ? (1 << 24) : 0).u32(0).u32(0)
+     .tag("HFNT").u16(0x0040).u16(Math.min(...cps)).u16(Math.max(...cps))
+     .i16(ASC).i16(DESC).i16(200).u16(winAsc).u16(winDesc)
+     .u32(1 | (hasHangul ? (1 << 19) : 0)).u32(0)
+     .i16(XH).i16(CAP).u16(0).u16(32).u16(1);
+
+  // 6) name
+  const fam = (state.name || "My Handwriting").trim() || "My Handwriting";
+  const ps = psName(fam);
+  const names = [[1, fam], [2, "Regular"], [3, ps + ";" + new Date().toISOString().slice(0, 10)], [4, fam], [5, "Version 1.000"], [6, ps]];
+  const strData = []; const recs = [];
+  for (const [id, s] of names) { const b = utf16be(s); recs.push([id, b.length, strData.length]); strData.push(...b); }
+  const name = new W();
+  name.u16(0).u16(recs.length).u16(6 + 12 * recs.length);
+  for (const [id, len, off] of recs) name.u16(3).u16(1).u16(0x0409).u16(id).u16(len).u16(off);
+  name.bytes(strData);
+
+  const post = new W();
+  post.u32(0x00030000).u32(0).i16(-100).i16(50).u32(0).u32(0).u32(0).u32(0).u32(0);
+
+  // 7) 조립
+  const tables = [["OS/2", os2], ["cmap", cmap], ["glyf", glyf], ["head", head], ["hhea", hhea],
+                  ["hmtx", hmtx], ["loca", loca], ["maxp", maxp], ["name", name], ["post", post]];
+  const nT = tables.length, eSel = Math.floor(Math.log2(nT)), sRange = Math.pow(2, eSel) * 16;
+  const dir = new W();
+  dir.u32(0x00010000).u16(nT).u16(sRange).u16(eSel).u16(nT * 16 - sRange);
+  let offset = 12 + 16 * nT;
+  const body = [];
+  let headOffset = 0;
+  for (const [tag, t] of tables) {
+    const len = t.length; const bytes = t.b.slice(); while (bytes.length % 4) bytes.push(0);
+    dir.tag(tag).u32(checksum(bytes)).u32(offset).u32(len);
+    if (tag === "head") headOffset = offset;
+    body.push(...bytes); offset += bytes.length;
+  }
+  const out = new Uint8Array(dir.length + body.length);
+  out.set(dir.b, 0); out.set(body, dir.length);
+  const adj = (0xB1B0AFBA - checksum(out)) >>> 0;
+  new DataView(out.buffer).setUint32(headOffset + 8, adj);
+  return { buffer: out.buffer, glyphCount: items.length };
+}
+
+/* ---------- 그리기 ---------- */
+const $ = id => document.getElementById(id);
+const pad = $("pad"), pctx = pad.getContext("2d");
+function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function drawStroke(ctx, s, k, color) {
+  ctx.strokeStyle = ctx.fillStyle = color; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const X = p => p[0] * k, Y = p => (ASC - p[1]) * k;
+  if (s.length === 1) { ctx.beginPath(); ctx.arc(X(s[0]), Y(s[0]), s[0][2] / 2 * k, 0, Math.PI * 2); ctx.fill(); return; }
+  for (let i = 1; i < s.length; i++) {
+    ctx.lineWidth = Math.max(0.5, (s[i - 1][2] + s[i][2]) / 2 * k);
+    ctx.beginPath(); ctx.moveTo(X(s[i - 1]), Y(s[i - 1])); ctx.lineTo(X(s[i]), Y(s[i])); ctx.stroke();
+  }
+}
+function sizeCanvas(c) {
+  const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  const w = Math.max(1, Math.round(r.width * d));
+  if (c.width !== w) { c.width = w; c.height = w; }
+  return w;
+}
+let live = null;
+function renderPad() {
+  const S = sizeCanvas(pad), k = S / UPM, ch = state.chars[cur];
+  pctx.clearRect(0, 0, S, S);
+  const line = (yu, color, dash, wpx) => {
+    pctx.save(); pctx.strokeStyle = color; pctx.lineWidth = wpx * (S / 560); pctx.setLineDash(dash.map(v => v * S / 560));
+    pctx.beginPath(); pctx.moveTo(0, (ASC - yu) * k); pctx.lineTo(S, (ASC - yu) * k); pctx.stroke(); pctx.restore();
+  };
+  // 세로 보조선(중심) + 가로 기준선들
+  pctx.save(); pctx.strokeStyle = css("--rule-soft"); pctx.lineWidth = S / 560; pctx.setLineDash([4 * S / 560, 6 * S / 560]);
+  pctx.beginPath(); pctx.moveTo(S / 2, 0); pctx.lineTo(S / 2, S); pctx.stroke(); pctx.restore();
+  line(CAP, css("--rule"), [], 1);
+  line(XH, css("--nib"), [6, 6], 1);
+  line(0, css("--baseline"), [], 1.5);
+  if (state.ghost && ch) {
+    pctx.save(); pctx.fillStyle = css("--ghost"); pctx.textAlign = "center"; pctx.textBaseline = "alphabetic";
+    pctx.font = `${Math.round(UPM * k * (isWide(ch) ? 0.82 : 1))}px ${css("--f-body")}`;
+    pctx.fillText(ch, S / 2, ASC * k); pctx.restore();
+  }
+  const ink = css("--ink");
+  for (const s of (state.glyphs[ch] || [])) drawStroke(pctx, s, k, ink);
+  if (live) drawStroke(pctx, live, k, css("--nib"));
+}
+function renderTile(i) {
+  const tile = $("grid").children[i]; if (!tile) return;
+  const c = tile.querySelector("canvas"), S = sizeCanvas(c), x = c.getContext("2d"), ch = state.chars[i];
+  x.clearRect(0, 0, S, S);
+  const strokes = state.glyphs[ch] || [];
+  tile.classList.toggle("done", strokes.length > 0);
+  if (!strokes.length) {
+    x.fillStyle = css("--muted"); x.globalAlpha = .55; x.textAlign = "center"; x.textBaseline = "middle";
+    x.font = `${Math.round(S * 0.42)}px ${css("--f-body")}`; x.fillText(ch, S / 2, S * 0.56); x.globalAlpha = 1;
+  }
+  for (const s of strokes) drawStroke(x, s, S / UPM, css("--ink"));
+}
+function buildGrid() {
+  const g = $("grid"); g.textContent = "";
+  state.chars.forEach((ch, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tile"; b.setAttribute("role", "option");
+    b.setAttribute("aria-label", `${ch} 쓰기`);
+    b.innerHTML = "<canvas></canvas><span></span>";
+    b.querySelector("span").textContent = ch;
+    b.addEventListener("click", () => select(i));
+    g.appendChild(b);
+  });
+  requestAnimationFrame(() => { state.chars.forEach((_, i) => renderTile(i)); markActive(); });
+  updateCount();
+}
+function markActive() {
+  [...$("grid").children].forEach((t, i) => { t.classList.toggle("active", i === cur); t.setAttribute("aria-selected", i === cur); });
+  const a = $("grid").children[cur]; if (a) a.scrollIntoView({ block: "nearest" });
+}
+function updateCount() {
+  const done = state.chars.filter(c => (state.glyphs[c] || []).length).length;
+  $("countLabel").textContent = `${done} / ${state.chars.length}`;
+  $("progressBar").style.width = (state.chars.length ? done / state.chars.length * 100 : 0) + "%";
+}
+function select(i) {
+  if (!state.chars.length) return;
+  cur = (i + state.chars.length) % state.chars.length;
+  const ch = state.chars[cur];
+  $("curChar").textContent = ch;
+  $("curCode").textContent = "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+  markActive(); renderPad();
+}
+
+/* ---------- 입력 ---------- */
+let drawing = null;
+function toUnits(e) {
+  const r = pad.getBoundingClientRect();
+  const x = (e.clientX - r.left) / r.width * UPM, y = ASC - (e.clientY - r.top) / r.height * UPM;
+  let w = state.pen;
+  if (e.pointerType === "pen" && e.pressure > 0) w = state.pen * (0.35 + e.pressure * 1.3);
+  return [x, y, w];
+}
+pad.addEventListener("pointerdown", e => {
+  if (e.button > 0) return;
+  e.preventDefault(); pad.setPointerCapture(e.pointerId);
+  drawing = e.pointerId; live = [toUnits(e)]; renderPad();
+});
+pad.addEventListener("pointermove", e => {
+  if (drawing !== e.pointerId) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for (const ev of (evs.length ? evs : [e])) live.push(toUnits(ev));
+  renderPad();
+});
+function endStroke(e) {
+  if (drawing !== e.pointerId) return;
+  drawing = null;
+  const ch = state.chars[cur];
+  const s = finishStroke(live); live = null;
+  pushHistory(ch);
+  (state.glyphs[ch] = state.glyphs[ch] || []).push(s);
+  changed();
+}
+pad.addEventListener("pointerup", endStroke);
+pad.addEventListener("pointercancel", endStroke);
+
+function pushHistory(ch) { (history[ch] = history[ch] || []).push(JSON.stringify(state.glyphs[ch] || [])); if (history[ch].length > 60) history[ch].shift(); }
+function undo() {
+  const ch = state.chars[cur], h = history[ch];
+  if (h && h.length) state.glyphs[ch] = JSON.parse(h.pop());
+  else if ((state.glyphs[ch] || []).length) state.glyphs[ch].pop();
+  else return;
+  changed();
+}
+function clearGlyph() {
+  const ch = state.chars[cur]; if (!(state.glyphs[ch] || []).length) return;
+  pushHistory(ch); state.glyphs[ch] = []; changed(); toast(`'${ch}'를 지웠어요. 되돌리기로 복구할 수 있어요.`);
+}
+function changed() { renderPad(); renderTile(cur); updateCount(); save(); scheduleBuild(); }
+
+/* ---------- 미리보기 폰트 ---------- */
+let buildTimer = 0, faceSeq = 0, currentFace = null;
+function scheduleBuild() { clearTimeout(buildTimer); buildTimer = setTimeout(rebuildPreview, 350); }
+async function rebuildPreview() {
+  const { buffer, glyphCount } = buildFont();
+  $("buildInfo").textContent = `${glyphCount}자 · ${(buffer.byteLength / 1024).toFixed(1)} KB`;
+  try {
+    const fam = "HFPreview" + (++faceSeq);
+    const face = new FontFace(fam, buffer);
+    await face.load();
+    document.fonts.add(face);
+    if (currentFace) document.fonts.delete(currentFace);
+    currentFace = face;
+    $("preview").style.fontFamily = `"${fam}", ${css("--f-body")}`;
+  } catch (err) {
+    $("buildInfo").textContent = "미리보기 실패";
+    console.error(err);
+  }
+  updateMissing();
+}
+function updateMissing() {
+  const text = $("preview").textContent || "";
+  const miss = [...new Set([...text].filter(c => !/\s/.test(c) && !(state.glyphs[c] || []).length))];
+  const el = $("missing"); el.textContent = "";
+  if (!miss.length) { el.textContent = "문장의 모든 글자를 내 손글씨로 그렸어요."; return; }
+  el.append("아직 안 쓴 글자(기본 글꼴로 보임): ");
+  const b = document.createElement("b"); b.textContent = miss.slice(0, 30).join(" "); el.append(b);
+  if (miss.some(c => !state.chars.includes(c))) {
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "chip"; btn.style.marginLeft = "6px";
+    btn.textContent = "목록에 추가"; btn.onclick = () => addChars(miss.join("")); el.append(btn);
+  }
+}
+
+/* ---------- 글자 목록 편집 ---------- */
+function addChars(str) {
+  const before = state.chars.length;
+  for (const c of str) {
+    if (/\s/.test(c)) continue;
+    if (c.codePointAt(0) > 0xFFFF) continue; // 이모지 등은 제외
+    if (!state.chars.includes(c)) state.chars.push(c);
+  }
+  const added = state.chars.length - before;
+  buildGrid(); save(); updateMissing();
+  toast(added ? `${added}글자를 추가했어요.` : "이미 목록에 있는 글자예요.");
+  if (added) select(before);
+}
+
+/* ---------- 내려받기 ---------- */
+async function offerFile(filename, data, mime) {
+  try {
+    if (window.claude && window.claude.use) {
+      const dl = await window.claude.use("downloads");
+      if (dl) {
+        try { await dl.save({ filename, data: new Blob([data], { type: mime }) }); toast(`${filename} 저장을 요청했어요.`); }
+        catch (e) { if (e && e.code !== "declined") toast("이 화면에서는 파일을 저장할 수 없어요."); }
+        return;
+      }
+    }
+  } catch (e) { /* 일반 브라우저 경로로 */ }
+  const url = URL.createObjectURL(new Blob([data], { type: mime }));
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(`${filename} 을(를) 내려받았어요.`);
+}
+
+/* ---------- 토스트 ---------- */
+let toastT = 0;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2400); }
+
+/* ---------- 연결 ---------- */
+function bindRange(id, outId, key, after) {
+  const el = $(id), out = $(outId);
+  el.value = state[key]; out.textContent = state[key];
+  el.addEventListener("input", () => { state[key] = +el.value; out.textContent = el.value; save(); after && after(); });
+}
+function init() {
+  load();
+  $("fontName").value = state.name;
+  $("fontName").addEventListener("input", e => { state.name = e.target.value; save(); scheduleBuild(); });
+  bindRange("penWidth", "penOut", "pen");
+  bindRange("smooth", "smoothOut", "smooth");
+  bindRange("spacing", "spacingOut", "spacing", scheduleBuild);
+  bindRange("spaceWidth", "spaceOut", "spaceWidth", scheduleBuild);
+  $("widthMode").value = state.widthMode;
+  $("widthMode").addEventListener("change", e => { state.widthMode = e.target.value; save(); scheduleBuild(); });
+  $("ghostToggle").checked = state.ghost;
+  $("ghostToggle").addEventListener("change", e => { state.ghost = e.target.checked; save(); renderPad(); });
+
+  const pr = $("presets");
+  for (const [label, chars] of PRESETS) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = "+ " + label;
+    b.addEventListener("click", () => addChars(chars)); pr.appendChild(b);
+  }
+  const doAdd = () => { const v = $("addInput").value; if (v.trim()) { addChars(v); $("addInput").value = ""; } };
+  $("addBtn").addEventListener("click", doAdd);
+  $("addInput").addEventListener("keydown", e => { if (e.key === "Enter") doAdd(); });
+
+  const sizes = $("sizes");
+  for (const px of [24, 40, 64, 96]) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = px + "px";
+    b.addEventListener("click", () => { $("preview").style.fontSize = px + "px"; }); sizes.appendChild(b);
+  }
+  $("preview").addEventListener("input", updateMissing);
+
+  $("prevBtn").addEventListener("click", () => select(cur - 1));
+  $("nextBtn").addEventListener("click", () => select(cur + 1));
+  $("undoBtn").addEventListener("click", undo);
+  $("clearBtn").addEventListener("click", clearGlyph);
+  document.addEventListener("keydown", e => {
+    const t = e.target;
+    if (t.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(t.tagName)) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
+    else if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); select(cur + 1); }
+    else if (e.key === "ArrowLeft") { e.preventDefault(); select(cur - 1); }
+  });
+
+  $("downloadBtn").addEventListener("click", () => {
+    const { buffer, glyphCount } = buildFont();
+    if (!glyphCount) { toast("먼저 글자를 하나 이상 써 주세요."); return; }
+    offerFile(psName(state.name) + ".ttf", buffer, "font/ttf");
+  });
+  $("exportBtn").addEventListener("click", () => offerFile(psName(state.name) + ".json", JSON.stringify(state), "application/json"));
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", async e => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const s = JSON.parse(await f.text());
+      if (!s || !Array.isArray(s.chars) || typeof s.glyphs !== "object") throw new Error("형식");
+      Object.assign(state, s); save(); refreshAll(); toast("작업을 불러왔어요.");
+    } catch (err) { toast("불러오지 못했어요. 이 도구에서 저장한 .json 파일인지 확인해 주세요."); }
+    e.target.value = "";
+  });
+  const showReset = () => {
+    const row = $("resetRow"); row.textContent = "";
+    const b = document.createElement("button"); b.className = "btn ghost"; b.id = "resetBtn"; b.type = "button"; b.textContent = "전체 새로 시작";
+    b.addEventListener("click", askReset); row.appendChild(b);
+  };
+  const askReset = () => {
+    const row = $("resetRow"); row.textContent = "";
+    const box = document.createElement("div"); box.className = "confirm";
+    const msg = document.createElement("span"); msg.textContent = "그린 글자가 모두 지워집니다.";
+    const yes = document.createElement("button"); yes.className = "btn"; yes.type = "button"; yes.textContent = "모두 지우기";
+    const no = document.createElement("button"); no.className = "btn ghost"; no.type = "button"; no.textContent = "취소";
+    yes.addEventListener("click", () => { state.glyphs = {}; for (const k in history) delete history[k]; save(); refreshAll(); showReset(); toast("모든 글자를 지웠어요."); });
+    no.addEventListener("click", showReset);
+    box.append(msg, yes, no); row.appendChild(box);
+  };
+  showReset();
+
+  new ResizeObserver(() => renderPad()).observe(pad);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { renderPad(); state.chars.forEach((_, i) => renderTile(i)); });
+  refreshAll();
+}
+function refreshAll() {
+  $("fontName").value = state.name;
+  buildGrid(); select(Math.min(cur, state.chars.length - 1)); rebuildPreview();
+}
+init();
+</script>
