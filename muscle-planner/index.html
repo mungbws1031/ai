@@ -312,6 +312,12 @@ input[type=range]::-moz-range-thumb{width:28px; height:28px; border-radius:50%; 
 .mvitem .ic.cardio{background:var(--bad-soft); color:var(--bad)} .mvitem .ic.posture{background:var(--good-soft); color:var(--good)} .mvitem .ic.soft{background:var(--warn-soft); color:var(--warn)}
 a.watch{color:var(--accent); font-weight:700; text-decoration:none}
 @media (prefers-reduced-motion: reduce){ .phases li{transition:none} }
+.stage{position:relative}
+.photo{position:absolute; inset:0; background:#fff; z-index:1}
+.photo img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain}
+.photo .ptag{position:absolute; left:12px; top:12px; background:rgba(25,31,40,.78); color:#fff; border-radius:10px; padding:3px 10px; font-size:.8rem; font-weight:700}
+.modeseg{position:absolute; right:10px; top:10px; z-index:2; box-shadow:0 2px 8px rgba(0,23,51,.12)}
+.ptbadge{font-style:normal; font-size:.68rem; font-weight:700; color:var(--accent); background:var(--accent-soft); border-radius:6px; padding:1px 6px; margin-left:4px; vertical-align:2px}
 </style>
 </head><!--shell-->
 <body><!--shell-->
@@ -437,7 +443,8 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
     <div class="panel player">
       <header><div><h2 id="mv-name"></h2><span class="muted small" id="mv-sub"></span></div>
         <div class="seg" role="group" aria-label="재생 속도"><button data-speed=".5">0.5×</button><button data-speed="1" aria-pressed="true">1×</button></div></header>
-      <div class="stage"><svg id="mv-svg" viewBox="0 0 240 200" role="img" aria-label="운동 동작 애니메이션"></svg></div>
+      <div class="stage"><div class="photo" id="mv-photo" hidden></div><svg id="mv-svg" viewBox="0 0 240 200" role="img" aria-label="운동 동작 애니메이션"></svg>
+        <div class="seg modeseg" id="mv-mode" role="group" aria-label="보기 방식" hidden><button data-mode="photo" aria-pressed="true">실사</button><button data-mode="mq">마네킹</button></div></div>
       <ol class="phases" id="mv-phases"></ol>
       <div class="chips" id="mv-mus"></div>
       <p class="small" id="mv-cue"></p>
@@ -1224,7 +1231,7 @@ const MV = (() => {
   A.lunge.props = []; A.deadlift.props = ["barHand"];
   const ease = t => .5 - Math.cos(Math.PI * t) / 2;
   let raf = 0;
-  function play(svg, id, speed, onPhase){
+  function play(svg, id, speed, onPhase, onTick){
     cancelAnimationFrame(raf);
     const ex = EXM[id], spec = A[id];
     if (!spec){ svg.innerHTML = ""; return false; }
@@ -1243,6 +1250,7 @@ const MV = (() => {
       const P = mix(cur[0], nxt[0], u);
       for (const k of ["kd","kdf","ed","edf"]) P[k] = (u < .5 ? cur[0][k] : nxt[0][k]) || cur[0][k];
       svg.innerHTML = `<rect x="-20" y="${G}" width="280" height="40" class="floor"/>${spec.bg || ""}<g transform="${spec.xf || ""}">${draw(P, spec.view, ex, props)}</g>`;
+      onTick && onTick(i, (i + 1) % frames.length, u);
       if (i !== lastPhase){ lastPhase = i; onPhase && onPhase(i, frames.map(f => [f[2], f[1]])); }
       if (!reduce) raf = requestAnimationFrame(frame);
     };
@@ -1258,14 +1266,20 @@ const MV = (() => {
   return {play, still, has: id => !!A[id], frames: id => A[id].k.length, stop: () => cancelAnimationFrame(raf)};
 })();
 
-let mvCat = "전체", mvSpeed = 1;
+let mvCat = "전체", mvSpeed = 1, mvMode = "photo";
+// GPT Image 2로 만든 시작/끝 자세. map = 애니메이션 키프레임별로 보여줄 사진 번호(0=시작, 1=끝)
+const PHOTO = {
+  goblet:{n:2, map:[0, 1]}, pushup:{n:2, map:[0, 1]}, plank:{n:1, map:[0, 0]}, lunge:{n:2, map:[0, 1]}, rdl:{n:2, map:[0, 1]},
+  hipthrust:{n:2, map:[0, 1, 1]}, bridge:{n:2, map:[0, 1, 1]}, row:{n:2, map:[0, 1]}, ohp:{n:2, map:[0, 1]},
+  latraise:{n:2, map:[0, 1]}, chintuck:{n:2, map:[0, 1]}, pronety:{n:2, map:[0, 1]}
+};
 function renderMoveList(){
   const cats = ["전체", ...CATS.filter(c => EX.some(e => e.c === c && MV.has(e.id)))];
   $("mv-cats").innerHTML = cats.map(c => `<button class="chip" aria-pressed="${c === mvCat}" data-cat="${c}">${c}</button>`).join("");
-  const list = EX.filter(e => MV.has(e.id) && (mvCat === "전체" || e.c === mvCat));
+  const list = EX.filter(e => MV.has(e.id) && (mvCat === "전체" || e.c === mvCat)).sort((a, b) => (PHOTO[b.id] ? 1 : 0) - (PHOTO[a.id] ? 1 : 0));
   $("mv-count").textContent = `${list.length}개 동작`;
   $("mv-list").innerHTML = list.map(e => { const [icc, ics] = icFor(e);
-    return `<button class="mvitem" data-mv="${e.id}" aria-pressed="${S.mv === e.id}"><span class="ic ${icc}">${ics}</span><span><b>${esc(e.n)}</b><small>${Object.entries(e.w).filter(([, w]) => w >= .5).map(([m]) => MUSCLES[m].s).join(" · ") || (e.stretch ? "스트레칭" : "가동성")}</small></span></button>`; }).join("");
+    return `<button class="mvitem" data-mv="${e.id}" aria-pressed="${S.mv === e.id}"><span class="ic ${icc}">${ics}</span><span><b>${esc(e.n)}${PHOTO[e.id] ? ` <i class="ptbadge">실사</i>` : ""}</b><small>${Object.entries(e.w).filter(([, w]) => w >= .5).map(([m]) => MUSCLES[m].s).join(" · ") || (e.stretch ? "스트레칭" : "가동성")}</small></span></button>`; }).join("");
 }
 function showMove(id){
   if (!MV.has(id)) id = "goblet";
@@ -1277,12 +1291,25 @@ function showMove(id){
     .map(([m, w]) => `<span class="mchip ${w >= .9 ? "hot" : w >= .4 ? "warm" : ""}">${MUSCLES[m].s}</span>`).join("") + (e.stretch || []).map(m => `<span class="mchip warm">${MUSCLES[m].s} 스트레칭</span>`).join("");
   $("mv-cue").textContent = e.cue;
   $("mv-add").textContent = S.routine.some(r => r.id === id) ? "루틴에 있어요 · 세트 더하기" : "내 루틴에 추가";
+  const ph = PHOTO[id], usePhoto = ph && mvMode === "photo";
+  $("mv-mode").hidden = !ph;
+  $("mv-mode").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mvMode));
+  $("mv-photo").hidden = !usePhoto; $("mv-svg").style.visibility = usePhoto ? "hidden" : "visible";
+  if (usePhoto) $("mv-photo").innerHTML = Array.from({length:ph.n}, (_, j) => `<img src="moves/${id}-${j}.webp" alt="${esc(e.n)} ${j ? "끝" : "시작"} 자세" width="512" height="512" style="opacity:${j ? 0 : 1}">`).join("") + `<span class="ptag">${ph.n > 1 ? "시작" : "자세"}</span>`;
+  const imgs = usePhoto ? $("mv-photo").querySelectorAll("img") : [], tag = usePhoto ? $("mv-photo").querySelector(".ptag") : null;
+  const onTick = usePhoto && ph.n > 1 ? (i, j, u) => {
+    const a = ph.map[i % ph.map.length], b = ph.map[j % ph.map.length];
+    const v = a + (b - a) * u;                      // 0 = 시작 사진, 1 = 끝 사진
+    imgs[1].style.opacity = Math.max(0, Math.min(1, (v - .3) / .4)).toFixed(3);   // 겹치는 구간을 짧게
+    tag.textContent = v < .5 ? "시작 자세" : "끝 자세";
+  } : null;
   MV.play($("mv-svg"), id, mvSpeed, (i, ph) => {
     const shown = ph.map((x, j) => [x, j]).filter(([x]) => x[0]);
     $("mv-phases").innerHTML = shown.map(([[say, t], j]) => `<li class="${j === i ? "on" : ""}"><span>${say}</span><b>${t >= 5 ? t + "초" : t.toFixed(1).replace(".0", "") + "초"}</b></li>`).join("");
-  });
+  }, onTick);
   document.querySelectorAll(".mvitem").forEach(b => b.setAttribute("aria-pressed", b.dataset.mv === id));
 }
+$("mv-mode").addEventListener("click", ev => { const b = ev.target.closest("[data-mode]"); if (!b) return; mvMode = b.dataset.mode; showMove(S.mv); });
 $("mv-cats").addEventListener("click", ev => { const c = ev.target.closest("[data-cat]")?.dataset.cat; if (!c) return; mvCat = c; renderMoveList(); });
 $("mv-list").addEventListener("click", ev => { const id = ev.target.closest("[data-mv]")?.dataset.mv; if (id){ showMove(id); if (matchMedia("(max-width:860px)").matches) $("mv-name").scrollIntoView({behavior:"smooth", block:"start"}); } });
 document.querySelector(".player .seg").addEventListener("click", ev => { const b = ev.target.closest("[data-speed]"); if (!b) return;
