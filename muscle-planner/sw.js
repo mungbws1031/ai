@@ -1,5 +1,5 @@
 // Muscle Planner service worker — offline app shell cache
-const CACHE = "muscle-planner-v7";
+const CACHE = "muscle-planner-v8";
 const ASSETS = [
   "./",
   "./index.html",

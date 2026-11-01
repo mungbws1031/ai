@@ -143,7 +143,14 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .rrow .nm small{display:block; color:var(--faint); font-size:.8rem; line-height:1.4}
 .rrow input[type=number]{width:58px; padding:8px 6px; border-radius:12px}
 .rrow select{padding:8px 32px 8px 12px; border-radius:12px; font-size:.85rem}
-@media (max-width:560px){ .rrow{grid-template-columns:44px minmax(0,1fr) auto; row-gap:8px} .rrow > :nth-child(3){grid-column:2} .rrow > :nth-child(4){grid-column:2 / 4} }
+@media (max-width:560px){
+  .rrow{grid-template-columns:44px auto minmax(0,1fr) auto; row-gap:10px; column-gap:10px}
+  .rrow > .ic{grid-column:1; grid-row:1}
+  .rrow > .nm{grid-column:2 / 4; grid-row:1}
+  .rrow > button.x{grid-column:4; grid-row:1; align-self:start}
+  .rrow > :nth-child(3){grid-column:2; grid-row:2}
+  .rrow > :nth-child(4){grid-column:3 / 5; grid-row:2; justify-self:start; max-width:100%}
+}
 .inl{display:inline-flex; align-items:center; gap:4px; font-size:.84rem; color:var(--muted); white-space:nowrap}
 .banner{background:var(--accent-soft); color:var(--ink2); border-radius:14px; padding:12px 14px; font-size:.88rem}
 
@@ -318,9 +325,69 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
 .photo .ptag{position:absolute; left:12px; top:12px; background:rgba(25,31,40,.78); color:#fff; border-radius:10px; padding:3px 10px; font-size:.8rem; font-weight:700}
 .modeseg{position:absolute; right:10px; top:10px; z-index:2; box-shadow:0 2px 8px rgba(0,23,51,.12)}
 .ptbadge{font-style:normal; font-size:.68rem; font-weight:700; color:var(--accent); background:var(--accent-soft); border-radius:6px; padding:1px 6px; margin-left:4px; vertical-align:2px}
+
+/* ---- app shell pass ---- */
+:root{ --shadow:none; }
+.panel,.card,.ref{box-shadow:none}
+.hero{box-shadow:none}
+.hero::after{display:none}
+.hero .hh{font-size:clamp(1.6rem, 1.05rem + 2.1vw, 2.4rem)}
+.hero .m{background:transparent; padding:0; border-radius:0}
+.hero .hm{gap:18px 24px; padding-top:4px}
+.hero .m .v{font-size:clamp(1.5rem, 1.1rem + 1.2vw, 2rem)}
+.bnav{display:none}
+.sheet{position:fixed; inset:0; z-index:30}
+.sheet-bg{position:absolute; inset:0; background:rgba(0,12,30,.45); opacity:0; transition:opacity .2s}
+.sheet-panel{position:absolute; left:0; right:0; bottom:0; max-width:560px; margin:0 auto; background:var(--surface); border-radius:24px 24px 0 0; padding:10px max(20px, env(safe-area-inset-left,0px)) calc(20px + env(safe-area-inset-bottom,0px)); display:grid; gap:2px; transform:translateY(100%); transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.sheet.open .sheet-bg{opacity:1} .sheet.open .sheet-panel{transform:none}
+.sheet .grab{width:40px; height:5px; border-radius:3px; background:var(--line); margin:4px auto 10px}
+.sheet a{display:grid; gap:2px; padding:14px 12px; border-radius:14px; text-decoration:none; color:var(--ink)}
+.sheet a:hover{background:var(--surface3)}
+.sheet a b{font-size:1.02rem} .sheet a span{font-size:.86rem; color:var(--muted)}
+.toast{position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom,0px)); transform:translate(-50%, 20px); background:#333d4b; color:#fff; padding:12px 18px; border-radius:14px; font-weight:600; font-size:.92rem; width:max-content; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:40; max-width:calc(100% - 32px); text-align:center}
+.toast.show{opacity:1; transform:translate(-50%, 0)}
+@media (max-width:600px){
+  body{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  nav.tabs{display:none}
+  header.top{padding-block:12px}
+  .brand h1{font-size:1.08rem}
+  section.view{gap:10px; padding-top:8px}
+  .vhead{padding:12px 4px 10px}
+  .grid2,.movegrid,.cards,.refs{gap:10px}
+  .panel,.card,.ref,.hero{border-radius:0; margin-inline:calc(-1 * max(16px, env(safe-area-inset-left,0px))); padding-inline:max(20px, env(safe-area-inset-left,0px)); padding-block:24px}
+  .panel .panel{margin-inline:0; border-radius:18px; padding:16px}
+  #m-detail,#outcome{margin-inline:0!important}
+  .maps,.stage,.frames{border-radius:16px}
+  .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .bnav{display:grid; grid-template-columns:repeat(5,1fr); position:fixed; left:0; right:0; bottom:0; z-index:20; background:color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--line); padding:6px max(6px, env(safe-area-inset-left,0px)) calc(6px + env(safe-area-inset-bottom,0px))}
+  .bnav a,.bnav button{display:grid; justify-items:center; gap:2px; padding:6px 0; font-size:.7rem; font-weight:600; color:var(--faint); text-decoration:none; background:none; border-radius:12px}
+  .bnav svg{width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+  .bnav svg .f{fill:currentColor; stroke:none}
+  .bnav .on{color:var(--ink)}
+  .bnav .on svg{stroke-width:2.4}
+  #gen-btn{position:sticky; bottom:calc(76px + env(safe-area-inset-bottom,0px)); z-index:3; box-shadow:0 -10px 20px var(--surface)}
+}
+@media (prefers-reduced-motion: reduce){ .sheet-bg,.sheet-panel,.toast{transition:none} }
 </style>
 </head><!--shell-->
 <body><!--shell-->
+<nav class="bnav" aria-label="주요 화면">
+  <a href="#sim" data-b="sim"><svg viewBox="0 0 24 24"><path d="M4 11.5L12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg>내 루틴</a>
+  <a href="#plan" data-b="plan"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" class="f"/></svg>목표</a>
+  <a href="#move" data-b="move"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg>동작</a>
+  <a href="#posture" data-b="posture"><svg viewBox="0 0 24 24"><circle cx="13" cy="5.5" r="2.3"/><path d="M12.5 9v6M9 11.5h7M12.5 15l-3 5M12.5 15l3 5"/></svg>자세</a>
+  <button type="button" data-b="more" id="more-btn" aria-haspopup="dialog"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.6" class="f"/><circle cx="12" cy="12" r="1.6" class="f"/><circle cx="18" cy="12" r="1.6" class="f"/></svg>더보기</button>
+</nav>
+<div class="sheet" id="more-sheet" hidden>
+  <div class="sheet-bg" data-close></div>
+  <div class="sheet-panel" role="dialog" aria-modal="true" aria-label="더보기">
+    <div class="grab"></div>
+    <a href="#angle" data-close><b>팔 올리는 각도</b><span>국민체조에서 팔을 어디까지 올릴지</span></a>
+    <a href="#why" data-close><b>운동 원리</b><span>근육이 자라는 과정과 계산 방식</span></a>
+    <a href="#refs" data-close><b>근거 논문</b><span>계산에 쓴 연구 30편</span></a>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="wrap">
 <header class="top">
   <div class="brand">
@@ -345,7 +412,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
   <div class="grid2">
     <div style="display:grid; gap:18px; min-width:0">
       <div class="panel">
-        <header><h2>내 정보</h2><span class="eyebrow">결과 보정용</span></header>
+        <header><h2>내 정보</h2></header>
         <div class="fields">
           <label class="f">운동 경력
             <select id="p-level">
@@ -394,7 +461,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
 
     <div style="display:grid; gap:18px; min-width:0">
       <div class="panel">
-        <header><h2>근육 자극 지도</h2><span class="eyebrow">주간 유효 세트</span></header>
+        <header><h2>근육 자극 지도</h2></header>
         <div class="maps">
           <figure><div class="bodymap"><img src="body-front.webp" alt="" width="400" height="800"><svg id="map-front" viewBox="0 0 400 800" role="img" aria-label="앞모습 근육 지도"></svg></div><figcaption>앞</figcaption></figure>
           <figure><div class="bodymap"><img src="body-back.webp" alt="" width="400" height="800"><svg id="map-back" viewBox="0 0 400 800" role="img" aria-label="뒷모습 근육 지도"></svg></div><figcaption>뒤</figcaption></figure>
@@ -428,7 +495,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
         <select id="g-min"><option value="20">20분</option><option value="30">30분</option><option value="45" selected>45분</option><option value="60">60분</option><option value="90">90분</option></select></label>
     </div>
     <div>
-      <div class="eyebrow" style="margin-bottom:6px">쓸 수 있는 도구</div>
+      <h3 style="margin-bottom:8px">쓸 수 있는 도구</h3>
       <div class="chips" id="equip"></div>
     </div>
     <div class="row"><button class="primary" id="gen-btn">플랜 만들기</button><span class="muted small">경력·나이·식사 정보는 ‘내 루틴 시뮬레이터’의 ‘내 정보’를 사용합니다.</span></div>
@@ -448,7 +515,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
       <ol class="phases" id="mv-phases"></ol>
       <div class="chips" id="mv-mus"></div>
       <p class="small" id="mv-cue"></p>
-      <button class="primary" id="mv-add">내 루틴에 추가</button>
+      <button class="primary" id="mv-add">루틴에 추가</button>
     </div>
     <div class="panel">
       <header><h2>운동 고르기</h2><span class="eyebrow" id="mv-count"></span></header>
@@ -478,7 +545,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
     </div>
 
     <div class="panel cva">
-      <header><h2>사진으로 내 목 각도 재기</h2><span class="eyebrow">CVA · 두개척추각</span></header>
+      <header><h2>사진으로 내 목 각도 재기</h2><span class="eyebrow">CVA</span></header>
       <p class="small">편하게 선 <b>옆모습 사진</b>을 올린 뒤 ① <b>귀 구슬(이주)</b> ② <b>목 뒤에서 가장 튀어나온 뼈(C7)</b> 순서로 누르세요. 사진은 기기 밖으로 전송되지 않습니다.</p>
       <label class="drop" id="cva-drop">사진 선택 또는 여기에 끌어다 놓기
         <input type="file" id="cva-file" accept="image/*" style="display:block; margin:8px auto 0"></label>
@@ -511,7 +578,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
       <ul class="notes" id="ang-notes"></ul>
     </div>
     <div class="panel chart">
-      <header><h2>각도별 근육 활성</h2><span class="eyebrow">상대값 모식도</span></header>
+      <header><h2>각도별 근육 활성</h2></header>
       <div id="ang-chart"></div>
       <div class="legend" id="ang-legend"></div>
       <p class="muted small">Wickham 2010(건강한 성인 어깨 외전 근전도)과 Ekstrom 2003의 경향을 단순화한 그림입니다. 근육마다 기준(최대 수의 수축 대비 %)이 달라 근육끼리의 높낮이보다 <b>각도에 따른 변화</b>를 보세요.</p>
@@ -540,7 +607,7 @@ a.watch{color:var(--accent); font-weight:700; text-decoration:none}
 <section class="view" id="v-why" hidden>
   <div class="vhead"><h2 class="vt">근육은<br>이렇게 자라요</h2><p class="lead">이 앱의 모든 계산은 아래 원리를 숫자로 바꾼 거예요. 원리를 알면 내 운동을 어떻게 바꿔야 할지 스스로 판단할 수 있어요.</p></div>
   <div class="panel">
-    <header><h2>근육이 커지는 과정</h2><span class="eyebrow">한 번의 운동 이후</span></header>
+    <header><h2>근육이 커지는 과정</h2></header>
     <ol class="flow" id="flow"></ol>
     <p class="muted small">운동 자체는 근육을 일시적으로 지치게 하고, 실제로 커지는 것은 <b>쉬는 동안</b>입니다. 그래서 같은 근육은 보통 48–72시간 간격으로 주 2회 정도 자극하는 것이 효율적입니다.</p>
   </div>
@@ -816,9 +883,9 @@ $("routine").addEventListener("click", ev => {
 $("add-btn").addEventListener("click", () => {
   const id = $("add-ex").value; const ex = S.routine.find(r => r.id === id);
   if (ex){ if (EXM[id].type === "cardio"){ ex.freq += 1; fixCardio(ex); } else ex.sets += 3; } else if (EXM[id].type === "cardio") S.routine.push(fixCardio({id, freq:DEF_FD[id][0], dur:DEF_FD[id][1], rir:"f2"})); else S.routine.push({id, sets: (EXM[id].type === "stretch" ? 5 : 3), rir: EXM[id].type === "mobility" ? "easy" : "f2"});
-  S.isExample = false; save(); renderSim();
+  S.isExample = false; save(); renderSim(); toast(`${EXM[id].n}, 루틴에 추가했어요`);
 });
-$("clear-btn").addEventListener("click", () => { S.routine = []; S.isExample = false; save(); renderSim(); });
+$("clear-btn").addEventListener("click", () => { S.routine = []; S.isExample = false; save(); renderSim(); toast("루틴을 비웠어요"); });
 for (const k of ["level","sex","age","kg","nutri","protein","weeks"]){
   const el = $("p-" + k);
   el.value = S.profile[k];
@@ -841,6 +908,7 @@ function renderDetail(st, by){
 }
 $("m-detail").addEventListener("click", ev => {
   const id = ev.target.dataset.addex; if (!id) return;
+  toast(`${EXM[id].n}, 루틴에 추가했어요`);
   const ex = S.routine.find(r => r.id === id);
   if (ex){ if (EXM[id].type === "cardio"){ ex.freq += 1; fixCardio(ex); } else ex.sets += 3; } else if (EXM[id].type === "cardio") S.routine.push(fixCardio({id, freq:DEF_FD[id][0], dur:DEF_FD[id][1], rir:"f2"})); else S.routine.push({id, sets: (EXM[id].type === "stretch" ? 5 : 3), rir:"f2"});
   S.isExample = false; save(); renderSim();
@@ -907,7 +975,7 @@ function renderResults(){
   const p = S.profile, lm = leanMass(st, p);
   const top = Object.entries(st).sort((a, b) => b[1] - a[1]);
   const opt = Object.values(st).filter(v => v >= 10).length;
-  $("res-sub").textContent = `${LEVEL[p.level].n} · ${p.sex === "M" ? "남성" : "여성"} · ${p.age}세 · ${p.weeks}주 기준`;
+  $("res-sub").textContent = `${p.age}세 ${p.sex === "M" ? "남성" : "여성"}, ${LEVEL[p.level].n} 기준으로 ${p.weeks}주를 계산했어요`;
   $("stats").innerHTML = `
     <div class="stat"><div class="v">${lm.kg < .05 ? "≈0" : fmt(lm.kg * .6) + "–" + fmt(lm.kg * 1.4)} kg</div><div class="k">${p.weeks}주 제지방(근육) 증가 추정</div></div>
     <div class="stat"><div class="v">${Math.round(lm.cov * 100)}%</div><div class="k">주요 근육 자극 커버리지</div></div>
@@ -935,15 +1003,36 @@ function renderHero(st, lm, top){
     : st[top[0][0]] < 3 ? `이대로 ${wk}주면 변화가 작아요.<br><em>세트를 조금 더</em> 늘려볼까요?`
     : `이대로 ${wk}주 하면<br><em>${topName}</em>${josa(topName, "이", "가")} 가장 많이 달라져요`;
   $("hero").innerHTML = `
-    <div class="hq">${S.isExample ? "예시 루틴 기준" : "내 루틴 기준"} · ${LEVEL[p.level].n} · ${p.kg}kg</div>
+    <div class="hq">${S.isExample ? "예시 루틴" : "지금 내 루틴"}으로 계산했어요</div>
     <div class="hh">${msg}</div>
     <div class="hm">
-      <div class="m up"><span class="k">근육</span><span class="v">${lm.kg < .05 ? "≈0" : "+" + rng(lm.kg * .6, lm.kg * 1.4)}<small>kg</small></span></div>
-      <div class="m down"><span class="k">체지방</span><span class="v">${o.fatKg < .1 ? "≈0" : "−" + rng(o.fatKg * .3, o.fatKg * .6)}<small>kg</small></span></div>
-      <div class="m up"><span class="k">심폐 체력</span><span class="v">${o.modMin < 10 ? "≈0" : "+" + rng(o.vo2 * .5, o.vo2 * 1.5, 0)}<small>%</small></span></div>
-      <div class="m up"><span class="k">근력</span><span class="v">${sets < 1 ? "≈0" : "+" + rng(o.strengthPct * .5, o.strengthPct * 1.5, 0)}<small>%</small></span></div>
+      ${metric("근육", "up", "+", lm.kg < .05 ? null : [lm.kg * .6, lm.kg * 1.4], 1, "kg")}
+      ${metric("체지방", "down", "−", o.fatKg < .1 ? null : [o.fatKg * .3, o.fatKg * .6], 1, "kg")}
+      ${metric("심폐 체력", "up", "+", o.modMin < 10 ? null : [o.vo2 * .5, o.vo2 * 1.5], 0, "%")}
+      ${metric("근력", "up", "+", sets < 1 ? null : [o.strengthPct * .5, o.strengthPct * 1.5], 0, "%")}
     </div>
-    <div class="hs"><span>근력 ${sets}세트/주</span><span>유산소 ${cmin}분/주</span><span>소모 ${Math.round(o.kcal).toLocaleString()}kcal/주</span><span>${wk}주</span></div>`;
+    <div class="hs"><span>근력 ${sets}세트/주</span><span>유산소 ${cmin}분/주</span><span>소모 ${Math.round(o.kcal).toLocaleString()}kcal/주</span></div>`;
+  countUp($("hero"));
+}
+// 요약 숫자: 값이 바뀌면 이전 값에서 새 값까지 세어 올라감 (이 화면의 유일한 자동 모션)
+function metric(k, cls, sign, r, d, unit){
+  return `<div class="m ${cls}"><span class="k">${k}</span><span class="v" data-key="${k}" ${r ? `data-lo="${r[0]}" data-hi="${r[1]}" data-d="${d}" data-sign="${sign}"` : ""}>${r ? sign + fmt(r[0], d) + "–" + fmt(r[1], d) : "≈0"}<small>${unit}</small></span></div>`;
+}
+const LAST = {};
+function countUp(root){
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  root.querySelectorAll(".v[data-lo]").forEach(el => {
+    const key = el.dataset.key, lo = +el.dataset.lo, hi = +el.dataset.hi, d = +el.dataset.d, sign = el.dataset.sign, unit = el.querySelector("small").outerHTML;
+    const from = LAST[key] || [0, 0]; LAST[key] = [lo, hi];
+    if (reduce || (Math.abs(from[0] - lo) < 1e-6 && Math.abs(from[1] - hi) < 1e-6)) return;
+    const t0 = performance.now(), D = 650;
+    const step = now => {
+      const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3);
+      el.innerHTML = sign + fmt(from[0] + (lo - from[0]) * e, d) + "–" + fmt(from[1] + (hi - from[1]) * e, d) + unit;
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  });
 }
 function renderSim(){ renderRoutine(); renderResults(); }
 
@@ -1048,7 +1137,7 @@ function renderPlan(){
     </tbody></table></div>
     <ul class="notes">${notes.map(n => `<li>${n}</li>`).join("")}</ul>
     <div class="row"><button class="primary" id="plan-apply">이 플랜을 시뮬레이터로 보내기</button><span class="muted small">현재 루틴을 이 플랜으로 바꾸고 근육 지도에서 확인합니다.</span></div>`;
-  $("plan-apply").onclick = () => { S.routine = P.routine.map(r => ({...r})); S.isExample = false; save(); location.hash = "#sim"; renderSim(); };
+  $("plan-apply").onclick = () => { S.routine = P.routine.map(r => ({...r})); S.isExample = false; save(); location.hash = "#sim"; renderSim(); toast("플랜을 내 루틴으로 바꿨어요"); };
 }
 $("gen-btn").addEventListener("click", generatePlan);
 
@@ -1286,11 +1375,11 @@ function showMove(id){
   S.mv = id; save();
   const e = EXM[id];
   $("mv-name").textContent = e.n;
-  $("mv-sub").textContent = `${e.c} · ${EQ[e.eq]}`;
+  $("mv-sub").textContent = `${e.c} 운동, ${EQ[e.eq]}`;
   $("mv-mus").innerHTML = Object.entries(e.w).filter(([, w]) => w >= .25).sort((a, b) => b[1] - a[1])
     .map(([m, w]) => `<span class="mchip ${w >= .9 ? "hot" : w >= .4 ? "warm" : ""}">${MUSCLES[m].s}</span>`).join("") + (e.stretch || []).map(m => `<span class="mchip warm">${MUSCLES[m].s} 스트레칭</span>`).join("");
   $("mv-cue").textContent = e.cue;
-  $("mv-add").textContent = S.routine.some(r => r.id === id) ? "루틴에 있어요 · 세트 더하기" : "내 루틴에 추가";
+  $("mv-add").textContent = S.routine.some(r => r.id === id) ? "루틴에 있어요 · 세트 더하기" : "루틴에 추가";
   const ph = PHOTO[id], usePhoto = ph && mvMode === "photo";
   $("mv-mode").hidden = !ph;
   $("mv-mode").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.mode === mvMode));
@@ -1319,7 +1408,7 @@ $("mv-add").addEventListener("click", () => {
   if (ex){ if (e.type === "cardio"){ ex.freq += 1; fixCardio(ex); } else ex.sets += 3; }
   else if (e.type === "cardio") S.routine.push(fixCardio({id, freq:DEF_FD[id][0], dur:DEF_FD[id][1], rir:"f2"}));
   else S.routine.push({id, sets: e.type === "stretch" ? 5 : 3, rir: e.type === "mobility" ? "easy" : "f2"});
-  S.isExample = false; save(); renderSim(); $("mv-add").textContent = "추가했어요 · 세트 더하기";
+  S.isExample = false; save(); renderSim(); $("mv-add").textContent = "루틴에 있어요 · 세트 더하기"; toast(`${e.n}, 루틴에 추가했어요`);
 });
 document.addEventListener("click", ev => { const id = ev.target.closest("[data-watch]")?.dataset.watch; if (!id) return; ev.preventDefault(); S.mv = id; location.hash = "#move"; });
 
@@ -1412,7 +1501,7 @@ function renderPrograms(){
 $("posture-cards").addEventListener("click", ev => {
   const i = ev.target.dataset.prog; if (i === undefined) return;
   for (const [id, n] of PROGRAMS[i].add){ const ex = S.routine.find(r => r.id === id); if (ex) ex.sets = Math.max(ex.sets, n); else S.routine.push({id, sets:n, rir:"f2"}); }
-  S.isExample = false; save(); renderSim(); $("prog-msg-" + i).textContent = "추가했습니다. ‘내 루틴 시뮬레이터’에서 확인하세요.";
+  S.isExample = false; save(); renderSim(); toast(`${PROGRAMS[i].n.split(" (")[0]} 운동을 루틴에 추가했어요`);
 });
 
 /* ---------------- arm angle ---------------- */
@@ -1519,6 +1608,13 @@ function renderRefs(){
   $("refs").innerHTML = REFS.map(r => `<div class="ref"><div class="cite">${esc(r.c)} <span class="ev">${r.e}</span></div><div class="use">이 툴에서: ${esc(r.u)}</div></div>`).join("");
 }
 
+/* ---------------- toast + more sheet ---------------- */
+let toastT = 0;
+function toast(msg){ const el = $("toast"); el.textContent = msg; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 1800); }
+$("more-btn").addEventListener("click", () => { $("more-sheet").hidden = false; requestAnimationFrame(() => $("more-sheet").classList.add("open")); });
+$("more-sheet").addEventListener("click", ev => { if (!ev.target.closest("[data-close]")) return; $("more-sheet").classList.remove("open"); setTimeout(() => $("more-sheet").hidden = true, 220); });
+document.addEventListener("keydown", ev => { if (ev.key === "Escape" && !$("more-sheet").hidden){ $("more-sheet").classList.remove("open"); $("more-sheet").hidden = true; } });
+
 /* ---------------- tabs ---------------- */
 const TABS = ["sim","plan","move","posture","angle","why","refs"];
 function route(){
@@ -1526,6 +1622,8 @@ function route(){
   for (const id of TABS) $("v-" + id).hidden = id !== t;
   if (t === "move"){ renderMoveList(); showMove(S.mv || "goblet"); } else MV.stop();
   document.querySelectorAll("nav.tabs a").forEach(a => { if (a.dataset.tab === t) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  const bt = ["angle","why","refs"].includes(t) ? "more" : t;
+  document.querySelectorAll(".bnav [data-b]").forEach(a => a.classList.toggle("on", a.dataset.b === bt));
 }
 window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
 
