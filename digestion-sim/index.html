@@ -327,6 +327,9 @@ button{font:inherit;color:inherit}
 .card-body{display:grid;gap:10px}
 .note{font-size:12.5px;color:var(--ink-2);max-width:90ch;line-height:1.65}
 .note strong{color:var(--ink)}
+.refs{display:grid;gap:6px;font-size:12.5px;color:var(--ink-2);max-width:90ch}
+.refs ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.refs a{color:var(--accent)}
 </style>
 
 <div class="wrap" lang="ko">
@@ -577,6 +580,18 @@ button{font:inherit;color:inherit}
   </div>
 
   <p class="note"><strong>이 시뮬레이션은 교육용 근사 모델입니다.</strong> 위 배출 반감기(지방·단백질이 많을수록 길어짐), 소장 구간별 체류(십이지장 약 12분, 공장 약 100분, 회장 약 120분), 대장 체류(약 28시간), 영양소별 소화율(탄수화물 약 96%, 단백질 약 92%, 지방 약 95%), 대장 발효율(수용성 섬유 약 90%, 불용성 섬유 약 30%)을 교과서 범위의 평균값으로 넣은 구획 모델이며, 실제 값은 사람·음식 조리 상태·장내세균·건강 상태에 따라 크게 달라집니다. 대장은 구간마다 정해 둔 수분 비율(상행 약 90%, 횡행 약 85%, 하행 약 78%, 직장 약 75%, 섬유가 많으면 조금 더 촉촉)까지 물을 되흡수하고, 직장에 오래 머물면 조금씩 더 마르도록 했습니다. 브리스톨 척도는 수분 비율로 대략 환산한 것입니다. 한 끼에서 나온 몫만 계산하므로 하루 실제 배변량(보통 100–200 g)보다 작게 나옵니다. 진단이나 식단 처방 용도로 쓰지 마세요. 배변 시각과 횟수는 직접 정할 수 있으며 기본값은 매일 오전 8시입니다.</p>
+  <section class="refs" aria-label="근거 자료">
+    <h3>근거 자료</h3>
+    <ol>
+      <li>Sender R, Fuchs S, Milo R. Revised estimates for the number of human and bacteria cells in the body. <i>PLoS Biol</i>. 2016. <a href="https://pubmed.ncbi.nlm.nih.gov/27541692/">PubMed</a> · 장내세균 약 38조 마리</li>
+      <li>Helander HF, Fändriks L. Surface area of the digestive tract – revisited. <i>Scand J Gastroenterol</i>. 2014. <a href="https://pubmed.ncbi.nlm.nih.gov/24694282/">PubMed</a> · 소화관 점막 표면적 약 32 m²</li>
+      <li>Rose C, Parker A, Jefferson B, Cartmell E. The characterization of feces and urine: a review of the literature to inform advanced treatment technology. <i>Crit Rev Environ Sci Technol</i>. 2015. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC4500995">PMC</a> · 변 수분 약 75%, 고형분의 25–54%가 세균, 하루 변 무게</li>
+      <li>Stephen AM, Cummings JH. The microbial contribution to human faecal mass. <i>J Med Microbiol</i>. 1980. <a href="https://pubmed.ncbi.nlm.nih.gov/7359576/">PubMed</a> · 변 고형분 중 세균 비율</li>
+      <li>Lewis SJ, Heaton KW. Stool form scale as a useful guide to intestinal transit time. <i>Scand J Gastroenterol</i>. 1997. · 브리스톨 대변 척도와 장 통과 시간</li>
+      <li>Degen LP, Phillips SF. Variability of gastrointestinal transit in healthy women and men. <i>Gut</i>. 1996. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1383315/">PMC</a> · 위 배출·대장 통과 시간의 개인차</li>
+      <li>보건복지부·한국영양학회. 2020 한국인 영양소 섭취기준. · 성인 식이섬유 충분섭취량(남 25 g, 여 20 g)</li>
+    </ol>
+  </section>
 </div>
 <div class="chart-tip" id="chartTip" role="tooltip" hidden></div>
 
