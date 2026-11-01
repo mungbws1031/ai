@@ -123,6 +123,15 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 9px 16px; border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: calc(100% - 32px); }
 .toast.show { opacity: 1; }
 .confirm { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+/* 한글 자동 조합 */
+.hangul { display: grid; gap: 6px; }
+.hangul .progress { margin-bottom: 4px; }
+.hangul .hint { margin: 0; }
+.hgsel { display: grid; gap: 4px; font-size: 13px; margin-top: 8px; }
+.hgsel select { padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.tile.auto span { color: var(--nib); }
+.autonote { width: min(100%, 560px); margin: 0; color: var(--nib); }
+
 /* 템플릿 스캔 */
 .scan { max-width: 1360px; margin: 18px auto 0; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; counter-reset: st; }
@@ -187,6 +196,7 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
       </div>
     </div>
     <div class="pad"><canvas id="pad" aria-label="여기에 글자를 쓰세요"></canvas></div>
+    <p class="hint autonote" id="autoNote" hidden>파란 글씨는 내가 그린 자모로 자동 조합한 모양이에요. 이 칸에 직접 쓰면 직접 쓴 글씨가 우선합니다.</p>
     <div class="tools">
       <label>펜 굵기 <input type="range" id="penWidth" min="16" max="160" value="62"><output id="penOut">62</output></label>
       <label>떨림 보정 <input type="range" id="smooth" min="0" max="4" value="2"><output id="smoothOut">2</output></label>
@@ -212,6 +222,20 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
       <div class="sizes" id="sizes"></div>
       <div id="preview" contenteditable="true" spellcheck="false" aria-label="미리보기 문장 (직접 고칠 수 있어요)">Hello World 안녕하세요</div>
       <p class="missing" id="missing"></p>
+    </section>
+    <section class="panel hangul" aria-labelledby="h-hg">
+      <h2 id="h-hg">한글 자동 조합</h2>
+      <div class="progress"><i id="hgBar"></i></div>
+      <p class="hint" id="hgStatus" style="color:var(--ink)"></p>
+      <p class="hint" id="hgLead">기본 자모 24자만 그리면 나머지 한글 음절을 자동으로 만들어요. 아직 안 그린 자모:</p>
+      <div class="chips" id="hgMissing" style="margin-top:8px"></div>
+      <label class="hgsel" for="hangulAuto">만들 범위
+        <select id="hangulAuto">
+          <option value="all">전체 11,172자</option>
+          <option value="ks">자주 쓰는 2,350자 (KS X 1001)</option>
+          <option value="off">끄기 (직접 쓴 글자만)</option>
+        </select>
+      </label>
     </section>
     <section class="panel settings">
       <h2>폰트 설정</h2>
@@ -272,6 +296,8 @@ const PRESETS = [
   ["숫자", "0123456789"],
   ["문장부호", ".,!?'\"-:;()&@#%/"],
   ["한글 가~하", "가나다라마바사아자차카타파하"],
+  ["한글 기본 자모 24", "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣ"],
+  ["쌍자음·복모음", "ㄲㄸㅃㅆㅉㅐㅒㅔㅖㅘㅙㅚㅝㅞㅟㅢ"],
   ["자주 쓰는 한글 50", "이의가는을에하고를다지한기도서사리로자대수일어시아나그만해정게요것들적사주보면오우전부있없했습니니다감사합안녕세"],
 ];
 
@@ -281,7 +307,7 @@ const state = {
   glyphs: {},          // char -> strokes (직접 쓴 획)
   outlines: {},        // char -> contours [[x, y, on], ...] (스캔에서 추출한 외곽선)
   template: null,      // 마지막으로 인쇄한 템플릿의 글자 배열
-  spacing: 60, spaceWidth: 300, widthMode: "auto",
+  spacing: 60, spaceWidth: 300, widthMode: "auto", hangulAuto: "all",
   pen: 62, smooth: 2, ghost: true,
 };
 let cur = 0;
@@ -297,7 +323,7 @@ function load() {
     if (!raw) return;
     const s = JSON.parse(raw);
     if (s && Array.isArray(s.chars) && s.glyphs) Object.assign(state, s);
-    state.outlines = state.outlines || {};
+    state.outlines = state.outlines || {}; state.hangulAuto = state.hangulAuto || "all";
   } catch (e) { /* 무시 */ }
 }
 
@@ -429,6 +455,127 @@ function psName(name) {
   return (s || "HandFont").slice(0, 60) + "-Regular";
 }
 
+/* ============================================================
+ * 한글 자동 조합
+ * 기본 자모 24자(자음 14 + 모음 10)만 그리면 나머지는 조합으로 만든다.
+ *  - 쌍자음·겹받침: 자음 두 개를 나란히 (ㄲ = ㄱ+ㄱ, ㄳ = ㄱ+ㅅ …)
+ *  - ㅐㅒㅔㅖ = ㅏㅑㅓㅕ + ㅣ,  ㅘㅙㅚㅝㅞㅟㅢ = 가로 모음 + 세로 모음
+ * 직접 그린 자모(ㄲ, ㅐ 등)가 있으면 그쪽을 우선 쓴다.
+ * 음절은 (모음 모양 × 받침 유무) 6가지 배치에 따라 칸을 나눠 자모를 끼워 넣는다.
+ * 폰트에는 "자모×자리" 부품 글리프를 한 번씩만 넣고, 음절 11,172자는 부품을 참조하는
+ * 복합 글리프로 만들어 파일 크기를 작게 유지한다.
+ * ============================================================ */
+const HG = {
+  L: "ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ",
+  V: "ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ",
+  T: ["", "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㄽ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"],
+  BASIC: "ㄱㄴㄷㄹㅁㅂㅅㅇㅈㅊㅋㅌㅍㅎㅏㅑㅓㅕㅗㅛㅜㅠㅡㅣ",
+  VCLASS: { V: "ㅏㅐㅑㅒㅓㅔㅕㅖㅣ", H: "ㅗㅛㅜㅠㅡ", C: "ㅘㅙㅚㅝㅞㅟㅢ" },
+  SPLIT: { "ㅘ": "ㅗㅏ", "ㅙ": "ㅗㅐ", "ㅚ": "ㅗㅣ", "ㅝ": "ㅜㅓ", "ㅞ": "ㅜㅔ", "ㅟ": "ㅜㅣ", "ㅢ": "ㅡㅣ" },
+  // 그리지 않은 자모를 다른 자모로 만드는 법: [글자, [u0, v0, u1, v1]] (상자 안 비율, v는 위에서부터)
+  DERIV: {},
+};
+(function () {
+  const pair = [[0, 0, 0.52, 1], [0.48, 0, 1, 1]];
+  const two = { "ㄲ": "ㄱㄱ", "ㄸ": "ㄷㄷ", "ㅃ": "ㅂㅂ", "ㅆ": "ㅅㅅ", "ㅉ": "ㅈㅈ", "ㄳ": "ㄱㅅ", "ㄵ": "ㄴㅈ", "ㄶ": "ㄴㅎ", "ㄺ": "ㄹㄱ", "ㄻ": "ㄹㅁ", "ㄼ": "ㄹㅂ", "ㄽ": "ㄹㅅ", "ㄾ": "ㄹㅌ", "ㄿ": "ㄹㅍ", "ㅀ": "ㄹㅎ", "ㅄ": "ㅂㅅ" };
+  for (const k in two) HG.DERIV[k] = [[two[k][0], pair[0]], [two[k][1], pair[1]]];
+  const bar = { "ㅐ": "ㅏ", "ㅒ": "ㅑ", "ㅔ": "ㅓ", "ㅖ": "ㅕ" };
+  for (const k in bar) HG.DERIV[k] = [[bar[k], [0, 0, 0.66, 1]], ["ㅣ", [0.62, 0, 1, 1]]];
+})();
+// 배치별 자리 상자 [u0, v0, u1, v1]. 몸통 영역(아래) 기준 비율.
+const HG_BODY = { x0: 70, x1: 930, yTop: 740, yBot: -100 };
+const HG_LAYOUT = {
+  V0: { I: [0.02, 0.10, 0.55, 0.90], Vv: [0.57, 0.00, 0.98, 1.00] },
+  VF: { I: [0.02, 0.04, 0.54, 0.56], Vv: [0.57, 0.00, 0.96, 0.64], F: [0.12, 0.67, 0.86, 1.00] },
+  H0: { I: [0.14, 0.02, 0.86, 0.52], Vh: [0.00, 0.56, 1.00, 0.94] },
+  HF: { I: [0.18, 0.00, 0.82, 0.36], Vh: [0.00, 0.37, 1.00, 0.61], F: [0.16, 0.66, 0.84, 1.00] },
+  C0: { I: [0.02, 0.02, 0.58, 0.48], Vh: [0.00, 0.52, 0.70, 0.92], Vv: [0.63, 0.00, 0.98, 1.00] },
+  CF: { I: [0.02, 0.00, 0.56, 0.32], Vh: [0.00, 0.34, 0.66, 0.60], Vv: [0.63, 0.00, 0.96, 0.66], F: [0.12, 0.69, 0.82, 1.00] },
+};
+function hgBox(r) {
+  const W = HG_BODY.x1 - HG_BODY.x0, H = HG_BODY.yTop - HG_BODY.yBot;
+  return { x0: HG_BODY.x0 + r[0] * W, x1: HG_BODY.x0 + r[2] * W, yTop: HG_BODY.yTop - r[1] * H, yBot: HG_BODY.yTop - r[3] * H };
+}
+function subBox(b, r) {
+  const W = b.x1 - b.x0, H = b.yTop - b.yBot;
+  return { x0: b.x0 + r[0] * W, x1: b.x0 + r[2] * W, yTop: b.yTop - r[1] * H, yBot: b.yTop - r[3] * H };
+}
+// 자모 하나를 상자에 맞출 조각 목록으로 풀기. 그릴 수 없으면 null.
+function hgResolve(j, box, depth = 0) {
+  if (hasInk(j)) return [{ ch: j, box }];
+  const d = HG.DERIV[j];
+  if (!d || depth > 2) return null;
+  const out = [];
+  for (const [c, r] of d) { const p = hgResolve(c, subBox(box, r), depth + 1); if (!p) return null; out.push(...p); }
+  return out;
+}
+// 그린 자모를 상자에 맞춰 옮김. 획은 중심선 기준으로 늘리고 굵기는 거의 유지한다.
+const placeCache = new Map();
+function hgPlace(ch, box) {
+  const key = ch + "|" + [box.x0, box.x1, box.yTop, box.yBot].map(Math.round).join(",");
+  if (placeCache.has(key)) return placeCache.get(key);
+  const strokes = state.glyphs[ch] || [], outl = (state.outlines || {})[ch] || [];
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, maxW = 0;
+  const grow = (x, y) => { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); };
+  for (const s of strokes) for (const [x, y, w] of s) { grow(x, y); maxW = Math.max(maxW, w); }
+  for (const c of outl) for (const [x, y] of c) grow(x, y);
+  const pad = maxW * 0.4;
+  const bx0 = box.x0 + pad, bx1 = box.x1 - pad, byT = box.yTop - pad, byB = box.yBot + pad;
+  const bw = Math.max(1, x1 - x0), bh = Math.max(1, y1 - y0);
+  let sx = (bx1 - bx0) / bw, sy = (byT - byB) / bh;
+  const R = 1.35; // 가로세로 비율이 너무 찌그러지지 않게
+  if (sx > sy * R) sx = sy * R; if (sy > sx * R) sy = sx * R;
+  const cx = (bx0 + bx1) / 2, cy = (byT + byB) / 2, ox = (x0 + x1) / 2, oy = (y0 + y1) / 2;
+  const tx = x => cx + (x - ox) * sx, ty = y => cy + (y - oy) * sy;
+  const s = Math.min(1, Math.sqrt(sx * sy)), wk = 0.62 + 0.38 * s;
+  const res = {
+    strokes: strokes.map(st => st.map(([x, y, w]) => [Math.round(tx(x)), Math.round(ty(y)), Math.max(4, Math.round(w * wk))])),
+    outlines: outl.map(c => c.map(([x, y, on]) => [Math.round(tx(x)), Math.round(ty(y)), on])),
+  };
+  placeCache.set(key, res);
+  return res;
+}
+// 음절 -> 부품 목록 [{key, parts:[{ch, box}]}]. 만들 수 없으면 null.
+function hgPlan(cp) {
+  const s = cp - 0xAC00; if (s < 0 || s > 11171) return null;
+  const L = HG.L[Math.floor(s / 588)], V = HG.V[Math.floor((s % 588) / 28)], T = HG.T[s % 28];
+  const cls = HG.VCLASS.V.includes(V) ? "V" : HG.VCLASS.H.includes(V) ? "H" : "C";
+  const lay = cls + (T ? "F" : "0"), slots = HG_LAYOUT[lay], comps = [];
+  const add = (role, j) => {
+    const parts = hgResolve(j, hgBox(slots[role])); if (!parts) return false;
+    comps.push({ key: `${role}:${j}:${lay}`, parts }); return true;
+  };
+  if (!add("I", L)) return null;
+  if (cls === "C") { const [h, v] = HG.SPLIT[V]; if (!add("Vh", h) || !add("Vv", v)) return null; }
+  else if (!add(cls === "V" ? "Vv" : "Vh", V)) return null;
+  if (T && !add("F", T)) return null;
+  return comps;
+}
+function hgCompose(ch) {
+  const plan = hgPlan(ch.codePointAt(0)); if (!plan) return null;
+  const out = { strokes: [], outlines: [] };
+  for (const c of plan) for (const p of c.parts) { const r = hgPlace(p.ch, p.box); out.strokes.push(...r.strokes); out.outlines.push(...r.outlines); }
+  return out;
+}
+function canCompose(ch) {
+  if (!state.hangulAuto || state.hangulAuto === "off") return false;
+  const cp = ch.codePointAt(0); return cp >= 0xAC00 && cp <= 0xD7A3 && !!hgPlan(cp);
+}
+let KS2350 = null;
+function ks2350() {
+  if (KS2350) return KS2350;
+  try {
+    const b = []; for (let hi = 0xB0; hi <= 0xC8; hi++) for (let lo = 0xA1; lo <= 0xFE; lo++) b.push(hi, lo);
+    KS2350 = new Set([...new TextDecoder("euc-kr").decode(new Uint8Array(b))].map(c => c.codePointAt(0)));
+  } catch (e) { KS2350 = null; }
+  return KS2350;
+}
+function hgTargets() {
+  if (state.hangulAuto === "all") return Array.from({ length: 11172 }, (_, i) => 0xAC00 + i);
+  if (state.hangulAuto === "ks") { const s = ks2350(); return s ? [...s].sort((a, b) => a - b) : Array.from({ length: 11172 }, (_, i) => 0xAC00 + i); }
+  return [];
+}
+
 function buildFont() {
   // 1) 글리프 모으기 (BMP만, 코드포인트 순서 = glyph id 순서)
   const items = [];
@@ -464,10 +611,48 @@ function buildFont() {
     }
     glyphs.push({ cp: it.cp, advance: Math.max(50, advance), contours });
   }
+  // 한글 자동 조합: 부품 글리프 + 복합 글리프
+  placeCache.clear();
+  const drawn = new Set(items.map(i => i.cp)), compIndex = new Map(), compGlyphs = [];
+  let composedCount = 0;
+  for (const cp of hgTargets()) {
+    if (drawn.has(cp)) continue;
+    const plan = hgPlan(cp); if (!plan) continue;
+    const refs = [];
+    for (const c of plan) {
+      if (!compIndex.has(c.key)) {
+        let contours = [];
+        for (const p of c.parts) {
+          const r = hgPlace(p.ch, p.box);
+          for (const st of r.strokes) contours = contours.concat(strokeContours(st));
+          for (const o of r.outlines) contours.push(o.map(([x, y, on]) => ({ x, y, on: !!on })));
+        }
+        compIndex.set(c.key, compGlyphs.length); compGlyphs.push({ advance: UPM, contours });
+      }
+      refs.push(compIndex.get(c.key));
+    }
+    glyphs.push({ cp, refs, advance: 0, contours: [] }); composedCount++;
+  }
   // glyph id 1(space)이 32보다 큰 cp 앞에 오도록 정렬 유지: space(32)는 가장 작은 인쇄 문자 이하
   const coded = glyphs.slice(1).sort((a, b) => a.cp - b.cp);
-  const all = [glyphs[0], ...coded];
-  const enc = all.map(g => encodeGlyph(g.contours));
+  const compBase = 1 + coded.length;
+  const all = [glyphs[0], ...coded, ...compGlyphs];
+  const encComp = compGlyphs.map(g => encodeGlyph(g.contours));
+  const enc = all.map((g, i) => {
+    if (i >= compBase) return encComp[i - compBase];
+    if (!g.refs) return encodeGlyph(g.contours);
+    // 복합 글리프: 부품 경계상자를 합쳐 폭을 정하고 x 이동량으로 여백을 맞춘다
+    let xMin = Infinity, yMin = Infinity, xMax = -Infinity, yMax = -Infinity, n = 0, nc = 0;
+    for (const r of g.refs) { const e = encComp[r]; if (!e.n) continue; xMin = Math.min(xMin, e.xMin); xMax = Math.max(xMax, e.xMax); yMin = Math.min(yMin, e.yMin); yMax = Math.max(yMax, e.yMax); n += e.n; nc += compGlyphs[r].contours.length; }
+    if (!isFinite(xMin)) { xMin = xMax = yMin = yMax = 0; }
+    let dx;
+    if (state.widthMode === "prop") { dx = Math.round(state.spacing - xMin); g.advance = Math.max(50, Math.round(xMax - xMin + 2 * state.spacing)); }
+    else { dx = Math.round(state.spacing - 60); g.advance = UPM + dx * 2; }
+    const w = new W();
+    w.i16(-1).i16(xMin + dx).i16(yMin).i16(xMax + dx).i16(yMax);
+    g.refs.forEach((r, k) => { w.u16(0x0001 | 0x0002 | (k < g.refs.length - 1 ? 0x0020 : 0)).u16(compBase + r).i16(dx).i16(0); });
+    return { data: w.b, xMin: xMin + dx, yMin, xMax: xMax + dx, yMax, n: 0, cn: n, cc: nc, comps: g.refs.length };
+  });
   const numGlyphs = all.length;
 
   // 2) glyf + loca
@@ -476,15 +661,17 @@ function buildFont() {
   loca.u32(glyf.length);
 
   // 전체 지표
+  let maxCPts = 0, maxCCts = 0, maxComp = 0;
   let gxMin = 0, gyMin = DESC, gxMax = 0, gyMax = ASC, maxPts = 0, maxCts = 0, advMax = 0, minLsb = 32767, minRsb = 32767, maxExt = 0, sumAdv = 0;
   all.forEach((g, i) => {
     const e = enc[i];
     advMax = Math.max(advMax, g.advance); sumAdv += g.advance;
-    if (e.n) {
+    if (e.n || e.comps) {
       gxMin = Math.min(gxMin, e.xMin); gyMin = Math.min(gyMin, e.yMin); gxMax = Math.max(gxMax, e.xMax); gyMax = Math.max(gyMax, e.yMax);
       minLsb = Math.min(minLsb, e.xMin); minRsb = Math.min(minRsb, g.advance - e.xMax); maxExt = Math.max(maxExt, e.xMax);
     }
     maxPts = Math.max(maxPts, e.n); maxCts = Math.max(maxCts, g.contours.length);
+    if (e.comps) { maxCPts = Math.max(maxCPts, e.cn); maxCCts = Math.max(maxCCts, e.cc); maxComp = Math.max(maxComp, e.comps); }
   });
   if (minLsb === 32767) { minLsb = 0; minRsb = 0; }
 
@@ -501,11 +688,11 @@ function buildFont() {
       .i16(1).i16(0).i16(0).i16(0).i16(0).i16(0).i16(0).i16(0).u16(numGlyphs);
 
   const hmtx = new W();
-  all.forEach((g, i) => { hmtx.u16(g.advance).i16(enc[i].n ? enc[i].xMin : 0); });
+  all.forEach((g, i) => { hmtx.u16(g.advance).i16(enc[i].n || enc[i].comps ? enc[i].xMin : 0); });
 
   const maxp = new W();
-  maxp.u32(0x00010000).u16(numGlyphs).u16(maxPts).u16(maxCts).u16(0).u16(0).u16(2)
-      .u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(0);
+  maxp.u32(0x00010000).u16(numGlyphs).u16(maxPts).u16(maxCts).u16(maxCPts).u16(maxCCts).u16(2)
+      .u16(0).u16(0).u16(0).u16(0).u16(0).u16(0).u16(maxComp).u16(maxComp ? 1 : 0);
 
   // 4) cmap (format 4)
   const map = all.map((g, gid) => ({ cp: g.cp, gid })).filter(m => m.cp !== undefined);
@@ -566,13 +753,13 @@ function buildFont() {
     const len = t.length; const bytes = t.b.slice(); while (bytes.length % 4) bytes.push(0);
     dir.tag(tag).u32(checksum(bytes)).u32(offset).u32(len);
     if (tag === "head") headOffset = offset;
-    body.push(...bytes); offset += bytes.length;
+    for (let q = 0; q < bytes.length; q++) body.push(bytes[q]); offset += bytes.length;
   }
   const out = new Uint8Array(dir.length + body.length);
   out.set(dir.b, 0); out.set(body, dir.length);
   const adj = (0xB1B0AFBA - checksum(out)) >>> 0;
   new DataView(out.buffer).setUint32(headOffset + 8, adj);
-  return { buffer: out.buffer, glyphCount: items.length };
+  return { buffer: out.buffer, glyphCount: items.length, composedCount };
 }
 
 /* ---------- 그리기 ---------- */
@@ -643,6 +830,13 @@ function renderPad() {
     pctx.fillText(ch, S / 2, ASC * k); pctx.restore();
   }
   const ink = css("--ink");
+  const auto = ch && !hasInk(ch) && !live && canCompose(ch) ? hgCompose(ch) : null;
+  $("autoNote").hidden = !auto;
+  if (auto) {
+    pctx.save(); pctx.globalAlpha = .45;
+    drawOutline(pctx, auto.outlines, k, css("--nib")); for (const s of auto.strokes) drawStroke(pctx, s, k, css("--nib"));
+    pctx.restore();
+  }
   drawOutline(pctx, state.outlines[ch], k, ink);
   for (const s of (state.glyphs[ch] || [])) drawStroke(pctx, s, k, ink);
   if (live) drawStroke(pctx, live, k, css("--nib"));
@@ -653,7 +847,12 @@ function renderTile(i) {
   x.clearRect(0, 0, S, S);
   const strokes = state.glyphs[ch] || [];
   tile.classList.toggle("done", hasInk(ch));
-  if (!hasInk(ch)) {
+  const auto = !hasInk(ch) && canCompose(ch) ? hgCompose(ch) : null;
+  tile.classList.toggle("auto", !!auto);
+  if (auto) {
+    x.globalAlpha = .6; drawOutline(x, auto.outlines, S / UPM, css("--nib"));
+    for (const s of auto.strokes) drawStroke(x, s, S / UPM, css("--nib")); x.globalAlpha = 1;
+  } else if (!hasInk(ch)) {
     x.fillStyle = css("--muted"); x.globalAlpha = .55; x.textAlign = "center"; x.textBaseline = "middle";
     x.font = `${Math.round(S * 0.42)}px ${css("--f-body")}`; x.fillText(ch, S / 2, S * 0.56); x.globalAlpha = 1;
   }
@@ -739,14 +938,37 @@ function clearGlyph() {
   const ch = state.chars[cur]; if (!hasInk(ch)) return;
   pushHistory(ch); state.glyphs[ch] = []; state.outlines[ch] = []; changed(); toast(`'${ch}'를 지웠어요. 되돌리기로 복구할 수 있어요.`);
 }
-function changed() { renderPad(); renderTile(cur); updateCount(); save(); scheduleBuild(); }
+function isJamo(ch) { const c = ch.codePointAt(0); return c >= 0x3131 && c <= 0x3163; }
+function changed() {
+  placeCache.clear(); renderPad();
+  if (isJamo(state.chars[cur])) state.chars.forEach((_, i) => renderTile(i)); else renderTile(cur);
+  updateCount(); updateHangulInfo(); save(); scheduleBuild();
+}
+function updateHangulInfo() {
+  const box = $("hgMissing"); box.textContent = "";
+  const missing = [...HG.BASIC].filter(j => !hasInk(j));
+  const done = 24 - missing.length;
+  $("hgBar").style.width = (done / 24 * 100) + "%";
+  let possible = 0;
+  if (state.hangulAuto !== "off") { placeCache.clear(); for (const cp of hgTargets()) if (hgPlan(cp)) possible++; }
+  $("hgStatus").textContent = state.hangulAuto === "off" ? `기본 자모 ${done} / 24 · 자동 조합 꺼짐`
+    : `기본 자모 ${done} / 24 · 지금 조합되는 글자 ${possible.toLocaleString()}자`;
+  for (const j of missing) {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = j;
+    b.title = `${j} 쓰러 가기`;
+    b.addEventListener("click", () => { if (!state.chars.includes(j)) { state.chars.push(j); buildGrid(); save(); } select(state.chars.indexOf(j)); $("pad").scrollIntoView({ block: "center", behavior: "smooth" }); });
+    box.appendChild(b);
+  }
+  $("hgLead").textContent = missing.length ? "기본 자모 24자만 그리면 나머지 한글 음절을 자동으로 만들어요. 아직 안 그린 자모:"
+    : "기본 자모를 모두 그렸어요. 쌍자음(ㄲ)이나 ㅐ·ㅘ 같은 모음도 직접 그리면 조합할 때 그 모양을 씁니다. 마음에 안 드는 음절은 그 글자를 직접 쓰면 바뀝니다.";
+}
 
 /* ---------- 미리보기 폰트 ---------- */
 let buildTimer = 0, faceSeq = 0, currentFace = null;
 function scheduleBuild() { clearTimeout(buildTimer); buildTimer = setTimeout(rebuildPreview, 350); }
 async function rebuildPreview() {
-  const { buffer, glyphCount } = buildFont();
-  $("buildInfo").textContent = `${glyphCount}자 · ${(buffer.byteLength / 1024).toFixed(1)} KB`;
+  const { buffer, glyphCount, composedCount } = buildFont();
+  $("buildInfo").textContent = `${glyphCount}자${composedCount ? ` + 조합 ${composedCount.toLocaleString()}자` : ""} · ${(buffer.byteLength / 1024).toFixed(1)} KB`;
   try {
     const fam = "HFPreview" + (++faceSeq);
     const face = new FontFace(fam, buffer);
@@ -763,7 +985,7 @@ async function rebuildPreview() {
 }
 function updateMissing() {
   const text = $("preview").textContent || "";
-  const miss = [...new Set([...text].filter(c => !/\s/.test(c) && !hasInk(c)))];
+  const miss = [...new Set([...text].filter(c => !/\s/.test(c) && !hasInk(c) && !canCompose(c)))];
   const el = $("missing"); el.textContent = "";
   if (!miss.length) { el.textContent = "문장의 모든 글자를 내 손글씨로 그렸어요."; return; }
   el.append("아직 안 쓴 글자(기본 글꼴로 보임): ");
@@ -825,6 +1047,8 @@ function init() {
   bindRange("smooth", "smoothOut", "smooth");
   bindRange("spacing", "spacingOut", "spacing", scheduleBuild);
   bindRange("spaceWidth", "spaceOut", "spaceWidth", scheduleBuild);
+  $("hangulAuto").value = state.hangulAuto || "all";
+  $("hangulAuto").addEventListener("change", e => { state.hangulAuto = e.target.value; save(); state.chars.forEach((_, i) => renderTile(i)); renderPad(); updateHangulInfo(); updateMissing(); scheduleBuild(); });
   $("widthMode").value = state.widthMode;
   $("widthMode").addEventListener("change", e => { state.widthMode = e.target.value; save(); scheduleBuild(); });
   $("ghostToggle").checked = state.ghost;
@@ -859,8 +1083,8 @@ function init() {
   });
 
   $("downloadBtn").addEventListener("click", () => {
-    const { buffer, glyphCount } = buildFont();
-    if (!glyphCount) { toast("먼저 글자를 하나 이상 써 주세요."); return; }
+    const { buffer, glyphCount, composedCount } = buildFont();
+    if (!glyphCount && !composedCount) { toast("먼저 글자를 하나 이상 써 주세요."); return; }
     offerFile(psName(state.name) + ".ttf", buffer, "font/ttf");
   });
   $("exportBtn").addEventListener("click", () => offerFile(psName(state.name) + ".json", JSON.stringify(state), "application/json"));
@@ -870,7 +1094,7 @@ function init() {
     try {
       const s = JSON.parse(await f.text());
       if (!s || !Array.isArray(s.chars) || typeof s.glyphs !== "object") throw new Error("형식");
-      Object.assign(state, s); state.outlines = state.outlines || {}; save(); refreshAll(); toast("작업을 불러왔어요.");
+      Object.assign(state, s); state.outlines = state.outlines || {}; state.hangulAuto = state.hangulAuto || "all"; save(); refreshAll(); toast("작업을 불러왔어요.");
     } catch (err) { toast("불러오지 못했어요. 이 도구에서 저장한 .json 파일인지 확인해 주세요."); }
     e.target.value = "";
   });
@@ -897,7 +1121,7 @@ function init() {
 }
 function refreshAll() {
   $("fontName").value = state.name;
-  buildGrid(); select(Math.min(cur, state.chars.length - 1)); rebuildPreview();
+  buildGrid(); select(Math.min(cur, state.chars.length - 1)); updateHangulInfo(); rebuildPreview();
 }
 /* ============================================================
  * 템플릿 스캔
