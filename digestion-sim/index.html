@@ -100,6 +100,8 @@ button{font:inherit;color:inherit}
 .dc-bar span{height:100%}
 .editing{font-size:13px;color:var(--ink-2);background:var(--paper);border-radius:8px;padding:8px 12px}
 .editing b{color:var(--accent)}
+.editing.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--sheet))}
+.editing.warn b{color:inherit}
 .meal-time{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
 .habits{border-top:1px solid var(--rule);padding-top:10px}
 .habits summary{cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;list-style:none}
@@ -614,9 +616,12 @@ const DAY = { mode:'single', active:1, meals:[
   {label:'저녁', time:'19:00', on:true, id:'brown', name:'현미밥 + 된장찌개 + 나물', carb:75, prot:22, fat:10, fib:11, water:420, sol:0.3}]};
 try { const v=JSON.parse(localStorage.getItem('digestion-day')||'null');
   if (v && ['single','day'].includes(v.mode) && Array.isArray(v.meals) && v.meals.length>=3 && v.meals.length<=6 && v.meals.every(x=>/^\d\d:\d\d$/.test(x.time) && ['carb','prot','fat','fib','water'].every(k=>Number.isFinite(x[k]))))
-    { DAY.mode=v.mode; DAY.meals=v.meals.map((x,k)=>k<3?{...DAY.meals[k],...x,label:DAY.meals[k].label,snack:false}:{...x,snack:true,on:true}); DAY.active=(v.active>=0&&v.active<DAY.meals.length)?v.active:1; relabelSnacks(); } } catch(e){}
-function relabelSnacks(){ DAY.meals.filter(x=>x.snack).sort((a,b)=>toMin(a.time)-toMin(b.time)).forEach((x,k)=>{ x.label='간식 '+(k+1); }); }
-const dayList=()=>DAY.meals.filter(x=>x.on).slice().sort((a,b)=>toMin(a.time)-toMin(b.time));
+    { DAY.mode=v.mode; DAY.meals=v.meals.map((x,k)=>k<3?{...DAY.meals[k],...x,label:DAY.meals[k].label,snack:false}:{sol:0.3,name:'간식',id:'custom',...x,snack:true,on:true});
+      for (const x of DAY.meals) if (!(Number.isFinite(x.sol) && x.sol>=0 && x.sol<=1)) x.sol=0.3; DAY.active=(v.active>=0&&v.active<DAY.meals.length)?v.active:1; relabelSnacks(); } } catch(e){}
+// minutes into the eating day, which starts at 04:00 so a snack after midnight follows dinner
+const DAY_START=240, dayMin=t=>{ const m=toMin(t); return m<DAY_START?m+1440:m; };
+function relabelSnacks(){ DAY.meals.filter(x=>x.snack).sort((a,b)=>dayMin(a.time)-dayMin(b.time)).forEach((x,k)=>{ x.label='간식 '+(k+1); }); }
+const dayList=()=>DAY.meals.filter(x=>x.on).slice().sort((a,b)=>dayMin(a.time)-dayMin(b.time));
 const mealMin=()=> DAY.mode==='day' ? toMin(dayList()[0].time) : toMin(MEALT.time);
 // bowel movements: viewer's habit, measured from the meal
 const BM = {time:'08:00', every:1440};
@@ -1065,9 +1070,13 @@ for (const b of mealChips.children) b.addEventListener('click',()=>{ MEALT.time=
 const dayCardsEl=document.getElementById('dayCards'), modeSeg=document.getElementById('modeSeg');
 function saveDay(){ try { localStorage.setItem('digestion-day',JSON.stringify(DAY)); } catch(e){} }
 function renderDayCards(){
+  // remember what had focus inside the cards so it can be restored on the rebuilt card
+  const fa=document.activeElement, fcard=fa&&dayCardsEl.contains(fa)?fa.closest('.dc'):null;
+  const fk=fcard?fcard.dataset.k:null, fpart=!fcard?null:fa.matches('input[type=checkbox]')?'cb':fa.matches('input[type=time]')?'tm':fa.classList.contains('dc-del')?'del':'card';
+  const focusAdd=fa&&fa.classList&&fa.classList.contains('dc-add');
   dayCardsEl.innerHTML='';
-  DAY.meals.map((x,k)=>[x,k]).sort((a,b)=>toMin(a[0].time)-toMin(b[0].time)).forEach(([x,k])=>{
-    const d=document.createElement('div'); d.className='dc'+(k===DAY.active?' on':'')+(x.on?'':' off'); d.tabIndex=0; d.setAttribute('role','button');
+  DAY.meals.map((x,k)=>[x,k]).sort((a,b)=>dayMin(a[0].time)-dayMin(b[0].time)).forEach(([x,k])=>{
+    const d=document.createElement('div'); d.className='dc'+(k===DAY.active?' on':'')+(x.on?'':' off'); d.tabIndex=0; d.setAttribute('role','button'); d.dataset.k=k;
     d.setAttribute('aria-label',`${x.label} 고치기`);
     const kc=kcalMacro(x.carb,x.prot,x.fat,x.fib), tot=x.carb+x.prot+x.fat+x.fib||1;
     if (x.snack) d.classList.add('snack');
@@ -1078,7 +1087,7 @@ function renderDayCards(){
       <div class="dc-kcal">약 ${Math.round(kc)} kcal · 섬유 ${x.fib} g · 물 ${x.water} mL</div>`;
     const cb=d.querySelector('input[type=checkbox]'), tm=d.querySelector('input[type=time]'), del=d.querySelector('.dc-del');
     if (cb){ cb.addEventListener('click',e=>e.stopPropagation());
-      cb.addEventListener('change',()=>{ if (!cb.checked && DAY.meals.filter(m=>m.on).length===1){ cb.checked=true; return; } x.on=cb.checked; saveDay(); dayChanged(); }); }
+      cb.addEventListener('change',()=>{ if (!cb.checked && DAY.meals.filter(m=>m.on).length===1){ cb.checked=true; return; } x.on=cb.checked; saveDay(); syncEditing(); dayChanged(); }); }
     if (del) del.addEventListener('click',e=>{ e.stopPropagation();
       DAY.meals.splice(k,1); relabelSnacks();
       if (DAY.active===k) DAY.active=1; else if (DAY.active>k) DAY.active--;
@@ -1102,11 +1111,27 @@ function renderDayCards(){
     });
     dayCardsEl.appendChild(add);
   }
+  if (fk!=null){ const c=dayCardsEl.querySelector(`.dc[data-k="${fk}"]`) || dayCardsEl.querySelector('.dc.on');
+    const t=c&&({cb:c.querySelector('input[type=checkbox]'),tm:c.querySelector('input[type=time]'),del:null,card:c})[fpart];
+    (t||c||dayCardsEl.querySelector('.dc-add'))?.focus(); }
+  else if (focusAdd) (dayCardsEl.querySelector('.dc.on')||dayCardsEl.querySelector('.dc-add'))?.focus();
+}
+// slider/preset/photo edits only change the active card's text and bar
+function patchActiveCard(){
+  const x=DAY.meals[DAY.active], d=dayCardsEl.querySelector(`.dc[data-k="${DAY.active}"]`);
+  if (!d){ renderDayCards(); return; }
+  const tot=x.carb+x.prot+x.fat+x.fib||1;
+  d.querySelector('.dc-name').textContent=x.name||'직접 입력';
+  [x.carb,x.prot,x.fat,x.fib].forEach((v,j)=>{ d.querySelectorAll('.dc-bar span')[j].style.width=(v/tot*100)+'%'; });
+  d.querySelector('.dc-kcal').textContent=`약 ${Math.round(kcalMacro(x.carb,x.prot,x.fat,x.fib))} kcal · 섬유 ${x.fib} g · 물 ${x.water} mL`;
 }
 function syncEditing(){
   const ed=document.getElementById('editing');
   ed.hidden = DAY.mode!=='day';
-  if (DAY.mode==='day') ed.innerHTML=`지금 고치는 끼니: <b>${DAY.meals[DAY.active].label}</b> · 아래 예시 식단, 사진, 슬라이더가 이 끼니에 적용됩니다. 다른 끼니를 고치려면 카드를 누르세요.${DAY.meals[DAY.active].snack?' 간식은 아래 \'간식\' 예시에서 고르면 편합니다.':''}`;
+  const off=DAY.mode==='day' && !DAY.meals[DAY.active].on;
+  ed.classList.toggle('warn',off);
+  if (off) ed.innerHTML=`<b>${DAY.meals[DAY.active].label}</b>은(는) '먹음'이 꺼져 있어 계산에 들어가지 않습니다. 카드의 '먹음'을 체크하면 반영됩니다.`;
+  else if (DAY.mode==='day') ed.innerHTML=`지금 고치는 끼니: <b>${DAY.meals[DAY.active].label}</b> · 아래 예시 식단, 사진, 슬라이더가 이 끼니에 적용됩니다. 다른 끼니를 고치려면 카드를 누르세요.${DAY.meals[DAY.active].snack?' 간식은 아래 \'간식\' 예시에서 고르면 편합니다.':''}`;
 }
 function syncMode(){
   for (const b of modeSeg.children) b.setAttribute('aria-pressed',String(b.dataset.mode===DAY.mode));
@@ -1116,10 +1141,10 @@ function syncMode(){
   document.querySelector('header h1').textContent = DAY.mode==='day' ? '하루 식사의 소화 여정' : '한 끼의 소화 여정';
   syncEditing();
 }
-function dayChanged(){ computeBM(); syncHabit(); drawTicks(); u=uOf(6); recompute(); }
+function dayChanged(){ computeBM(); syncHabit(); drawTicks(); if (DAY.mode==='day') renderDayCards(); recompute(); }
 for (const b of modeSeg.children) b.addEventListener('click',()=>{
   if (DAY.mode===b.dataset.mode) return;
-  DAY.mode=b.dataset.mode; meal = DAY.mode==='day' ? DAY.meals[DAY.active] : singleMeal;
+  DAY.mode=b.dataset.mode; meal = DAY.mode==='day' ? DAY.meals[DAY.active] : singleMeal; u=uOf(6);
   saveDay(); syncMode(); syncSliders(); markPreset(meal.id); dayChanged();
 });
 const drinkEl=document.getElementById('drink'), actChips=document.getElementById('actChips');
@@ -1295,7 +1320,7 @@ for (const id of ['chartA','chartB']){
 const $=id=>document.getElementById(id);
 const sw=col=>`<i class="sw" style="background:var(${col})"></i>`;
 function simList(){
-  if (DAY.mode==='day') return dayList().map(x=>({...x,tmin:toMin(x.time)}));
+  if (DAY.mode==='day') return dayList().map(x=>({...x,tmin:dayMin(x.time)}));
   return [{...singleMeal,label:'',tmin:toMin(MEALT.time)}];
 }
 const AFTER=()=>R&&R.multi?'첫 식사 후 ':'식후 ';
@@ -1303,7 +1328,7 @@ let recomputeQueued=false;
 function scheduleRecompute(){ if (recomputeQueued) return; recomputeQueued=true; requestAnimationFrame(()=>{ recomputeQueued=false; recompute(); }); }
 function recompute(){
   R=simulate(simList());
-  if (DAY.mode==='day') renderDayCards();
+  if (DAY.mode==='day') patchActiveCard();
   const kin=kcalOf(R.meal);
   $('kcalIn').textContent=Math.round(kin).toLocaleString('ko-KR');
   drawCharts(); drawGantt(); renderVerdict(); renderFeces(); render(true);
@@ -1667,6 +1692,7 @@ const PHOTO_ERR={not_granted:'Claude 사용을 허용하지 않아 사진을 분
   rate_limited:'요청이 많아 잠시 쉬어야 합니다. 조금 뒤에 다시 올려 주세요.',session_expired:'다시 로그인한 뒤 사진을 올려 주세요.',image_rejected:'이 이미지는 읽을 수 없습니다. JPEG·PNG·WebP 사진(20 MB 이하)으로 다시 올려 주세요.',
   refused:'이 사진은 분석할 수 없습니다. 다른 사진을 올려 주세요.',invalid_json:'분석 결과를 읽지 못했습니다. 같은 사진을 한 번 더 올려 보세요.',images_unavailable:'이 화면에서는 사진을 보낼 수 없습니다.'};
 async function analyzePhoto(file){
+  const target=meal;               // the meal being edited when the photo was added
   if (!sampleFn || photoBusy) return;
   photoBusy=true; photoCtl=new AbortController();
   const prev=$('photoPrev'); if (prev.src) URL.revokeObjectURL(prev.src); prev.src=URL.createObjectURL(file); prev.hidden=false;
@@ -1679,10 +1705,12 @@ async function analyzePhoto(file){
     const t={carb:0,prot:0,fat:0,fib:0,water:0,solW:0};
     for (const it of items){ const fb=num(it.fiber_g); t.carb+=num(it.carb_g); t.prot+=num(it.protein_g); t.fat+=num(it.fat_g); t.fib+=fb; t.water+=num(it.water_ml); t.solW+=fb*clamp(num(it.soluble_fiber_share)||0.3,0,1); }
     let capped=false;
-    const put=(k,v)=>{ const s=SLIDERS.find(s=>s.k===k); const r=k==='water'?Math.round(v/10)*10:Math.round(v); if (r>s.max) capped=true; meal[k]=Math.min(s.max,r); };
+    const put=(k,v)=>{ const s=SLIDERS.find(s=>s.k===k); const r=k==='water'?Math.round(v/10)*10:Math.round(v); if (r>s.max) capped=true; target[k]=Math.min(s.max,r); };
     put('carb',t.carb); put('prot',t.prot); put('fat',t.fat); put('fib',t.fib); put('water',t.water);
-    meal.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; meal.id='photo'; meal.name='사진: '+items.map(it=>String(it.name||'')).filter(Boolean).slice(0,3).join(', '); saveDay();
-    syncSliders(); markPreset('photo'); u=uOf(6); recompute();
+    target.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; target.id='photo'; target.name='사진: '+items.map(it=>String(it.name||'')).filter(Boolean).slice(0,3).join(', '); saveDay();
+    if (target===meal){ syncSliders(); markPreset('photo'); }
+    if (DAY.mode==='day') renderDayCards();
+    u=uOf(6); recompute();
     const conf={high:'높음',medium:'보통',low:'낮음'}[r.confidence]||'보통';
     $('photoStatus').textContent=`사진에서 ${items.length}가지 음식을 찾았습니다 · 추정 신뢰도 ${conf}`;
     $('photoItems').innerHTML=items.map(it=>{ const k=kcalMacro(num(it.carb_g),num(it.protein_g),num(it.fat_g),num(it.fiber_g));
