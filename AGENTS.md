@@ -4,7 +4,7 @@ This repository began as an early-stage concept evaluation tool for LFA urine
 stick ideas, but has since grown into a multi-project workspace. It now also
 hosts standalone apps such as `frontend/` (Next.js IVDR workflow UI),
 `backend/` (Python), `ticketing/`, `site/`, `eddie/` (Next.js ADHD routine
-companion app), `scent-mixer/` (single-file PWA), `tina/` (정리 임팩트
+companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF 폰트 생성 단일 파일 웹앱), `tina/` (정리 임팩트
 최적화 PWA — 사진 기반 티 점수 분석), and `miri/` (Vite + React PWA — ADHD
 워킹맘용 선제적 리마인더 & 역산 스케줄러, PRD-MIRI-MVP-v0.1).
 
