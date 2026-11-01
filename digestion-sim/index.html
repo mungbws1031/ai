@@ -10,11 +10,11 @@
   --paper:#F2F5F3; --sheet:#FFFFFF; --ink:#1D2A29; --ink-2:#55635F; --rule:#D3DBD7;
   --tissue:#F4D3CA; --wall:#C27F6F; --organ:#D9A092; --liver:#A65446; --torso:#E9EEEB;
   --accent:#12706A; --accent-2:#5FA8A1; --accent-3:#A9D3CD;
-  --carb:#DB8418; --prot:#C2385A; --fat:#7A56C6; --fib:#5A8A2A; --water:#3B7DC0; --bact:#8C918A;
+  --carb:#C97A12; --prot:#C2385A; --fat:#7A56C6; --fib:#5A8A2A; --water:#3B7DC0; --bact:#8C918A;
   --portal:#9A2B4A; --lymph:#C99512;
   --loc-mouth:#EBD8CB; --loc-stom:#E2A68E; --loc-si:#C66F5E; --loc-colon:#8A5240; --loc-ferm:#8DB060; --loc-out:#4E3F33;
   --skin-1:#F7F0EB; --skin-2:#EADDD4; --stom-1:#F8C9BA; --stom-2:#D47F6A; --si-1:#F4C7B9; --si-2:#C77D6B; --colon-1:#EBC6A9; --colon-2:#B57F60;
-  --liv-1:#BC5E4C; --liv-2:#7A3127; --gb-1:#A9BF6C; --gb-2:#5E7A2F; --pan-1:#F3D7AC; --pan-2:#C99962; --spl-1:#B0697F; --spl-2:#6E3550; --lung-1:#F6E1E3; --lung-2:#E9C4C9; --sheen:.32; --good:#2E7D4F; --warn:#B7790F; --bad:#B9382F; --loose:#2F74B5;
+  --liv-1:#BC5E4C; --liv-2:#7A3127; --gb-1:#A9BF6C; --gb-2:#5E7A2F; --pan-1:#F3D7AC; --pan-2:#C99962; --spl-1:#B0697F; --spl-2:#6E3550; --lung-1:#F6E1E3; --lung-2:#E9C4C9; --sheen:.32; --good:#2E7D4F; --warn:#8F5E00; --bad:#B9382F; --loose:#2F74B5;
   --display:"Nanum Myeongjo","Noto Serif KR",serif;
   --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",monospace;
@@ -23,7 +23,7 @@
   --paper:#111716; --sheet:#182120; --ink:#E4ECE9; --ink-2:#A1AFAB; --rule:#2C3836;
   --tissue:#5C3B36; --wall:#B47264; --organ:#7E4C43; --liver:#8A4237; --torso:#1E2928;
   --accent:#55C4B8; --accent-2:#3E8F87; --accent-3:#2A5E59;
-  --carb:#F0A443; --prot:#EC6C89; --fat:#A68BEE; --fib:#93C25A; --water:#6EAAE8; --bact:#A4A9A1;
+  --carb:#C98426; --prot:#DE5E7A; --fat:#9A80E2; --fib:#73A03E; --water:#6EAAE8; --bact:#A4A9A1;
   --portal:#E2617F; --lymph:#EDC24B;
   --loc-mouth:#4A3E37; --loc-stom:#8C5A4A; --loc-si:#B1604F; --loc-colon:#C48A6A; --loc-ferm:#7FA552; --loc-out:#D9C7B5;
   --skin-1:#28322F; --skin-2:#1D2523; --stom-1:#C9826F; --stom-2:#87483A; --si-1:#BC7C6C; --si-2:#82463A; --colon-1:#B88E70; --colon-2:#7A5340;
@@ -33,7 +33,7 @@
   --paper:#111716; --sheet:#182120; --ink:#E4ECE9; --ink-2:#A1AFAB; --rule:#2C3836;
   --tissue:#5C3B36; --wall:#B47264; --organ:#7E4C43; --liver:#8A4237; --torso:#1E2928;
   --accent:#55C4B8; --accent-2:#3E8F87; --accent-3:#2A5E59;
-  --carb:#F0A443; --prot:#EC6C89; --fat:#A68BEE; --fib:#93C25A; --water:#6EAAE8; --bact:#A4A9A1;
+  --carb:#C98426; --prot:#DE5E7A; --fat:#9A80E2; --fib:#73A03E; --water:#6EAAE8; --bact:#A4A9A1;
   --portal:#E2617F; --lymph:#EDC24B;
   --loc-mouth:#4A3E37; --loc-stom:#8C5A4A; --loc-si:#B1604F; --loc-colon:#C48A6A; --loc-ferm:#7FA552; --loc-out:#D9C7B5;
   --skin-1:#28322F; --skin-2:#1D2523; --stom-1:#C9826F; --stom-2:#87483A; --si-1:#BC7C6C; --si-2:#82463A; --colon-1:#B88E70; --colon-2:#7A5340;
@@ -42,6 +42,8 @@
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.photo:focus-within .drop{outline:2px solid var(--accent);outline-offset:2px}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
 .wrap{max-width:1180px;margin:0 auto;display:grid;gap:24px}
@@ -99,6 +101,12 @@ button{font:inherit;color:inherit}
 .editing{font-size:13px;color:var(--ink-2);background:var(--paper);border-radius:8px;padding:8px 12px}
 .editing b{color:var(--accent)}
 .meal-time{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
+.habits{border-top:1px solid var(--rule);padding-top:10px}
+.habits summary{cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;list-style:none}
+.habits summary::-webkit-details-marker{display:none}
+.habits summary::before{content:"▸";color:var(--ink-2);transition:transform .15s}
+.habits[open] summary::before{transform:rotate(90deg)}
+.habits[open] summary{margin-bottom:4px}
 .habit{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding-top:12px;border-top:1px solid var(--rule);font-size:13px}
 .habit-lbl{font-weight:600}
 .habit-time{display:flex;align-items:center;gap:6px;color:var(--ink-2)}
@@ -108,6 +116,8 @@ button{font:inherit;color:inherit}
 .habit-desc{font-size:12.5px}
 .kcal b{color:var(--ink);font-family:var(--mono);font-weight:500}
 
+.photo:has(#photoOut[hidden]){grid-template-columns:minmax(0,1fr)}
+.photo:has(#photoOut[hidden]) .drop{min-height:0;padding:10px 14px}
 .photo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px 20px;align-items:start}
 @media (max-width:760px){.photo{grid-template-columns:minmax(0,1fr)}}
 .drop{display:flex;gap:14px;align-items:center;border:1.5px dashed var(--rule);border-radius:10px;padding:12px 14px;cursor:pointer;min-height:76px;background:var(--paper)}
@@ -229,6 +239,11 @@ button{font:inherit;color:inherit}
 .chart-panel{display:grid;gap:8px}
 .chart-panel svg{width:100%;height:auto;display:block;cursor:crosshair;touch-action:pan-y}
 .chart-note{font-size:12.5px;color:var(--ink-2)}
+.chart-tip{position:fixed;z-index:20;pointer-events:none;background:var(--sheet);border:1px solid var(--rule);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.14);padding:8px 10px;font-size:12px;display:grid;gap:2px;min-width:150px}
+.chart-tip b{font-family:var(--mono);font-weight:500}
+.chart-tip .r{display:flex;justify-content:space-between;gap:12px}
+.chart-tip i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.hover-line{stroke:var(--ink-2);stroke-width:1;stroke-dasharray:3 3}
 .axis{font-family:var(--mono);font-size:10px;fill:var(--ink-2)}
 .grid-line{stroke:var(--rule);stroke-width:1}
 .cursor{stroke:var(--ink);stroke-width:1.2}
@@ -314,11 +329,11 @@ button{font:inherit;color:inherit}
 .note strong{color:var(--ink)}
 </style>
 
-<div class="wrap">
+<div class="wrap" lang="ko">
   <header>
-    <div class="eyebrow">Digestive transit · 72-hour simulation</div>
+    <div class="eyebrow">72시간 소화 시뮬레이션</div>
     <h1>한 끼의 소화 여정</h1>
-    <p class="lede">먹은 음식이 입에서 위, 소장, 대장을 지나며 어떻게 쪼개지는지, 영양소가 어느 혈관으로 흡수되어 어디로 가는지, 그리고 결국 얼마가 변으로 나오는지를 시간에 따라 따라가 봅니다. 식단을 고르고 재생하거나, 시간 막대를 끌어 보세요.</p>
+    <p class="lede">먹은 음식이 입에서 위, 소장, 대장을 지나며 어떻게 쪼개지는지, 영양소가 어느 혈관으로 흡수되어 어디로 가는지, 그리고 결국 얼마가 변으로 나오는지를 시간에 따라 따라가 봅니다. 한 끼나 하루 식사를 고르거나 음식 사진을 올린 뒤, 재생하거나 시간 막대를 끌어 보세요.</p>
   </header>
 
   <section class="panel meal" aria-label="식단 설정">
@@ -347,7 +362,7 @@ button{font:inherit;color:inherit}
         <img id="photoPrev" alt="" hidden>
         <span class="drop-txt"><b>음식 사진으로 입력</b><span id="dropHint">사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 영양성분을 추정해 아래 값을 채웁니다.</span></span>
       </label>
-      <input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif" hidden>
+      <input type="file" id="photoInput" class="sr-only" accept="image/jpeg,image/png,image/webp,image/gif">
       <div class="photo-out" id="photoOut" hidden>
         <div class="photo-status"><span id="photoStatus"></span><button class="chip" type="button" id="photoStop" hidden>중지</button></div>
         <ul class="list" id="photoItems"></ul>
@@ -355,6 +370,8 @@ button{font:inherit;color:inherit}
       </div>
     </div>
     <div class="sliders" id="sliders"></div>
+    <details class="habits" id="habits">
+      <summary><span class="habit-lbl">생활·배변 습관</span> <span class="muted" id="habitSummary"></span></summary>
     <div class="habit" role="group" aria-labelledby="lifeLbl">
       <span class="habit-lbl" id="lifeLbl">생활 습관</span>
       <label class="habit-time" for="drink">하루에 마시는 물 <input type="range" id="drink" min="0" max="3000" step="100" value="1200" style="accent-color:var(--water);width:140px"> <output class="mono" id="drinkOut">1,200 mL</output></label>
@@ -375,6 +392,7 @@ button{font:inherit;color:inherit}
       </div>
       <span class="habit-desc muted" id="bmDesc"></span>
     </div>
+    </details>
   </section>
 
   <div class="main">
@@ -459,7 +477,7 @@ button{font:inherit;color:inherit}
         <div class="where-legend" id="whereLegend"></div>
       </section>
 
-      <section class="panel organ-card" aria-live="polite">
+      <section class="panel organ-card">
         <div class="oc-head">
           <div class="eyebrow" id="ocMode">자동 추적 · 음식이 가장 많은 곳</div>
           <h2 id="ocTitle">위</h2>
@@ -470,36 +488,6 @@ button{font:inherit;color:inherit}
         <button class="chip auto-btn" id="autoBtn" type="button" hidden>자동 추적으로 돌아가기</button>
       </section>
     </div>
-  </div>
-
-  <section class="panel transit" aria-label="소화 시간표">
-    <div>
-      <h3>먹고 몇 시간 뒤에 변이 될까</h3>
-      <p class="transit-lead" id="transitLead"></p>
-    </div>
-    <div class="transit-chart"><svg id="gantt" viewBox="0 0 1100 250"></svg></div>
-    <ol class="milestones" id="milestones"></ol>
-    <div class="chart-note">띠가 진할수록 그 시간에 그 장기에 먹은 음식의 내용물이 많다는 뜻입니다(장기마다 가장 많을 때를 가장 진하게 표시). 번호는 아래 시간표와 같고, 띠를 누르면 그 시각으로 이동합니다.</div>
-  </section>
-
-  <div class="grid2">
-    <section class="panel chart-panel">
-      <h3>음식은 지금 어디에 있나</h3>
-      <div class="chart-note">먹은 고형 영양소(탄수화물·단백질·지방·섬유) 전체를 100%로 놓고 위치별 비율을 쌓았습니다. 가로축은 앞쪽 몇 시간을 넓게 보도록 제곱근 눈금입니다.</div>
-      <svg id="chartA" viewBox="0 0 640 230"></svg>
-      <div class="fate-legend" id="chartALegend"></div>
-    </section>
-    <section class="panel chart-panel">
-      <h3>혈액으로 들어가는 속도 (g/시간)</h3>
-      <div class="chart-note">소장에서 포도당·아미노산·지방이 흡수되는 속도와, 대장에서 세균이 섬유를 발효해 만든 단쇄지방산이 흡수되는 속도입니다.</div>
-      <svg id="chartB" viewBox="0 0 640 230"></svg>
-      <div class="fate-legend">
-        <span><i style="background:var(--carb)"></i>당류(포도당 등)</span>
-        <span><i style="background:var(--prot)"></i>아미노산</span>
-        <span><i style="background:var(--fat)"></i>지방(킬로미크론)</span>
-        <span><i style="background:var(--fib)"></i>단쇄지방산</span>
-      </div>
-    </section>
   </div>
 
   <section class="panel verdict" aria-label="변 상태 예측">
@@ -513,6 +501,36 @@ button{font:inherit;color:inherit}
     </div>
     <div class="chart-note"><span id="vBasis">이 식사를 하루 세 끼 먹는다고 보고 하루 섭취량을 추정했습니다.</span> 예측 모양은 시뮬레이션에서 배변 때 변의 수분 비율로 정한 것이고, 판정은 교과서 권장량(식이섬유 하루 25 g 이상, 음식 수분 포함 물 2 L 이상, 주 3회 이상 배변)과 비교한 간단한 규칙입니다. 의학적 진단이 아니며, 변비나 설사가 3주 넘게 이어지거나 피가 섞이거나 체중이 빠지면 진료를 받으세요.</div>
   </section>
+
+  <section class="panel transit" aria-label="소화 시간표">
+    <div>
+      <h3>먹고 몇 시간 뒤에 변이 될까</h3>
+      <p class="transit-lead" id="transitLead"></p>
+    </div>
+    <div class="transit-chart"><svg id="gantt" viewBox="0 0 1100 250" role="img" aria-label="장기별로 음식이 머무는 시간을 보여 주는 띠 그래프. 같은 내용이 아래 시간표에 글로 있습니다."></svg></div>
+    <ol class="milestones" id="milestones"></ol>
+    <div class="chart-note">띠가 진할수록 그 시간에 그 장기에 먹은 음식의 내용물이 많다는 뜻입니다(장기마다 가장 많을 때를 가장 진하게 표시). 번호는 아래 시간표와 같고, 띠를 누르면 그 시각으로 이동합니다.</div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel chart-panel">
+      <h3>음식은 지금 어디에 있나</h3>
+      <div class="chart-note">먹은 고형 영양소(탄수화물·단백질·지방·섬유) 전체를 100%로 놓고 위치별 비율을 쌓았습니다. 가로축은 앞쪽 몇 시간을 넓게 보도록 제곱근 눈금입니다.</div>
+      <svg id="chartA" viewBox="0 0 640 230" role="img" aria-label="먹은 영양소가 시간에 따라 어디에 있는지 비율로 쌓은 그래프"></svg>
+      <div class="fate-legend" id="chartALegend"></div>
+    </section>
+    <section class="panel chart-panel">
+      <h3>혈액으로 들어가는 속도 (g/시간)</h3>
+      <div class="chart-note">소장에서 포도당·아미노산·지방이 흡수되는 속도와, 대장에서 세균이 섬유를 발효해 만든 단쇄지방산이 흡수되는 속도입니다.</div>
+      <svg id="chartB" viewBox="0 0 640 230" role="img" aria-label="당류, 아미노산, 지방, 단쇄지방산이 혈액으로 흡수되는 속도 그래프"></svg>
+      <div class="fate-legend">
+        <span><i style="background:var(--carb)"></i>당류(포도당 등)</span>
+        <span><i style="background:var(--prot)"></i>아미노산</span>
+        <span><i style="background:var(--fat)"></i>지방(킬로미크론)</span>
+        <span><i style="background:var(--fib)"></i>단쇄지방산</span>
+      </div>
+    </section>
+  </div>
 
   <section class="panel stool" aria-label="변이 만들어지는 과정">
     <div class="stool-head">
@@ -541,7 +559,7 @@ button{font:inherit;color:inherit}
         <span><i style="background:var(--accent-2)"></i>회장 흡수</span>
         <span><i style="background:var(--loc-ferm)"></i>대장 세균이 발효</span>
         <span><i style="background:var(--loc-out)"></i>변으로 배출</span>
-        <span><i style="background:var(--loc-mouth)"></i>아직 장 속</span>
+        <span><i style="background:var(--loc-mouth)"></i>아직 장 안에 있음</span>
       </div>
     </section>
     <section class="panel card-body">
@@ -560,6 +578,7 @@ button{font:inherit;color:inherit}
 
   <p class="note"><strong>이 시뮬레이션은 교육용 근사 모델입니다.</strong> 위 배출 반감기(지방·단백질이 많을수록 길어짐), 소장 구간별 체류(십이지장 약 12분, 공장 약 100분, 회장 약 120분), 대장 체류(약 28시간), 영양소별 소화율(탄수화물 약 96%, 단백질 약 92%, 지방 약 95%), 대장 발효율(수용성 섬유 약 90%, 불용성 섬유 약 30%)을 교과서 범위의 평균값으로 넣은 구획 모델이며, 실제 값은 사람·음식 조리 상태·장내세균·건강 상태에 따라 크게 달라집니다. 대장은 구간마다 정해 둔 수분 비율(상행 약 90%, 횡행 약 85%, 하행 약 78%, 직장 약 75%, 섬유가 많으면 조금 더 촉촉)까지 물을 되흡수하고, 직장에 오래 머물면 조금씩 더 마르도록 했습니다. 브리스톨 척도는 수분 비율로 대략 환산한 것입니다. 한 끼에서 나온 몫만 계산하므로 하루 실제 배변량(보통 100–200 g)보다 작게 나옵니다. 진단이나 식단 처방 용도로 쓰지 마세요. 배변 시각과 횟수는 직접 정할 수 있으며 기본값은 매일 오전 8시입니다.</p>
 </div>
+<div class="chart-tip" id="chartTip" role="tooltip" hidden></div>
 
 <script>
 (function(){
@@ -1005,6 +1024,7 @@ function drawTicks(){
 // habit controls
 const bmTime=document.getElementById('bmTime'), bmFreq=document.getElementById('bmFreq');
 function syncHabit(){
+  habitSummary();
   bmTime.value=BM.time;
   for (const b of bmFreq.children) b.setAttribute('aria-pressed',String(+b.dataset.every===BM.every));
   document.getElementById('bmDesc').textContent=`${bmDesc()} 배변 · ${DAY.mode==='day'?'첫 식사('+todClock(mealMin())+')':todClock(mealMin())+' 식사'} 기준 · 72시간 동안 ${BM_TIMES.length}번`;
@@ -1083,7 +1103,12 @@ for (const b of modeSeg.children) b.addEventListener('click',()=>{
   saveDay(); syncMode(); syncSliders(); markPreset(meal.id); dayChanged();
 });
 const drinkEl=document.getElementById('drink'), actChips=document.getElementById('actChips');
+function habitSummary(){
+  const el=document.getElementById('habitSummary'); if (!el) return;
+  el.textContent=`물 ${(LIFE.drink/1000).toFixed(1)} L · 활동량 ${({low:'적음',mid:'보통',high:'많음'})[LIFE.act]} · ${bmDesc()} 배변`;
+}
 function syncLife(){
+  habitSummary();
   drinkEl.value=LIFE.drink; document.getElementById('drinkOut').textContent=LIFE.drink.toLocaleString('ko-KR')+' mL';
   for (const b of actChips.querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.act===LIFE.act));
 }
@@ -1177,8 +1202,9 @@ function drawGantt(){
     h+=`<g transform="translate(${x},${y - (row?0:0)})"><circle r="9" cy="${row?-0:0}" fill="var(--ink)" transform="translate(${row?14:0},0)"/><text class="ms-pin" x="${row?14:0}" y="4" text-anchor="middle">${k+1}</text></g>`; });
   h+=`<line id="curG" class="cursor" y1="${top-6}" y2="${yb+lh}"/>`;
   svg.innerHTML=h;
-  $('milestones').innerHTML=M.ms.map((m,k)=>`<li data-t="${m.t}"><span class="n">${k+1}</span><span>${m.name}<b>${AFTER()}${fmtDur(m.t)}</b><span class="t">${clockOf(m.t)} · ${m.note}</span></span></li>`).join('');
-  for (const li of $('milestones').children) li.addEventListener('click',()=>{ u=uOf(+li.dataset.t); if (playing) togglePlay(false); render(); });
+  $('milestones').innerHTML=M.ms.map((m,k)=>`<li data-t="${m.t}" tabindex="0" role="button" aria-label="${m.name}, ${AFTER()}${fmtDur(m.t)}로 이동"><span class="n">${k+1}</span><span>${m.name}<b>${AFTER()}${fmtDur(m.t)}</b><span class="t">${clockOf(m.t)} · ${m.note}</span></span></li>`).join('');
+  for (const li of $('milestones').children){ const go=()=>{ u=uOf(+li.dataset.t); if (playing) togglePlay(false); render(); };
+    li.addEventListener('click',go); li.addEventListener('keydown',e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); go(); } }); }
   const lead=[];
   if (M.r50!=null) lead.push(`먹은 음식의 찌꺼기는 약 <b>${Math.round(M.r50/60)}시간</b> 뒤면 대부분 직장에 도착해 변이 될 준비를 마칩니다.`);
   if (M.firstBm) lead.push(`${bmDesc()} 배변한다고 하면 <b>${AFTER()}${Math.round(M.firstBm.t/60)}시간</b>(${clockOf(M.firstBm.t)})에 처음 나오고`);
@@ -1199,7 +1225,7 @@ function drawCharts(){
     const bot=l.pts.slice().reverse().map(p=>`${p[0].toFixed(1)},${(CH-PB-ys*Math.min(1,p[1])).toFixed(1)}`);
     s+=`<polygon points="${top.join(' ')} ${bot.join(' ')}" fill="var(${l.col})"/>`;
   }
-  s+=`<line id="curA" class="cursor" y1="${PT}" y2="${CH-PB}"/>`;
+  s+=`<line id="curA" class="cursor" y1="${PT}" y2="${CH-PB}"/><line id="hovA" class="hover-line" y1="${PT}" y2="${CH-PB}" visibility="hidden"/>`;
   svgA.innerHTML=s;
   document.getElementById('chartALegend').innerHTML=layers.map(l=>`<span><i style="background:var(${l.col})"></i>${l.name}</span>`).join('');
   // B: absorption rates g/h
@@ -1212,13 +1238,32 @@ function drawCharts(){
     const pts=SAMPLES.map(t=>{ let a=0,c=0; for (let k=Math.max(0,t-5);k<=Math.min(T-1,t+5);k++){a+=R.rate[k*5+j];c++;} return `${cx(t).toFixed(1)},${(CH-PB-ys*(a/c*60)/yMax).toFixed(1)}`; });
     sb+=`<polyline points="${pts.join(' ')}" fill="none" stroke="var(${col})" stroke-width="2" stroke-linejoin="round"/>`;
   }
-  sb+=`<line id="curB" class="cursor" y1="${PT}" y2="${CH-PB}"/>`;
+  sb+=`<line id="curB" class="cursor" y1="${PT}" y2="${CH-PB}"/><line id="hovB" class="hover-line" y1="${PT}" y2="${CH-PB}" visibility="hidden"/>`;
   svgB.innerHTML=sb;
 }
 for (const id of ['chartA','chartB']){
   const svg=document.getElementById(id);
   const pick=e=>{ const r=svg.getBoundingClientRect(); const x=(e.clientX-r.left)/r.width*CW; u=clamp((x-PL)/(CW-PL-PR),0,1); if (playing) togglePlay(false); render(); };
   svg.addEventListener('click',pick);
+  // hover: crosshair + values at that moment
+  const tip=document.getElementById('chartTip'), hov=()=>document.getElementById(id==='chartA'?'hovA':'hovB');
+  svg.addEventListener('mousemove',e=>{
+    if (!R) return;
+    const r=svg.getBoundingClientRect(), x=(e.clientX-r.left)/r.width*CW;
+    if (x<PL || x>CW-PR){ tip.hidden=true; hov()?.setAttribute('visibility','hidden'); return; }
+    const t=tOf(clamp((x-PL)/(CW-PL-PR),0,1));
+    let rows;
+    if (id==='chartA'){ const S0=R.S0||1; rows=locations(R,t).filter(l=>l.v>0.05).reverse().map(l=>[l.name,l.col,`${(l.v/S0*100).toFixed(0)}%`]); }
+    else { const avg=j=>{ let a=0,c=0; for (let k=Math.max(0,t-5);k<=Math.min(T-1,t+5);k++){a+=R.rate[k*5+j];c++;} return a/c*60; };
+      rows=[['당류','--carb',avg(0)],['아미노산','--prot',avg(1)],['지방','--fat',avg(2)],['단쇄지방산','--fib',avg(3)]].map(([n,c,v])=>[n,c,`${fmt(v)} g/시간`]); }
+    tip.innerHTML=`<div class="muted">${AFTER()}${fmtDur(t)} · ${clockOf(t)}</div>`+rows.map(([n,c,v])=>`<div class="r"><span><i style="background:var(${c})"></i>${n}</span><b>${v}</b></div>`).join('');
+    tip.hidden=false;
+    const tw=tip.offsetWidth, th=tip.offsetHeight;
+    tip.style.left=Math.min(window.innerWidth-tw-8, e.clientX+14)+'px';
+    tip.style.top=Math.max(8, Math.min(window.innerHeight-th-8, e.clientY-th/2))+'px';
+    const hl=hov(); if (hl){ const xx=cx(t); hl.setAttribute('x1',xx); hl.setAttribute('x2',xx); hl.setAttribute('visibility','visible'); }
+  });
+  svg.addEventListener('mouseleave',()=>{ tip.hidden=true; hov()?.setAttribute('visibility','hidden'); });
 }
 
 // ---------- render ----------
@@ -1381,7 +1426,7 @@ function renderStool(i,key){
     b.classList.toggle('empty',empty);
     b.classList.toggle('on', st.key===key && (key!=='colon' || true));
     b.querySelector('.art').innerHTML=stoolArt(k===0&&!empty?7:br.t, st.col);
-    b.querySelector('.state').textContent = empty ? '지금은 이 식사의 내용물이 없음' : (k===0 ? '물기 많은 미즙' : `${br.t}형 · ${br.name}`);
+    b.querySelector('.state').textContent = empty ? '지금은 비어 있음' : (k===0 ? '물기 많은 미즙' : `${br.t}형 · ${br.name}`);
     const bact=g(BACT), fib=g(SFIB)+g(IFIB), endo=g(ENDO), rest=g(CARB)+g(PROT)+g(FAT);
     b.querySelector('.nums').innerHTML = empty ? '<span>무게</span><span>0 g</span>' :
       `<span>무게</span><span>${fmt(wet)} g</span><span>수분</span><span>${pct.toFixed(0)}%</span><span>세균</span><span>${fmt(bact)} g</span><span>섬유</span><span>${fmt(fib)} g</span>`;
