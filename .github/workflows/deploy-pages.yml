@@ -32,10 +32,12 @@ permissions:
   pages: write
   id-token: write
 
-# Allow one concurrent deployment; newer pushes cancel in-progress runs.
+# Allow one concurrent deployment. Queue newer runs instead of cancelling an
+# in-progress one: a deploy cancelled mid-way can also cancel the next run's
+# deployment of the same commit ("Deployment cancelled").
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
