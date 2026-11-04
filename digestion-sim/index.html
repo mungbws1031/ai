@@ -125,6 +125,9 @@ button{font:inherit;color:inherit}
 .drop{display:flex;gap:14px;align-items:center;border:1.5px dashed var(--rule);border-radius:10px;padding:12px 14px;cursor:pointer;min-height:76px;background:var(--paper)}
 .drop:hover,.drop.over{border-color:var(--accent)}
 .drop.off{cursor:not-allowed;opacity:.65}
+.thumbs{display:flex;gap:4px;flex:none;align-items:center}
+.thumbs img{width:44px!important;height:44px!important}
+.thumbs b{font-family:var(--mono);font-size:12px;color:var(--ink-2);font-weight:500}
 .drop img{width:64px;height:64px;object-fit:cover;border-radius:8px;flex:none}
 .drop-txt{display:grid;gap:2px;font-size:13px;color:var(--ink-2);min-width:0}
 .drop-txt b{color:var(--ink);font-size:14px}
@@ -364,10 +367,10 @@ button{font:inherit;color:inherit}
     </div>
     <div class="photo" id="photo">
       <label class="drop" id="drop" for="photoInput">
-        <img id="photoPrev" alt="" hidden>
-        <span class="drop-txt"><b>음식 사진으로 입력</b><span id="dropHint">사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 영양성분을 추정해 아래 값을 채웁니다.</span></span>
+        <img id="photoPrev" alt="" hidden><span class="thumbs" id="photoThumbs" hidden></span>
+        <span class="drop-txt"><b>음식 사진으로 입력</b><span id="dropHint">사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 여러 장도 한꺼번에 올릴 수 있습니다.</span></span>
       </label>
-      <input type="file" id="photoInput" class="sr-only" accept="image/jpeg,image/png,image/webp,image/gif">
+      <input type="file" id="photoInput" class="sr-only" multiple accept="image/jpeg,image/png,image/webp,image/gif">
       <div class="photo-out" id="photoOut" hidden>
         <div class="photo-status"><span id="photoStatus"></span><button class="chip" type="button" id="photoStop" hidden>중지</button></div>
         <ul class="list" id="photoItems"></ul>
@@ -1668,7 +1671,7 @@ const PHOTO_PROMPT = `이 사진은 사용자가 먹으려는 한 끼 식사입�
 {"items":[{"name":"음식 이름(한국어)","portion":"추정 분량, 예: 1공기(210 g)","carb_g":0,"protein_g":0,"fat_g":0,"fiber_g":0,"soluble_fiber_share":0.3,"water_ml":0}],"confidence":"high|medium|low","note":"추정에 영향을 준 점 한 문장(한국어)"}
 사진에 음식이 없으면 {"items":[],"confidence":"low","note":"음식이 보이지 않는 이유"} 로 답하세요.`;
 const drop=$('drop'), photoInput=$('photoInput');
-let sampleFn=null, photoCtl=null, photoBusy=false;
+let sampleFn=null, photoCtl=null, photoBusy=false, imgPerCall=1;
 function photoOff(msg){ drop.classList.add('off'); photoInput.disabled=true; $('dropHint').textContent=msg; }
 photoOff('사진 분석은 claude.ai에서 이 페이지를 열었을 때 사용할 수 있습니다. 연결을 확인하는 중…');
 (async()=>{
@@ -1678,36 +1681,132 @@ photoOff('사진 분석은 claude.ai에서 이 페이지를 열었을 때 사용
     if (!s || !lim || !lim.images){ photoOff('이 화면에서는 사진 분석을 쓸 수 없습니다. 아래 예시 식단이나 슬라이더로 입력하세요.'); return; }
     sampleFn=s; drop.classList.remove('off'); photoInput.disabled=false;
     photoInput.accept=lim.images.mediaTypes.join(',');
-    $('dropHint').textContent='사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 영양성분을 추정해 아래 값을 채웁니다.';
+    imgPerCall=Math.max(1,lim.images.maxCount||1);
+    $('dropHint').textContent='사진을 끌어다 놓거나, 눌러서 고르거나, 붙여넣기 하세요. 여러 장을 한꺼번에 올리면 하루 모드에서는 사진마다 간식이 하나씩 추가되고, 한 끼 모드에서는 합쳐서 한 끼로 계산합니다.';
   } catch(e){ photoOff('이 화면에서는 사진 분석을 쓸 수 없습니다. 아래 예시 식단이나 슬라이더로 입력하세요.'); }
 })();
-photoInput.addEventListener('change',()=>{ const f=photoInput.files&&photoInput.files[0]; photoInput.value=''; if (f) analyzePhoto(f); });
+const imagesIn=list=>[...(list||[])].filter(f=>f.type.startsWith('image/'));
+photoInput.addEventListener('change',()=>{ const fs=imagesIn(photoInput.files); photoInput.value=''; if (fs.length) analyzePhotos(fs); });
 drop.addEventListener('dragover',e=>{ e.preventDefault(); if (sampleFn) drop.classList.add('over'); });
 drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
-drop.addEventListener('drop',e=>{ e.preventDefault(); drop.classList.remove('over'); const f=[...(e.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/')); if (f) analyzePhoto(f); });
-document.addEventListener('paste',e=>{ const f=[...(e.clipboardData?.files||[])].find(f=>f.type.startsWith('image/')); if (f){ e.preventDefault(); analyzePhoto(f); } });
+drop.addEventListener('drop',e=>{ e.preventDefault(); drop.classList.remove('over'); const fs=imagesIn(e.dataTransfer?.files); if (fs.length) analyzePhotos(fs); });
+document.addEventListener('paste',e=>{ const fs=imagesIn(e.clipboardData?.files); if (fs.length){ e.preventDefault(); analyzePhotos(fs); } });
 $('photoStop').addEventListener('click',()=>photoCtl?.abort());
 const num=v=>{ const n=Number(v); return Number.isFinite(n)&&n>0?n:0; };
 const PHOTO_ERR={not_granted:'Claude 사용을 허용하지 않아 사진을 분석할 수 없습니다. 슬라이더로 직접 입력하세요.',sampling_disabled:'이 계정에서는 Claude를 쓸 수 없습니다.',
   rate_limited:'요청이 많아 잠시 쉬어야 합니다. 조금 뒤에 다시 올려 주세요.',session_expired:'다시 로그인한 뒤 사진을 올려 주세요.',image_rejected:'이 이미지는 읽을 수 없습니다. JPEG·PNG·WebP 사진(20 MB 이하)으로 다시 올려 주세요.',
   refused:'이 사진은 분석할 수 없습니다. 다른 사진을 올려 주세요.',invalid_json:'분석 결과를 읽지 못했습니다. 같은 사진을 한 번 더 올려 보세요.',images_unavailable:'이 화면에서는 사진을 보낼 수 없습니다.'};
+// add up one photo's foods into meal fields (g, mL); values beyond a slider's range are capped
+function totalsFrom(items){
+  const t={carb:0,prot:0,fat:0,fib:0,water:0,solW:0};
+  for (const it of items){ const fb=num(it.fiber_g); t.carb+=num(it.carb_g); t.prot+=num(it.protein_g); t.fat+=num(it.fat_g); t.fib+=fb; t.water+=num(it.water_ml); t.solW+=fb*clamp(num(it.soluble_fiber_share)||0.3,0,1); }
+  return t;
+}
+function applyTotals(target,t,name){
+  let capped=false;
+  for (const k of ['carb','prot','fat','fib','water']){ const sl=SLIDERS.find(x=>x.k===k); const r=k==='water'?Math.round(t[k]/10)*10:Math.round(t[k]); if (r>sl.max) capped=true; target[k]=Math.min(sl.max,r); }
+  target.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; target.id='photo'; target.name=name;
+  return capped;
+}
+const foodNames=items=>items.map(it=>String(it.name||'')).filter(Boolean).slice(0,3).join(', ');
+const MULTI_PROMPT=n=>`사진 ${n}장이 순서대로 주어집니다. 사진마다 사용자가 따로 먹은 간식이나 음식입니다. 사진마다 음식을 알아보고, 보이는 양을 기준으로 한 사람이 먹는 양의 영양성분을 따로 추정하세요.
+한국 음식이면 한국 식품영양성분 데이터베이스의 일반적인 값을 기준으로 삼으세요. 음료의 물도 water_ml에 넣으세요.
+다른 텍스트 없이 아래 형식의 JSON 객체 하나로만 답하세요. photos 배열은 사진 순서와 같고 정확히 ${n}개여야 합니다. 숫자는 g 단위(물은 mL)입니다.
+{"photos":[{"items":[{"name":"음식 이름(한국어)","portion":"추정 분량","carb_g":0,"protein_g":0,"fat_g":0,"fiber_g":0,"soluble_fiber_share":0.3,"water_ml":0}],"confidence":"high|medium|low","note":"한 문장(한국어)"}]}
+음식이 없는 사진은 {"items":[],"confidence":"low","note":"이유"} 로 채우세요.`;
+// time of day a photo was taken, from the file's timestamp; null when it is just "now" (a paste or screenshot)
+function photoTime(file){
+  const ms=file.lastModified; if (!ms || Math.abs(Date.now()-ms)<2*60*1000) return null;
+  const d=new Date(ms), m=Math.floor((d.getHours()*60+d.getMinutes())/5)*5;
+  return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+}
+function showThumbs(files){
+  const prev=$('photoPrev'), th=$('photoThumbs');
+  if (prev.src) URL.revokeObjectURL(prev.src);
+  for (const im of th.querySelectorAll('img')) URL.revokeObjectURL(im.src);
+  if (files.length===1){ prev.src=URL.createObjectURL(files[0]); prev.hidden=false; th.hidden=true; th.innerHTML=''; return; }
+  prev.hidden=true; prev.removeAttribute('src'); th.hidden=false;
+  th.innerHTML=files.slice(0,4).map(f=>`<img alt="" src="${URL.createObjectURL(f)}">`).join('')+(files.length>4?`<b>+${files.length-4}</b>`:'');
+}
+function photoFailed(e){
+  if (e && e.code==='cancelled'){ $('photoStatus').textContent='분석을 멈췄습니다.'; return; }
+  $('photoStatus').textContent='분석하지 못했습니다';
+  $('photoNote').textContent=PHOTO_ERR[e&&e.code]||'연결에 문제가 있었습니다. 잠시 뒤 다시 올려 주세요.';
+  if (e && ['not_granted','sampling_disabled','images_unavailable','capability_disabled','not_declared','capability_removed'].includes(e.code)){ sampleFn=null; photoOff(PHOTO_ERR[e.code]||'이 화면에서는 사진 분석을 쓸 수 없습니다.'); }
+}
+async function analyzePhotos(files){
+  if (!sampleFn || photoBusy || !files.length) return;
+  if (files.length===1) return analyzePhoto(files[0]);
+  const day=DAY.mode==='day';
+  const free=day ? 3-DAY.meals.filter(x=>x.snack).length : files.length;
+  $('photoOut').hidden=false; $('photoItems').innerHTML=''; $('photoNote').textContent='';
+  if (day && free<=0){ $('photoStatus').textContent='간식 칸이 가득 찼습니다'; $('photoNote').textContent='간식은 3개까지 넣을 수 있습니다. 간식 카드를 지운 뒤 다시 올려 주세요.'; return; }
+  const use=files.slice(0,free), skipped=files.length-use.length;
+  const target=meal;
+  photoBusy=true; photoCtl=new AbortController();
+  showThumbs(use);
+  $('photoStatus').textContent=`사진 ${use.length}장을 분석하는 중…`; $('photoStop').hidden=false;
+  try {
+    const res=[];
+    for (let a=0;a<use.length;a+=imgPerCall){
+      const chunk=use.slice(a,a+imgPerCall);
+      if (use.length>imgPerCall) $('photoStatus').textContent=`사진 ${use.length}장을 분석하는 중… (${a+1}–${a+chunk.length}번째)`;
+      const r = chunk.length===1 ? {photos:[await sampleFn.json(PHOTO_PROMPT,{images:chunk[0],signal:photoCtl.signal})]}
+                                 : await sampleFn.json(MULTI_PROMPT(chunk.length),{images:chunk,signal:photoCtl.signal});
+      const ps=Array.isArray(r?.photos)?r.photos:[];
+      chunk.forEach((f,k)=>res.push({file:f, items:Array.isArray(ps[k]?.items)?ps[k].items:[], note:ps[k]?.note}));
+    }
+    const found=res.filter(x=>x.items.length);
+    if (!found.length){ $('photoStatus').textContent='음식을 찾지 못했습니다'; $('photoNote').textContent='다른 사진을 올려 주세요.'; return; }
+    let capped=false, rows=[];
+    if (day){
+      // one snack card per photo, timed from the photo file when it has a real timestamp
+      const fallback=['15:30','10:30','21:00','16:30','22:00','14:00'];
+      for (const x of found){
+        const used=new Set(DAY.meals.map(m=>m.time));
+        const time=photoTime(x.file) || fallback.find(t=>!used.has(t)) || '15:00';
+        const snack={time, on:true, snack:true, label:''};
+        capped=applyTotals(snack,totalsFrom(x.items),'사진: '+foodNames(x.items))||capped;
+        DAY.meals.push(snack); x.snack=snack; x.timed=!!photoTime(x.file);
+      }
+      relabelSnacks();
+      DAY.active=DAY.meals.indexOf(found[found.length-1].snack); meal=DAY.meals[DAY.active];
+      rows=found.map(x=>({head:`${x.snack.label} · ${todClock(toMin(x.snack.time))}${x.timed?'':' (시각 임의)'}`, items:x.items}));
+    } else {
+      // single-meal mode: everything in the photos is one meal
+      const all=found.flatMap(x=>x.items);
+      capped=applyTotals(target,totalsFrom(all),`사진 ${found.length}장: `+foodNames(all));
+      rows=found.map((x,k)=>({head:`사진 ${res.indexOf(x)+1}`, items:x.items}));
+    }
+    saveDay();
+    if (target===meal || day){ syncSliders(); markPreset('photo'); }
+    if (day){ syncEditing(); computeBM(); syncHabit(); drawTicks(); renderDayCards(); }
+    u=uOf(6); recompute();
+    $('photoStatus').textContent = day ? `사진 ${found.length}장에서 간식 ${found.length}개를 추가했습니다` : `사진 ${found.length}장을 합쳐 한 끼로 넣었습니다`;
+    $('photoItems').innerHTML=rows.map(r=>{ const k=r.items.reduce((a,it)=>a+kcalMacro(num(it.carb_g),num(it.protein_g),num(it.fat_g),num(it.fiber_g)),0);
+      return `<li><span>${esc(r.head)}<small>${esc(foodNames(r.items))}</small></span><span class="mono">${Math.round(k)} kcal</span></li>`; }).join('');
+    const empty=res.length-found.length;
+    $('photoNote').textContent=[
+      day&&found.some(x=>x.timed)?'간식 시각은 사진 파일의 시각으로 넣었습니다. 카드에서 바꿀 수 있어요.':'',
+      empty?`${empty}장에서는 음식을 찾지 못했습니다.`:'',
+      skipped?`간식은 3개까지라 ${skipped}장은 넣지 않았습니다.`:'',
+      '사진만 보고 추정한 값이라 실제와 다를 수 있습니다.',
+      capped?'일부 값이 슬라이더 최대치를 넘어 최대치로 맞췄습니다.':''].filter(Boolean).join(' ');
+  } catch(e){ photoFailed(e); }
+  finally { photoBusy=false; $('photoStop').hidden=true; }
+}
 async function analyzePhoto(file){
   const target=meal;               // the meal being edited when the photo was added
   if (!sampleFn || photoBusy) return;
   photoBusy=true; photoCtl=new AbortController();
-  const prev=$('photoPrev'); if (prev.src) URL.revokeObjectURL(prev.src); prev.src=URL.createObjectURL(file); prev.hidden=false;
+  showThumbs([file]);
   $('photoOut').hidden=false; $('photoStatus').textContent='사진 속 음식을 분석하는 중…'; $('photoStop').hidden=false;
   $('photoItems').innerHTML=''; $('photoNote').textContent='';
   try {
     const r = await sampleFn.json(PHOTO_PROMPT,{images:file,signal:photoCtl.signal});
     const items = Array.isArray(r?.items) ? r.items : [];
     if (!items.length){ $('photoStatus').textContent='음식을 찾지 못했습니다'; $('photoNote').textContent=String(r?.note||'다른 사진을 올려 주세요.'); return; }
-    const t={carb:0,prot:0,fat:0,fib:0,water:0,solW:0};
-    for (const it of items){ const fb=num(it.fiber_g); t.carb+=num(it.carb_g); t.prot+=num(it.protein_g); t.fat+=num(it.fat_g); t.fib+=fb; t.water+=num(it.water_ml); t.solW+=fb*clamp(num(it.soluble_fiber_share)||0.3,0,1); }
-    let capped=false;
-    const put=(k,v)=>{ const s=SLIDERS.find(s=>s.k===k); const r=k==='water'?Math.round(v/10)*10:Math.round(v); if (r>s.max) capped=true; target[k]=Math.min(s.max,r); };
-    put('carb',t.carb); put('prot',t.prot); put('fat',t.fat); put('fib',t.fib); put('water',t.water);
-    target.sol = t.fib>0 ? clamp(t.solW/t.fib,0.1,0.8) : 0.3; target.id='photo'; target.name='사진: '+items.map(it=>String(it.name||'')).filter(Boolean).slice(0,3).join(', '); saveDay();
+    const capped=applyTotals(target,totalsFrom(items),'사진: '+foodNames(items)); saveDay();
     if (target===meal){ syncSliders(); markPreset('photo'); }
     if (DAY.mode==='day') renderDayCards();
     u=uOf(6); recompute();
@@ -1716,14 +1815,8 @@ async function analyzePhoto(file){
     $('photoItems').innerHTML=items.map(it=>{ const k=kcalMacro(num(it.carb_g),num(it.protein_g),num(it.fat_g),num(it.fiber_g));
       return `<li><span>${esc(it.name||'음식')}<small>${esc(it.portion||'')}</small></span><span class="mono">${Math.round(k)} kcal</span></li>`; }).join('');
     $('photoNote').textContent=[r.note?String(r.note):'', '사진만 보고 추정한 값이라 실제와 다를 수 있습니다. 아래 슬라이더로 고칠 수 있어요.', capped?'일부 값이 슬라이더 최대치를 넘어 최대치로 맞췄습니다.':''].filter(Boolean).join(' ');
-  } catch(e){
-    if (e && e.code==='cancelled'){ $('photoStatus').textContent='분석을 멈췄습니다.'; }
-    else {
-      $('photoStatus').textContent='분석하지 못했습니다';
-      $('photoNote').textContent=PHOTO_ERR[e&&e.code]||'연결에 문제가 있었습니다. 잠시 뒤 다시 올려 주세요.';
-      if (e && ['not_granted','sampling_disabled','images_unavailable','capability_disabled','not_declared','capability_removed'].includes(e.code)){ sampleFn=null; photoOff(PHOTO_ERR[e.code]||'이 화면에서는 사진 분석을 쓸 수 없습니다.'); }
-    }
-  } finally { photoBusy=false; $('photoStop').hidden=true; }
+  } catch(e){ photoFailed(e); }
+  finally { photoBusy=false; $('photoStop').hidden=true; }
 }
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
