@@ -158,9 +158,9 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
 
 <div class="wrap">
   <header>
-    <div class="eyebrow">충청북도 영동군 심천면 초강리 · 국토교통부 실거래가 2016.01–2026.11</div>
+    <div class="eyebrow">충청북도 영동군 심천면 초강리 · 국토교통부 실거래가 2016.01–<span id="asof-ym"></span></div>
     <h1>초강리 논은 <span class="hl">평당 약 10만 원</span>에 거래됩니다</h1>
-    <p class="lede">최근 3년(2024–2026) 실거래 35건 기준입니다. 10년 전 평당 7만 원에서 꾸준히 올랐고, 같은 마을 안에서도 용도지역과 입지에 따라 2배 넘게 차이 납니다. 집을 지을 수 있는 대지는 평당 약 32만 원이고, 임야는 최근 3년 동안 정상 거래가 없었습니다.</p>
+    <p class="lede">최근 3년(2024–2026) 실거래 <span id="lede-n"></span>건 기준입니다. 10년 전 평당 <span id="lede-old"></span>만 원에서 꾸준히 올랐고, 같은 마을 안에서도 용도지역과 입지에 따라 2배 넘게 차이 납니다. 집을 지을 수 있는 대지는 평당 약 <span id="lede-dae"></span>만 원이고, 임야는 최근 3년 동안 정상 거래가 없었습니다.</p>
   </header>
 
   <section class="kpis" id="kpis" aria-label="농지 지목별 최근 평당가"></section>
@@ -268,11 +268,16 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
     </div>
   </section>
 
-  <footer>출처: 국토교통부 실거래가 공개시스템(rt.molit.go.kr) 토지 매매, 계약일 기준 2016-01-01 ~ 2026-11-04 조회(초강리 및 영동군 전체). 행정 경계: vuski/admdongkor (2023-07). 법적 효력이 없는 참고 자료입니다. 평당가 = 거래금액 ÷ (계약면적 ÷ 3.3058).</footer>
+  <footer>출처: 국토교통부 실거래가 공개시스템(rt.molit.go.kr) 토지 매매, 계약일 기준 2016-01-01 ~ <span id="asof-foot"></span> 조회(초강리 및 영동군 전체). 행정 경계: vuski/admdongkor (2023-07). 법적 효력이 없는 참고 자료입니다. 평당가 = 거래금액 ÷ (계약면적 ÷ 3.3058).</footer>
 </div>
 
 <script>
 const D = __DATA__;
+document.getElementById('asof-ym').textContent=D.asof.slice(0,7).replace('-','.');
+document.getElementById('asof-foot').textContent=D.asof;
+document.getElementById('lede-n').textContent=D.deals.filter(d=>d.d>='2024').length;
+document.getElementById('lede-old').textContent=Math.round(D.periods[0].med);
+document.getElementById('lede-dae').textContent=Math.round(D.others.dae.recent.med);
 const J = {"답":{v:"--s-dap",shape:"c"},"전":{v:"--s-jeon",shape:"s"},"과수원":{v:"--s-orch",shape:"t"},"대":{v:"--s-dae",shape:"d"},"임야":{v:"--s-forest",shape:"h"}};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const NS="http://www.w3.org/2000/svg";
@@ -419,13 +424,13 @@ document.getElementById('legend1').innerHTML=["답","전","과수원"].map(j=>`<
 (function(){
   const host=document.getElementById('scatter');
   const W=960,H=380,ml=44,mr=16,mt=12,mb=30, iw=W-ml-mr, ih=H-mt-mb;
-  const t0=Date.parse('2016-01-01'), t1=Date.parse('2026-12-31');
+  const AY=+D.asof.slice(0,4); const t0=Date.parse('2016-01-01'), t1=Date.parse(`${AY}-12-31`);
   const x=d=>ml+(Date.parse(d)-t0)/(t1-t0)*iw;
   const ymax=30, y=v=>mt+ih-(Math.min(v,ymax)/ymax)*ih;
-  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'2016년부터 2026년까지 초강리 농지 거래 산점도, 평당 만 원'},host);
+  const s=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':`2016년부터 ${AY}년까지 초강리 농지 거래 산점도, 평당 만 원`},host);
   const g=el('g',{class:'grid'},s);
   for(let v=0;v<=ymax;v+=5){el('line',{x1:ml,x2:W-mr,y1:y(v),y2:y(v)},g);const t=el('text',{x:ml-8,y:y(v)+4,'text-anchor':'end'},s);t.textContent=v===0?'0':v+'만';}
-  for(let yr=2016;yr<=2026;yr++){const t=el('text',{x:x(`${yr}-07-01`),y:H-8,'text-anchor':'middle'},s);t.textContent=String(yr);}
+  for(let yr=2016;yr<=AY;yr++){const t=el('text',{x:x(`${yr}-07-01`),y:H-8,'text-anchor':'middle'},s);t.textContent=String(yr);}
   // median line
   const pts=D.yearly.map(o=>[x(`${o.y}-07-01`),y(o.med)]);
   el('path',{d:'M'+pts.map(p=>p.join(',')).join('L'),style:'fill:none;stroke:var(--med)','stroke-width':2,'stroke-linejoin':'round'},s);
@@ -450,8 +455,8 @@ document.getElementById('legend1').innerHTML=["답","전","과수원"].map(j=>`<
     hit.addEventListener('focus',()=>{const b=hit.getBoundingClientRect();show(dl,{clientX:b.left+9,clientY:b.top});}); hit.addEventListener('blur',()=>tip.hidden=true);
   });
   // label endpoint
-  const last=pts[pts.length-2]; // 2025 (2026 has 3 deals)
-  const lt=el('text',{x:last[0]+8,y:last[1]-10,class:'lab'},s); lt.textContent=`2025년 중앙값 ${D.yearly.find(o=>o.y==='2025').med}만`;
+  const li=D.yearly.map(o=>o.n>=5).lastIndexOf(true); const last=pts[li]; // 거래 5건 이상인 마지막 해
+  const lt=el('text',{x:last[0]+8,y:last[1]-10,class:'lab'},s); lt.textContent=`${D.yearly[li].y}년 중앙값 ${D.yearly[li].med}만`;
   const capped=D.deals.filter(d=>d.pp>ymax).length;
   if(capped){const t=el('text',{x:W-mr,y:mt+10,'text-anchor':'end'},s);t.textContent=`30만 초과 ${capped}건은 맨 위에 표시`;}
 })();
