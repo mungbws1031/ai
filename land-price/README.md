@@ -4,6 +4,8 @@
 
 `index.html`을 브라우저로 열면 바로 볼 수 있습니다. 데이터가 파일 안에 들어 있어 서버가 필요 없습니다.
 
+휴대폰으로 가족과 나눠 볼 때는 `phone.html`을 쓰세요. 어르신이 보기 쉽게 큰 글씨(기본 21px, 4단계 조절)와 쉬운 말로 정리한 휴대폰 전용 화면입니다.
+
 ## 핵심 결과 (2024–2026 실거래 중앙값, 평당)
 
 | 지목 | 중앙값 | 중간 50% 범위 | 건수 |
@@ -40,6 +42,7 @@
 ```
 land-price/
 ├── index.html                          # 완성된 인포그래픽 (build_data.py가 생성)
+├── phone.html                          # 휴대폰·큰 글씨 버전 (build_data.py가 생성)
 ├── data/
 │   ├── raw/2016.csv … 2026.csv         # 국토부 원본 CSV (CP949), 토지 매매 306건
 │   ├── chogang_farmland_2016-2026.csv  # 농지 256건 정리본 (UTF-8, 평당가 포함)
@@ -51,7 +54,8 @@ land-price/
     ├── extract_simcheon.py  # 영동군 원본에서 심천면만 골라 저장
     ├── analyze.py       # 농지만 골라 통계 출력, 정리 CSV 작성
     ├── build_data.py    # 지도·차트 데이터(대지·임야 포함)를 만들고 index.html 생성
-    └── template.html    # 페이지 템플릿 (__DATA__ 자리에 데이터가 들어감)
+    ├── template.html    # 페이지 템플릿 (__DATA__ 자리에 데이터가 들어감)
+    └── template_phone.html  # 휴대폰·큰 글씨 버전 템플릿
 ```
 
 ## 다시 만들기

@@ -1,0 +1,251 @@
+<title>초강리 땅값</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="format-detection" content="telephone=no">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
+<style>
+/* 휴대폰 한 줄 스크롤: 큰 결론 → 지목별 카드 → 10년 변화 → 이웃 마을 비교 → 최근 거래 카드 → 알아두실 점 */
+:root{
+  --base:21px;
+  --bg:#fbfaf6; --card:#ffffff; --ink:#191c17; --ink-2:#3a4037; --edge:#767f71;
+  --line:#dfe3d8; --accent:#234f16; --accent-bg:#e4eed8; --bar:#4f7f3a; --bar-old:#9aa694;
+  --f:"Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121410; --card:#1b1e19; --ink:#f2f3ee; --ink-2:#d2d7cd; --edge:#7d8678;
+  --line:#2f342c; --accent:#b4dc97; --accent-bg:#26331f; --bar:#8fbf72; --bar-old:#5b6457; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121410; --card:#1b1e19; --ink:#f2f3ee; --ink-2:#d2d7cd; --edge:#7d8678;
+  --line:#2f342c; --accent:#b4dc97; --accent-bg:#26331f; --bar:#8fbf72; --bar-old:#5b6457; color-scheme:dark}
+html{font-size:var(--base);-webkit-text-size-adjust:100%;text-size-adjust:100%}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-weight:400;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:12px 40px;-webkit-tap-highlight-color:transparent;word-break:keep-all;overflow-wrap:break-word}
+.nw{white-space:nowrap}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:1.4rem}
+h1,h2{margin:0;font-weight:700;line-height:1.25;text-wrap:balance}
+h1{font-size:1.6rem} h2{font-size:1.25rem}
+p{margin:0}
+b,strong{font-weight:600}
+.sub{color:var(--ink-2)}
+.num{font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;touch-action:manipulation}
+button:focus-visible,a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+/* 글씨 크기 */
+.sizebar{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:clamp(16px,0.85rem,20px);background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:6px}
+.sizebar button{min-width:64px;min-height:48px;border-radius:10px;border:1px solid var(--edge);background:var(--bg);font-weight:600;cursor:pointer}
+.sizebar .now{font-weight:600;text-align:center;flex:1}
+
+header{display:flex;flex-direction:column;gap:.4rem}
+
+.hero{background:var(--accent-bg);border:2px solid var(--accent);border-radius:18px;padding:1.1rem 1rem;display:flex;flex-direction:column;gap:.5rem}
+.hero .label{font-weight:600;color:var(--accent)}
+.hero .big{font-size:2rem;font-weight:700;line-height:1.2}
+.hero .eg{background:var(--card);border-radius:12px;padding:.7rem .8rem}
+
+.card{background:var(--card);border:1px solid var(--edge);border-radius:16px;padding:1rem;display:flex;flex-direction:column;gap:.35rem}
+.card .what{font-weight:600;font-size:1.1rem}
+.card .price{font-size:1.5rem;font-weight:700;line-height:1.25}
+.card .price small{font-size:1rem;font-weight:400;color:var(--ink-2)}
+.list{display:flex;flex-direction:column;gap:.8rem}
+
+/* 10년 변화 막대 */
+.bars{display:flex;flex-direction:column;gap:.9rem}
+.bar-item{display:flex;flex-direction:column;gap:.25rem}
+.bar-top{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.track{height:18px;border-radius:9px;background:var(--line);overflow:hidden}
+.fill{height:100%;border-radius:9px;background:var(--bar)}
+.fill.old{background:var(--bar-old)}
+
+/* 이웃 마을 */
+.toggle{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toggle button{min-height:52px;border-radius:12px;border:1px solid var(--edge);background:var(--card);font-weight:600;cursor:pointer}
+.toggle button[aria-pressed="true"]{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.vil{display:flex;flex-direction:column;gap:.2rem;padding:.65rem .75rem;border-radius:12px}
+.vil.me{background:var(--accent-bg);border:2px solid var(--accent)}
+.vil .vtop{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.vil .vname{font-weight:600}
+.vil .vprice{font-weight:600}
+.vil .note{color:var(--ink-2);font-size:.9rem}
+.vil.total{border:1px dashed var(--edge)}
+
+/* 거래 카드 */
+.deal{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:.8rem .9rem;display:flex;flex-direction:column;gap:.15rem}
+.deal .when{color:var(--ink-2)}
+.deal .main{font-weight:600}
+.more{min-height:52px;border-radius:12px;border:1px solid var(--edge);background:var(--card);font-weight:600;cursor:pointer;width:100%}
+.linkbtn{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:12px;border:1px solid var(--edge);background:var(--card);color:var(--ink);text-decoration:none;font-weight:600}
+
+.tips{display:flex;flex-direction:column;gap:.7rem;margin:0;padding-left:1.2rem}
+footer{color:var(--ink-2);font-size:.85rem;border-top:1px solid var(--line);padding-top:.8rem}
+@media (hover:hover){.sizebar button:hover,.toggle button:hover,.more:hover,.linkbtn:hover{border-color:var(--accent)}}
+</style>
+
+<div class="wrap">
+  <div class="sizebar" role="group" aria-label="글씨 크기">
+    <button id="size-down" type="button" aria-label="글씨 작게">가 −</button>
+    <span class="now" id="size-now">글씨 보통</span>
+    <button id="size-up" type="button" aria-label="글씨 크게">가 +</button>
+  </div>
+
+  <header>
+    <h1>초강리 땅값, 한눈에</h1>
+    <p class="sub">충북 영동군 심천면 초강리 · 나라에 신고된 실제 거래값(국토교통부)으로 정리했어요.</p>
+  </header>
+
+  <section class="hero" aria-label="결론">
+    <p class="label">요즘 초강리 논값</p>
+    <p class="big">한 평에 약 <span id="hero-dap"></span></p>
+    <p>2024년부터 지금까지 실제로 팔린 논 <b id="hero-n"></b>을 줄 세웠을 때 가운데 값이에요.</p>
+    <p class="eg" id="hero-eg"></p>
+  </section>
+
+  <section class="list" aria-labelledby="h-kind">
+    <h2 id="h-kind">땅 종류별 값 (최근 3년)</h2>
+    <div class="list" id="kinds"></div>
+  </section>
+
+  <section class="list" aria-labelledby="h-trend">
+    <h2 id="h-trend">10년 동안 얼마나 올랐나</h2>
+    <p class="sub">논·밭·과수원을 모두 합쳐 본 한 평 값이에요.</p>
+    <div class="card bars" id="trend"></div>
+  </section>
+
+  <section class="list" aria-labelledby="h-vil">
+    <h2 id="h-vil">심천면 이웃 마을과 비교</h2>
+    <p class="sub">심천면 14개 마을의 최근 3년 한 평 값이에요. 비싼 순서대로 놓았어요.</p>
+    <div class="toggle" role="group" aria-label="비교할 땅">
+      <button type="button" id="vt-dap" data-v="답" aria-pressed="true">논</button>
+      <button type="button" id="vt-jeon" data-v="전" aria-pressed="false">밭</button>
+    </div>
+    <div class="card" id="villages"></div>
+  </section>
+
+  <section class="list" aria-labelledby="h-deals">
+    <h2 id="h-deals">초강리 최근 거래</h2>
+    <p class="sub">2024년부터 실제로 팔린 논·밭·과수원·집터예요. 최근 것부터 보여드려요.</p>
+    <div class="list" id="deals"></div>
+    <button type="button" class="more" id="deals-more">더 보기</button>
+  </section>
+
+  <section class="list" aria-labelledby="h-where">
+    <h2 id="h-where">위치 보기</h2>
+    <a class="linkbtn" href="https://map.naver.com/p/search/%EC%98%81%EB%8F%99%EA%B5%B0%20%EC%8B%AC%EC%B2%9C%EB%A9%B4%20%EC%B4%88%EA%B0%95%EB%A6%AC" target="_blank" rel="noopener">네이버 지도에서 초강리 보기</a>
+    <a class="linkbtn" href="https://map.kakao.com/?q=%EC%98%81%EB%8F%99%EA%B5%B0%20%EC%8B%AC%EC%B2%9C%EB%A9%B4%20%EC%B4%88%EA%B0%95%EB%A6%AC" target="_blank" rel="noopener">카카오맵에서 초강리 보기</a>
+  </section>
+
+  <section class="card" aria-labelledby="h-tips">
+    <h2 id="h-tips">알아두실 점</h2>
+    <ul class="tips">
+      <li>같은 마을이라도 길이 붙어 있는지, 집을 지을 수 있는 땅인지에 따라 값이 두 배 넘게 차이 나요.</li>
+      <li>대부분 중개사 없이 직접 거래한 것이라, 가족끼리 거래한 값이 섞여 있을 수 있어요.</li>
+      <li>거래가 몇 건 안 되는 곳은 값이 쉽게 흔들려요. 그런 곳은 "거래 적음"이라고 적었어요.</li>
+      <li>나라에서 공개한 자료도 번지 일부를 가려서, 어느 땅이 팔렸는지는 알 수 없어요.</li>
+      <li>참고용이에요. 사고팔 때는 동네 중개사무소에 꼭 물어보세요.</li>
+    </ul>
+  </section>
+
+  <footer>자료: 국토교통부 실거래가 공개시스템, 계약일 2016.1.1 ~ 2026.11.4. 한 평 값 = 거래금액 ÷ (면적 ÷ 3.3058).</footer>
+</div>
+
+<script>
+const D = __DATA__;
+const NAME={"답":"논","전":"밭","과수원":"과수원","대":"집터(대지)","임야":"산(임야)"};
+const man=v=>{ // 만 원 단위 숫자 → 읽기 쉬운 말
+  v=Math.round(v);
+  if(v>=10000){const e=Math.floor(v/10000), r=v%10000; return r?`${e}억 ${r.toLocaleString('ko-KR')}만 원`:`${e}억 원`;}
+  return `${v.toLocaleString('ko-KR')}만 원`;
+};
+const pp=v=>`<span class="nw">${(Math.round(v*10)/10).toString()}만 원</span>`;
+const dot=d=>d.replace(/-/g,'.');
+
+// 글씨 크기
+(function(){
+  const steps=[18,21,24,28], names=['글씨 작게','글씨 보통','글씨 크게','글씨 아주 크게'];
+  let i=1; try{const s=parseInt(localStorage.getItem('fontStep'),10); if(s>=0&&s<4) i=s;}catch(e){}
+  const now=document.getElementById('size-now'), dn=document.getElementById('size-down'), up=document.getElementById('size-up');
+  const apply=()=>{document.documentElement.style.setProperty('--base',steps[i]+'px'); now.textContent=names[i]; dn.disabled=i===0; up.disabled=i===3;
+    try{localStorage.setItem('fontStep',String(i));}catch(e){}};
+  dn.addEventListener('click',()=>{if(i>0){i--;apply();}}); up.addEventListener('click',()=>{if(i<3){i++;apply();}});
+  apply();
+})();
+
+// 결론
+(function(){
+  const s=D.byj['답'];
+  document.getElementById('hero-dap').innerHTML=pp(s.med);
+  document.getElementById('hero-n').textContent=`${s.n}건`;
+  document.getElementById('hero-eg').innerHTML=`예를 들어 논 <b>1,000평</b>이면 약 <b>${man(s.med*1000)}</b>이에요. 대부분은 한 평에 ${pp(s.q1)}에서 ${pp(s.q3)} 사이에 팔렸어요.`;
+})();
+
+// 종류별 카드
+(function(){
+  const box=document.getElementById('kinds');
+  const card=(what,price,lines)=>`<div class="card"><p class="what">${what}</p><p class="price">${price}</p>${lines.map(l=>`<p class="sub">${l}</p>`).join('')}</div>`;
+  const out=[];
+  const ex={"답":1000,"전":500,"과수원":1000};
+  for(const j of ['답','전','과수원']){
+    const s=D.byj[j];
+    out.push(card(NAME[j],`한 평에 약 ${pp(s.med)}`,[
+      `대부분 ${pp(s.q1)} ~ ${pp(s.q3)} 사이 · 거래 ${s.n}건${s.n<10?' (거래 적음)':''}`,
+      `${ex[j].toLocaleString('ko-KR')}평이면 약 ${man(s.med*ex[j])}`]));
+  }
+  const d=D.others.dae.recent;
+  out.push(card(NAME['대'],`한 평에 약 ${pp(d.med)}`,[
+    `대부분 ${pp(d.q1)} ~ ${pp(d.q3)} 사이 · 거래 ${d.n}건 (거래 적음)`,
+    `집을 지을 수 있는 땅이라 논보다 약 3배 비싸요. 100평이면 약 ${man(d.med*100)}`]));
+  out.push(card(NAME['임야'],`최근 3년 거래 없음`,[
+    `10년 동안 9건뿐이었어요. 한꺼번에 여러 필지를 판 2017년에는 한 평에 약 5천 원, 따로 판 산은 한 평에 5만~7만 원이었어요.`]));
+  box.innerHTML=out.join('');
+})();
+
+// 10년 변화
+(function(){
+  const host=document.getElementById('trend'); const P=D.periods; const max=Math.max(...P.map(p=>p.med))*1.1;
+  host.innerHTML=P.map((p,i)=>`<div class="bar-item"><div class="bar-top"><span>${p.p.replace('–','~')}년</span><b>${pp(p.med)}</b></div>
+    <div class="track"><div class="fill ${i===0?'old':''}" style="width:${p.med/max*100}%"></div></div></div>`).join('')
+    +`<p><b>10년 전보다 약 ${(P[P.length-1].med/P[0].med).toFixed(1)}배</b>가 됐어요.</p>`;
+})();
+
+// 이웃 마을
+(function(){
+  const host=document.getElementById('villages'); let cur='답';
+  const S=D.simcheon;
+  const render=()=>{
+    const rows=S.villages.filter(v=>v[cur].recent.n>0).sort((a,b)=>b[cur].recent.med-a[cur].recent.med);
+    const none=S.villages.filter(v=>v[cur].recent.n===0).map(v=>v.name);
+    const max=Math.max(...rows.map(v=>v[cur].recent.med))*1.05;
+    const item=(v,cls,rank)=>{const r=v[cur].recent;
+      return `<div class="vil ${cls}"><div class="vtop"><span class="vname">${rank?rank+'. ':''}${v.name}${cls==='me'?' (우리 마을)':''}</span><span class="vprice">${pp(r.med)}</span></div>
+      <div class="track"><div class="fill" style="width:${r.med/max*100}%"></div></div>
+      <span class="note">거래 ${r.n}건${r.n<5?' · 거래 적음':''}</span></div>`;};
+    const t=S.total;
+    host.innerHTML=`<div class="vil total"><div class="vtop"><span class="vname">심천면 평균</span><span class="vprice">${pp(t[cur].recent.med)}</span></div><span class="note">심천면 전체 거래 ${t[cur].recent.n}건의 가운데 값</span></div>`
+      +rows.map((v,i)=>item(v,v.name==='초강리'?'me':'',i+1)).join('')
+      +(none.length?`<p class="note sub">최근 3년 거래 없음: ${none.join(', ')}</p>`:'');
+    document.querySelectorAll('.toggle button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===cur));
+  };
+  document.querySelector('.toggle').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;cur=b.dataset.v;render();});
+  render();
+})();
+
+// 최근 거래
+(function(){
+  const dae=D.others.dae.deals.filter(d=>d.d>='2024'&&!d.share&&!d.void);
+  const rows=D.deals.filter(d=>d.d>='2024').concat(dae).sort((a,b)=>b.d.localeCompare(a.d));
+  const box=document.getElementById('deals'), more=document.getElementById('deals-more');
+  let shown=6;
+  const render=()=>{
+    box.innerHTML=rows.slice(0,shown).map(r=>`<div class="deal"><p class="when">${dot(r.d)}</p>
+      <p class="main">${NAME[r.j]} ${r.py.toLocaleString('ko-KR')}평 · ${man(r.amt)}</p>
+      <p>한 평에 ${pp(r.pp)}</p></div>`).join('');
+    more.hidden=shown>=rows.length;
+    more.textContent=`더 보기 (${rows.length-shown}건 남음)`;
+  };
+  more.addEventListener('click',()=>{shown=Math.min(rows.length,shown+10);render();});
+  render();
+})();
+</script>

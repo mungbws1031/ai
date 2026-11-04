@@ -99,4 +99,7 @@ print(H, len(deals), periods, byj, [ (b['z'],b['n'],b['med']) for b in byz], [(a
 tpl=open('scripts/template.html',encoding='utf-8').read()
 page='<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n</head>\n<body>\n'+tpl.replace('__DATA__',json.dumps(out,ensure_ascii=False,separators=(',',':')))+'\n</body>\n</html>\n'
 open('index.html','w',encoding='utf-8').write(page)
+tpl2=open('scripts/template_phone.html',encoding='utf-8').read()
+page2=page.split('<body>')[0]+'<body>\n'+tpl2.replace('__DATA__',json.dumps(out,ensure_ascii=False,separators=(',',':')))+'\n</body>\n</html>\n'
+open('phone.html','w',encoding='utf-8').write(page2)
 print('wrote index.html', len(page))
