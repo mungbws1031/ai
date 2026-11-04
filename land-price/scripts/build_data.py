@@ -73,7 +73,27 @@ for j,key in (('대','dae'),('임야','forest')):
 # 5개 지목 10년 분포 비교
 compare=[{'j':j,**stats([x['pp'] for x in deals if x['j']==j])} for j in ('과수원','전','답')]
 compare=[{'j':'대',**others['dae']['all']}]+compare+[{'j':'임야',**others['forest']['all']}]
-out={'others':others,'compare':compare,'map':mapdata,'deals':deals,'yearly':yearly,'byj':byj,'allj':allj,'byz':byz,'periods':periods,'counts':{'all_land':len(raw),'farm':len(farm),'used':len(ok)}}
+# --- 심천면 14개 리 비교 (data/simcheon_land_2016-2026.csv)
+sim=list(csv.DictReader(open('data/simcheon_land_2016-2026.csv',encoding='utf-8-sig')))
+ri=lambda r:r['시군구'].split()[-1]
+def ppv(r): return int(r['거래금액(만원)'].replace(',',''))/(float(r['계약면적'])/3.305785)
+simok=[r for r in sim if r['지분구분']!='지분' and r['해제사유발생일'] in ('-','')]
+def medn(v): return {'n':len(v),'med':round(st.median(v),1) if v else None}
+SJ=('답','전','과수원','대','임야')
+def ri_stats(R, nall):
+    o={'name':None,'n_all':nall}
+    for j in SJ:
+        o[j]={'recent':medn([ppv(r) for r in R if r['지목']==j and r['계약년월']>='202401']),
+              'all':medn([ppv(r) for r in R if r['지목']==j]),
+              'old':medn([ppv(r) for r in R if r['지목']==j and r['계약년월']<'201901'])}
+    return o
+villages=[]
+for name in sorted(set(ri(r) for r in sim)):
+    o=ri_stats([r for r in simok if ri(r)==name], sum(ri(r)==name for r in sim)); o['name']=name; villages.append(o)
+villages.sort(key=lambda o:-o['n_all'])
+tot=ri_stats(simok,len(sim)); tot['name']='심천면 전체'
+simcheon={'total':tot,'villages':villages}
+out={'simcheon':simcheon,'others':others,'compare':compare,'map':mapdata,'deals':deals,'yearly':yearly,'byj':byj,'allj':allj,'byz':byz,'periods':periods,'counts':{'all_land':len(raw),'farm':len(farm),'used':len(ok)}}
 json.dump(out,open('data/viz.json','w'),ensure_ascii=False,separators=(',',':'))
 print(H, len(deals), periods, byj, [ (b['z'],b['n'],b['med']) for b in byz], [(a['name'],a['cx'],a['cy']) for a in areas])
 tpl=open('scripts/template.html',encoding='utf-8').read()
