@@ -7,7 +7,7 @@
 :root{
   --bg:#f6f7f2; --surface:#fcfcfb; --ink:#1b1f1a; --ink-2:#4d544b; --ink-3:#7a8177;
   --line:#dfe3d8; --line-2:#c9cfc2; --field:#e9ede1; --field-hi:#d4dcc4; --accent:#3f6b2a;
-  --s-dap:#2a78d6; --s-jeon:#eb6834; --s-orch:#1baf7a; --med:#1b1f1a;
+  --s-dap:#2a78d6; --s-jeon:#eb6834; --s-orch:#1baf7a; --s-dae:#6250d6; --s-forest:#008300; --med:#1b1f1a;
   --f-display:"Gowun Batang","Nanum Myeongjo",serif;
   --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
@@ -15,11 +15,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#141613; --surface:#1a1c19; --ink:#eef0ea; --ink-2:#c1c7bc; --ink-3:#8f968b;
   --line:#2e322c; --line-2:#3e443b; --field:#232720; --field-hi:#3a4630; --accent:#9cc47f;
-  --s-dap:#3987e5; --s-jeon:#d95926; --s-orch:#199e70; --med:#eef0ea; color-scheme:dark}}
+  --s-dap:#3987e5; --s-jeon:#d95926; --s-orch:#199e70; --s-dae:#9085e9; --s-forest:#2f9a2f; --med:#eef0ea; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#141613; --surface:#1a1c19; --ink:#eef0ea; --ink-2:#c1c7bc; --ink-3:#8f968b;
   --line:#2e322c; --line-2:#3e443b; --field:#232720; --field-hi:#3a4630; --accent:#9cc47f;
-  --s-dap:#3987e5; --s-jeon:#d95926; --s-orch:#199e70; --med:#eef0ea; color-scheme:dark}
+  --s-dap:#3987e5; --s-jeon:#d95926; --s-orch:#199e70; --s-dae:#9085e9; --s-forest:#2f9a2f; --med:#eef0ea; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 56px}
@@ -51,7 +51,21 @@ header .lede{max-width:62ch;color:var(--ink-2);font-size:16px}
 .rng .lbl{position:absolute;top:22px;font-size:11px;color:var(--ink-3);transform:translateX(-50%)}
 .kpi .rng{margin-bottom:14px}
 .sw{width:12px;height:12px;display:inline-block;flex:none}
-.sw.c{border-radius:50%} .sw.t{clip-path:polygon(50% 0,100% 100%,0 100%)}
+.sw.c{border-radius:50%} .sw.t{clip-path:polygon(50% 0,100% 100%,0 100%)} .sw.d{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)} .sw.h{clip-path:polygon(25% 5%,75% 5%,100% 50%,75% 95%,25% 95%,0 50%)}
+.kpis.two-up{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi .k-val.na{font-size:24px}
+.kpi ul{margin:0;padding-left:18px;font-size:13px;color:var(--ink-2)}
+.rangechart .row{display:grid;grid-template-columns:64px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px;min-height:34px}
+.rangechart .track{position:relative;height:24px}
+.rangechart .wh{position:absolute;top:11px;height:2px;background:var(--line-2)}
+.rangechart .box{position:absolute;top:5px;height:14px;border-radius:4px;opacity:.4}
+.rangechart .dot{position:absolute;top:6px;width:12px;height:12px;border-radius:50%;border:2px solid var(--surface);transform:translateX(-50%)}
+.rangechart .clip{display:block;font-size:11px;color:var(--ink-3);white-space:nowrap}
+.rangechart .ax{position:relative;height:18px;margin-left:74px;margin-right:74px}
+.rangechart .ax span{position:absolute;transform:translateX(-50%);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.rangechart .ax span:last-child{transform:translateX(-100%)}
+.rangechart .row > div:first-child{white-space:nowrap}
+.rangechart .v{text-align:right}
 
 .section{display:flex;flex-direction:column;gap:16px}
 .section-head{display:flex;flex-direction:column;gap:6px}
@@ -105,7 +119,9 @@ tr:last-child td{border-bottom:0}
 footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:16px}
 
 @media (max-width:760px){
-  .kpis,.mapgrid,.two,.caveats{grid-template-columns:minmax(0,1fr)}
+  .kpis,.kpis.two-up,.mapgrid,.two,.caveats{grid-template-columns:minmax(0,1fr)}
+  .rangechart .row{grid-template-columns:60px minmax(0,1fr) 72px;gap:8px}
+  .rangechart .ax{margin-left:68px;margin-right:80px}
   .bar-row{grid-template-columns:84px minmax(0,1fr) 64px}
 }
 @media (prefers-reduced-motion:no-preference){.kpi,.panel{transition:border-color .2s}}
@@ -115,10 +131,20 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
   <header>
     <div class="eyebrow">충청북도 영동군 심천면 초강리 · 국토교통부 실거래가 2016.01–2026.11</div>
     <h1>초강리 논은 <span class="hl">평당 약 10만 원</span>에 거래됩니다</h1>
-    <p class="lede">최근 3년(2024–2026) 실거래 35건 기준입니다. 10년 전 평당 7만 원에서 꾸준히 올랐고, 같은 마을 안에서도 용도지역과 입지에 따라 2배 넘게 차이 납니다.</p>
+    <p class="lede">최근 3년(2024–2026) 실거래 35건 기준입니다. 10년 전 평당 7만 원에서 꾸준히 올랐고, 같은 마을 안에서도 용도지역과 입지에 따라 2배 넘게 차이 납니다. 집을 지을 수 있는 대지는 평당 약 32만 원이고, 임야는 최근 3년 동안 정상 거래가 없었습니다.</p>
   </header>
 
-  <section class="kpis" id="kpis" aria-label="지목별 최근 평당가"></section>
+  <section class="kpis" id="kpis" aria-label="농지 지목별 최근 평당가"></section>
+
+  <section class="section" aria-labelledby="h-other">
+    <div class="section-head">
+      <h2 id="h-other">대지와 임야</h2>
+      <p>같은 초강리 안에서 대지(집터)는 논의 약 3배 가격에 거래됐습니다. 임야는 거래가 드물고, 묶음 매각은 평당 5천 원 수준이었습니다.</p>
+    </div>
+    <div class="kpis two-up" id="kpis-other"></div>
+    <div class="panel rangechart" id="compare" role="img" aria-label="지목 5개의 10년 평당가 분포 비교"></div>
+    <p class="note" style="margin-top:0">막대는 중간 50% 범위, 점은 중앙값, 가는 선은 최저~최고입니다. 2016–2026년 전체 거래 기준이라 위 카드의 최근 3년 값과 다릅니다.</p>
+  </section>
 
   <section class="section" aria-labelledby="h-map">
     <div class="section-head">
@@ -175,10 +201,18 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
   <section class="section" aria-labelledby="h-tbl">
     <div class="section-head">
       <h2 id="h-tbl">최근 거래 대장 (2024–2026)</h2>
-      <p>평당 20만 원이 넘는 거래는 굵게 표시했습니다.</p>
+      <p>농지와 대지 거래입니다. 농지 중 평당 20만 원이 넘는 거래는 굵게 표시했습니다.</p>
     </div>
     <div class="chips" id="chips" role="group" aria-label="지목 필터"></div>
     <div class="tbl-wrap"><table id="tbl"><thead><tr><th>계약일</th><th>지목</th><th>용도지역</th><th>번지</th><th class="r">면적(평)</th><th class="r">금액(만 원)</th><th class="r">평당(만 원)</th><th>유형</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="section" aria-labelledby="h-forest">
+    <div class="section-head">
+      <h2 id="h-forest">임야 거래 전체 (10건)</h2>
+      <p>2017년 3월 13일 하루에 5필지가 평당 약 5천 원에 묶여 팔렸습니다. 낱개로 팔린 임야는 평당 5만~7만 원이었습니다.</p>
+    </div>
+    <div class="tbl-wrap"><table id="tbl-forest"><thead><tr><th>계약일</th><th>용도지역</th><th>번지</th><th class="r">면적(평)</th><th class="r">금액(만 원)</th><th class="r">평당(만 원)</th><th>비고</th></tr></thead><tbody></tbody></table></div>
   </section>
 
   <section class="section" aria-labelledby="h-cav">
@@ -187,7 +221,9 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
       <div><b>거의 전부 직거래</b>가족 간 거래나 공공 매입이 섞여 있을 수 있어 중개 시세와 다를 수 있습니다.</div>
       <div><b>같은 날 묶음 거래</b>2025년 2월 26일(4건), 10월 29일(5건)처럼 한 번에 여러 필지를 산 거래가 있습니다.</div>
       <div><b>제외한 거래</b>지분 거래 5건과 해제된 계약 1건은 평당가 계산에서 뺐습니다.</div>
-      <div><b>표본이 작은 지목</b>최근 3년 밭은 6건, 과수원은 7건뿐이라 중앙값이 쉽게 흔들립니다.</div>
+      <div><b>표본이 작은 지목</b>최근 3년 밭은 6건, 과수원은 7건, 대지는 6건뿐이라 중앙값이 쉽게 흔들립니다.</div>
+      <div><b>대지의 튀는 값</b>2021년 12월 대지 77평이 6,800만 원(평당 88.2만 원)에 팔렸습니다. 건물값이 섞였을 수 있어 분포 그림에서는 40만 원 위로 잘라 표시했습니다.</div>
+      <div><b>임야는 시세가 없음</b>10년간 정상 거래가 9건이고 그중 5건이 하루 묶음 거래라, 평균이나 중앙값을 시세로 쓰기 어렵습니다.</div>
     </div>
   </section>
 
@@ -196,12 +232,13 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
 
 <script>
 const D = __DATA__;
-const J = {"답":{v:"--s-dap",shape:"c"},"전":{v:"--s-jeon",shape:"s"},"과수원":{v:"--s-orch",shape:"t"}};
+const J = {"답":{v:"--s-dap",shape:"c"},"전":{v:"--s-jeon",shape:"s"},"과수원":{v:"--s-orch",shape:"t"},"대":{v:"--s-dae",shape:"d"},"임야":{v:"--s-forest",shape:"h"}};
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const NS="http://www.w3.org/2000/svg";
 const el=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
 const fmt=n=>n.toLocaleString('ko-KR');
-const sw=j=>`<span class="sw ${J[j].shape==='c'?'c':J[j].shape==='t'?'t':''}" style="background:var(${J[j].v})"></span>`;
+const sw=j=>`<span class="sw ${J[j].shape==='s'?'':J[j].shape}" style="background:var(${J[j].v})"></span>`;
+const JN={"대":"대지"};
 
 document.getElementById('cnt-all').textContent=D.counts.all_land;
 document.getElementById('cnt-farm').textContent=D.counts.farm;
@@ -227,6 +264,56 @@ document.getElementById('cnt-farm').textContent=D.counts.farm;
       <div class="k-sub">2024–26 · <span class="num">${s.n}</span>건 · ${sub[j]}</div>`;
     box.appendChild(c);
   }
+})();
+
+// 대지·임야 cards
+(function(){
+  const box=document.getElementById('kpis-other'); const max=40; const pct=v=>Math.min(100,v/max*100);
+  const dae=D.others.dae.recent, fo=D.others.forest;
+  const a=document.createElement('div'); a.className='kpi';
+  a.innerHTML=`<div class="k-top">${sw('대')}대지</div>
+    <div class="k-val num">${dae.med.toFixed(1)}<small>만 원 / 평</small></div>
+    <div class="rng" aria-label="중간 50% 범위 ${dae.q1}~${dae.q3}만 원">
+      <div class="axis"></div>
+      <div class="iqr" style="left:${pct(dae.q1)}%;width:${pct(dae.q3)-pct(dae.q1)}%;background:var(--s-dae)"></div>
+      <div class="med" style="left:calc(${pct(dae.med)}% - 1.5px)"></div>
+      <span class="lbl num" style="left:0;transform:none">0</span>
+      <span class="lbl num" style="left:${pct(dae.q1)}%">${dae.q1}</span>
+      <span class="lbl num" style="left:${pct(dae.q3)}%">${dae.q3}</span>
+      <span class="lbl num" style="right:0;left:auto;transform:none">40만</span>
+    </div>
+    <div class="k-sub">2024–26 · <span class="num">${dae.n}</span>건 · 집터. 10년 전 평당 ${D.others.dae.periods[0].med}만 원에서 2배 넘게 오름</div>`;
+  const b=document.createElement('div'); b.className='kpi';
+  const p0=fo.periods[0];
+  b.innerHTML=`<div class="k-top">${sw('임야')}임야</div>
+    <div class="k-val na">최근 3년 정상 거래 없음</div>
+    <ul>
+      <li>10년간 <span class="num">${fo.all.n}</span>건 (지분 거래 1건 제외), 모두 계획관리지역</li>
+      <li>2017년 3월 묶음 매각 5필지: 평당 약 <span class="num">0.5</span>만 원</li>
+      <li>낱개 매각: 평당 <span class="num">5.0</span>만 원(2017), <span class="num">7.0</span>만 원(2021)</li>
+    </ul>`;
+  box.append(a,b);
+})();
+
+// 5개 지목 분포 비교
+(function(){
+  const host=document.getElementById('compare'); const max=40; const pct=v=>Math.min(100,v/max*100);
+  const nm=j=>JN[j]||j;
+  host.innerHTML=D.compare.map(c=>`<div class="row"><div><span class="tag">${sw(c.j)}${nm(c.j)}</span><div class="faint num" style="font-size:11px">${c.n}건</div></div>
+    <div class="track">
+      <div class="wh" style="left:${pct(c.min)}%;width:${Math.max(.5,pct(c.max)-pct(c.min))}%"></div>
+      <div class="box" style="left:${pct(c.q1)}%;width:${Math.max(.8,pct(c.q3)-pct(c.q1))}%;background:var(${J[c.j].v})"></div>
+      <div class="dot" style="left:${pct(c.med)}%;background:var(${J[c.j].v})"></div>
+    </div>
+    <div class="v num">${c.med.toFixed(1)}만${c.max>max?`<span class="clip">최고 ${c.max}만 →</span>`:''}</div></div>`).join('')
+    +`<div class="ax">${[0,10,20,30,40].map(v=>`<span class="num" style="left:${pct(v)}%">${v===0?'0':v+'만'}</span>`).join('')}</div>`;
+})();
+
+// 임야 표
+(function(){
+  const tb=document.querySelector('#tbl-forest tbody');
+  const rows=[...D.others.forest.deals].sort((a,b)=>b.d.localeCompare(a.d));
+  tb.innerHTML=rows.map(r=>`<tr><td class="num">${r.d}</td><td>${r.z}</td><td class="num">${r.b}</td><td class="r num">${fmt(r.py)}</td><td class="r num">${fmt(r.amt)}</td><td class="r num">${r.pp.toFixed(1)}</td><td>${r.share?'지분 거래 (계산 제외)':r.d==='2017-03-13'?'같은 날 5필지 묶음':''}</td></tr>`).join('');
 })();
 
 // Map
@@ -312,15 +399,16 @@ bars('zones',D.byz,r=>r.z);
 
 // Table
 (function(){
-  const rows=D.deals.filter(d=>d.d>='2024').sort((a,b)=>b.d.localeCompare(a.d));
+  const daeRecent=D.others.dae.deals.filter(d=>d.d>='2024'&&!d.share&&!d.void);
+  const rows=D.deals.filter(d=>d.d>='2024').concat(daeRecent).sort((a,b)=>b.d.localeCompare(a.d));
   const tb=document.querySelector('#tbl tbody'); const chips=document.getElementById('chips');
   let cur='전체';
-  const opts=['전체','답','전','과수원'];
+  const opts=['전체','답','전','과수원','대'];
   const render=()=>{
-    tb.innerHTML=rows.filter(r=>cur==='전체'||r.j===cur).map(r=>`<tr class="${r.pp>=20?'hot':''}"><td class="num">${r.d}</td><td><span class="tag">${sw(r.j)}${r.j}</span></td><td>${r.z}</td><td class="num">${r.b}</td><td class="r num">${fmt(r.py)}</td><td class="r num">${fmt(r.amt)}</td><td class="r num">${r.pp.toFixed(1)}</td><td>${r.t}</td></tr>`).join('');
+    tb.innerHTML=rows.filter(r=>cur==='전체'||r.j===cur).map(r=>`<tr class="${r.pp>=20&&r.j!=='대'?'hot':''}"><td class="num">${r.d}</td><td><span class="tag">${sw(r.j)}${JN[r.j]||r.j}</span></td><td>${r.z}</td><td class="num">${r.b}</td><td class="r num">${fmt(r.py)}</td><td class="r num">${fmt(r.amt)}</td><td class="r num">${r.pp.toFixed(1)}</td><td>${r.t}</td></tr>`).join('');
     chips.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.v===cur));
   };
-  chips.innerHTML=opts.map(o=>`<button class="chip" id="chip-${o}" data-v="${o}" aria-pressed="false">${o==='전체'?'':sw(o)}${o} <span class="num faint">${o==='전체'?rows.length:rows.filter(r=>r.j===o).length}</span></button>`).join('');
+  chips.innerHTML=opts.map(o=>`<button class="chip" id="chip-${o}" data-v="${o}" aria-pressed="false">${o==='전체'?'':sw(o)}${JN[o]||o} <span class="num faint">${o==='전체'?rows.length:rows.filter(r=>r.j===o).length}</span></button>`).join('');
   chips.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;cur=b.dataset.v;render();});
   render();
 })();

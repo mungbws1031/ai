@@ -50,7 +50,30 @@ byz=sorted([{'z':z,**stats([x['pp'] for x in r22 if x['z']==z])} for z in set(x[
 periods=[]
 for lo,hi in (('2016','2018'),('2019','2021'),('2022','2023'),('2024','2026')):
     periods.append({'p':f'{lo}–{hi[2:]}',**stats([x['pp'] for x in deals if lo<=x['d'][:4]<=hi])})
-out={'map':mapdata,'deals':deals,'yearly':yearly,'byj':byj,'allj':allj,'byz':byz,'periods':periods,'counts':{'all_land':306,'farm':len(farm),'used':len(ok)}}
+# --- 대지·임야 (원본 CSV에서 직접 읽음)
+import glob, io
+raw=[]
+for f in sorted(glob.glob('data/raw/*.csv')):
+    L=open(f,'rb').read().decode('cp949').splitlines()
+    i=next(k for k,l in enumerate(L) if l.startswith('"NO"'))
+    raw+=list(csv.DictReader(io.StringIO('\n'.join(L[i:]))))
+def rec_of(r):
+    m2=float(r['계약면적']); amt=int(r['거래금액(만원)'].replace(',',''))
+    return {'d':f"{r['계약년월'][:4]}-{r['계약년월'][4:]}-{r['계약일'].zfill(2)}",'j':r['지목'],'z':r['용도지역'],'b':r['번지'],
+            'm2':m2,'py':round(m2/3.305785),'amt':amt,'pp':round(amt/(m2/3.305785),1),
+            't':r['거래유형'] if r['거래유형']!='-' else '-','share':r['지분구분']=='지분','void':r['해제사유발생일'] not in ('-','')}
+others={}
+for j,key in (('대','dae'),('임야','forest')):
+    allr=sorted([rec_of(r) for r in raw if r['지목']==j],key=lambda x:x['d'])
+    okr=[x for x in allr if not x['share'] and not x['void']]
+    recent=[x['pp'] for x in okr if x['d']>='2024']
+    others[key]={'all':stats([x['pp'] for x in okr]),'recent':stats(recent) if recent else None,
+        'periods':[{'p':f'{lo}–{hi[2:]}',**stats(v)} for lo,hi in (('2016','2018'),('2019','2021'),('2022','2023'),('2024','2026')) for v in [[x['pp'] for x in okr if lo<=x['d'][:4]<=hi]] if v],
+        'deals':allr}
+# 5개 지목 10년 분포 비교
+compare=[{'j':j,**stats([x['pp'] for x in deals if x['j']==j])} for j in ('과수원','전','답')]
+compare=[{'j':'대',**others['dae']['all']}]+compare+[{'j':'임야',**others['forest']['all']}]
+out={'others':others,'compare':compare,'map':mapdata,'deals':deals,'yearly':yearly,'byj':byj,'allj':allj,'byz':byz,'periods':periods,'counts':{'all_land':len(raw),'farm':len(farm),'used':len(ok)}}
 json.dump(out,open('data/viz.json','w'),ensure_ascii=False,separators=(',',':'))
 print(H, len(deals), periods, byj, [ (b['z'],b['n'],b['med']) for b in byz], [(a['name'],a['cx'],a['cy']) for a in areas])
 tpl=open('scripts/template.html',encoding='utf-8').read()
