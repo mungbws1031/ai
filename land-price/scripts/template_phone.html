@@ -148,11 +148,12 @@ footer{color:var(--ink-2);font-size:.85rem;border-top:1px solid var(--line);padd
     </ul>
   </section>
 
-  <footer>자료: 국토교통부 실거래가 공개시스템, 계약일 2016.1.1 ~ 2026.11.4. 한 평 값 = 거래금액 ÷ (면적 ÷ 3.3058).</footer>
+  <footer>자료: 국토교통부 실거래가 공개시스템, 계약일 2016.1.1 ~ <span id="asof-foot"></span>. 한 평 값 = 거래금액 ÷ (면적 ÷ 3.3058).</footer>
 </div>
 
 <script>
 const D = __DATA__;
+document.getElementById('asof-foot').textContent=D.asof.replace(/-/g,'.');
 const NAME={"답":"논","전":"밭","과수원":"과수원","대":"집터(대지)","임야":"산(임야)"};
 const man=v=>{ // 만 원 단위 숫자 → 읽기 쉬운 말
   v=Math.round(v);
@@ -198,7 +199,7 @@ const dot=d=>d.replace(/-/g,'.');
     `대부분 ${pp(d.q1)} ~ ${pp(d.q3)} 사이 · 거래 ${d.n}건 (거래 적음)`,
     `집을 지을 수 있는 땅이라 논보다 약 3배 비싸요. 100평이면 약 ${man(d.med*100)}`]));
   out.push(card(NAME['임야'],`최근 3년 거래 없음`,[
-    `10년 동안 9건뿐이었어요. 한꺼번에 여러 필지를 판 2017년에는 한 평에 약 5천 원, 따로 판 산은 한 평에 5만~7만 원이었어요.`]));
+    `10년 동안 ${D.others.forest.all.n}건뿐이었어요. 한꺼번에 여러 필지를 판 2017년에는 한 평에 약 5천 원, 따로 판 산은 한 평에 5만~7만 원이었어요.`]));
   box.innerHTML=out.join('');
 })();
 

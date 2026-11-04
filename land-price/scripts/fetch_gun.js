@@ -6,8 +6,9 @@ const fs = require('fs');
   const b = await chromium.launch();
   const p = await b.newPage();
   await p.goto('https://rt.molit.go.kr/pt/xls/xls.do?mobileAt=', {waitUntil:'networkidle', timeout:60000});
-  for (let y = 2016; y <= 2026; y++) {
-    const form = {srhThingNo:'G',srhDelngSecd:'1',srhAddrGbn:'1',srhLfstsSecd:'1',sidoNm:'충청북도',sggNm:'영동군',emdNm:'전체',loadNm:'',areaNm:'면적',hsmpNm:'',mobileAt:'',srhFromDt:`${y}-01-01`,srhToDt: y===2026?'2026-11-04':`${y}-12-31`,srhNewRonSecd:'',srhSidoCd:'43000',srhSggCd:'43740',srhEmdCd:'',srhRoadNm:'',srhLoadCd:'',srhHsmpCd:'',srhArea:'',srhFromAmount:'',srhToAmount:'',srhLrArea:''};
+  const _now=new Date(Date.now()+9*3600*1000); const END_Y=_now.getUTCFullYear(); const END_D=_now.toISOString().slice(0,10); // 오늘(한국 시간)까지 조회
+  for (let y = 2016; y <= END_Y; y++) {
+    const form = {srhThingNo:'G',srhDelngSecd:'1',srhAddrGbn:'1',srhLfstsSecd:'1',sidoNm:'충청북도',sggNm:'영동군',emdNm:'전체',loadNm:'',areaNm:'면적',hsmpNm:'',mobileAt:'',srhFromDt:`${y}-01-01`,srhToDt: y===END_Y?END_D:`${y}-12-31`,srhNewRonSecd:'',srhSidoCd:'43000',srhSggCd:'43740',srhEmdCd:'',srhRoadNm:'',srhLoadCd:'',srhHsmpCd:'',srhArea:'',srhFromAmount:'',srhToAmount:'',srhLrArea:''};
     const body = new URLSearchParams(form).toString();
     const res = await p.evaluate(async bd => {
       const h = {'Content-Type':'application/x-www-form-urlencoded; charset=UTF-8'};
@@ -22,5 +23,6 @@ const fs = require('fs');
     if (res.b64) fs.writeFileSync(`data/gun/${y}.csv`, Buffer.from(res.b64,'base64'));
     await p.waitForTimeout(800);
   }
+  fs.writeFileSync('data/asof.txt', END_D+'\n');  // 조회 종료일 기록 → build_data.py가 페이지에 표시
   await b.close();
 })();

@@ -93,7 +93,12 @@ for name in sorted(set(ri(r) for r in sim)):
 villages.sort(key=lambda o:-o['n_all'])
 tot=ri_stats(simok,len(sim)); tot['name']='심천면 전체'
 simcheon={'total':tot,'villages':villages}
-out={'simcheon':simcheon,'others':others,'compare':compare,'map':mapdata,'deals':deals,'yearly':yearly,'byj':byj,'allj':allj,'byz':byz,'periods':periods,'counts':{'all_land':len(raw),'farm':len(farm),'used':len(ok)}}
+import datetime
+try:
+    asof=open('data/asof.txt').read().strip()  # fetch 스크립트가 기록한 조회 종료일
+except FileNotFoundError:
+    asof=(datetime.datetime.now(datetime.timezone.utc)+datetime.timedelta(hours=9)).date().isoformat()
+out={'asof':asof,'simcheon':simcheon,'others':others,'compare':compare,'map':mapdata,'deals':deals,'yearly':yearly,'byj':byj,'allj':allj,'byz':byz,'periods':periods,'counts':{'all_land':len(raw),'farm':len(farm),'used':len(ok)}}
 json.dump(out,open('data/viz.json','w'),ensure_ascii=False,separators=(',',':'))
 print(H, len(deals), periods, byj, [ (b['z'],b['n'],b['med']) for b in byz], [(a['name'],a['cx'],a['cy']) for a in areas])
 tpl=open('scripts/template.html',encoding='utf-8').read()
