@@ -4,6 +4,11 @@
 
 `index.html`을 브라우저로 열면 바로 볼 수 있습니다. 데이터가 파일 안에 들어 있어 서버가 필요 없습니다.
 
+배포 주소(GitHub Pages):
+
+- 휴대폰·큰 글씨: https://mungbws1031.github.io/ai/land-price/phone.html
+- 자세한 분석: https://mungbws1031.github.io/ai/land-price/
+
 휴대폰으로 가족과 나눠 볼 때는 `phone.html`을 쓰세요. 어르신이 보기 쉽게 큰 글씨(기본 21px, 4단계 조절)와 쉬운 말로 정리한 휴대폰 전용 화면입니다.
 
 ## 핵심 결과 (2024–2026 실거래 중앙값, 평당)
