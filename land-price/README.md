@@ -1,0 +1,57 @@
+# land-price — 초강리 농지 실거래 인포그래픽
+
+충북 영동군 심천면 초강리의 농지(전·답·과수원) 실거래가를 국토교통부 실거래가 공개시스템에서 받아 정리한 단일 파일 인포그래픽입니다.
+
+`index.html`을 브라우저로 열면 바로 볼 수 있습니다. 데이터가 파일 안에 들어 있어 서버가 필요 없습니다.
+
+## 핵심 결과 (2024–2026 실거래 중앙값, 평당)
+
+| 지목 | 중앙값 | 중간 50% 범위 | 건수 |
+|---|---|---|---|
+| 답 | 10.1만 원 | 9.0–11.5만 원 | 22 |
+| 전 | 15.1만 원 | 9.0–22.3만 원 | 6 |
+| 과수원 | 14.6만 원 | 12.3–21.7만 원 | 7 |
+
+농지 전체 중앙값은 2016–18년 7.0만 원에서 2024–26년 10.9만 원으로 올랐습니다.
+
+## 폴더 구성
+
+```
+land-price/
+├── index.html                          # 완성된 인포그래픽 (build_data.py가 생성)
+├── data/
+│   ├── raw/2016.csv … 2026.csv         # 국토부 원본 CSV (CP949), 토지 매매 306건
+│   ├── chogang_farmland_2016-2026.csv  # 농지 256건 정리본 (UTF-8, 평당가 포함)
+│   └── viz.json                        # 지도 경로와 차트용 집계
+└── scripts/
+    ├── fetch_rtms.js    # 원본 CSV를 연도별로 내려받기 (Playwright)
+    ├── analyze.py       # 농지만 골라 통계 출력, 정리 CSV 작성
+    ├── build_data.py    # 지도·차트 데이터를 만들고 index.html 생성
+    └── template.html    # 페이지 템플릿 (__DATA__ 자리에 데이터가 들어감)
+```
+
+## 다시 만들기
+
+`land-price/` 폴더에서 실행합니다.
+
+```bash
+node scripts/fetch_rtms.js      # 최신 거래를 다시 받을 때만 (rt.molit.go.kr 접속 필요)
+python3 scripts/analyze.py      # data/chogang_farmland_2016-2026.csv 갱신
+python3 scripts/build_data.py   # data/viz.json, index.html 갱신
+```
+
+`build_data.py`는 영동군 읍면 경계를 그리려고 행정동 경계 GeoJSON(vuski/admdongkor, 약 35MB)을 `data/adm.json`으로 내려받습니다. 이 파일은 `.gitignore`로 저장소에서 뺐습니다.
+
+다른 리를 보려면 `fetch_rtms.js`의 `srhEmdCd`(초강리 = `40033`)와 `emdNm`을 바꾸면 됩니다. 영동군 리 코드는 사이트의 `/cmm/ptEmdList.do` 응답에서 확인할 수 있습니다.
+
+## 한계
+
+- 실거래 자료는 번지가 일부만 공개되어(예: `4**`) 거래를 필지 단위로 지도에 찍을 수 없습니다. 지도는 초강리가 속한 심천면을 강조해 보여줍니다.
+- 최근 거래는 거의 전부 직거래라 가족 간 거래나 묶음 매입이 섞여 있을 수 있습니다.
+- 지분 거래 5건과 해제된 계약 1건은 평당가 계산에서 뺐습니다.
+- 국토부 안내대로 법적 효력이 없는 참고 자료입니다.
+
+## 출처
+
+- 국토교통부 실거래가 공개시스템 (rt.molit.go.kr), 토지 매매, 계약일 기준 2016-01-01 ~ 2026-11-04
+- 행정동 경계: [vuski/admdongkor](https://github.com/vuski/admdongkor) ver20230701
