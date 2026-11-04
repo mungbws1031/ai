@@ -66,6 +66,32 @@ header .lede{max-width:62ch;color:var(--ink-2);font-size:16px}
 .rangechart .ax span:last-child{transform:translateX(-100%)}
 .rangechart .row > div:first-child{white-space:nowrap}
 .rangechart .v{text-align:right}
+.rank .row{display:grid;grid-template-columns:84px minmax(0,1fr) 92px;gap:10px;align-items:center;font-size:13.5px;min-height:30px}
+.rank .row.me{font-weight:600}
+.rank .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank .row.me .nm{color:var(--accent)}
+.rank .row.thin{color:var(--ink-3)}
+.rank .track{position:relative;height:20px}
+.rank .base{position:absolute;left:0;right:0;top:9px;height:2px;background:var(--line)}
+.rank .bar{position:absolute;left:0;top:4px;height:12px;border-radius:0 4px 4px 0;background:var(--accent);opacity:.8}
+.rank .row.thin .bar{opacity:.28}
+.rank .row.tot .bar{background:var(--ink-2);opacity:.55}
+.rank .old{position:absolute;top:2px;width:2px;height:16px;background:var(--ink);opacity:.7;transform:translateX(-1px)}
+.rank .v{text-align:right;white-space:nowrap}
+.rank .v small{color:var(--ink-3);font-size:11px;margin-left:4px}
+.rank .ax{position:relative;height:18px;margin-left:94px;margin-right:102px}
+.rank .ax span{position:absolute;transform:translateX(-50%);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.rank .ax span:last-child{transform:translateX(-100%)}
+.rank .sep{border-top:1px solid var(--line);margin:4px 0}
+.keyrow{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--ink-2);align-items:center}
+.keyrow span{display:inline-flex;gap:6px;align-items:center}
+.keyrow .k-bar{width:18px;height:10px;border-radius:0 3px 3px 0;background:var(--accent);opacity:.8}
+.keyrow .k-old{width:2px;height:14px;background:var(--ink);opacity:.7}
+.keyrow .k-thin{width:18px;height:10px;border-radius:0 3px 3px 0;background:var(--accent);opacity:.28}
+td.thin{color:var(--ink-3)}
+td.me,tr.me td:first-child{font-weight:600}
+tr.tot td{background:var(--bg);font-weight:600}
+td small{color:var(--ink-3);font-size:11px;margin-left:3px}
 
 .section{display:flex;flex-direction:column;gap:16px}
 .section-head{display:flex;flex-direction:column;gap:6px}
@@ -120,6 +146,9 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
 
 @media (max-width:760px){
   .kpis,.kpis.two-up,.mapgrid,.two,.caveats{grid-template-columns:minmax(0,1fr)}
+  .rank .row{grid-template-columns:72px minmax(0,1fr) 84px;gap:8px}
+  .rank .ax{margin-left:80px;margin-right:92px}
+  .rank .ax .minor{display:none}
   .rangechart .row{grid-template-columns:60px minmax(0,1fr) 72px;gap:8px}
   .rangechart .ax{margin-left:68px;margin-right:80px}
   .bar-row{grid-template-columns:84px minmax(0,1fr) 64px}
@@ -169,6 +198,18 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
         <p class="note">지도는 행정동 경계(2023.7) 기준으로 심천면 전체를 칠했습니다. 리 단위 경계와 개별 필지 좌표는 공개 자료에 없어 표시하지 못했습니다. 실거래 자료도 번지가 일부 가려져 있습니다(예: 4**).</p>
       </div>
     </div>
+  </section>
+
+  <section class="section" aria-labelledby="h-sim">
+    <div class="section-head">
+      <h2 id="h-sim">심천면 14개 리와 비교</h2>
+      <p>같은 방식으로 영동군 전체 토지 매매 24,095건을 받아 심천면 2,814건을 리별로 나눴습니다. 최근 3년(2024–26) 평당 중앙값입니다. 지목을 바꿔 볼 수 있습니다.</p>
+    </div>
+    <div class="chips" id="sim-chips" role="group" aria-label="비교할 지목"></div>
+    <div class="keyrow"><span><span class="k-bar"></span>2024–26 중앙값</span><span><span class="k-old"></span>2016–18 중앙값</span><span><span class="k-thin"></span>최근 거래 5건 미만 (참고용)</span></div>
+    <div class="panel rank" id="sim-rank"></div>
+    <div class="tbl-wrap"><table id="sim-tbl"><thead><tr><th>리</th><th class="r">토지 거래</th><th class="r">논</th><th class="r">밭</th><th class="r">과수원</th><th class="r">대지</th><th class="r">임야</th></tr></thead><tbody></tbody></table></div>
+    <p class="note" style="margin-top:0">표의 값은 2024–26 평당 중앙값(만 원)이고 작은 숫자는 건수입니다. 회색은 5건 미만이라 시세보다 개별 사례에 가깝습니다. 리 경계 자료가 공개되지 않아 지도 대신 표로 보여줍니다.</p>
   </section>
 
   <section class="section" aria-labelledby="h-scatter">
@@ -227,7 +268,7 @@ footer{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padd
     </div>
   </section>
 
-  <footer>출처: 국토교통부 실거래가 공개시스템(rt.molit.go.kr) 토지 매매, 계약일 기준 2016-01-01 ~ 2026-11-04 조회. 행정 경계: vuski/admdongkor (2023-07). 법적 효력이 없는 참고 자료입니다. 평당가 = 거래금액 ÷ (계약면적 ÷ 3.3058).</footer>
+  <footer>출처: 국토교통부 실거래가 공개시스템(rt.molit.go.kr) 토지 매매, 계약일 기준 2016-01-01 ~ 2026-11-04 조회(초강리 및 영동군 전체). 행정 경계: vuski/admdongkor (2023-07). 법적 효력이 없는 참고 자료입니다. 평당가 = 거래금액 ÷ (계약면적 ÷ 3.3058).</footer>
 </div>
 
 <script>
@@ -314,6 +355,34 @@ document.getElementById('cnt-farm').textContent=D.counts.farm;
   const tb=document.querySelector('#tbl-forest tbody');
   const rows=[...D.others.forest.deals].sort((a,b)=>b.d.localeCompare(a.d));
   tb.innerHTML=rows.map(r=>`<tr><td class="num">${r.d}</td><td>${r.z}</td><td class="num">${r.b}</td><td class="r num">${fmt(r.py)}</td><td class="r num">${fmt(r.amt)}</td><td class="r num">${r.pp.toFixed(1)}</td><td>${r.share?'지분 거래 (계산 제외)':r.d==='2017-03-13'?'같은 날 5필지 묶음':''}</td></tr>`).join('');
+})();
+
+// 심천면 리 비교
+(function(){
+  const S=D.simcheon; const opts=[['답','논'],['전','밭'],['과수원','과수원'],['대','대지'],['임야','임야']];
+  let cur='답';
+  const chips=document.getElementById('sim-chips'), host=document.getElementById('sim-rank');
+  chips.innerHTML=opts.map(([k,l])=>`<button class="chip" id="simchip-${k}" data-v="${k}" aria-pressed="false">${sw(k)}${l}</button>`).join('');
+  const render=()=>{
+    const rows=S.villages.filter(v=>v[cur].recent.n>0).sort((a,b)=>b[cur].recent.med-a[cur].recent.med);
+    const missing=S.villages.filter(v=>v[cur].recent.n===0).map(v=>v.name);
+    const all=[S.total,...rows];
+    const maxv=Math.max(...all.map(v=>Math.max(v[cur].recent.med||0,v[cur].old.med||0)));
+    const step=[1,2,2.5,5,10,20,25,50].find(st=>maxv/st<=5)||100;
+    const top=Math.ceil(maxv/step)*step||step, pct=x=>x/top*100;
+    const row=(v,cls)=>{const r=v[cur].recent,o=v[cur].old;
+      return `<div class="row ${cls}"><div class="nm">${v.name}</div><div class="track"><div class="base"></div><div class="bar" style="width:${pct(r.med)}%"></div>${o.n?`<div class="old" style="left:${pct(o.med)}%" title="2016–18 ${o.med}만"></div>`:''}</div><div class="v num">${r.med.toFixed(1)}만<small>${r.n}건</small></div></div>`;};
+    const ticks=[]; for(let t=0;t<=top+1e-9;t+=step) ticks.push(Math.round(t*10)/10);
+    host.innerHTML=row({...S.total,name:'면 전체'},'tot')+'<div class="sep"></div>'+rows.map(v=>row(v,[v.name==='초강리'?'me':'',v[cur].recent.n<5?'thin':''].join(' '))).join('')
+      +`<div class="ax">${ticks.map((t,i)=>`<span class="num ${i>0&&i<ticks.length-1&&(i%2===1||ticks.length-1-i===1)?'minor':''}" style="left:${pct(t)}%">${t===0?'0':t+'만'}</span>`).join('')}</div>`
+      +(missing.length?`<p class="note">최근 3년 거래 없음: ${missing.join(', ')}</p>`:'');
+    chips.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.v===cur));
+  };
+  chips.addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;cur=b.dataset.v;render();});
+  render();
+  const cell=x=>x.recent.n?`<td class="r num ${x.recent.n<5?'thin':''}">${x.recent.med.toFixed(1)}<small>${x.recent.n}</small></td>`:`<td class="r faint">–</td>`;
+  const tr=(v,cls)=>`<tr class="${cls}"><td>${v.name}</td><td class="r num">${fmt(v.n_all)}</td>${['답','전','과수원','대','임야'].map(j=>cell(v[j])).join('')}</tr>`;
+  document.querySelector('#sim-tbl tbody').innerHTML=tr(S.total,'tot')+S.villages.map(v=>tr(v,v.name==='초강리'?'me':'')).join('');
 })();
 
 // Map
