@@ -130,6 +130,12 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
 .hgsel { display: grid; gap: 4px; font-size: 13px; margin-top: 8px; }
 .hgsel select { padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
 .tile.auto span { color: var(--nib); }
+.tile.variant { border-style: dashed; }
+.tile.variant span { font-size: 9px; }
+.varpick { display: grid; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--rule); }
+.varpick select { flex: 1; min-width: 0; width: 0; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+.chip.on { background: var(--nib-soft); border-color: var(--nib); color: var(--nib); }
+.chip.has::after { content: " ✓"; }
 .autonote { width: min(100%, 560px); margin: 0; color: var(--nib); }
 
 /* 템플릿 스캔 */
@@ -196,6 +202,7 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
       </div>
     </div>
     <div class="pad"><canvas id="pad" aria-label="여기에 글자를 쓰세요"></canvas></div>
+    <p class="hint autonote" id="varNote" hidden>자리별 모양이에요. 파란 점선 상자 안에, 옆에 연하게 보이는 다른 자모와 어울리게 쓰세요. 쓴 위치와 크기 그대로 이 자리의 모든 음절에 쓰입니다.</p>
     <p class="hint autonote" id="autoNote" hidden>파란 글씨는 내가 그린 자모로 자동 조합한 모양이에요. 이 칸에 직접 쓰면 직접 쓴 글씨가 우선합니다.</p>
     <div class="tools">
       <label>펜 굵기 <input type="range" id="penWidth" min="16" max="160" value="62"><output id="penOut">62</output></label>
@@ -229,6 +236,15 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
       <p class="hint" id="hgStatus" style="color:var(--ink)"></p>
       <p class="hint" id="hgLead">기본 자모 24자만 그리면 나머지 한글 음절을 자동으로 만들어요. 아직 안 그린 자모:</p>
       <div class="chips" id="hgMissing" style="margin-top:8px"></div>
+      <div class="varpick">
+        <p class="hint" style="color:var(--ink);font-weight:500">자리별 모양 그리기</p>
+        <p class="hint">같은 자모라도 '가'의 ㄱ, '고'의 ㄱ, 받침 ㄱ은 모양이 달라요. 자모를 고르고 자리를 누르면 그 자리 모양을 따로 그릴 수 있어요. 안 그린 자리는 기본 모양을 크기만 맞춰 씁니다.</p>
+        <div class="addrow">
+          <select id="varJamo" aria-label="자모 고르기"></select>
+          <button class="btn" id="varAll" type="button">모든 자리 추가</button>
+        </div>
+        <div class="chips" id="varSlots"></div>
+      </div>
       <label class="hgsel" for="hangulAuto">만들 범위
         <select id="hangulAuto">
           <option value="all">전체 11,172자</option>
@@ -511,7 +527,8 @@ function hgResolve(j, box, depth = 0) {
 }
 // 그린 자모를 상자에 맞춰 옮김. 획은 중심선 기준으로 늘리고 굵기는 거의 유지한다.
 const placeCache = new Map();
-function hgPlace(ch, box) {
+function hgPlace(ch, box, abs) {
+  if (abs) return { strokes: state.glyphs[ch] || [], outlines: (state.outlines || {})[ch] || [] }; // 자리별 모양: 그린 위치 그대로
   const key = ch + "|" + [box.x0, box.x1, box.yTop, box.yBot].map(Math.round).join(",");
   if (placeCache.has(key)) return placeCache.get(key);
   const strokes = state.glyphs[ch] || [], outl = (state.outlines || {})[ch] || [];
@@ -536,14 +553,17 @@ function hgPlace(ch, box) {
   return res;
 }
 // 음절 -> 부품 목록 [{key, parts:[{ch, box}]}]. 만들 수 없으면 null.
-function hgPlan(cp) {
+// loose = true: 못 만드는 자리는 건너뛰고 나머지만 돌려줌(필기 칸 배경용)
+function hgPlan(cp, loose) {
   const s = cp - 0xAC00; if (s < 0 || s > 11171) return null;
   const L = HG.L[Math.floor(s / 588)], V = HG.V[Math.floor((s % 588) / 28)], T = HG.T[s % 28];
   const cls = HG.VCLASS.V.includes(V) ? "V" : HG.VCLASS.H.includes(V) ? "H" : "C";
   const lay = cls + (T ? "F" : "0"), slots = HG_LAYOUT[lay], comps = [];
   const add = (role, j) => {
-    const parts = hgResolve(j, hgBox(slots[role])); if (!parts) return false;
-    comps.push({ key: `${role}:${j}:${lay}`, parts }); return true;
+    const vk = varKey(j, role, lay), box = hgBox(slots[role]);
+    const parts = hasInk(vk) ? [{ ch: vk, box, abs: true }] : hgResolve(j, box);
+    if (!parts) return !!loose;
+    comps.push({ key: `${role}:${j}:${lay}`, role, j, parts }); return true;
   };
   if (!add("I", L)) return null;
   if (cls === "C") { const [h, v] = HG.SPLIT[V]; if (!add("Vh", h) || !add("Vv", v)) return null; }
@@ -554,13 +574,46 @@ function hgPlan(cp) {
 function hgCompose(ch) {
   const plan = hgPlan(ch.codePointAt(0)); if (!plan) return null;
   const out = { strokes: [], outlines: [] };
-  for (const c of plan) for (const p of c.parts) { const r = hgPlace(p.ch, p.box); out.strokes.push(...r.strokes); out.outlines.push(...r.outlines); }
+  for (const c of plan) for (const p of c.parts) { const r = hgPlace(p.ch, p.box, p.abs); out.strokes.push(...r.strokes); out.outlines.push(...r.outlines); }
   return out;
 }
 function canCompose(ch) {
   if (!state.hangulAuto || state.hangulAuto === "off") return false;
   const cp = ch.codePointAt(0); return cp >= 0xAC00 && cp <= 0xD7A3 && !!hgPlan(cp);
 }
+/* ---------- 자리별 자모 모양 ----------
+ * 키 형식: "ㄱ@I.V0" = ㄱ을 '가'형 음절의 초성 자리에 쓸 때의 모양.
+ * 이 키는 글자 목록에 들어가지만 폰트에 글자로 들어가지 않고, 조합할 때 그 자리에서 그린 위치 그대로 쓰인다. */
+const ROLE_NAME = { I: "초성", Vv: "세로 모음", Vh: "가로 모음", F: "받침" };
+const C_PAIR = { "ㅏ": "ㅘ", "ㅐ": "ㅙ", "ㅓ": "ㅝ", "ㅔ": "ㅞ", "ㅣ": "ㅚ", "ㅗ": "ㅘ", "ㅜ": "ㅝ", "ㅡ": "ㅢ" };
+function varKey(j, role, lay) { return `${j}@${role}.${lay}`; }
+function parseVar(k) { const m = /^(.)@(I|Vv|Vh|F)\.([VHC][0F])$/u.exec(k); return m ? { j: m[1], role: m[2], lay: m[3] } : null; }
+function isVar(k) { return [...k].length > 1 && !!parseVar(k); }
+// 그 자리를 보여 줄 예시 음절(문맥: 초성 ㅇ, 모음 ㅏ/ㅗ/ㅘ, 받침 ㄴ)
+function sampleSyllable(j, role, lay) {
+  const cls = lay[0], fin = lay[1] === "F";
+  let L = "ㅇ", V = cls === "V" ? "ㅏ" : cls === "H" ? "ㅗ" : "ㅘ", T = fin ? "ㄴ" : "";
+  if (role === "I") L = j;
+  else if (role === "F") T = j;
+  else if (cls === "C") V = C_PAIR[j];
+  else V = j;
+  const li = HG.L.indexOf(L), vi = HG.V.indexOf(V), ti = HG.T.indexOf(T);
+  if (li < 0 || vi < 0 || ti < 0) return null;
+  return String.fromCharCode(0xAC00 + (li * 21 + vi) * 28 + ti);
+}
+// 자모 하나가 들어갈 수 있는 자리 목록
+function slotsFor(j) {
+  const out = [];
+  if (HG.L.includes(j)) for (const lay of ["V0", "VF", "H0", "HF", "C0", "CF"]) out.push({ role: "I", lay });
+  if (HG.VCLASS.V.includes(j)) out.push({ role: "Vv", lay: "V0" }, { role: "Vv", lay: "VF" });
+  if (HG.VCLASS.H.includes(j)) out.push({ role: "Vh", lay: "H0" }, { role: "Vh", lay: "HF" });
+  if ("ㅏㅐㅓㅔㅣ".includes(j)) out.push({ role: "Vv", lay: "C0" }, { role: "Vv", lay: "CF" });
+  if ("ㅗㅜㅡ".includes(j)) out.push({ role: "Vh", lay: "C0" }, { role: "Vh", lay: "CF" });
+  if (HG.T.includes(j) && j) for (const lay of ["VF", "HF", "CF"]) out.push({ role: "F", lay });
+  return out.map(o => ({ ...o, key: varKey(j, o.role, o.lay), sample: sampleSyllable(j, o.role, o.lay) })).filter(o => o.sample);
+}
+function charLabel(k) { const v = parseVar(k); return v ? `${v.j}·${sampleSyllable(v.j, v.role, v.lay)}` : k; }
+
 let KS2350 = null;
 function ks2350() {
   if (KS2350) return KS2350;
@@ -581,7 +634,7 @@ function buildFont() {
   const items = [];
   for (const ch of new Set([...Object.keys(state.glyphs), ...Object.keys(state.outlines || {})])) {
     const cp = ch.codePointAt(0);
-    if (!hasInk(ch) || cp > 0xFFFF || cp === 32) continue;
+    if (isVar(ch) || [...ch].length !== 1 || !hasInk(ch) || cp > 0xFFFF || cp === 32) continue;
     items.push({ ch, cp, strokes: state.glyphs[ch] || [], outline: (state.outlines || {})[ch] || [] });
   }
   items.sort((a, b) => a.cp - b.cp);
@@ -623,7 +676,7 @@ function buildFont() {
       if (!compIndex.has(c.key)) {
         let contours = [];
         for (const p of c.parts) {
-          const r = hgPlace(p.ch, p.box);
+          const r = hgPlace(p.ch, p.box, p.abs);
           for (const st of r.strokes) contours = contours.concat(strokeContours(st));
           for (const o of r.outlines) contours.push(o.map(([x, y, on]) => ({ x, y, on: !!on })));
         }
@@ -824,7 +877,9 @@ function renderPad() {
   line(CAP, css("--rule"), [], 1);
   line(XH, css("--nib"), [6, 6], 1);
   line(0, css("--baseline"), [], 1.5);
-  if (state.ghost && ch) {
+  const vinfo = ch ? parseVar(ch) : null;
+  if (vinfo) drawVariantContext(pctx, S, k, ch, vinfo);
+  else if (state.ghost && ch) {
     pctx.save(); pctx.fillStyle = css("--ghost"); pctx.textAlign = "center"; pctx.textBaseline = "alphabetic";
     pctx.font = `${Math.round(UPM * k * (isWide(ch) ? 0.82 : 1))}px ${css("--f-body")}`;
     pctx.fillText(ch, S / 2, ASC * k); pctx.restore();
@@ -841,6 +896,31 @@ function renderPad() {
   for (const s of (state.glyphs[ch] || [])) drawStroke(pctx, s, k, ink);
   if (live) drawStroke(pctx, live, k, css("--nib"));
 }
+// 자리별 모양을 그릴 때: 자리 상자 + 예시 음절의 나머지 자모를 연하게 보여 준다
+function drawVariantContext(ctx, S, k, key, v) {
+  const box = hgBox(HG_LAYOUT[v.lay][v.role]);
+  ctx.save(); ctx.strokeStyle = css("--nib"); ctx.lineWidth = 1.5 * S / 560; ctx.setLineDash([8 * S / 560, 6 * S / 560]);
+  ctx.strokeRect(box.x0 * k, (ASC - box.yTop) * k, (box.x1 - box.x0) * k, (box.yTop - box.yBot) * k); ctx.restore();
+  const sample = sampleSyllable(v.j, v.role, v.lay); if (!sample) return;
+  placeCache.clear();
+  const plan = hgPlan(sample.codePointAt(0), true) || [];
+  for (const c of plan) {
+    const mine = c.role === v.role;
+    if (mine && hasInk(key)) continue; // 내가 그린 모양은 아래에서 진하게
+    ctx.save(); ctx.globalAlpha = mine ? (state.ghost ? .16 : 0) : .3;
+    for (const p of c.parts) {
+      if (p.ch === key) continue;
+      const r = hgPlace(p.ch, p.box, p.abs);
+      drawOutline(ctx, r.outlines, k, mine ? css("--nib") : css("--muted"));
+      for (const s of r.strokes) drawStroke(ctx, s, k, mine ? css("--nib") : css("--muted"));
+    }
+    ctx.restore();
+  }
+  if (!plan.length || !plan.some(c => c.role !== v.role)) {
+    ctx.save(); ctx.fillStyle = css("--ghost"); ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.font = `${Math.round(UPM * k * 0.82)}px ${css("--f-body")}`; ctx.fillText(sample, S / 2, ASC * k); ctx.restore();
+  }
+}
 function renderTile(i) {
   const tile = $("grid").children[i]; if (!tile) return;
   const c = tile.querySelector("canvas"), S = sizeCanvas(c), x = c.getContext("2d"), ch = state.chars[i];
@@ -854,7 +934,8 @@ function renderTile(i) {
     for (const s of auto.strokes) drawStroke(x, s, S / UPM, css("--nib")); x.globalAlpha = 1;
   } else if (!hasInk(ch)) {
     x.fillStyle = css("--muted"); x.globalAlpha = .55; x.textAlign = "center"; x.textBaseline = "middle";
-    x.font = `${Math.round(S * 0.42)}px ${css("--f-body")}`; x.fillText(ch, S / 2, S * 0.56); x.globalAlpha = 1;
+    const lbl = parseVar(ch) ? sampleSyllable(parseVar(ch).j, parseVar(ch).role, parseVar(ch).lay) : ch;
+    x.font = `${Math.round(S * 0.42)}px ${css("--f-body")}`; x.fillText(lbl, S / 2, S * 0.56); x.globalAlpha = 1;
   }
   drawOutline(x, state.outlines[ch], S / UPM, css("--ink"));
   for (const s of strokes) drawStroke(x, s, S / UPM, css("--ink"));
@@ -864,9 +945,11 @@ function buildGrid() {
   state.chars.forEach((ch, i) => {
     const b = document.createElement("button");
     b.type = "button"; b.className = "tile"; b.setAttribute("role", "option");
-    b.setAttribute("aria-label", `${ch} 쓰기`);
+    const v = parseVar(ch);
+    b.setAttribute("aria-label", v ? `${v.j} ${ROLE_NAME[v.role]} 모양 ('${sampleSyllable(v.j, v.role, v.lay)}' 자리) 쓰기` : `${ch} 쓰기`);
+    if (v) b.classList.add("variant");
     b.innerHTML = "<canvas></canvas><span></span>";
-    b.querySelector("span").textContent = ch;
+    b.querySelector("span").textContent = charLabel(ch);
     b.addEventListener("click", () => select(i));
     g.appendChild(b);
   });
@@ -886,8 +969,11 @@ function select(i) {
   if (!state.chars.length) return;
   cur = (i + state.chars.length) % state.chars.length;
   const ch = state.chars[cur];
-  $("curChar").textContent = ch;
-  $("curCode").textContent = "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+  const v = parseVar(ch);
+  $("curChar").textContent = v ? v.j : ch;
+  $("curCode").textContent = v ? `${ROLE_NAME[v.role]} · '${sampleSyllable(v.j, v.role, v.lay)}' 자리 모양`
+    : "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
+  $("varNote").hidden = !v;
   markActive(); renderPad();
 }
 
@@ -942,7 +1028,24 @@ function isJamo(ch) { const c = ch.codePointAt(0); return c >= 0x3131 && c <= 0x
 function changed() {
   placeCache.clear(); renderPad();
   if (isJamo(state.chars[cur])) state.chars.forEach((_, i) => renderTile(i)); else renderTile(cur);
-  updateCount(); updateHangulInfo(); save(); scheduleBuild();
+  updateCount(); updateHangulInfo(); renderVarSlots(); save(); scheduleBuild();
+}
+function renderVarSlots() {
+  const j = $("varJamo").value, box = $("varSlots"); box.textContent = "";
+  for (const o of slotsFor(j)) {
+    const b = document.createElement("button"); b.type = "button";
+    b.className = "chip" + (state.chars.includes(o.key) ? " on" : "") + (hasInk(o.key) ? " has" : "");
+    b.textContent = `${ROLE_NAME[o.role]} '${o.sample}'`;
+    b.title = `'${o.sample}' 같은 음절의 ${ROLE_NAME[o.role]} ${j} 모양 그리기`;
+    b.addEventListener("click", () => openVariant([o.key]));
+    box.appendChild(b);
+  }
+}
+function openVariant(keys) {
+  let first = -1;
+  for (const k of keys) { if (!state.chars.includes(k)) state.chars.push(k); if (first < 0) first = state.chars.indexOf(k); }
+  buildGrid(); save(); select(first); renderVarSlots();
+  $("pad").scrollIntoView({ block: "center", behavior: "smooth" });
 }
 function updateHangulInfo() {
   const box = $("hgMissing"); box.textContent = "";
@@ -1047,6 +1150,11 @@ function init() {
   bindRange("smooth", "smoothOut", "smooth");
   bindRange("spacing", "spacingOut", "spacing", scheduleBuild);
   bindRange("spaceWidth", "spaceOut", "spaceWidth", scheduleBuild);
+  const vj = $("varJamo");
+  for (const j of [...new Set([...HG.L, ...HG.V, ...HG.T.filter(Boolean)])]) { const o = document.createElement("option"); o.value = j; o.textContent = j; vj.appendChild(o); }
+  vj.addEventListener("change", renderVarSlots);
+  $("varAll").addEventListener("click", () => openVariant(slotsFor(vj.value).map(o => o.key)));
+  renderVarSlots();
   $("hangulAuto").value = state.hangulAuto || "all";
   $("hangulAuto").addEventListener("change", e => { state.hangulAuto = e.target.value; save(); state.chars.forEach((_, i) => renderTile(i)); renderPad(); updateHangulInfo(); updateMissing(); scheduleBuild(); });
   $("widthMode").value = state.widthMode;
@@ -1158,10 +1266,16 @@ function renderTemplatePage(chars, page, pages, k = 2) {
   for (let i = 0; i < T.PER; i++) {
     const ch = chars[page * T.PER + i]; if (ch === undefined) break;
     const { x, y } = cellBox(i);
-    g.fillStyle = "#333"; g.font = `500 20px ${font}`; g.fillText(ch, x, y - 8);
-    g.fillStyle = "#999"; g.font = `400 12px "IBM Plex Mono", monospace`;
-    g.fillText("U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"), x + 30, y - 9);
+    const vv = parseVar(ch);
+    g.fillStyle = "#333"; g.font = `500 20px ${font}`; g.fillText(vv ? vv.j : ch, x, y - 8);
+    g.fillStyle = "#999"; g.font = `400 12px ${vv ? font : '"IBM Plex Mono", monospace'}`;
+    g.fillText(vv ? `${ROLE_NAME[vv.role]} '${sampleSyllable(vv.j, vv.role, vv.lay)}' 자리` : "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"), x + 30, y - 9);
     const u = T.BOX / UPM, yOf = fu => y + (ASC - fu) * u;
+    if (vv) {
+      const bx = hgBox(HG_LAYOUT[vv.lay][vv.role]);
+      g.strokeStyle = DROP_BOX; g.lineWidth = 1.2; g.setLineDash([5, 4]);
+      g.strokeRect(x + bx.x0 * u, yOf(bx.yTop), (bx.x1 - bx.x0) * u, (bx.yTop - bx.yBot) * u); g.setLineDash([]);
+    }
     g.strokeStyle = DROP_GUIDE; g.lineWidth = 1; g.setLineDash([4, 4]);
     for (const fu of [CAP, XH]) { g.beginPath(); g.moveTo(x, yOf(fu)); g.lineTo(x + T.BOX, yOf(fu)); g.stroke(); }
     g.setLineDash([]); g.lineWidth = 2; g.beginPath(); g.moveTo(x, yOf(0)); g.lineTo(x + T.BOX, yOf(0)); g.stroke();
