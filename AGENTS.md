@@ -8,7 +8,8 @@ companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF
 최적화 PWA — 사진 기반 티 점수 분석), and `miri/` (Vite + React PWA — ADHD
 워킹맘용 선제적 리마인더 & 역산 스케줄러, PRD-MIRI-MVP-v0.1), and
 `digestion-sim/` (단일 파일 소화 시뮬레이터 — 식사별 72시간 소화·흡수·배변 모델), and
-`land-price/` (영동군 심천면 초강리 농지 실거래 인포그래픽 — 국토부 실거래 CSV + 단일 HTML).
+`land-price/` (영동군 심천면 초강리 농지 실거래 인포그래픽 — 국토부 실거래 CSV + 단일 HTML), and
+`trip-planner/` (여행 계획 앱 기획 — 코스+구성원 기반 준비물·숙소·항공·이동경로·맛집·D-day 역산 알림, PRD v0.1).
 
 ## Scope of rules
 
