@@ -136,6 +136,14 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
 .varpick select { flex: 1; min-width: 0; width: 0; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
 .chip.on { background: var(--nib-soft); border-color: var(--nib); color: var(--nib); }
 .chip.has::after { content: " ✓"; }
+.varslots { display: grid; gap: 4px; }
+.vhead { margin: 6px 0 0; font-size: 12px; }
+.vgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.vgrid { display: grid; gap: 3px; }
+.vcell { border: 1px solid var(--rule); background: transparent; border-radius: 6px; padding: 3px 0; font-size: 14px; cursor: pointer; position: relative; }
+.vcell:hover { border-color: var(--nib); color: var(--nib); }
+.vcell.on { background: var(--nib-soft); border-color: var(--nib); color: var(--nib); }
+.vcell.has::after { content: ""; position: absolute; right: 2px; top: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--done); }
 .autonote { width: min(100%, 560px); margin: 0; color: var(--nib); }
 
 /* 템플릿 스캔 */
@@ -238,12 +246,12 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 24
       <div class="chips" id="hgMissing" style="margin-top:8px"></div>
       <div class="varpick">
         <p class="hint" style="color:var(--ink);font-weight:500">자리별 모양 그리기</p>
-        <p class="hint">같은 자모라도 '가'의 ㄱ, '고'의 ㄱ, 받침 ㄱ은 모양이 달라요. 자모를 고르고 자리를 누르면 그 자리 모양을 따로 그릴 수 있어요. 안 그린 자리는 기본 모양을 크기만 맞춰 씁니다.</p>
+        <p class="hint">같은 자모라도 '가'의 ㄱ, '거'의 ㄱ, '고'의 ㄱ, 받침 ㄱ은 모양이 달라요. 자모를 고르고 자리를 누르면 그 자리 모양을 따로 그릴 수 있어요. 음절마다 모음별 모양 → 배치별 모양 → 기본 모양 순서로, 그린 것 중 가장 자세한 것을 씁니다.</p>
         <div class="addrow">
           <select id="varJamo" aria-label="자모 고르기"></select>
-          <button class="btn" id="varAll" type="button">모든 자리 추가</button>
+          <button class="btn" id="varAll" type="button">배치별 자리 모두 추가</button>
         </div>
-        <div class="chips" id="varSlots"></div>
+        <div class="varslots" id="varSlots"></div>
       </div>
       <label class="hgsel" for="hangulAuto">만들 범위
         <select id="hangulAuto">
@@ -559,11 +567,17 @@ function hgPlan(cp, loose) {
   const L = HG.L[Math.floor(s / 588)], V = HG.V[Math.floor((s % 588) / 28)], T = HG.T[s % 28];
   const cls = HG.VCLASS.V.includes(V) ? "V" : HG.VCLASS.H.includes(V) ? "H" : "C";
   const lay = cls + (T ? "F" : "0"), slots = HG_LAYOUT[lay], comps = [];
+  // 고르는 순서: 그 모음 전용 모양(초성·받침) → 배치별 모양 → 기본 자모를 상자에 맞춤
   const add = (role, j) => {
-    const vk = varKey(j, role, lay), box = hgBox(slots[role]);
-    const parts = hasInk(vk) ? [{ ch: vk, box, abs: true }] : hgResolve(j, box);
+    const box = hgBox(slots[role]);
+    const vv = (role === "I" || role === "F") ? varKey(j, role, lay, V) : null;
+    const vl = varKey(j, role, lay);
+    let parts, key = `${role}:${j}:${lay}`;
+    if (vv && hasInk(vv)) { parts = [{ ch: vv, box, abs: true }]; key += ":" + V; }
+    else if (hasInk(vl)) parts = [{ ch: vl, box, abs: true }];
+    else parts = hgResolve(j, box);
     if (!parts) return !!loose;
-    comps.push({ key: `${role}:${j}:${lay}`, role, j, parts }); return true;
+    comps.push({ key, role, j, parts }); return true;
   };
   if (!add("I", L)) return null;
   if (cls === "C") { const [h, v] = HG.SPLIT[V]; if (!add("Vh", h) || !add("Vv", v)) return null; }
@@ -583,16 +597,22 @@ function canCompose(ch) {
 }
 /* ---------- 자리별 자모 모양 ----------
  * 키 형식: "ㄱ@I.V0" = ㄱ을 '가'형 음절의 초성 자리에 쓸 때의 모양.
+ *          "ㄱ@I.V0.ㅓ" = 받침 없이 ㅓ 앞에 올 때만 쓰는 초성 ㄱ ('거').
+ *          "ㄱ@F.VF.ㅣ" = ㅣ 뒤에 올 때만 쓰는 받침 ㄱ ('익').
  * 이 키는 글자 목록에 들어가지만 폰트에 글자로 들어가지 않고, 조합할 때 그 자리에서 그린 위치 그대로 쓰인다. */
 const ROLE_NAME = { I: "초성", Vv: "세로 모음", Vh: "가로 모음", F: "받침" };
 const C_PAIR = { "ㅏ": "ㅘ", "ㅐ": "ㅙ", "ㅓ": "ㅝ", "ㅔ": "ㅞ", "ㅣ": "ㅚ", "ㅗ": "ㅘ", "ㅜ": "ㅝ", "ㅡ": "ㅢ" };
-function varKey(j, role, lay) { return `${j}@${role}.${lay}`; }
-function parseVar(k) { const m = /^(.)@(I|Vv|Vh|F)\.([VHC][0F])$/u.exec(k); return m ? { j: m[1], role: m[2], lay: m[3] } : null; }
+function varKey(j, role, lay, v) { return `${j}@${role}.${lay}` + (v ? "." + v : ""); }
+function parseVar(k) { const m = /^(.)@(I|Vv|Vh|F)\.([VHC][0F])(?:\.(.))?$/u.exec(k); return m ? { j: m[1], role: m[2], lay: m[3], v: m[4] || "" } : null; }
+function vowelClass(v) { return HG.VCLASS.V.includes(v) ? "V" : HG.VCLASS.H.includes(v) ? "H" : "C"; }
+function varSample(i) { return sampleSyllable(i.j, i.role, i.lay, i.v); }
+function varTitle(i) { return i.v ? `${ROLE_NAME[i.role]} · ${i.role === "I" ? `${i.v} 앞` : `${i.v} 뒤`} '${varSample(i)}' 자리` : `${ROLE_NAME[i.role]} · '${varSample(i)}' 자리`; }
 function isVar(k) { return [...k].length > 1 && !!parseVar(k); }
 // 그 자리를 보여 줄 예시 음절(문맥: 초성 ㅇ, 모음 ㅏ/ㅗ/ㅘ, 받침 ㄴ)
-function sampleSyllable(j, role, lay) {
+function sampleSyllable(j, role, lay, v) {
   const cls = lay[0], fin = lay[1] === "F";
-  let L = "ㅇ", V = cls === "V" ? "ㅏ" : cls === "H" ? "ㅗ" : "ㅘ", T = fin ? "ㄴ" : "";
+  if (v && vowelClass(v) !== cls) return null;
+  let L = "ㅇ", V = v || (cls === "V" ? "ㅏ" : cls === "H" ? "ㅗ" : "ㅘ"), T = fin ? "ㄴ" : "";
   if (role === "I") L = j;
   else if (role === "F") T = j;
   else if (cls === "C") V = C_PAIR[j];
@@ -612,7 +632,15 @@ function slotsFor(j) {
   if (HG.T.includes(j) && j) for (const lay of ["VF", "HF", "CF"]) out.push({ role: "F", lay });
   return out.map(o => ({ ...o, key: varKey(j, o.role, o.lay), sample: sampleSyllable(j, o.role, o.lay) })).filter(o => o.sample);
 }
-function charLabel(k) { const v = parseVar(k); return v ? `${v.j}·${sampleSyllable(v.j, v.role, v.lay)}` : k; }
+// 모음 하나하나에 맞춘 자리: 초성은 모음 21 × 받침 유무, 받침은 앞 모음 21
+function vowelSlotsFor(j) {
+  const ini = [], fin = [];
+  if (HG.L.includes(j)) for (const v of HG.V) for (const f of ["0", "F"]) ini.push({ role: "I", lay: vowelClass(v) + f, v });
+  if (HG.T.includes(j) && j) for (const v of HG.V) fin.push({ role: "F", lay: vowelClass(v) + "F", v });
+  const fill = o => ({ ...o, key: varKey(j, o.role, o.lay, o.v), sample: sampleSyllable(j, o.role, o.lay, o.v) });
+  return { ini: ini.map(fill), fin: fin.map(fill) };
+}
+function charLabel(k) { const v = parseVar(k); return v ? `${v.j}·${varSample(v)}` : k; }
 
 let KS2350 = null;
 function ks2350() {
@@ -901,7 +929,7 @@ function drawVariantContext(ctx, S, k, key, v) {
   const box = hgBox(HG_LAYOUT[v.lay][v.role]);
   ctx.save(); ctx.strokeStyle = css("--nib"); ctx.lineWidth = 1.5 * S / 560; ctx.setLineDash([8 * S / 560, 6 * S / 560]);
   ctx.strokeRect(box.x0 * k, (ASC - box.yTop) * k, (box.x1 - box.x0) * k, (box.yTop - box.yBot) * k); ctx.restore();
-  const sample = sampleSyllable(v.j, v.role, v.lay); if (!sample) return;
+  const sample = varSample(v); if (!sample) return;
   placeCache.clear();
   const plan = hgPlan(sample.codePointAt(0), true) || [];
   for (const c of plan) {
@@ -934,7 +962,7 @@ function renderTile(i) {
     for (const s of auto.strokes) drawStroke(x, s, S / UPM, css("--nib")); x.globalAlpha = 1;
   } else if (!hasInk(ch)) {
     x.fillStyle = css("--muted"); x.globalAlpha = .55; x.textAlign = "center"; x.textBaseline = "middle";
-    const lbl = parseVar(ch) ? sampleSyllable(parseVar(ch).j, parseVar(ch).role, parseVar(ch).lay) : ch;
+    const lbl = parseVar(ch) ? varSample(parseVar(ch)) : ch;
     x.font = `${Math.round(S * 0.42)}px ${css("--f-body")}`; x.fillText(lbl, S / 2, S * 0.56); x.globalAlpha = 1;
   }
   drawOutline(x, state.outlines[ch], S / UPM, css("--ink"));
@@ -946,7 +974,7 @@ function buildGrid() {
     const b = document.createElement("button");
     b.type = "button"; b.className = "tile"; b.setAttribute("role", "option");
     const v = parseVar(ch);
-    b.setAttribute("aria-label", v ? `${v.j} ${ROLE_NAME[v.role]} 모양 ('${sampleSyllable(v.j, v.role, v.lay)}' 자리) 쓰기` : `${ch} 쓰기`);
+    b.setAttribute("aria-label", v ? `${v.j} ${varTitle(v)} 모양 쓰기` : `${ch} 쓰기`);
     if (v) b.classList.add("variant");
     b.innerHTML = "<canvas></canvas><span></span>";
     b.querySelector("span").textContent = charLabel(ch);
@@ -971,7 +999,7 @@ function select(i) {
   const ch = state.chars[cur];
   const v = parseVar(ch);
   $("curChar").textContent = v ? v.j : ch;
-  $("curCode").textContent = v ? `${ROLE_NAME[v.role]} · '${sampleSyllable(v.j, v.role, v.lay)}' 자리 모양`
+  $("curCode").textContent = v ? `${varTitle(v)} 모양`
     : "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
   $("varNote").hidden = !v;
   markActive(); renderPad();
@@ -1032,13 +1060,27 @@ function changed() {
 }
 function renderVarSlots() {
   const j = $("varJamo").value, box = $("varSlots"); box.textContent = "";
-  for (const o of slotsFor(j)) {
+  const chip = (o, text, title, cls = "chip") => {
     const b = document.createElement("button"); b.type = "button";
-    b.className = "chip" + (state.chars.includes(o.key) ? " on" : "") + (hasInk(o.key) ? " has" : "");
-    b.textContent = `${ROLE_NAME[o.role]} '${o.sample}'`;
-    b.title = `'${o.sample}' 같은 음절의 ${ROLE_NAME[o.role]} ${j} 모양 그리기`;
+    b.className = cls + (state.chars.includes(o.key) ? " on" : "") + (hasInk(o.key) ? " has" : "");
+    b.textContent = text; b.title = title;
     b.addEventListener("click", () => openVariant([o.key]));
-    box.appendChild(b);
+    return b;
+  };
+  const head = t => { const h = document.createElement("p"); h.className = "hint vhead"; h.textContent = t; return h; };
+  const shape = document.createElement("div"); shape.className = "chips";
+  for (const o of slotsFor(j)) shape.appendChild(chip(o, `${ROLE_NAME[o.role]} '${o.sample}'`, `'${o.sample}' 같은 음절의 ${ROLE_NAME[o.role]} ${j} 모양 그리기`));
+  box.append(head("배치별 (모음 모양 × 받침 유무)"), shape);
+  const { ini, fin } = vowelSlotsFor(j);
+  if (ini.length) {
+    const g = document.createElement("div"); g.className = "vgrid";
+    for (const o of ini) g.appendChild(chip(o, o.sample, `${o.v} 앞 초성 ${j} ('${o.sample}'${o.lay[1] === "F" ? ", 받침 있음" : ""}) 그리기`, "vcell"));
+    box.append(head("모음별 초성 — 모음 하나하나 앞 (받침 없음 · 있음)"), g);
+  }
+  if (fin.length) {
+    const g = document.createElement("div"); g.className = "vgrid";
+    for (const o of fin) g.appendChild(chip(o, o.sample, `${o.v} 뒤 받침 ${j} ('${o.sample}') 그리기`, "vcell"));
+    box.append(head("모음별 받침 — 모음 하나하나 뒤"), g);
   }
 }
 function openVariant(keys) {
@@ -1269,7 +1311,7 @@ function renderTemplatePage(chars, page, pages, k = 2) {
     const vv = parseVar(ch);
     g.fillStyle = "#333"; g.font = `500 20px ${font}`; g.fillText(vv ? vv.j : ch, x, y - 8);
     g.fillStyle = "#999"; g.font = `400 12px ${vv ? font : '"IBM Plex Mono", monospace'}`;
-    g.fillText(vv ? `${ROLE_NAME[vv.role]} '${sampleSyllable(vv.j, vv.role, vv.lay)}' 자리` : "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"), x + 30, y - 9);
+    g.fillText(vv ? `${ROLE_NAME[vv.role]} '${varSample(vv)}' 자리` : "U+" + ch.codePointAt(0).toString(16).toUpperCase().padStart(4, "0"), x + 30, y - 9);
     const u = T.BOX / UPM, yOf = fu => y + (ASC - fu) * u;
     if (vv) {
       const bx = hgBox(HG_LAYOUT[vv.lay][vv.role]);
