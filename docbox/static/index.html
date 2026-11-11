@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocBox 문서함</title>
+<style>
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --line: #e3e6eb; --text: #1d2330; --muted: #6b7385;
+  --accent: #2f6fed; --accent-weak: #e8effd; --danger: #d64545; --star: #f0a500;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --panel: #1a1e26; --line: #2a303b; --text: #e6e9ef; --muted: #8e97a8;
+    --accent: #6b9bff; --accent-weak: #1f2b44; --danger: #ff6b6b; --star: #ffc53d;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 6px 12px; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.ghost { border-color: transparent; background: transparent; }
+button.danger { color: var(--danger); }
+input[type=text], input[type=search], input[type=password], select {
+  border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 7px 10px; outline: none; }
+input:focus, select:focus { border-color: var(--accent); }
+
+.app { display: grid; grid-template-columns: 240px 1fr; grid-template-rows: 56px 1fr; height: 100vh; }
+header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 0 16px;
+  background: var(--panel); border-bottom: 1px solid var(--line); }
+.logo { font-weight: 700; font-size: 17px; display: flex; gap: 8px; align-items: center; min-width: 200px; }
+.logo span { color: var(--accent); }
+#search { flex: 1; max-width: 560px; }
+.spacer { flex: 1; }
+
+aside { background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; padding: 12px 8px; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; cursor: pointer;
+  user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav-item:hover { background: var(--bg); }
+.nav-item.active { background: var(--accent-weak); color: var(--accent); font-weight: 600; }
+.nav-item.drop { outline: 2px dashed var(--accent); }
+.nav-item .cnt { margin-left: auto; color: var(--muted); font-size: 12px; font-weight: 400; }
+.nav-item .tw { width: 14px; text-align: center; color: var(--muted); flex: none; }
+.section { color: var(--muted); font-size: 12px; margin: 16px 10px 6px; display: flex; justify-content: space-between; align-items: center; }
+.section button { padding: 0 6px; font-size: 16px; line-height: 20px; }
+.tag-chip { display: inline-block; padding: 1px 8px; margin: 2px; border-radius: 99px; background: var(--accent-weak);
+  color: var(--accent); font-size: 12px; cursor: pointer; }
+.usage { margin: 16px 10px 0; color: var(--muted); font-size: 12px; }
+
+main { overflow: hidden; display: flex; min-width: 0; }
+.list { flex: 1; overflow-y: auto; padding: 16px 20px; min-width: 0; }
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.crumb { font-size: 18px; font-weight: 700; margin-right: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.name { white-space: normal; word-break: break-all; }
+tr.row { cursor: pointer; }
+tr.row:hover td { background: var(--bg); }
+tr.row.sel td { background: var(--accent-weak); }
+.ico { display: inline-block; width: 22px; text-align: center; margin-right: 6px; }
+.star { color: var(--star); }
+.muted { color: var(--muted); }
+.ver-badge { font-size: 11px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); margin-left: 6px; }
+.empty { text-align: center; color: var(--muted); padding: 60px 20px; background: var(--panel); border-radius: 12px; border: 2px dashed var(--line); }
+
+.detail { width: 380px; flex: none; background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto; padding: 16px; display: none; }
+.detail.open { display: block; }
+.detail h3 { margin: 0 0 4px; word-break: break-all; }
+.preview { margin: 12px 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg);
+  min-height: 80px; display: flex; align-items: center; justify-content: center; }
+.preview img { max-width: 100%; max-height: 320px; display: block; }
+.preview iframe { width: 100%; height: 360px; border: 0; background: #fff; }
+.preview pre { margin: 0; padding: 10px; max-height: 320px; overflow: auto; width: 100%; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.field { margin: 10px 0; }
+.field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+.field input, .field select { width: 100%; }
+.btns { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0; }
+.vers { list-style: none; padding: 0; margin: 0; }
+.vers li { display: flex; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.vers li .grow { flex: 1; min-width: 0; }
+.vers a { color: var(--accent); text-decoration: none; }
+
+#dropzone { position: fixed; inset: 0; background: rgba(47,111,237,.15); border: 4px dashed var(--accent);
+  display: none; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; color: var(--accent); z-index: 50; pointer-events: none; }
+#dropzone.on { display: flex; }
+#toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg);
+  padding: 10px 16px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 60; max-width: 90vw; }
+#toast.on { opacity: .95; }
+#progress { height: 3px; background: var(--accent); width: 0; position: fixed; top: 0; left: 0; z-index: 70; transition: width .2s; }
+
+#login { display: none; position: fixed; inset: 0; background: var(--bg); align-items: center; justify-content: center; z-index: 80; }
+#login.on { display: flex; }
+#login form { background: var(--panel); padding: 28px; border-radius: 14px; box-shadow: var(--shadow); display: grid; gap: 12px; width: min(340px, 90vw); }
+
+.menu-btn { display: none; }
+@media (max-width: 860px) {
+  .app { grid-template-columns: 1fr; }
+  aside { position: fixed; top: 56px; bottom: 0; left: 0; width: 260px; z-index: 40; transform: translateX(-100%); transition: transform .2s; box-shadow: var(--shadow); }
+  aside.open { transform: none; }
+  .menu-btn { display: inline-block; }
+  .logo { min-width: 0; }
+  .logo b { display: none; }
+  .detail { position: fixed; inset: 56px 0 0 0; width: auto; z-index: 45; }
+  .hide-sm { display: none; }
+  header { gap: 6px; padding: 0 8px; }
+  header .spacer { display: none; }
+  #search { min-width: 0; width: 0; flex: 1; }
+  .app { grid-template-columns: minmax(0, 1fr); }
+  header button { white-space: nowrap; padding: 6px 10px; }
+  #logoutBtn { display: none; }
+  .crumb { font-size: 16px; flex-basis: 100%; }
+  .list { padding: 12px; }
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<div class="app">
+  <header>
+    <button class="ghost menu-btn" id="menuBtn" aria-label="메뉴">☰</button>
+    <div class="logo">🗄️ <b>Doc<span>Box</span></b></div>
+    <input type="search" id="search" placeholder="파일명 · 태그 · 본문(텍스트 문서) 검색   ( / )">
+    <div class="spacer"></div>
+    <button class="primary" id="uploadBtn">⬆ 업로드</button>
+    <input type="file" id="fileInput" multiple hidden>
+    <button class="ghost" id="logoutBtn" hidden>로그아웃</button>
+  </header>
+
+  <aside id="side">
+    <div class="nav-item" data-view="all" data-folder="">📚 전체 문서</div>
+    <div class="nav-item" data-view="starred">⭐ 즐겨찾기</div>
+    <div class="nav-item" data-view="trash">🗑️ 휴지통 <span class="cnt" id="trashCnt"></span></div>
+    <div class="section">폴더 <button class="ghost" id="newFolderBtn" title="새 폴더">＋</button></div>
+    <div id="folderTree"></div>
+    <div class="section">태그</div>
+    <div id="tagList" style="padding:0 8px"></div>
+    <div class="usage" id="usage"></div>
+  </aside>
+
+  <main>
+    <section class="list">
+      <div class="toolbar">
+        <div class="crumb" id="crumb">전체 문서</div>
+        <select id="sort" title="정렬">
+          <option value="">최근 수정순</option>
+          <option value="created">최근 등록순</option>
+          <option value="name">이름순</option>
+        </select>
+        <button id="folderMenuBtn" hidden>폴더 관리 ▾</button>
+      </div>
+      <div id="listWrap"></div>
+    </section>
+    <section class="detail" id="detail"></section>
+  </main>
+</div>
+
+<div id="dropzone">여기에 놓으면 현재 폴더에 업로드됩니다</div>
+<div id="toast"></div>
+
+<div id="login">
+  <form id="loginForm">
+    <div class="logo">🗄️ <b>Doc<span>Box</span></b></div>
+    <input type="password" id="pw" placeholder="비밀번호" autocomplete="current-password" autofocus>
+    <button class="primary">들어가기</button>
+    <div class="muted" id="loginMsg"></div>
+  </form>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const state = { view: 'all', folder: '', tag: '', q: '', sort: '', folders: [], docs: [], sel: null, expanded: new Set(JSON.parse(localStorageGet('docbox.exp') || '[]')) };
+
+function localStorageGet(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function localStorageSet(k, v) { try { localStorage.setItem(k, v); } catch {} }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 2600); }
+function fmtSize(b) { if (b < 1024) return b + ' B'; const u = ['KB', 'MB', 'GB', 'TB']; let i = -1; do { b /= 1024; i++; } while (b >= 1024 && i < 3); return b.toFixed(b < 10 ? 1 : 0) + ' ' + u[i]; }
+function fmtDate(t) {
+  const d = new Date(t * 1000), now = new Date();
+  const p = n => String(n).padStart(2, '0');
+  if (d.toDateString() === now.toDateString()) return `오늘 ${p(d.getHours())}:${p(d.getMinutes())}`;
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+}
+function icon(name, mime) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (mime.startsWith('image/')) return '🖼️';
+  if (mime.startsWith('video/')) return '🎬';
+  if (mime.startsWith('audio/')) return '🎵';
+  if (ext === 'pdf') return '📕';
+  if (['doc', 'docx', 'hwp', 'hwpx', 'odt', 'rtf'].includes(ext)) return '📝';
+  if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) return '📊';
+  if (['ppt', 'pptx', 'key', 'odp'].includes(ext)) return '📽️';
+  if (['zip', '7z', 'rar', 'tar', 'gz'].includes(ext)) return '🗜️';
+  if (['txt', 'md', 'log'].includes(ext)) return '📄';
+  return '📎';
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch('/api/' + path, { credentials: 'same-origin', ...opts,
+    headers: opts.body && !(opts.body instanceof Blob) ? { 'Content-Type': 'application/json', ...(opts.headers || {}) } : opts.headers });
+  if (res.status === 401) { showLogin(); throw new Error('로그인 필요'); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) { toast(data.error || '오류가 발생했습니다'); throw new Error(data.error); }
+  return data;
+}
+const send = (path, method, body) => api(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
+
+// ---------------- auth
+async function boot() {
+  const me = await fetch('/api/me').then(r => r.json());
+  $('#logoutBtn').hidden = !me.needs_password;
+  if (!me.authed) return showLogin();
+  refreshAll();
+}
+function showLogin() { $('#login').classList.add('on'); $('#pw').focus(); }
+$('#loginForm').onsubmit = async e => {
+  e.preventDefault();
+  const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: $('#pw').value }) });
+  if (r.ok) { $('#login').classList.remove('on'); $('#pw').value = ''; refreshAll(); }
+  else $('#loginMsg').textContent = '비밀번호가 틀렸습니다';
+};
+$('#logoutBtn').onclick = async () => { await fetch('/api/logout', { method: 'POST' }); location.reload(); };
+
+// ---------------- loading
+async function refreshAll() { await Promise.all([loadFolders(), loadStats()]); await loadDocs(); }
+async function loadFolders() { state.folders = await api('folders'); renderTree(); }
+async function loadStats() {
+  const s = await api('stats');
+  $('#trashCnt').textContent = s.trash || '';
+  $('#usage').textContent = `문서 ${s.docs}개 · 버전 ${s.versions}개 · ${fmtSize(s.bytes)} 사용`;
+  $('#tagList').innerHTML = s.tags.length ? s.tags.map(([t, n]) =>
+    `<span class="tag-chip" data-tag="${esc(t)}">#${esc(t)} <span class="muted">${n}</span></span>`).join('') : '<span class="muted" style="font-size:12px;padding-left:2px">문서 상세에서 태그를 붙여보세요</span>';
+  $('#tagList').querySelectorAll('.tag-chip').forEach(el => el.onclick = () => go({ view: 'all', folder: '', tag: el.dataset.tag }));
+}
+async function loadDocs() {
+  const p = new URLSearchParams({ view: state.view });
+  if (state.folder) { p.set('folder', state.folder); p.set('deep', state.q ? '1' : '0'); }
+  if (state.tag) p.set('tag', state.tag);
+  if (state.q) p.set('q', state.q);
+  if (state.sort) p.set('sort', state.sort);
+  state.docs = await api('docs?' + p);
+  renderList();
+}
+function go(patch) {
+  Object.assign(state, { tag: '' }, patch);
+  closeDetail();
+  $('#side').classList.remove('open');
+  renderTree(); renderCrumb(); loadDocs();
+}
+
+// ---------------- sidebar tree
+function renderTree() {
+  const byParent = {};
+  state.folders.forEach(f => (byParent[f.parent_id ?? 'root'] ||= []).push(f));
+  const html = [];
+  const walk = (pid, depth) => (byParent[pid] || []).forEach(f => {
+    const kids = byParent[f.id]?.length, open = state.expanded.has(f.id);
+    html.push(`<div class="nav-item ${state.view === 'all' && state.folder == f.id ? 'active' : ''}" data-fid="${f.id}" style="padding-left:${10 + depth * 14}px">
+      <span class="tw" data-tw="${f.id}">${kids ? (open ? '▾' : '▸') : ''}</span>📁 ${esc(f.name)}<span class="cnt">${f.count || ''}</span></div>`);
+    if (kids && open) walk(f.id, depth + 1);
+  });
+  walk('root', 0);
+  $('#folderTree').innerHTML = html.join('') || '<div class="muted" style="padding:4px 12px;font-size:12px">＋ 로 폴더를 만드세요</div>';
+  $('#folderTree').querySelectorAll('[data-fid]').forEach(el => {
+    const fid = +el.dataset.fid;
+    el.onclick = e => {
+      if (e.target.dataset.tw) { toggleExpand(fid); return; }
+      state.expanded.add(fid); saveExp(); go({ view: 'all', folder: String(fid) });
+    };
+    el.ondragover = e => { if (e.dataTransfer.types.includes('docbox/doc')) { e.preventDefault(); el.classList.add('drop'); } };
+    el.ondragleave = () => el.classList.remove('drop');
+    el.ondrop = async e => {
+      const id = e.dataTransfer.getData('docbox/doc'); el.classList.remove('drop');
+      if (!id) return; e.preventDefault(); e.stopPropagation();
+      await send('docs/' + id, 'PATCH', { folder_id: fid }); toast('이동했습니다'); refreshAll();
+    };
+  });
+  document.querySelectorAll('aside > [data-view]').forEach(el => {
+    el.classList.toggle('active', state.view === el.dataset.view && (el.dataset.view !== 'all' || (!state.folder && !state.tag)));
+    el.onclick = () => go({ view: el.dataset.view, folder: '' });
+  });
+  $('#folderMenuBtn').hidden = !(state.view === 'all' && state.folder);
+}
+function toggleExpand(id) { state.expanded.has(id) ? state.expanded.delete(id) : state.expanded.add(id); saveExp(); renderTree(); }
+function saveExp() { localStorageSet('docbox.exp', JSON.stringify([...state.expanded])); }
+function folderPath(fid) {
+  const out = []; let f = state.folders.find(x => x.id == fid);
+  while (f) { out.unshift(f.name); f = state.folders.find(x => x.id === f.parent_id); }
+  return out;
+}
+function renderCrumb() {
+  let t = { all: '전체 문서', starred: '⭐ 즐겨찾기', trash: '🗑️ 휴지통' }[state.view];
+  if (state.view === 'all' && state.folder) t = '📁 ' + folderPath(state.folder).join(' › ');
+  if (state.tag) t = '#' + state.tag;
+  if (state.q) t += ` · "${state.q}" 검색`;
+  $('#crumb').textContent = t;
+}
+
+$('#newFolderBtn').onclick = async () => {
+  const parent = state.view === 'all' && state.folder ? +state.folder : null;
+  const name = prompt(parent ? `"${folderPath(parent).join(' › ')}" 안에 만들 폴더 이름` : '새 폴더 이름');
+  if (!name?.trim()) return;
+  await send('folders', 'POST', { name, parent_id: parent });
+  if (parent) { state.expanded.add(parent); saveExp(); }
+  loadFolders();
+};
+$('#folderMenuBtn').onclick = async () => {
+  const fid = +state.folder, f = state.folders.find(x => x.id === fid);
+  const act = prompt(`"${f.name}" 폴더\n1 = 이름 바꾸기\n2 = 최상위로 옮기기\n3 = 폴더 삭제 (비어 있을 때만)`, '1');
+  if (act === '1') { const n = prompt('새 이름', f.name); if (n?.trim()) { await send('folders/' + fid, 'PATCH', { name: n }); loadFolders(); renderCrumb(); } }
+  if (act === '2') { await send('folders/' + fid, 'PATCH', { parent_id: null }); loadFolders(); }
+  if (act === '3' && confirm('폴더(와 하위 폴더)를 삭제할까요?')) { await send('folders/' + fid, 'DELETE'); go({ view: 'all', folder: '' }); loadFolders(); }
+};
+
+// ---------------- list
+function renderList() {
+  renderCrumb();
+  if (!state.docs.length) {
+    $('#listWrap').innerHTML = `<div class="empty">${state.view === 'trash' ? '휴지통이 비어 있습니다' : state.q ? '검색 결과가 없습니다' :
+      '📂 아직 문서가 없습니다<br><br>파일을 이 창에 <b>끌어다 놓거나</b> ⬆ 업로드 버튼을 누르세요.<br><span style="font-size:12px">같은 폴더에 같은 이름으로 다시 올리면 새 버전으로 쌓입니다.</span>'}</div>`;
+    return;
+  }
+  const showFolder = !state.folder || state.q;
+  $('#listWrap').innerHTML = `<table><thead><tr><th>이름</th>${showFolder ? '<th class="hide-sm">폴더</th>' : ''}<th class="hide-sm">크기</th><th>수정일</th></tr></thead><tbody>${
+    state.docs.map(d => `<tr class="row ${state.sel === d.id ? 'sel' : ''}" data-id="${d.id}" draggable="true">
+      <td class="name"><span class="ico">${icon(d.name, d.mime)}</span>${d.starred ? '<span class="star">★</span> ' : ''}${esc(d.name)}${d.ver > 1 ? `<span class="ver-badge">v${d.ver}</span>` : ''}
+        ${d.tags.map(t => `<span class="tag-chip" style="font-size:11px">#${esc(t)}</span>`).join('')}</td>
+      ${showFolder ? `<td class="hide-sm muted">${esc(d.folder_id ? folderPath(d.folder_id).join(' › ') : '—')}</td>` : ''}
+      <td class="hide-sm muted">${fmtSize(d.size)}</td><td class="muted">${fmtDate(d.updated)}</td></tr>`).join('')}</tbody></table>`;
+  $('#listWrap').querySelectorAll('tr.row').forEach(tr => {
+    tr.onclick = () => openDetail(+tr.dataset.id);
+    tr.ondblclick = () => { const d = state.docs.find(x => x.id == tr.dataset.id); if (d) window.open(`/api/file/${d.version_id}`, '_blank'); };
+    tr.ondragstart = e => e.dataTransfer.setData('docbox/doc', tr.dataset.id);
+  });
+}
+
+// ---------------- detail
+function closeDetail() { state.sel = null; $('#detail').classList.remove('open'); }
+async function openDetail(id) {
+  state.sel = id;
+  document.querySelectorAll('tr.row').forEach(tr => tr.classList.toggle('sel', +tr.dataset.id === id));
+  const d = await api('docs/' + id);
+  const url = `/api/file/${d.version_id}`;
+  let preview = `<div class="muted" style="padding:24px">${icon(d.name, d.mime)} 미리보기를 지원하지 않는 형식</div>`;
+  if (/^image\/(png|jpeg|gif|webp|bmp)$/.test(d.mime)) preview = `<img src="${url}" alt="">`;
+  else if (d.mime === 'application/pdf') preview = `<iframe src="${url}"></iframe>`;
+  else if (d.mime.startsWith('video/')) preview = `<video src="${url}" controls style="max-width:100%"></video>`;
+  else if (d.mime.startsWith('audio/')) preview = `<audio src="${url}" controls></audio>`;
+  else if (d.mime.startsWith('text/') || /\.(md|txt|json|log|csv|py|js)$/i.test(d.name)) {
+    preview = `<pre>불러오는 중…</pre>`;
+    fetch(url + '?dl=1').then(r => r.text()).then(t => { const pre = $('#detail .preview pre'); if (pre && state.sel === id) pre.textContent = t.slice(0, 20000) + (t.length > 20000 ? '\n…(이하 생략)' : ''); });
+  }
+  const folderOpts = ['<option value="">(최상위)</option>'].concat(state.folders.map(f =>
+    `<option value="${f.id}" ${d.folder_id === f.id ? 'selected' : ''}>${esc(folderPath(f.id).join(' › '))}</option>`)).join('');
+  const trash = d.deleted;
+  $('#detail').innerHTML = `
+    <div style="display:flex;gap:8px;align-items:flex-start">
+      <h3 style="flex:1">${icon(d.name, d.mime)} ${esc(d.name)}</h3>
+      <button class="ghost" id="dClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="muted">v${d.ver} · ${fmtSize(d.size)} · ${fmtDate(d.updated)} 수정</div>
+    <div class="preview">${preview}</div>
+    <div class="btns">
+      ${trash ? `<button class="primary" id="dRestore">↩ 복원</button><button class="danger" id="dPurge">영구 삭제</button>` : `
+      <a href="${url}?dl=1"><button class="primary">⬇ 다운로드</button></a>
+      <button id="dStar">${d.starred ? '★ 즐겨찾기 해제' : '☆ 즐겨찾기'}</button>
+      <button id="dNewVer">⬆ 새 버전</button>
+      <button class="danger" id="dDel">🗑 삭제</button>`}
+    </div>
+    ${trash ? '' : `
+    <div class="field"><label>이름</label><input type="text" id="dName" value="${esc(d.name)}"></div>
+    <div class="field"><label>폴더</label><select id="dFolder">${folderOpts}</select></div>
+    <div class="field"><label>태그 (쉼표로 구분)</label><input type="text" id="dTags" value="${esc(d.tags.join(', '))}" placeholder="예: 계약서, 2026, 세금"></div>`}
+    <div class="section" style="margin:18px 0 6px">버전 기록 (${d.versions.length})</div>
+    <ul class="vers">${d.versions.map(v => `<li>
+      <b>v${v.ver}</b><div class="grow"><div>${fmtDate(v.created)} · ${fmtSize(v.size)}</div>${v.note ? `<div class="muted">${esc(v.note)}</div>` : ''}</div>
+      <a href="/api/file/${v.id}?dl=1">받기</a>
+      ${v.ver !== d.ver && !trash ? `<button class="ghost" data-restore="${v.id}" style="color:var(--accent)">되돌리기</button>` : ''}
+    </li>`).join('')}</ul>
+    <input type="file" id="dVerInput" hidden>`;
+  $('#detail').classList.add('open');
+  $('#dClose').onclick = () => { closeDetail(); renderList(); };
+  const reload = async msg => { if (msg) toast(msg); await refreshAll(); if (state.sel === id) openDetail(id); };
+  if (trash) {
+    $('#dRestore').onclick = async () => { await send(`docs/${id}/restore`, 'POST'); closeDetail(); reload('복원했습니다'); };
+    $('#dPurge').onclick = async () => { if (confirm('모든 버전이 영구 삭제됩니다. 계속할까요?')) { await send(`docs/${id}?purge=1`, 'DELETE'); closeDetail(); reload('영구 삭제했습니다'); } };
+  } else {
+    $('#dStar').onclick = async () => { await send('docs/' + id, 'PATCH', { starred: !d.starred }); reload(); };
+    $('#dDel').onclick = async () => { await send('docs/' + id, 'DELETE'); closeDetail(); reload('휴지통으로 옮겼습니다'); };
+    $('#dName').onchange = async e => { await send('docs/' + id, 'PATCH', { name: e.target.value }); reload('이름을 바꿨습니다'); };
+    $('#dFolder').onchange = async e => { await send('docs/' + id, 'PATCH', { folder_id: e.target.value ? +e.target.value : null }); reload('이동했습니다'); };
+    $('#dTags').onchange = async e => { await send('docs/' + id, 'PATCH', { tags: e.target.value }); reload('태그를 저장했습니다'); };
+    $('#dNewVer').onclick = () => $('#dVerInput').click();
+    $('#dVerInput').onchange = async e => {
+      const f = e.target.files[0]; if (!f) return;
+      const note = prompt('이번 버전 메모 (선택)', '') ?? '';
+      await uploadOne(f, d.folder_id, note, d.name); reload('새 버전을 올렸습니다');
+    };
+    $('#detail').querySelectorAll('[data-restore]').forEach(b => b.onclick = async () => {
+      await send(`versions/${b.dataset.restore}/restore`, 'POST'); reload('이전 버전을 최신으로 되돌렸습니다');
+    });
+  }
+}
+
+// ---------------- upload
+function uploadOne(file, folderId, note = '', asName = null) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    xhr.setRequestHeader('X-Filename', encodeURIComponent(asName || file.name));
+    if (folderId) xhr.setRequestHeader('X-Folder', String(folderId));
+    if (note) xhr.setRequestHeader('X-Note', encodeURIComponent(note));
+    xhr.upload.onprogress = e => { if (e.lengthComputable) $('#progress').style.width = (e.loaded / e.total * 100) + '%'; };
+    xhr.onload = () => {
+      $('#progress').style.width = '0';
+      let data = {}; try { data = JSON.parse(xhr.responseText); } catch {}
+      if (xhr.status === 401) { showLogin(); return reject(); }
+      xhr.status < 300 ? resolve(data) : (toast(`${file.name}: ${data.error || '업로드 실패'}`), reject(new Error(data.error)));
+    };
+    xhr.onerror = () => { $('#progress').style.width = '0'; toast('네트워크 오류'); reject(); };
+    xhr.send(file);
+  });
+}
+async function uploadFiles(files) {
+  const folder = state.view === 'all' && state.folder ? +state.folder : null;
+  let ok = 0, newVer = 0, same = 0;
+  for (const f of files) {
+    try {
+      const r = await uploadOne(f, folder);
+      if (r.unchanged) same++; else if (r.ver > 1) newVer++; else ok++;
+    } catch {}
+  }
+  const parts = [];
+  if (ok) parts.push(`새 문서 ${ok}개`);
+  if (newVer) parts.push(`새 버전 ${newVer}개`);
+  if (same) parts.push(`변경 없음 ${same}개`);
+  if (parts.length) toast(parts.join(' · ') + ' 업로드 완료');
+  if (state.view !== 'all') state.view = 'all';
+  refreshAll();
+}
+$('#uploadBtn').onclick = () => $('#fileInput').click();
+$('#fileInput').onchange = e => { uploadFiles([...e.target.files]); e.target.value = ''; };
+let dragDepth = 0;
+const isFileDrag = e => e.dataTransfer?.types.includes('Files');
+window.addEventListener('dragenter', e => { if (isFileDrag(e)) { dragDepth++; $('#dropzone').classList.add('on'); } });
+window.addEventListener('dragleave', e => { if (isFileDrag(e) && --dragDepth <= 0) { dragDepth = 0; $('#dropzone').classList.remove('on'); } });
+window.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
+window.addEventListener('drop', e => {
+  if (!isFileDrag(e)) return;
+  e.preventDefault(); dragDepth = 0; $('#dropzone').classList.remove('on');
+  const files = [...e.dataTransfer.files].filter(f => f.size || f.type);  // 폴더 자체는 제외
+  if (files.length) uploadFiles(files);
+});
+
+// ---------------- search / misc
+let searchT;
+$('#search').oninput = e => { clearTimeout(searchT); searchT = setTimeout(() => { state.q = e.target.value.trim(); closeDetail(); loadDocs(); }, 250); };
+$('#sort').onchange = e => { state.sort = e.target.value; loadDocs(); };
+$('#menuBtn').onclick = () => $('#side').classList.toggle('open');
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement.tagName !== 'INPUT') { e.preventDefault(); $('#search').focus(); }
+  if (e.key === 'Escape') { closeDetail(); renderList(); }
+});
+
+boot();
+</script>
+</body>
+</html>
