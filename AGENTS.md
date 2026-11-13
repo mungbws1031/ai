@@ -8,7 +8,8 @@ companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF
 최적화 PWA — 사진 기반 티 점수 분석), and `miri/` (Vite + React PWA — ADHD
 워킹맘용 선제적 리마인더 & 역산 스케줄러, PRD-MIRI-MVP-v0.1), and
 `digestion-sim/` (단일 파일 소화 시뮬레이터 — 식사별 72시간 소화·흡수·배변 모델), and
-`land-price/` (영동군 심천면 초강리 농지 실거래 인포그래픽 — 국토부 실거래 CSV + 단일 HTML).
+`land-price/` (영동군 심천면 초강리 농지 실거래 인포그래픽 — 국토부 실거래 CSV + 단일 HTML), and
+`cook/` (전자혀 — 요리 초보용 맛 튜닝 계산기 단일 파일 PWA, 기획서 `cook/docs/PRD.md`).
 
 ## Scope of rules
 
