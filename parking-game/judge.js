@@ -45,7 +45,10 @@
     return !(slot.freesOnCall && state.afterCall);
   }
   function slotRuleKey(slot) {
-    if (slot.disabled) return 'disabled';
+    if (slot.disabled || slot.type === 'disabled') return 'disabled';
+    if (slot.type === 'ev') return 'ev_charge';
+    if (slot.type === 'compact') return 'compact_slot';
+    if (slot.type === 'pregnant') return 'pregnant_slot';
     return slot.kind === 'street' ? 'street_slot' : 'slot';
   }
 
@@ -87,9 +90,12 @@
 
     // 구획 안에 완전히 들어갔는지
     let inSlot = null, align = null;
-    if (RULES[key].severity === 0) {
+    if (RULES[key].severity <= 2 && perPoint.every(hs => hs.some(h => h.slot))) {
       const slot = perPoint[8].find(h => h.slot)?.slot;
-      if (slot && perPoint.every(hs => hs.some(h => h.slot === slot))) {
+      if (!slot || !perPoint.every(hs => hs.some(h => h.slot === slot))) {
+        key = 'straddle';
+        reasons.push('구획선을 밟고 두 칸에 걸쳤습니다.');
+      } else {
         inSlot = slot;
         const along = slot.w > slot.h ? 0 : Math.PI / 2;
         const deg = Math.min(angDiff(pose.heading, along), angDiff(pose.heading, along + Math.PI)) * 180 / Math.PI;
@@ -119,7 +125,7 @@
     if (hitKeys.length > 1 && RULES[hitKeys[0]].severity > 0) {
       reasons.push(`차체가 걸친 구역: ${hitKeys.map(k => RULES[k].short).join(', ')} → 가장 엄격한 '${RULES[key].short}' 기준 적용`);
     }
-    return { key, rule, legal, mode, effective, minutes, inSlot, align, wrongWay, hitKeys, reasons };
+    return { key, rule, answer: rule.answer, legal, mode, effective, minutes, inSlot, align, wrongWay, hitKeys, reasons };
   }
 
   // ---------- 단속 위험 ----------
@@ -166,7 +172,7 @@
   }
 
   const api = { CAR, SLOT_TOL, carCorners, samplePoints, hitsAt, judgePose, assessRisk, rollOutcome,
-    slotOccupied, inRect, inZone, angDiff };
+    slotOccupied, slotRuleKey, inRect, inZone, angDiff };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Judge = api;
 })(typeof window !== 'undefined' ? window : globalThis);

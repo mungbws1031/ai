@@ -10,9 +10,11 @@
   const pct = p => Math.round(p * 100) + '%';
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-  const tint = r => (r.park ? 'ok' : r.stop ? 'stop' : 'ban');
-  const TINT = { ok: 'rgba(47,190,110,.30)', stop: 'rgba(255,194,14,.34)', ban: 'rgba(226,59,59,.26)' };
-  const TINT_SOLID = { ok: '#3ccf7d', stop: '#ffc20e', ban: '#ff5a5a' };
+  const ANS = window.ANSWERS;
+  const tint = r => ({ park: 'ok', stop: 'stop', no: 'ban', manner: 'manner' }[r.answer] || (r.park ? 'ok' : r.stop ? 'stop' : 'ban'));
+  const TINT = { ok: 'rgba(47,190,110,.30)', stop: 'rgba(255,194,14,.34)', ban: 'rgba(226,59,59,.26)', manner: 'rgba(180,140,255,.32)' };
+  const TINT_SOLID = { ok: '#3ccf7d', stop: '#ffc20e', ban: '#ff5a5a', manner: '#b48cff' };
+  const TINT_LABEL = { ok: '주차 OK', stop: '정차만', ban: '안 돼요', manner: '법은 OK·비매너' };
   const store = {
     get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* 저장 불가 환경 */ } },
@@ -110,11 +112,27 @@
       ctx.fillStyle = '#e0262b'; ctx.fillRect(h.x - 5, y - 0.18, 10, 0.36);
       if (o.learn) { ctx.strokeStyle = '#ff5a5a'; ctx.lineWidth = 0.08; ctx.setLineDash([0.4, 0.3]); ctx.beginPath(); ctx.arc(h.x, h.y, 5, 0, 2 * PI); ctx.stroke(); ctx.setLineDash([]); }
     });
+    // 노면 도색 구역(소방차 전용·구급차 전용·보행통로·이중주차 구간)
+    const hatch = (z, color, gap) => {
+      ctx.save(); ctx.beginPath(); ctx.rect(z.x, z.y, z.w, z.h); ctx.clip();
+      ctx.strokeStyle = color; ctx.lineWidth = 0.18; ctx.beginPath();
+      for (let d = -z.h; d < z.w; d += gap) { ctx.moveTo(z.x + d, z.y + z.h); ctx.lineTo(z.x + d + z.h, z.y); }
+      ctx.stroke(); ctx.restore();
+      ctx.strokeStyle = color; ctx.lineWidth = 0.2; ctx.strokeRect(z.x + 0.1, z.y + 0.1, z.w - 0.2, z.h - 0.2);
+    };
+    lv.zones.forEach(z => {
+      if (z.type === 'fire_lane') { ctx.fillStyle = 'rgba(245,184,0,.18)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#f5b800', 1.2); }
+      if (z.type === 'ambulance') { ctx.fillStyle = 'rgba(224,38,43,.22)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#e0262b', 1.2); }
+      if (z.type === 'entrance') { ctx.fillStyle = 'rgba(236,238,232,.16)'; ctx.fillRect(z.x, z.y, z.w, z.h); }
+      if (z.type === 'double_park') { ctx.strokeStyle = 'rgba(236,238,232,.7)'; ctx.lineWidth = 0.1; ctx.setLineDash([0.8, 0.6]); ctx.strokeRect(z.x, z.y, z.w, z.h); ctx.setLineDash([]); }
+    });
     // 주차구획
+    const SLOT_FILL = { disabled: 'rgba(31,95,173,.75)', ev: 'rgba(36,140,88,.75)', pregnant: 'rgba(214,106,154,.6)', compact: 'rgba(80,130,200,.35)' };
     (lv.slots || []).forEach(s => {
-      if (s.disabled) { ctx.fillStyle = 'rgba(31,95,173,.75)'; ctx.fillRect(s.x, s.y, s.w, s.h); }
+      const ty = s.disabled ? 'disabled' : s.type;
+      if (SLOT_FILL[ty]) { ctx.fillStyle = SLOT_FILL[ty]; ctx.fillRect(s.x, s.y, s.w, s.h); }
       else if (o.learn && !J.slotOccupied(s, o.state)) { ctx.fillStyle = TINT.ok; ctx.fillRect(s.x, s.y, s.w, s.h); }
-      ctx.strokeStyle = s.disabled ? '#9cc1ff' : '#eceee8'; ctx.lineWidth = 0.12; ctx.strokeRect(s.x, s.y, s.w, s.h);
+      ctx.strokeStyle = ty === 'disabled' ? '#9cc1ff' : '#eceee8'; ctx.lineWidth = 0.12; ctx.strokeRect(s.x, s.y, s.w, s.h);
     });
     // 보호구역·버스 노면 글씨
     if (cam.ppm > 4) {
@@ -125,7 +143,12 @@
         }
       });
       lv.zones.filter(z => z.type === 'bus_stop').forEach(z => text(z.x + z.w / 2, z.y + z.h / 2, '버스', 1.2 * ppm, '#f5b800'));
-      (lv.slots || []).filter(s => s.disabled).forEach(s => text(s.x + s.w / 2, s.y + s.h / 2, '♿', 1.8 * ppm, '#fff', 'Noto Sans KR'));
+      const SLOT_TXT = { disabled: ['♿', 1.8], ev: ['⚡', 1.6], pregnant: ['임산부', 0.7], compact: ['경차', 0.8] };
+      (lv.slots || []).forEach(s => {
+        const t = SLOT_TXT[s.disabled ? 'disabled' : s.type];
+        if (t && !(o.parked || []).some(c => c.slot === s.id)) text(s.x + s.w / 2, s.y + s.h * 0.72, t[0], t[1] * ppm, '#fff', 'Noto Sans KR');
+      });
+      lv.zones.filter(z => z.paint).forEach(z => text(z.x + z.w / 2, z.y + z.h / 2, z.paint, clamp(0.9 * ppm, 10, 22), z.type === 'fire_lane' ? '#ffd23a' : '#f6efe0'));
     }
     // 주변 시설
     (lv.props || []).forEach(p => {
@@ -172,6 +195,21 @@
     // 건물 이름
     lv.buildings.forEach(b => { if (b.label && cam.ppm > 3) text(b.x + b.w / 2, b.y + b.h / 2, b.label, clamp(ppm * 0.9, 11, 18), b.dest ? '#fff' : '#e6e9ec', b.dest ? 'Do Hyeon' : 'Noto Sans KR'); });
     (lv.lots || []).forEach(l => { if (l.label && cam.ppm > 3) text(l.x + l.w / 2, l.y + l.h / 2 - (l.h > 14 ? 0 : 2.6), l.label, clamp(ppm * 0.8, 10, 15), '#cfd5db', 'Noto Sans KR'); });
+    // 판단 모드 후보 자리 핀
+    (o.candidates || []).forEach(c => {
+      world();
+      const r = Math.max(0.9, 11 / ppm);
+      const pin = { x: c.x, y: c.y };
+      if (!c.status && o.pulse) {
+        const k = (o.t % 1.4) / 1.4;
+        ctx.strokeStyle = `rgba(255,255,255,${0.8 * (1 - k)})`; ctx.lineWidth = Math.max(0.12, 2 / ppm);
+        ctx.beginPath(); ctx.arc(pin.x, pin.y, r * (1 + k * 0.9), 0, 2 * PI); ctx.stroke();
+      }
+      ctx.fillStyle = c.status ? TINT_SOLID[c.status] : '#0b5aa8';
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = Math.max(0.12, 2.5 / ppm);
+      ctx.beginPath(); ctx.arc(pin.x, pin.y, r, 0, 2 * PI); ctx.fill(); ctx.stroke();
+      text(pin.x, pin.y, String(c.n), Math.max(13, r * ppm * 1.2), c.status ? '#17202a' : '#fff');
+    });
     // 플레이어 차
     if (o.player) { world(); drawCar(ctx, o.player, '#0b5aa8', { player: true, brake: o.player.brakeOn, reverse: o.player.gear === 'R' }); }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -231,10 +269,12 @@
   }
   function hideBubble() { bubble.classList.add('hidden'); bubble.dataset.modal = ''; }
 
+  function answerBadge(r) { return `<span class="badge" style="background:${TINT_SOLID[tint(r)]};color:#17202a">${TINT_LABEL[tint(r)]}</span>`; }
   function ruleCard(key, extraTitle) {
     const r = RULES[key];
     return `<h4>${extraTitle ? extraTitle + ' · ' : ''}${r.name}</h4>
-      <div class="badges">
+      <p class="easy">${r.easy || ''}</p>
+      <div class="badges">${answerBadge(r)}<span class="badge info">${r.basis || ''}</span>
         <span class="badge ${r.stop || r.park ? 'yes' : 'no'}">정차 ${r.stop || r.park ? '가능' : '금지'}</span>
         <span class="badge ${r.park ? 'yes' : 'no'}">주차 ${r.park ? '가능' : '금지'}</span>
         ${r.fine ? `<span class="badge info">과태료 ${won(r.fine)}</span>` : ''}
@@ -253,48 +293,61 @@
   let selected = 0;
   function presentKeys(lv) {
     const keys = new Set(lv.zones.map(z => z.type));
-    (lv.slots || []).forEach(s => keys.add(s.disabled ? 'disabled' : s.kind === 'street' ? 'street_slot' : 'slot'));
-    ['lane', 'sidewalk', 'wrong_way'].forEach(k => keys.add(k));
+    (lv.slots || []).forEach(s => keys.add(J.slotRuleKey(s)));
+    if (lv.roads.length) ['lane', 'sidewalk', 'wrong_way'].forEach(k => keys.add(k));
+    if ((lv.lots || []).length) keys.add('lot_aisle');
     return [...keys].sort((a, b) => RULES[a].severity - RULES[b].severity);
   }
   function renderPreview() {
     const best = store.get('pg-stars', {});
-    $('#levelList').innerHTML = LEVELS.map((lv, i) => `
+    const item = (lv, i) => `
       <button class="lvl" role="tab" aria-selected="${i === selected}" data-i="${i}">
-        <small>레벨 ${lv.id}</small><b>${lv.title}</b><small>${lv.place}</small>
+        <small>${lv.bonus ? '보너스' : '레벨 ' + lv.id}</small><b>${lv.title}</b><small>${lv.place}</small>
         <div class="stars">${'★'.repeat(best[lv.id] || 0)}${'☆'.repeat(3 - (best[lv.id] || 0))}</div>
-      </button>`).join('');
+      </button>`;
+    $('#levelList').innerHTML = LEVELS.map((lv, i) => (lv.bonus && !LEVELS[i - 1].bonus ? '<div class="lvl-sep">보너스 · 직접 운전 전용</div>' : '') + item(lv, i)).join('');
     $('#levelList').querySelectorAll('.lvl').forEach(b => b.onclick = () => { selected = +b.dataset.i; renderPreview(); });
     const lv = LEVELS[selected];
     const keys = presentKeys(lv);
-    const groups = { ok: [], stop: [], ban: [] };
+    const groups = { ok: [], stop: [], manner: [], ban: [] };
     keys.forEach(k => groups[tint(RULES[k])].push(k));
     const chips = arr => arr.map(k => `<span class="chip" data-k="${k}"><i style="background:${TINT_SOLID[tint(RULES[k])]}"></i>${RULES[k].short}</span>`).join('');
+    const candRows = (lv.candidates || []).map((c, i) => {
+      const j = J.judgePose(lv, c, 'stop', { minutes: 3 });
+      const ok = j.key === c.expect && j.answer === c.answer;
+      return `<tr><td>후보 ${i + 1}</td><td>${RULES[j.key].short} → ${ANS[j.answer].label}</td><td class="${ok ? 'pass' : 'fail'}">${ok ? '통과' : '실패'}</td><td></td></tr>`;
+    });
     const results = lv.samples.map((s, i) => {
       const j = J.judgePose(lv, s, s.mode, { minutes: s.minutes, state: { afterCall: !!s.afterCall } });
       const ok = j.key === s.expect && j.legal === s.legal;
       return `<tr><td>${i + 1}</td><td>${s.name}<br><small style="color:var(--muted)">${s.mode === 'stop' ? '정차' : '주차'} ${s.minutes}분 → ${RULES[j.key].short} · ${j.legal ? '합법' : '불법'}</small></td>
         <td class="${ok ? 'pass' : 'fail'}">${ok ? '통과' : '실패'}</td><td><button class="btn small ghost" data-s="${i}">여기서</button></td></tr>`;
     });
-    const passN = results.filter(r => r.includes('class="pass"')).length;
+    const allRows = [...candRows, ...results];
+    const passN = allRows.filter(r => r.includes('class="pass"')).length;
+    const timed = store.get('pg-timed', false);
+    const who = lv.situation ? `<dt>상황</dt><dd>${lv.situation.text}</dd>` : `<dt>약속 상대</dt><dd>${lv.story.friend} · 머무는 시간 ${lv.story.meetingMinutes}분</dd>`;
     $('#levelInfo').innerHTML = `
       <section><h3>목표</h3><p>${lv.goal}</p></section>
-      <section><dl class="kv"><dt>제한시간</dt><dd>${Math.floor(lv.timeLimit / 60)}분 ${lv.timeLimit % 60 ? lv.timeLimit % 60 + '초' : ''}</dd>
-        <dt>장소</dt><dd>${lv.place}</dd><dt>약속 상대</dt><dd>${lv.story.friend} · 머무는 시간 ${lv.story.meetingMinutes}분</dd></dl></section>
-      <section><h3>주차 가능 구역</h3>${chips(groups.ok)}</section>
-      <section><h3>정차만 가능</h3>${chips(groups.stop)}</section>
-      <section><h3>정차·주차 금지</h3>${chips(groups.ban)}</section>
+      <div class="actions">${lv.candidates ? '<button class="btn primary" id="btnQuiz">판단 연습 시작</button>' : ''}
+        <button class="btn ${lv.candidates ? '' : 'primary'}" id="btnStart">직접 운전</button></div>
+      <section><dl class="kv"><dt>장소</dt><dd>${lv.place}</dd>${who}
+        <dt>제한시간</dt><dd><label><input type="checkbox" id="chkTimed" ${timed ? 'checked' : ''}> 직접 운전에서 ${Math.floor(lv.timeLimit / 60)}분 제한 켜기</label></dd></dl></section>
+      <section><h3>주차 OK</h3>${chips(groups.ok) || '<small>없음</small>'}</section>
+      <section><h3>정차만</h3>${chips(groups.stop) || '<small>없음</small>'}</section>
+      <section><h3>법은 OK · 비매너</h3>${chips(groups.manner) || '<small>없음</small>'}</section>
+      <section><h3>안 돼요</h3>${chips(groups.ban)}</section>
       <section class="basis"><h3>판정 근거</h3><ul>${keys.map(k => `<li><b>${RULES[k].short}</b> — ${RULES[k].law}</li>`).join('')}
         <li>${REPORT_NOTE}</li><li>${TOW_NOTE}</li><li>${OVERTIME_NOTE}</li></ul></section>
-      <section><h3>샘플 판정 테스트 ${passN}/${results.length}</h3><table class="tests">${results.join('')}</table></section>
-      <div class="actions"><button class="btn primary" id="btnStart">레벨 ${lv.id} 시작</button></div>
+      <details><summary>판정 테스트 ${passN}/${allRows.length} 통과 (정답이 보이니 연습 뒤에 여세요)</summary><table class="tests">${allRows.join('')}</table></details>
       <p style="font-size:12px;color:var(--muted)">게임용 단순화 모델입니다. 과태료는 승용차 기준 대표값이며 지자체·시간대·표지판에 따라 다릅니다. 실제 운전 시 현장 표지와 law.go.kr의 최신 법령을 확인하세요.</p>`;
     $('#levelInfo').querySelectorAll('.chip').forEach(c => c.onclick = e => showBubble(e.clientX, e.clientY, ruleCard(c.dataset.k)));
     $('#levelInfo').querySelectorAll('[data-s]').forEach(b => b.onclick = () => startLevel(selected, lv.samples[+b.dataset.s]));
     $('#btnStart').onclick = () => startLevel(selected);
-    $('#miniLegend').innerHTML = [['ok', '주차 가능'], ['stop', '정차만'], ['ban', '금지']]
-      .map(([k, l]) => `<span><i class="dot" style="width:10px;height:10px;border-radius:2px;background:${TINT_SOLID[k]}"></i>${l}</span>`).join('') +
-      '<span>번호 = 오른쪽 샘플 테스트 위치</span>';
+    if ($('#btnQuiz')) $('#btnQuiz').onclick = () => startLevel(selected, null, 'quiz');
+    $('#chkTimed').onchange = e => store.set('pg-timed', e.target.checked);
+    $('#miniLegend').innerHTML = (lv.candidates ? '<span>파란 번호 = 판단 연습 후보 자리 (정답은 연습에서)</span>'
+      : ['ok', 'stop', 'manner', 'ban'].map(k => `<span><i class="dot" style="width:10px;height:10px;border-radius:2px;background:${TINT_SOLID[k]}"></i>${TINT_LABEL[k]}</span>`).join('') + '<span>번호 = 샘플 테스트 위치</span>');
     drawMini();
   }
   function miniCam(lv, w, h) {
@@ -306,14 +359,15 @@
     const lv = LEVELS[selected];
     const { w, h, dpr } = sizeCanvas(mini);
     const ctx = mini.getContext('2d');
-    drawWorld(ctx, lv, miniCam(lv, w, h), { dpr, learn: true, state: {}, parked: parkedList(lv, {}), samples: lv.samples, showDest: true, t: 0,
-      player: { ...lv.start, gear: 'D' } });
+    drawWorld(ctx, lv, miniCam(lv, w, h), { dpr, learn: !lv.candidates, state: {}, parked: parkedList(lv, {}), samples: lv.candidates ? [] : lv.samples, showDest: true, t: 0,
+      candidates: (lv.candidates || []).map((c, i) => ({ ...c, n: i + 1 })), player: { ...lv.start, gear: 'D' } });
   }
   mini.addEventListener('click', e => {
     const lv = LEVELS[selected];
     const r = mini.getBoundingClientRect();
     const cam = miniCam(lv, r.width, r.height);
     const p = { x: (e.clientX - r.left - cam.w / 2) / cam.ppm + cam.cx, y: (e.clientY - r.top - cam.h / 2) / cam.ppm + cam.cy };
+    if (lv.candidates) { showBubble(e.clientX, e.clientY, '<h4>판단 연습에서 확인하세요</h4><p>이 레벨은 각 자리의 정답을 연습하면서 알아보는 레벨입니다. "판단 연습 시작"을 눌러 주세요.</p>'); return; }
     infoAt(lv, p, e.clientX, e.clientY, {});
   });
   $('#btnData').onclick = () => showData();
@@ -338,7 +392,7 @@
   const ctx = cv.getContext('2d');
   let G = null;
 
-  function startLevel(i, sample) {
+  function startLevel(i, sample, mode = 'drive') {
     const lv = LEVELS[i];
     hideBubble(); $('#overlay').classList.add('hidden');
     G = {
@@ -349,7 +403,12 @@
       state: { afterCall: false }, events: [], parked: parkedList(lv, {}),
       learn: store.get('pg-learn', true), map: false, zoom: 1, paused: false,
       arrivedAt: null, declined: false, cooldown: {}, liveAt: 0, flash: null, lastPos: null,
+      mode, timed: store.get('pg-timed', false), anim: null, q: null,
     };
+    $('#game').classList.toggle('quiz', mode === 'quiz');
+    $('#game').classList.toggle('untimed', mode === 'quiz' || !G.timed);
+    $('#btnMode').textContent = mode === 'quiz' ? '직접 운전으로' : '판단 연습으로';
+    $('#btnMode').classList.toggle('hidden', !lv.candidates);
     if (sample) {
       Object.assign(G.car, { x: sample.x, y: sample.y, heading: sample.heading, gear: 'N' });
       if (sample.afterCall) { G.state.afterCall = true; G.parked = parkedList(lv, G.state); G.phase = 'park'; }
@@ -363,6 +422,7 @@
     $('#live').classList.toggle('hidden', !G.learn);
     setGearUI(); updateGoal();
     tryLandscape();
+    if (mode === 'quiz') startQuiz();
   }
   function hhmm(s) { const [h, m] = s.split(':').map(Number); return h * 3600 + m * 60; }
   function fmtClock(sec) { const m = Math.floor(sec / 60) % 1440; return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; }
@@ -373,10 +433,12 @@
   function updateGoal() {
     const lv = G.lv;
     const text = {
-      drive: `${lv.destination.label}로 가세요. 건물 주차장은 만차입니다.`,
+      drive: `${lv.destination.label} 쪽으로 가세요.${lv.bonus ? ' 건물 주차장은 만차입니다.' : ''}`,
       findStop: '도착! 잠깐 세울 곳을 골라 멈춘 뒤 기어를 P로 두세요.',
       park: `${lv.story.meetingMinutes}분 머물 곳에 정식 주차하고 P를 누르세요.`,
       call: '통화 중',
+      quiz: G.q && ({ intro: '', pick: `번호 핀을 눌러 "여기 세워도 될까?"를 골라 보세요. (${Object.keys(G.q.picks).length}/${lv.candidates.length})`,
+        event: '상황이 바뀌었어요.', final: `이제 ${lv.situation.extra}분 머물러요. 실제로 어디에 둘래요? 번호를 누르세요.`, done: '끝' }[G.q.stage]),
       done: '끝',
     }[G.phase];
     $('#hGoal').textContent = text;
@@ -496,11 +558,17 @@
     const dtReal = Math.min(0.1, (now - last) / 1000); last = now;
     if (!G || $('#game').classList.contains('hidden')) { return; }
     G.t += dtReal;
-    if (!G.paused && G.phase !== 'done') {
+    if (G.anim) {
+      const a = G.anim, k = Math.min(1, (G.t - a.t0) / a.dur), e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      let dh = a.to.heading - a.from.heading; dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+      Object.assign(G.car, { x: a.from.x + (a.to.x - a.from.x) * e, y: a.from.y + (a.to.y - a.from.y) * e, heading: a.from.heading + dh * e, v: 0 });
+      if (k >= 1) { G.anim = null; a.done && a.done(); }
+    }
+    if (G.mode === 'drive' && !G.paused && G.phase !== 'done') {
       acc += dtReal;
       while (acc >= 1 / 60) { step(1 / 60); acc -= 1 / 60; }
-      G.timeLeft -= dtReal; G.clock += dtReal;
-      if (G.timeLeft <= 0) finish('timeout');
+      G.clock += dtReal;
+      if (G.timed) { G.timeLeft -= dtReal; if (G.timeLeft <= 0) finish('timeout'); }
       if (G.phase === 'findStop' && G.arrivedAt != null && !G.declined && G.t - G.arrivedAt > 20 && !bubbleOpen()) ring(true);
       animateParked(dtReal);
     }
@@ -515,7 +583,7 @@
   function camera() {
     const { w, h, dpr } = sizeCanvas(cv);
     const lv = G.lv, c = G.car;
-    if (G.map) { const m = miniCam(lv, w, h); return { ...m, dpr }; }
+    if (G.map || G.mode === 'quiz') { const m = miniCam(lv, w, h * 0.86); return { ...m, h, cy: m.cy - h * 0.07 / m.ppm, dpr }; }
     const ppm = Math.max(w / 56, h / 30) * G.zoom;
     const ahead = clamp(c.v, -3, 8) * 0.7;
     let cx = c.x + Math.cos(c.heading) * ahead, cy = c.y + Math.sin(c.heading) * ahead + h * 0.08 / ppm;
@@ -528,7 +596,9 @@
   function render() {
     const cam = camera(); lastCam = cam;
     drawWorld(ctx, G.lv, cam, { dpr: cam.dpr, learn: G.learn, state: G.state, parked: G.parked, player: G.car,
-      showDest: G.phase === 'drive' || G.phase === 'findStop', t: G.t, flash: G.flash });
+      showDest: G.mode === 'drive' && (G.phase === 'drive' || G.phase === 'findStop'), t: G.t, flash: G.flash,
+      candidates: G.mode === 'quiz' ? G.lv.candidates.map((c, i) => ({ ...c, n: i + 1, status: G.q.picks[i] ? tint(G.q.picks[i].j.rule) : (G.q.final === i ? 'ok' : null) })) : null,
+      pulse: G.mode === 'quiz' && (G.q.stage === 'pick' || G.q.stage === 'final') });
   }
   function hud() {
     $('#hTime').textContent = fmtLeft(G.timeLeft);
@@ -543,7 +613,7 @@
     spd.classList.toggle('over', school && kmh > 30);
     $('#accel').classList.toggle('on', !!(G.accel || G.keys.up));
     $('#brake').classList.toggle('on', !!(G.brake || G.keys.down || G.keys.space));
-    if (G.learn && G.t - G.liveAt > 0.15) {
+    if (G.mode === 'drive' && G.learn && G.t - G.liveAt > 0.15) {
       G.liveAt = G.t;
       const mode = G.phase === 'park' ? 'park' : 'stop';
       const j = J.judgePose(G.lv, G.car, mode, { minutes: mode === 'park' ? G.lv.story.meetingMinutes : 3, state: G.state });
@@ -678,7 +748,7 @@
         if (e.j.legal) add('합법 정차', 100);
         else { add('불법 정차', -150); if (e.outcome.cost) add('정차 과태료', -e.outcome.cost / 200); }
       } else if (e.kind === 'park') {
-        if (e.j.legal) { success = true; add('정식 주차', 200); add(e.j.inSlot ? '구획 정렬' : '가장자리 주차', e.j.inSlot ? e.j.align.score * 2 : 80); }
+        if (e.j.legal) { success = true; add('정식 주차', 200); add(e.j.inSlot ? '구획 정렬' : '가장자리 주차', e.j.inSlot ? e.j.align.score * 2 : 80); if (e.j.answer === 'manner') add('비매너', -150); }
         else { add('불법 주차', -300); if (e.outcome.cost) add('주차 과태료·견인', -e.outcome.cost / 200); if (e.risk.penalty) add('통로 방해', -e.risk.penalty); }
       } else {
         add(DRIVE_VIOLATIONS[e.key].name, e.key === 'crash' ? -100 : -150);
@@ -705,7 +775,7 @@
         <button class="btn ghost" id="rMenu">레벨 선택</button></div></div>`;
     ov.classList.remove('hidden');
     $('#rAgain').onclick = () => startLevel(G.i);
-    if ($('#rNext')) $('#rNext').onclick = () => startLevel(G.i + 1);
+    if ($('#rNext')) $('#rNext').onclick = () => startLevel(G.i + 1, null, LEVELS[G.i + 1].candidates ? 'quiz' : 'drive');
     $('#rMenu').onclick = exitToMenu;
   }
   function evCard(e) {
@@ -728,7 +798,7 @@
       <h5>${e.j.legal ? '합법' : '불법'} — ${r.name}</h5>
       ${e.j.reasons.map(x => `<p style="margin:2px 0">· ${x}</p>`).join('')}
       <div style="font-size:12px;color:#3c4a5a;border-left:3px solid #0b5aa8;padding-left:6px;margin-top:4px">${r.law}</div>
-      ${e.j.legal ? (e.j.inSlot ? `<div class="out">구획 정렬 ${e.j.align.score}점</div>` : '<div class="out">문제 없음</div>')
+      ${e.j.legal ? (e.j.answer === 'manner' ? `<div class="out" style="color:#6b3fb8">법은 OK·비매너 — ${e.j.rule.consequence || ''}</div>` : e.j.inSlot ? `<div class="out">구획 정렬 ${e.j.align.score}점</div>` : '<div class="out">문제 없음</div>')
         : `<p style="margin:6px 0 0;font-size:12px">신고 ${pct(rk.reportProb)} · CCTV ${pct(rk.cctvProb)} · 순찰 ${pct(rk.patrolProb)} · 견인 ${pct(rk.towProb)}</p><div class="out">결과: ${outs.join(' → ')}</div>`}</div>`;
   }
   function exitToMenu() {
@@ -783,6 +853,14 @@
     if (moved > 12) return;
     if (bubbleOpen()) { if (bubble.dataset.modal) return; hideBubble(); return; }
     const p = { x: (e.clientX - lastCam.w / 2) / lastCam.ppm + lastCam.cx, y: (e.clientY - lastCam.h / 2) / lastCam.ppm + lastCam.cy };
+    if (G.mode === 'quiz') {
+      if (G.anim || !['pick', 'final'].includes(G.q.stage)) return;
+      const r = Math.max(1.6, 20 / lastCam.ppm);
+      const idx = G.lv.candidates.findIndex(c => dist(c, p) < r);
+      if (idx >= 0) return quizTap(idx);
+      if (G.q.stage === 'pick') return showBubble(e.clientX, e.clientY, '<h4>번호 핀을 눌러 보세요</h4><p>파란 번호가 붙은 자리가 오늘 고민해 볼 후보입니다.</p>');
+      return;
+    }
     infoAt(G.lv, p, e.clientX, e.clientY, G.state, G.car);
   });
   cv.addEventListener('wheel', e => { if (G) G.zoom = clamp(G.zoom * (e.deltaY > 0 ? 0.9 : 1.1), 0.5, 2.2); }, { passive: true });
@@ -847,7 +925,130 @@
     $('#btnLearn').setAttribute('aria-pressed', G.learn); $('#live').classList.toggle('hidden', !G.learn);
   };
   $('#btnExit').onclick = exitToMenu;
+  $('#btnMode').onclick = () => { if (G) startLevel(G.i, null, G.mode === 'quiz' ? 'drive' : 'quiz'); };
   $('#live').addEventListener('click', e => { if (G) infoAt(G.lv, G.car, e.clientX, e.clientY - 20, G.state, G.car); });
+
+  // ═════════════════════════ 판단 모드 ═════════════════════════
+  function candScreen(c) { return { x: (c.x - lastCam.cx) * lastCam.ppm + lastCam.w / 2, y: (c.y - lastCam.cy) * lastCam.ppm + lastCam.h / 2 }; }
+  function showCard(html, onGo, goLabel = '시작') {
+    const ov = $('#overlay');
+    ov.innerHTML = `<div class="result quiz-card">${html}<div class="actions" style="margin-top:12px"><button class="btn primary" id="cardGo">${goLabel}</button></div></div>`;
+    ov.classList.remove('hidden');
+    $('#cardGo').onclick = () => { ov.classList.add('hidden'); onGo && onGo(); };
+  }
+  function startQuiz() {
+    const lv = G.lv, s = lv.situation;
+    G.phase = 'quiz'; G.learn = false;
+    G.q = { stage: 'intro', picks: {}, final: null };
+    G.clock = hhmm(lv.clock);
+    updateGoal();
+    showCard(`<div class="sign"><div class="in"><h2>${s.title}</h2><div>${s.text}</div></div></div>
+      <p style="margin:12px 2px 0">지도에 번호가 붙은 후보 자리가 ${lv.candidates.length}곳 있어요. 하나씩 눌러서 골라 보세요.</p>
+      <div class="ans-legend">${Object.values(ANS).map(a => `<span><i style="background:${a.color}"></i>${a.label}</span>`).join('')}</div>`,
+      () => { G.q.stage = 'pick'; updateGoal(); });
+  }
+  function moveCar(c, done) {
+    G.anim = { from: { x: G.car.x, y: G.car.y, heading: G.car.heading }, to: { x: c.x, y: c.y, heading: c.heading }, t0: G.t, dur: 0.9, done };
+  }
+  function quizTap(idx) {
+    const lv = G.lv, c = lv.candidates[idx], sc = candScreen(c);
+    if (G.q.stage === 'final') {
+      showBubble(sc.x, sc.y, `<h4>${idx + 1}번 자리에 ${lv.situation.extra}분 둘까요?</h4><p>차를 두고 ${lv.situation.who === '마트 안내 방송' ? '장을 보러' : '볼일을 보러'} 갑니다.</p>
+        <div class="row"><button class="btn dark" id="fBack">다시 고르기</button><button class="btn primary" id="fGo">여기 둔다</button></div>`, { modal: true });
+      $('#fBack').onclick = hideBubble;
+      $('#fGo').onclick = () => { hideBubble(); G.q.final = idx; moveCar(c, () => finishQuiz(idx)); };
+      return;
+    }
+    if (G.q.picks[idx]) { moveCar(c, () => reveal(idx)); return; }
+    showBubble(sc.x, sc.y, `<h4>${idx + 1}번 자리 · 여기 어때요?</h4>
+      <div class="answers">${Object.entries(ANS).map(([k, a]) => `<button class="ans" data-a="${k}" style="--c:${a.color}">${a.label}</button>`).join('')}</div>`, { modal: true });
+    bubble.querySelectorAll('.ans').forEach(b => b.onclick = () => {
+      hideBubble();
+      const j = J.judgePose(lv, c, 'stop', { minutes: 3, state: G.state });
+      G.q.picks[idx] = { a: b.dataset.a, correct: j.answer === b.dataset.a, j };
+      updateGoal();
+      moveCar(c, () => reveal(idx));
+    });
+  }
+  function consequenceHtml(c) {
+    const lv = G.lv, mins = lv.situation.extra;
+    const j = J.judgePose(lv, c, 'park', { minutes: mins, state: G.state });
+    const r = j.rule;
+    if (j.answer === 'manner') return `<p><b>그대로 ${mins}분 두면?</b> ${r.consequence}</p>`;
+    if (j.legal) return `<p><b>그대로 ${mins}분 두면?</b> 문제없어요.</p>`;
+    const risk = J.assessRisk(lv, c, j, { minutes: mins, driverPresent: false });
+    const head = j.answer === 'stop' && j.key !== 'lot_aisle' ? `<p><b>그대로 ${mins}분 두면?</b> 5분이 넘으면 '주차'가 되어 위반이에요.</p>` : `<p><b>그대로 ${mins}분 두면?</b></p>`;
+    if (!r.fine) return head + `<p>${r.consequence || '과태료는 없지만 관리실 경고 스티커, 이동 요청, 견인 요청을 받을 수 있어요.'}</p>`;
+    return head + riskBlock(risk);
+  }
+  function reveal(idx) {
+    const lv = G.lv, c = lv.candidates[idx], pk = G.q.picks[idx], r = pk.j.rule, sc = candScreen(c);
+    const a = ANS[pk.j.answer];
+    showBubble(sc.x, sc.y, `<h4>${pk.correct ? '맞았어요!' : '아쉬워요'} — 정답은 <span style="color:${a.color === '#ffc20e' ? '#9a6b00' : a.color}">${a.label}</span></h4>
+      ${pk.correct ? '' : `<p style="color:#5b6774">고른 답: ${ANS[pk.a].label}</p>`}
+      <p class="easy">${r.easy}</p>
+      ${pk.j.reasons.filter(x => !x.startsWith('차체가')).map(x => `<p>· ${x}</p>`).join('')}
+      <div id="conseq"></div>
+      <details><summary>근거 보기 · ${r.basis}</summary>${ruleCard(pk.j.key).replace(/<h4>.*?<\/h4>/s, '').replace(/<p class="easy">.*?<\/p>/s, '')}</details>
+      <div class="row">${pk.j.answer === 'park' ? '' : '<button class="btn dark" id="rWhat">그대로 두면?</button>'}<button class="btn primary" id="rNext">다음</button></div>`, { modal: true });
+    if ($('#rWhat')) $('#rWhat').onclick = () => { $('#conseq').innerHTML = consequenceHtml(c); $('#rWhat').remove(); };
+    $('#rNext').onclick = () => {
+      hideBubble();
+      if (Object.keys(G.q.picks).length === lv.candidates.length && G.q.stage === 'pick') startEvent();
+    };
+  }
+  function startEvent() {
+    const lv = G.lv, s = lv.situation;
+    G.q.stage = 'event'; updateGoal();
+    callEl.classList.remove('hidden', 'ringing');
+    $('#callAv').textContent = s.who[0];
+    $('#callName').textContent = s.who;
+    $('#callSub').textContent = '상황이 바뀌었어요';
+    $('#callLines').innerHTML = s.event.map(l => `<p>${l}</p>`).join('');
+    $('#callRow').innerHTML = '<button class="accept" id="evOk">알겠어요</button>';
+    $('#evOk').onclick = () => {
+      callEl.classList.add('hidden');
+      G.clock += (s.extra - s.stay) * 60;
+      G.q.stage = 'final'; updateGoal();
+      toast(`이제 ${s.extra}분 머물러요. 실제로 어디에 둘지 번호를 눌러 고르세요.`, '', 4500);
+    };
+  }
+  function finishQuiz(idx) {
+    const lv = G.lv, c = lv.candidates[idx], mins = lv.situation.extra;
+    G.q.stage = 'done'; G.phase = 'done'; updateGoal();
+    const j = J.judgePose(lv, c, 'park', { minutes: mins, state: G.state });
+    const risk = J.assessRisk(lv, c, j, { minutes: mins, driverPresent: false });
+    const out = J.rollOutcome(risk);
+    const picks = lv.candidates.map((cc, i) => ({ i, ...G.q.picks[i] }));
+    const right = picks.filter(p => p.correct).length;
+    let score = right * 100 + (j.legal ? (j.answer === 'park' ? 300 : 150) : 0);
+    const stars = !j.legal ? 0 : right === picks.length && j.answer === 'park' ? 3 : right >= Math.ceil(picks.length / 2) ? 2 : 1;
+    const best = store.get('pg-stars', {});
+    if (stars > (best[lv.id] || 0)) { best[lv.id] = stars; store.set('pg-stars', best); }
+    const wrong = picks.filter(p => !p.correct);
+    const tips = wrong.length ? wrong.map(p => `<div class="ev bad"><div class="kind">${p.i + 1}번 자리 · 고른 답 ${ANS[p.a].label}</div>
+        <h5>정답: ${ANS[p.j.answer].label} — ${p.j.rule.name}</h5><p>${p.j.rule.easy}</p></div>`).join('')
+      : '<div class="ev"><h5>모든 자리를 맞혔어요</h5><p>이 장소에서는 어디에 세울지 이미 알고 있어요.</p></div>';
+    const head = !j.legal ? ['red', '두고 간 자리가 문제예요', `${idx + 1}번 자리에 ${mins}분 두면 위반입니다.`]
+      : j.answer === 'manner' ? ['', '법은 지켰지만 아쉬워요', `${idx + 1}번 자리는 과태료는 없지만 비매너예요.`]
+      : ['green', '잘 세웠어요', `${idx + 1}번 자리라면 ${mins}분 둬도 문제없어요.`];
+    const ov = $('#overlay');
+    ov.innerHTML = `<div class="result">
+      <div class="top"><div class="sign ${head[0]}"><div class="in"><h2>${head[1]}</h2><div>${head[2]}</div></div></div>
+        <div class="score">${score}<small>점 · ${right}/${picks.length} 정답</small><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div></div></div>
+      <h3 class="sub">다음엔 이렇게</h3><div class="events">${tips}</div>
+      <h3 class="sub">실제로 둔 자리</h3><div class="events">${evCard({ kind: 'park', j, risk, outcome: out })}</div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn" id="rAgain">다시 하기</button>
+        <button class="btn" id="rDrive">직접 운전으로 해보기</button>
+        ${G.i < LEVELS.length - 1 && !LEVELS[G.i + 1].bonus ? '<button class="btn primary" id="rNext">다음 레벨</button>' : ''}
+        <button class="btn ghost" id="rMenu">레벨 선택</button></div></div>`;
+    setTimeout(() => ov.classList.remove('hidden'), 350);
+    $('#rAgain').onclick = () => startLevel(G.i, null, 'quiz');
+    $('#rDrive').onclick = () => startLevel(G.i, null, 'drive');
+    if ($('#rNext')) $('#rNext').onclick = () => startLevel(G.i + 1, null, 'quiz');
+    $('#rMenu').onclick = exitToMenu;
+  }
 
   // ═════════════════════════ 데이터 구조 모달 ═════════════════════════
   function showData() {
@@ -872,5 +1073,5 @@
   requestAnimationFrame(loop);
 
   // 디버그·자동 테스트용
-  window.__game = { get G() { return G; }, startLevel, setGear, onPark, endCall, exitToMenu };
+  window.__game = { get G() { return G; }, startLevel, setGear, onPark, endCall, exitToMenu, quizTap };
 })();

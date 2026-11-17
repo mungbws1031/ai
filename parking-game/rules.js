@@ -124,6 +124,108 @@
     },
   };
 
+  // ── 2단계: 사유지(마트·아파트)·병원 규칙 ──
+  // 사유지 주차장은 원칙적으로 도로교통법 주정차 단속 대상이 아닙니다. 대신 아래 법과 관리규정이 적용됩니다.
+  Object.assign(RULES, {
+    compact_slot: {
+      name: '경차 전용칸', short: '경차칸',
+      stop: true, park: true, severity: 1, fine: 0, report: false, tow: 0, cctvGrace: 999,
+      law: '주차장법 시행규칙 제3조 — 경형자동차 전용주차구획 설치 근거. 일반차 주차에 대한 과태료 규정은 없음(일부 공영주차장은 조례로 제한)',
+      desc: '경차를 위해 만든 칸입니다. 일반 승용차가 대면 과태료는 없지만, 경차 운전자의 자리를 뺏게 됩니다.',
+      consequence: '경차 차주가 빈자리를 못 찾아 헤맵니다. 관리 직원이 이동을 부탁하거나, 차 앞유리에 안내 쪽지가 붙을 수 있어요.',
+    },
+    pregnant_slot: {
+      name: '임산부 배려칸', short: '임산부칸',
+      stop: true, park: true, severity: 1, fine: 0, report: false, tow: 0, cctvGrace: 999,
+      law: '법적 강제 없음 — 지자체 조례·시설 자율로 운영하는 배려 구역',
+      desc: '임신부·영유아 동반 가족이 문 가까이 세우도록 비워 두는 칸입니다. 과태료는 없지만 배려가 필요한 사람의 자리입니다.',
+      consequence: '과태료는 없지만, 만삭 임신부가 먼 자리까지 걸어가야 합니다. 주변의 따가운 눈총과 민원이 생길 수 있어요.',
+    },
+    straddle: {
+      name: '두 칸 걸침', short: '두 칸 걸침',
+      stop: true, park: true, severity: 2, fine: 0, report: false, tow: 0, cctvGrace: 999,
+      law: '주차장 관리규정 — 한 대는 한 칸에(도로교통법 단속 대상 아님)',
+      desc: '구획선을 밟고 두 칸을 차지했습니다. 한 칸 안에 반듯하게 넣어야 합니다.',
+      consequence: '한 자리가 통째로 사라집니다. 옆 차가 문을 못 열 수도 있고, 사진이 커뮤니티에 올라가기도 해요.',
+    },
+    double_park: {
+      name: '통로 이중주차', short: '이중주차',
+      stop: true, park: true, severity: 2, fine: 0, report: false, tow: 0, cctvGrace: 999,
+      law: '아파트 관리규약 — 빈칸이 없을 때 허용하는 단지가 많음. 기어 N·주차 브레이크 해제가 조건',
+      desc: '빈칸이 없는 밤 아파트에서는 흔히 허용됩니다. 대신 기어를 N에 두고 주차 브레이크를 풀어, 안쪽 차가 밀고 나갈 수 있게 해야 합니다.',
+      consequence: '기어를 P에 두면 안쪽 차가 못 나가 새벽에 전화가 옵니다. N으로 두고 연락처를 꼭 남기세요.',
+    },
+    entrance: {
+      name: '출입구·보행통로 앞', short: '출입구 앞',
+      stop: false, park: false, severity: 5, fine: 0, report: false, tow: 0.2, cctvGrace: 999,
+      law: '사유지 관리규정 — 도로교통법 과태료는 없지만, 보행자·카트·휠체어 통로를 막는 곳이라 세우면 안 됨',
+      desc: '사람이 드나드는 길입니다. 사유지라 과태료는 없지만, 관리실이 경고 스티커를 붙이거나 견인을 요청할 수 있습니다.',
+    },
+    ev_charge: {
+      name: '전기차 충전구역', short: '충전구역',
+      stop: false, park: false, severity: 6, fine: 100000, report: true, tow: 0, cctvGrace: 1,
+      law: '친환경자동차법 제11조의2 — 충전구역에 일반 자동차 주차 금지 (과태료 10만원). 전기차도 충전 끝나고 오래 두면 과태료',
+      desc: '초록·파란 바닥의 충전 칸은 충전하는 전기차만 쓸 수 있습니다. 잠깐이라도 일반차는 안 됩니다.',
+    },
+    ambulance: {
+      name: '구급차 진입로', short: '구급차길',
+      stop: false, park: false, severity: 8, fine: 40000, report: true, tow: 1.0, cctvGrace: 1,
+      law: '병원 관리규정 · 응급의료법 제12조(응급의료 방해 금지) · 도로교통법 제32조(정차·주차 금지)',
+      desc: '응급실로 들어가는 구급차 길입니다. 잠깐이라도 막으면 응급 환자 이송이 늦어집니다.',
+    },
+    hydrant_private: {
+      name: '단지 안 소화전 앞', short: '단지 소화전',
+      stop: false, park: false, severity: 8, fine: 0, report: false, tow: 0.3, cctvGrace: 999,
+      law: '사유지라 도로교통법 과태료는 없음 — 소방시설법·관리규정상 소방시설을 가리면 안 됨',
+      desc: '불이 나면 소방호스를 연결하는 곳입니다. 사유지라 과태료는 없어도, 여기는 세우면 안 되는 곳으로 기억하세요.',
+    },
+    fire_lane: {
+      name: '소방차 전용구역', short: '소방차 전용',
+      stop: false, park: false, severity: 8, fine: 500000, report: true, tow: 0, cctvGrace: 1,
+      law: '소방기본법 제21조의2 — 공동주택 소방차 전용구역 주차·진입 방해 금지 (과태료 1회 50만원, 2회 이상 100만원)',
+      desc: '노란 빗금 칸에 "소방차 전용"이라 쓰인 곳입니다. 사유지라도 과태료가 나오고, 안전신문고로 신고됩니다.',
+    },
+  });
+
+  // 네 가지 답: park = 주차 OK, stop = 정차만, no = 안 돼요, manner = 법은 OK·비매너
+  const ANSWERS = {
+    park: { label: '주차 OK', color: '#3ccf7d' },
+    stop: { label: '정차만', color: '#ffc20e' },
+    no: { label: '안 돼요', color: '#ff5a5a' },
+    manner: { label: '법은 OK·비매너', color: '#b48cff' },
+  };
+  const META = {
+    // key: [answer, basis, 쉬운 말 한 줄]
+    slot: ['park', '주차장법', '흰 선 칸 안에 반듯하게 넣으면 오래 둬도 돼요.'],
+    street_slot: ['park', '주차장법', '도로 위 흰색 칸은 정식 주차 자리예요. 칸 안에만 넣으세요.'],
+    white_edge: ['park', '도로교통법', '흰 실선 가장자리는 세워도 돼요. 진행 방향 오른쪽에 붙여서요.'],
+    compact_slot: ['manner', '관리규정·매너', '경차 칸은 과태료는 없지만 경차 자리를 뺏는 거예요.'],
+    pregnant_slot: ['manner', '관리규정·매너', '임산부 칸은 과태료는 없지만 꼭 필요한 사람의 자리예요.'],
+    straddle: ['manner', '관리규정·매너', '두 칸을 걸치면 한 자리가 사라져요. 한 칸에 넣으세요.'],
+    double_park: ['manner', '관리규정·매너', '빈칸이 없을 땐 이중주차가 허용되는 곳이 많아요. 단, 기어 N!'],
+    lot_aisle: ['stop', '관리규정·매너', '통로에 잠깐 짐 싣는 건 괜찮지만 세워두면 다른 차가 못 지나가요.'],
+    yellow_dashed: ['stop', '도로교통법', '노란 점선은 5분 안에 타고 내리는 것만 돼요.'],
+    yellow_solid: ['no', '도로교통법', '노란 실선은 잠깐 서는 것도 안 돼요.'],
+    lane: ['no', '도로교통법', '차로 한가운데에 서면 뒤차가 다 막혀요.'],
+    wrong_way: ['no', '도로교통법', '반대 방향으로 세우면 안 돼요. 진행 방향 오른쪽 가장자리만 돼요.'],
+    crosswalk_near: ['no', '도로교통법', '횡단보도 10m 안은 안 돼요. 건너는 사람이 차에 가려요.'],
+    corner: ['no', '도로교통법', '모퉁이 5m 안은 안 돼요. 도는 차가 앞을 못 봐요.'],
+    bus_stop: ['no', '도로교통법', '버스정류장 10m 안은 안 돼요. 버스가 정류장에 못 붙어요.'],
+    entrance: ['no', '관리규정', '사람이 드나드는 길이라 안 돼요. 과태료는 없어도 세우면 안 되는 곳이에요.'],
+    ev_charge: ['no', '친환경자동차법', '충전 칸은 충전하는 전기차만! 일반차는 10만원이에요.'],
+    disabled: ['no', '장애인등편의법', '장애인 칸은 표지 있는 차만 돼요. 비어 있어도 안 돼요.'],
+    intersection: ['no', '도로교통법', '교차로 안에 서면 모든 방향이 막혀요.'],
+    crosswalk: ['no', '도로교통법', '횡단보도 위는 절대 안 돼요.'],
+    sidewalk: ['no', '도로교통법', '인도에 바퀴 하나만 올려도 안 돼요.'],
+    ambulance: ['no', '응급의료법·도로교통법', '구급차 길은 잠깐도 막으면 안 돼요.'],
+    hydrant_private: ['no', '관리규정·소방', '소화전 앞은 사유지여도 비워 두세요. 불 나면 여기서 물을 써요.'],
+    fire_lane: ['no', '소방기본법', '소방차 전용구역은 아파트 안이어도 과태료 50만원부터예요.'],
+    hydrant: ['no', '도로교통법', '소화전 앞 5m는 잠깐도 안 돼요. 불 나면 소방차가 물을 못 써요.'],
+    school_zone: ['no', '도로교통법', '어린이보호구역은 잠깐 정차도 안 돼요. 과태료도 3배예요.'],
+  };
+  for (const [k, [answer, basis, easy]] of Object.entries(META)) Object.assign(RULES[k], { answer, basis, easy });
+  RULES.lot_aisle.consequence = '세워 둔 채 자리를 비우면 뒤차들이 경적을 울리고, 관리 직원이 방송으로 차주를 찾습니다.';
+
   // 정차·주차 외의 운전 중 위반 (이벤트)
   const DRIVE_VIOLATIONS = {
     phone: {
@@ -158,7 +260,7 @@
   const REPORT_NOTE = '안전신문고 주민신고 — 같은 위치에서 1분 이상 간격으로 찍은 사진 2장(차량번호·위반 장소 식별)이 있으면 과태료가 부과됩니다. 6대 대상: 소화전·교차로 모퉁이·버스정류소·횡단보도·어린이보호구역·인도.';
   const OVERTIME_NOTE = '같은 장소에서 2시간을 넘기면 일반 주정차 위반 과태료가 1만원 가산됩니다(승용 4만→5만원).';
 
-  const api = { RULES, DRIVE_VIOLATIONS, STOP_LIMIT_MIN, TOW_NOTE, REPORT_NOTE, OVERTIME_NOTE };
+  const api = { RULES, ANSWERS, DRIVE_VIOLATIONS, STOP_LIMIT_MIN, TOW_NOTE, REPORT_NOTE, OVERTIME_NOTE };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else Object.assign(root, api);
 })(typeof window !== 'undefined' ? window : globalThis);

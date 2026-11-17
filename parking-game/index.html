@@ -192,6 +192,24 @@ table.tests .pass { color: #6fdc9b; } table.tests .fail { color: #ff8a8a; }
 .modal table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .modal td, .modal th { border-bottom: 1px solid #d3d8dd; padding: 4px 6px; text-align: left; vertical-align: top; }
 
+/* 판단 모드 */
+#game.quiz .wheel-wrap, #game.quiz .drive, #game.quiz #live, #game.quiz #btnLearn, #game.quiz #btnMap { display: none; }
+#game.untimed .hud-tl .meta > span:first-child { display: none; }
+.answers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.ans { border: 0; border-radius: 10px; min-height: 48px; padding: 6px 8px; font-weight: 700; font-size: 15px; background: var(--c); color: #17202a; }
+.bubble .easy { font-size: 15px; font-weight: 500; color: #17202a; margin: 2px 0 6px; }
+.bubble details { margin-top: 8px; border-top: 1px solid #d3d8dd; padding-top: 6px; }
+.bubble summary { cursor: pointer; font-weight: 700; color: var(--sign); min-height: 32px; display: flex; align-items: center; }
+.quiz-card { width: min(560px, 94vw); }
+.ans-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13px; }
+.ans-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.ans-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.result h3.sub { font-family: var(--display); font-weight: 400; font-size: 19px; color: var(--caution); margin: 14px 0 0; }
+.result .events { margin: 8px 0; }
+.lvl-sep { font-size: 12px; color: var(--muted); padding: 6px 4px 0; border-top: 1px solid rgba(255,255,255,.12); margin-top: 4px; }
+.info details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.info label { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+
 /* 세로 화면 안내 */
 #rotate { position: fixed; inset: 0; z-index: 90; background: var(--sign); display: none; place-items: center; text-align: center; padding: 24px; }
 #rotate .in { border: 3px solid #fff; border-radius: 14px; padding: 24px; }
@@ -212,7 +230,7 @@ table.tests .pass { color: #6fdc9b; } table.tests .fail { color: #ff8a8a; }
 <!-- ───────── 미리보기 / 레벨 선택 ───────── -->
 <div id="preview">
   <header>
-    <div class="sign"><div class="in"><h1>잠깐 세워도 될까</h1><p>도로교통법으로 판정하는 주차 연습 · 프로토타입</p></div></div>
+    <div class="sign"><div class="in"><h1>잠깐 세워도 될까</h1><p>초보운전자를 위한 주차 판단 연습 · 도로교통법·소방기본법 기준</p></div></div>
     <div class="spacer"></div>
     <button class="btn ghost small" id="btnData">데이터 구조 보기</button>
   </header>
@@ -232,6 +250,7 @@ table.tests .pass { color: #6fdc9b; } table.tests .fail { color: #ff8a8a; }
   <div class="hud-tr">
     <button id="btnLearn" aria-pressed="true" title="구역 색칠과 실시간 판정 표시">학습 모드</button>
     <button id="btnMap" aria-pressed="false">전체 지도</button>
+    <button id="btnMode" class="hidden">직접 운전으로</button>
     <button id="btnExit">나가기</button>
   </div>
   <div class="toast" id="toast" aria-live="polite"></div>

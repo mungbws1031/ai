@@ -264,7 +264,193 @@
     ],
   };
 
-  const LEVELS = [L1, L2, L3];
+  // ═══════════════════ 2단계: 초보운전자 판단 연습 레벨 ═══════════════════
+  // situation: {title, text, stay(머무는 분), who, event[](머무는 시간이 늘어나는 사건 대사), extra(늘어난 뒤 총 머무는 분)}
+  // candidates[]: 판단 모드에서 고르는 후보 자리 {x,y,heading, expect(규칙 키), answer(park|stop|no|manner)}
+  //   — 정답은 judge.js가 그 위치를 판정해 규칙표의 answer에서 읽습니다. expect/answer는 테스트용 기대값입니다.
+  const storyFrom = sit => ({ friend: sit.who, callMinutes: 3, meetingMinutes: sit.extra, ringLines: sit.event });
+
+  // ── 1. 마트 주차장 ── (차가 다니지 않는 사유지 주차장)
+  const martSit = {
+    title: '주말 장보기', text: '마트에 도착했어요. 장보는 데 30분쯤 걸릴 것 같아요. 어디에 세울까요?',
+    who: '마트 안내 방송', stay: 30, extra: 60,
+    event: ['오늘은 계산대 줄이 아주 깁니다.', '계산까지 1시간 가까이 걸릴 수 있어요.'],
+  };
+  const M1 = {
+    id: 1, key: 'mart', title: '마트 주차장', place: '대형마트 지상 주차장 · 사유지',
+    goal: '후보 자리마다 "여기 세워도 될까?"를 판단해 보고, 실제로 1시간 둘 자리를 고르세요.',
+    timeLimit: 240, clock: '11:20', situation: martSit, story: storyFrom(martSit),
+    world: { w: 72, h: 30 },
+    start: { x: 68, y: 20.8, heading: PI },
+    destination: { x: 36, y: 9.5, label: '마트 입구', radius: 18 },
+    buildings: [{ x: 0, y: 0, w: 72, h: 9, label: '○○마트 (입구는 가운데)', dest: true }],
+    roads: [], sidewalks: [], lines: [], crosswalks: [],
+    lots: [{ x: 0, y: 12, w: 72, h: 18 }],
+    zones: [
+      { type: 'entrance', x: 0, y: 9, w: 72, h: 3, label: '매장 앞 보행통로', paint: '보행통로 · 카트' },
+    ],
+    slots: [
+      { id: 'D1', x: 2, y: 12.3, w: 3.3, h: 5, kind: 'lot', type: 'disabled', disabled: true, occupied: false },
+      { id: 'D2', x: 5.3, y: 12.3, w: 3.3, h: 5, kind: 'lot', type: 'disabled', disabled: true, occupied: true, color: '#e9e9e4' },
+      { id: 'M1', x: 8.6, y: 12.3, w: 2.6, h: 5, kind: 'lot', type: 'pregnant', occupied: false },
+      { id: 'E1', x: 11.2, y: 12.3, w: 2.6, h: 5, kind: 'lot', type: 'ev', occupied: false },
+      { id: 'E2', x: 13.8, y: 12.3, w: 2.6, h: 5, kind: 'lot', type: 'ev', occupied: true, color: '#2f4a6b' },
+      { id: 'K1', x: 16.4, y: 12.3, w: 2.6, h: 5, kind: 'lot', type: 'compact', occupied: true, color: '#d6d0c0' },
+      ...slotRow('A', 19, 12.3, 21, 2.5, 5, 'lot', { seed: 2 }),
+      ...slotRow('B', 2, 24.3, 27, 2.5, 5, 'lot', { seed: 6, empty: [12, 13] }),
+    ],
+    parked: [],
+    props: [
+      { type: 'reporter', x: 30, y: 10.4, label: '카트 끌고 나오는 손님', phone: true },
+      { type: 'sign', x: 12.5, y: 18.6, label: '⚡ 충전구역' },
+      { type: 'sign', x: 66, y: 23, label: '출구 →' },
+    ],
+    candidates: [
+      { x: 3.65, y: 14.8, heading: -PI / 2, expect: 'disabled', answer: 'no' },
+      { x: 12.5, y: 14.8, heading: -PI / 2, expect: 'ev_charge', answer: 'no' },
+      { x: 9.9, y: 14.8, heading: -PI / 2, expect: 'pregnant_slot', answer: 'manner' },
+      { x: 36, y: 10.5, heading: 0, expect: 'entrance', answer: 'no' },
+      { x: 50, y: 20.8, heading: PI, expect: 'lot_aisle', answer: 'stop' },
+      { x: 33.25, y: 26.8, heading: PI / 2, expect: 'slot', answer: 'park' },
+    ],
+    samples: [
+      { name: '빈 칸 두 개에 걸쳐 세움', x: 34.5, y: 26.8, heading: PI / 2, mode: 'park', minutes: 30, expect: 'straddle', legal: true },
+    ],
+  };
+
+  // ── 2. 아파트 단지 ──
+  const aptSit = {
+    title: '밤 9시 친구 집', text: '친구가 사는 101동에 왔어요. 주차장이 꽉 찼어요. 30분만 있다 갈 거예요.',
+    who: '친구', stay: 30, extra: 150,
+    event: ['야식 시켰어! 먹고 가.', '두 시간은 더 있다 가야겠다.'],
+  };
+  const M2 = {
+    id: 2, key: 'apt', title: '아파트 단지', place: '아파트 단지 안 · 사유지',
+    goal: '빈칸이 거의 없는 밤 아파트에서 세워도 되는 곳과 안 되는 곳을 가려내세요.',
+    timeLimit: 240, clock: '21:05', situation: aptSit, story: storyFrom(aptSit),
+    world: { w: 80, h: 36 },
+    start: { x: 76, y: 17, heading: PI },
+    destination: { x: 18, y: 10, label: '101동 출입구', radius: 20 },
+    buildings: [
+      { x: 0, y: 0, w: 36, h: 10, label: '101동 (친구 집)', dest: true },
+      { x: 44, y: 0, w: 36, h: 10, label: '102동' },
+      { x: 0, y: 32, w: 80, h: 4, label: '' },
+    ],
+    roads: [], sidewalks: [], lines: [], crosswalks: [],
+    lots: [{ x: 0, y: 10, w: 80, h: 22 }],
+    zones: [
+      { type: 'entrance', x: 14, y: 10, w: 8, h: 4, label: '101동 출입구 앞', paint: '출입구' },
+      { type: 'entrance', x: 58, y: 10, w: 8, h: 4, label: '102동 출입구 앞', paint: '출입구' },
+      { type: 'fire_lane', x: 24, y: 12, w: 12, h: 6, label: '소방차 전용구역', paint: '소방차 전용' },
+      { type: 'hydrant_private', cx: 50, cy: 11, r: 3 },
+      { type: 'double_park', x: 0, y: 23.2, w: 80, h: 2.8, label: '이중주차 허용 구간(기어 N)' },
+    ],
+    slots: slotRow('S', 0, 27, 32, 2.5, 5, 'lot', { seed: 3, empty: [29] }),
+    parked: [
+      car(8, 24.6, 0, 1, { label: '이중주차된 차', note: '기어를 N에 두고 연락처를 남겨 둔 차입니다. 밀어서 옮길 수 있어요.' }),
+      car(14, 24.6, 0, 5, { label: '이중주차된 차', note: '기어를 N에 두고 연락처를 남겨 둔 차입니다. 밀어서 옮길 수 있어요.' }),
+    ],
+    props: [
+      { type: 'hydrant', x: 50, y: 11, label: '단지 옥외소화전' },
+      { type: 'reporter', x: 40, y: 11, label: '산책하는 주민', phone: true },
+    ],
+    candidates: [
+      { x: 30, y: 15, heading: PI, expect: 'fire_lane', answer: 'no' },
+      { x: 18, y: 12.2, heading: 0, expect: 'entrance', answer: 'no' },
+      { x: 50, y: 13.2, heading: PI, expect: 'hydrant_private', answer: 'no' },
+      { x: 50, y: 24.5, heading: 0, expect: 'double_park', answer: 'manner' },
+      { x: 73.75, y: 29.5, heading: -PI / 2, expect: 'slot', answer: 'park' },
+    ],
+    samples: [],
+  };
+
+  // ── 3. 병원 앞 ── (여기서부터 실제 도로)
+  const hospSit = {
+    title: '엄마 병원 모시기', text: '엄마를 모시고 병원 앞에 왔어요. 병원 주차장은 만차래요. 진료는 20분이면 끝난대요.',
+    who: '엄마', stay: 20, extra: 60,
+    event: ['접수했는데 앞에 대기가 많네.', '한 시간은 걸리겠다. 차 제대로 대고 와.'],
+  };
+  const M3 = {
+    id: 3, key: 'hospital', title: '병원 앞', place: '왕복 2차로 · 병원 · 버스정류장',
+    goal: '모시고 내리는 자리와 오래 세울 자리를 구분하세요. 여기서부터는 도로교통법이 적용되는 도로입니다.',
+    timeLimit: 220, clock: '10:40', situation: hospSit, story: storyFrom(hospSit),
+    world: { w: 110, h: 45 },
+    start: { x: 106, y: 19.7, heading: PI },
+    destination: { x: 55, y: 13, label: '병원 정문', radius: 24 },
+    buildings: [
+      { x: 0, y: 0, w: 40, h: 12, label: '약국 · 편의점' },
+      { x: 40, y: 0, w: 40, h: 12, label: '○○병원 (주차장 만차)', dest: true },
+      { x: 80, y: 0, w: 30, h: 12, label: '상가' },
+      { x: 0, y: 32, w: 110, h: 13, label: '주택가' },
+    ],
+    roads: [{ x: 0, y: 15, w: 110, h: 14 }, { x: 60, y: 12, w: 8, h: 3 }],
+    lots: [],
+    sidewalks: [{ x: 0, y: 12, w: 60, h: 3 }, { x: 68, y: 12, w: 42, h: 3 }, { x: 0, y: 29, w: 110, h: 3 }],
+    lines: [
+      { x1: 0, y1: 22, x2: 20, y2: 22, type: 'yellowDouble' },
+      { x1: 26, y1: 22, x2: 110, y2: 22, type: 'yellowDouble' },
+    ],
+    crosswalks: [{ x: 20, y: 15, w: 6, h: 14 }],
+    zones: [
+      { type: 'yellow_solid', x: 0, y: 15, w: 30, h: 2.5, curb: 'top', dir: PI },
+      { type: 'crosswalk_near', x: 10, y: 15, w: 10, h: 2.5 },
+      { type: 'crosswalk', x: 20, y: 15, w: 6, h: 14 },
+      { type: 'crosswalk_near', x: 26, y: 15, w: 10, h: 2.5 },
+      { type: 'bus_stop', x: 30, y: 15, w: 20, h: 2.5, curb: 'top', dir: PI },
+      { type: 'yellow_dashed', x: 50, y: 15, w: 10, h: 2.5, curb: 'top', dir: PI, label: '병원 앞 승하차 구간' },
+      { type: 'ambulance', x: 60, y: 12, w: 8, h: 5.5, label: '응급실 구급차 진입로', paint: '구급차 전용' },
+      { type: 'yellow_solid', x: 68, y: 15, w: 12, h: 2.5, curb: 'top', dir: PI },
+      { type: 'white_edge', x: 80, y: 15, w: 30, h: 2.5, curb: 'top', dir: PI },
+      { type: 'yellow_solid', x: 0, y: 26.5, w: 110, h: 2.5, curb: 'bottom', dir: 0 },
+      { type: 'crosswalk_near', x: 10, y: 26.5, w: 10, h: 2.5 },
+      { type: 'crosswalk_near', x: 26, y: 26.5, w: 10, h: 2.5 },
+    ],
+    slots: [],
+    parked: [82.75, 87.85, 99.55, 104.65].map((x, i) => car(x, 16.25, PI, i + 2)),
+    props: [
+      { type: 'busstop', x: 40, y: 13.5, label: '병원 앞 정류장' },
+      { type: 'cctv', x: 56, y: 13.4, r: 25, label: '병원 앞 단속 CCTV' },
+      { type: 'reporter', x: 44, y: 13.6, label: '버스 기다리는 시민', phone: true },
+      { type: 'reporter', x: 70, y: 13.6, label: '병원 경비원', phone: true },
+      { type: 'sign', x: 93.7, y: 13.4, label: '빈 가장자리 7m' },
+    ],
+    candidates: [
+      { x: 40, y: 16.25, heading: PI, expect: 'bus_stop', answer: 'no' },
+      { x: 55, y: 16.25, heading: PI, expect: 'yellow_dashed', answer: 'stop' },
+      { x: 64, y: 16.25, heading: PI, expect: 'ambulance', answer: 'no' },
+      { x: 55, y: 27.75, heading: 0, expect: 'yellow_solid', answer: 'no' },
+      { x: 93.7, y: 16.25, heading: PI, expect: 'white_edge', answer: 'park' },
+    ],
+    samples: [],
+  };
+
+  // ── 4. 학교 앞 ── (1단계 레벨 2를 복사해 다듬음)
+  const schoolSit = {
+    title: '학원 상담', text: '아이 학원 상담에 왔어요. 학원 앞이 초등학교 앞 어린이보호구역이에요. 상담은 20분이래요.',
+    who: '학원 상담실장', stay: 20, extra: 50,
+    event: ['어머님, 앞 상담이 길어져서요.', '30분 정도 더 기다리셔야 할 것 같아요.'],
+  };
+  const M4 = {
+    ...L2, id: 4, key: 'school', title: '학교 앞', place: '초등학교 앞 · 어린이보호구역',
+    goal: '어린이보호구역 안과 밖을 구분하세요. 보호구역은 잠깐 정차도 안 됩니다.',
+    clock: '15:40', situation: schoolSit, story: storyFrom(schoolSit),
+    slots: slotRow('S', 102, 15.3, 8, 6, 2.0, 'street', { empty: [2], seed: 2, dir: PI }),
+    candidates: [
+      { x: 80, y: 16.4, heading: PI, expect: 'school_zone', answer: 'no' },
+      { x: 60, y: 16.4, heading: PI, expect: 'school_zone', answer: 'no' },
+      { x: 97, y: 16.4, heading: PI, expect: 'yellow_dashed', answer: 'stop' },
+      { x: 110, y: 27.6, heading: 0, expect: 'yellow_solid', answer: 'no' },
+      { x: 117, y: 16.3, heading: PI, expect: 'street_slot', answer: 'park' },
+    ],
+    samples: [],
+  };
+
+  // 1단계 레벨은 보너스(직접 운전 전용)로 유지
+  Object.assign(L1, { id: 5, bonus: true });
+  Object.assign(L2, { id: 6, bonus: true });
+  Object.assign(L3, { id: 7, bonus: true });
+
+  const LEVELS = [M1, M2, M3, M4, L1, L2, L3];
   if (typeof module !== 'undefined' && module.exports) module.exports = { LEVELS };
   else root.LEVELS = LEVELS;
 })(typeof window !== 'undefined' ? window : globalThis);
