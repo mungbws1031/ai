@@ -25,3 +25,31 @@ test("옛 소스 이름 즐겨찾기가 새 이름으로 이어진다", async ()
     await browser.close();
   }
 });
+
+test("저장한 배합의 옛 스타일 이름이 새 이름으로 이어진다", async () => {
+  const entry = { id: "r0", title: "t", createdAt: "2026.01.01", categoryName: "볶음", styleName: "백종원식 대중 한식",
+    foodWeightG: 300, zon: null, ingredients: [{ name: "간장", amountG: 5, spoon: "1큰술" }], rating: 0, memo: "" };
+  const { browser, page } = await openApp({ storage: { electronic_tongue_saved_recipes: JSON.stringify([entry]) } });
+  try {
+    assert.strictEqual(await page.evaluate(() => loadSaved()[0].styleName), "밥도둑 대중 한식");
+    assert.strictEqual(JSON.parse(await page.evaluate(() => localStorage.getItem("electronic_tongue_saved_recipes")))[0].styleName, "밥도둑 대중 한식");
+    await page.evaluate(() => renderSaved());
+    const txt = await page.evaluate(() => document.getElementById("savedList").innerText);
+    assert.match(txt, /밥도둑 대중 한식/);
+    assert.doesNotMatch(txt, /백종원|류수영|이연복|최강록|고든 ?램지/);
+  } finally {
+    await browser.close();
+  }
+});
+test("소스 이름이 분류·제품 표에 모두 연결된다", async () => {
+  const { browser, page } = await openApp();
+  try {
+    const r = await page.evaluate(() => ({
+      noCat: SAUCES.map(s => s.name).filter(n => !(n in SAUCE_CAT)),
+      badProd: Object.keys(SAUCE_PROD).filter(k => !SAUCES.some(s => s.name === k)),
+    }));
+    assert.deepStrictEqual(r, { noCat: [], badProd: [] });
+  } finally {
+    await browser.close();
+  }
+});
