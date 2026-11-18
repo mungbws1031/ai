@@ -110,3 +110,17 @@ test('every recipe output and input is a known item or molecule', async () => {
     .filter(id => !A.ITEMS[id] && !A.MOLECULES[id]));
   assert.deepEqual(bad, []);
 });
+
+test('review fixes: science texts are not misleading', async () => {
+  const t = await run(A => ({ fire: A.ITEMS.fire.why, o2: A.MOLECULES.O2.why, h2: A.MOLECULES.H2.why, axe: A.MISSIONS.find(m => m.target === 'stone_axe').text }));
+  assert.match(t.fire, /황철석/);
+  assert.doesNotMatch(t.o2, /공기야/);
+  assert.match(t.h2, /원소/);
+  assert.match(t.axe, /두 개/);
+});
+
+test('service worker fetches pages network-first so updates reach tablets', async () => {
+  const fs = await import('node:fs');
+  const src = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
+  assert.match(src, /mode === "navigate"/);
+});

@@ -154,3 +154,60 @@ test('portrait tablet has no horizontal scroll and drawer does not cover bench',
   assert.ok(bench.height > 300);
   await ctx.close();
 });
+
+const nearlyStone = () => localStorage.setItem('atomciv.v1', JSON.stringify(
+  { found: ['H2', 'H2O', 'O2', 'CO2', 'CH4', 'H3N', 'ClNa', 'O2Si', 'fire', 'stone_axe', 'charcoal'], missionIdx: 0, muted: true }));
+
+test('finishing an era shows the new-era card without the science prefix', async () => {
+  const { ctx, page } = await fresh(undefined, nearlyStone);
+  await page.click('#drawer [data-item=clay]');
+  await page.click('#drawer [data-item=H2O]');
+  await page.click('#heat-btn');
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#card').isVisible(), 'era card visible');
+  assert.match(await page.textContent('#card-name'), /청동기시대/);
+  const before = await page.evaluate(() => getComputedStyle(document.querySelector('#card-why'), '::before').content);
+  assert.equal(before, 'none');
+  await ctx.close();
+});
+
+test('a second pointer does not hijack an atom drag', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=O]');
+  const id = (await benchIds(page, 'O'))[0];
+  const moved = await page.evaluate((id) => {
+    const svg = document.querySelector('#bench'), g = svg.querySelector(`.atom[data-id="${id}"]`);
+    const r = g.getBoundingClientRect(), x = r.x + r.width / 2, y = r.y + r.height / 2;
+    const ev = (type, pid, cx, cy, target) => target.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: pid, clientX: cx, clientY: cy, isPrimary: pid === 1 }));
+    ev('pointerdown', 1, x, y, g);
+    const sr = svg.getBoundingClientRect();
+    ev('pointermove', 2, sr.x + 5, sr.y + 5, svg);
+    ev('pointerup', 2, sr.x + 5, sr.y + 5, svg);
+    ev('pointerup', 1, x, y, svg);
+    const r2 = svg.querySelector(`.atom[data-id="${id}"]`).getBoundingClientRect();
+    return Math.hypot(r2.x - r.x, r2.y - r.y);
+  }, id);
+  assert.ok(moved < 2, `atom moved ${moved}px`);
+  await ctx.close();
+});
+
+test('an atom dropped on the tray is pushed back into open bench space', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=O]');
+  const id = (await benchIds(page, 'O'))[0];
+  await drag(page, `.atom[data-id="${id}"]`, '#tray');
+  const a = await page.locator(`.atom[data-id="${id}"]`).boundingBox();
+  const t = await page.locator('#tray').boundingBox();
+  const cy = a.y + a.height / 2, cx = a.x + a.width / 2;
+  assert.ok(!(cx > t.x && cx < t.x + t.width && cy > t.y && cy < t.y + t.height), 'atom center outside tray');
+  await ctx.close();
+});
+
+test('hint on a molecule mission tells the child to drag atoms together', async () => {
+  const { ctx, page } = await fresh(undefined, undefined, true);
+  await page.click('#hint-btn');
+  assert.match(await page.textContent('#toast'), /끌어/);
+  await ctx.close();
+});
