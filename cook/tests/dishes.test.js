@@ -63,3 +63,42 @@ test("재료 줄 분리: 수식어 제거, 숫자+단위만 스케일", () => wi
   assert.strictEqual(r.d, "3공기"); assert.strictEqual(r.e, "약간"); assert.strictEqual(r.f, "2~3큰술");
   assert.strictEqual(r.g, "1개"); assert.strictEqual(r.h, "2컵(400ml)");
 }));
+
+test("저장된 식단이 있어도 로드 시 오류 없고 장보기 칩이 나온다", async () => {
+  const { browser, page } = await openApp({ storage: { et_meal_plan: JSON.stringify({ mon: { d: "떡볶이" }, sat: { l: "계란볶음밥" } }) } });
+  try {
+    assert.deepStrictEqual(page.__errors, []);
+    const n = await page.evaluate(() => document.querySelectorAll("#mealShop .shopwrap span").length);
+    assert.ok(n >= 1);
+  } finally { await browser.close(); }
+});
+
+test("모든 요리 2인분 줄 이름은 중복 없음", () => withApp(async page => {
+  const dup = await page.evaluate(() => {
+    const o = [];
+    for (const id in TASTE_DISHES) for (const d of TASTE_DISHES[id]) {
+      const n = dishLines(id, d, 2).map(l => l.name);
+      if (new Set(n).size !== n.length) o.push(id + "/" + d.name);
+    }
+    return o;
+  });
+  assert.deepStrictEqual(dup, []);
+}));
+
+test("계산된 양념량이 초보자에게 현실적 (지방 30g, 기타 40g 이하)", () => withApp(async page => {
+  const bad = await page.evaluate(() => {
+    const FAT = ["버터", "식용유", "참기름", "올리브오일"], o = [];
+    for (const id in TASTE_DISHES) for (const d of TASTE_DISHES[id]) {
+      if (d.recipe) continue;
+      const mains = d.main.map(m => m.name);
+      for (const l of dishLines(id, d, 2)) {
+        const m = l.qty.match(/^(\d+(?:\.\d+)?)g$/); if (!m) continue;
+        const a = parseFloat(m[1]);
+        if (l.name === "물" || l.name === "육수") continue;
+        if (FAT.includes(l.name) ? a > 30 : (!mains.includes(l.name) && a > 40)) o.push(d.name + " " + l.name + " " + l.qty);
+      }
+    }
+    return o;
+  });
+  assert.deepStrictEqual(bad, []);
+}));
