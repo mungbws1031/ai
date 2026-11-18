@@ -13,7 +13,7 @@ let browser;
 before(async () => { browser = await chromium.launch(); });
 after(async () => { await browser.close(); });
 
-async function fresh(viewport = { width: 1024, height: 768 }, init) {
+async function fresh(viewport = { width: 1024, height: 768 }, init, stayOnStart = false) {
   const ctx = await browser.newContext({ viewport, hasTouch: false });
   if (init) await ctx.addInitScript(init);
   const page = await ctx.newPage();
@@ -21,7 +21,7 @@ async function fresh(viewport = { width: 1024, height: 768 }, init) {
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
   await page.goto(PAGE);
-  await page.click('[data-tab=lab]');
+  if (!stayOnStart) await page.click('[data-tab=lab]');
   return { ctx, page, errors };
 }
 
@@ -110,5 +110,47 @@ test('a wrong combination gives no penalty and keeps the tray', async () => {
   await page.click('#combine-btn');
   assert.ok(await page.locator('#card').isHidden());
   assert.equal(await page.locator('#tray [data-item]').count(), 1);
+  await ctx.close();
+});
+
+test('first run starts on the hydrogen mission; hint glows; mission advances', async () => {
+  const { ctx, page, errors } = await fresh(undefined, undefined, true);
+  assert.equal(await page.getAttribute('[data-tab=mission]', 'aria-current'), 'true');
+  assert.match(await page.textContent('#mission-text'), /수소/);
+  await page.click('#hint-btn');
+  assert.equal(await page.locator('[data-atom=H].glow').count(), 1);
+  await page.click('[data-atom=H]');
+  await page.click('[data-atom=H]');
+  const [a, b] = await benchIds(page, 'H');
+  await drag(page, `.atom[data-id="${a}"]`, `.atom[data-id="${b}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.match(await page.textContent('#mission-text'), /물/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('tech map and village reflect progress', async () => {
+  const { ctx, page } = await fresh();
+  assert.equal(await page.getAttribute('#village', 'data-era'), 'stone');
+  await page.click('[data-tab=map]');
+  assert.equal(await page.getAttribute('.map-node[data-id=fire]', 'data-lit'), 'false');
+  await page.click('#panel-close');
+  await page.click('#drawer [data-item=wood]');
+  await page.click('#drawer [data-item=flint]');
+  await page.click('#combine-btn');
+  await page.click('#card-ok');
+  await page.click('[data-tab=map]');
+  assert.equal(await page.getAttribute('.map-node[data-id=fire]', 'data-lit'), 'true');
+  await ctx.close();
+});
+
+test('portrait tablet has no horizontal scroll and drawer does not cover bench', async () => {
+  const { ctx, page } = await fresh({ width: 768, height: 1024 });
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 768));
+  const bench = await page.locator('#bench').boundingBox();
+  const drawer = await page.locator('#drawer').boundingBox();
+  assert.ok(bench.y + bench.height <= drawer.y + 1, 'bench above drawer');
+  assert.ok(bench.height > 300);
   await ctx.close();
 });
