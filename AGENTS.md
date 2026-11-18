@@ -9,7 +9,8 @@ companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF
 워킹맘용 선제적 리마인더 & 역산 스케줄러, PRD-MIRI-MVP-v0.1), and
 `digestion-sim/` (단일 파일 소화 시뮬레이터 — 식사별 72시간 소화·흡수·배변 모델), and
 `land-price/` (영동군 심천면 초강리 농지 실거래 인포그래픽 — 국토부 실거래 CSV + 단일 HTML), and
-`gulza/` (무료 모션 자막 제작기 — ruruoni1/gulza v0.16.1 사본, MIT, 정적 웹앱 + AE 패널).
+`gulza/` (무료 모션 자막 제작기 — ruruoni1/gulza v0.16.1 사본, MIT, 정적 웹앱 + AE 패널), and
+`atomciv/` (원자에서 문명까지 — 초등학생용 원자→분자→발명→시대 과학 게임, 단일 HTML PWA).
 
 ## Scope of rules
 
