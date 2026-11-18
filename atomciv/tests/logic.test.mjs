@@ -88,3 +88,25 @@ test('known molecules: methane, ammonia, salt, HCl', async () => {
   assert.deepEqual(await judgeOf({ atoms: ['Na', 'Cl'], bonds: [[0, 1]] }), [{ status: 'known', key: 'ClNa' }]);
   assert.deepEqual(await judgeOf({ atoms: ['H', 'Cl'], bonds: [[0, 1]] }), [{ status: 'known', key: 'ClH' }]);
 });
+
+test('recipes ignore order and respect heat', async () => {
+  assert.equal(await run(A => A.matchRecipe(['charcoal', 'iron_ore'], true)), 'iron');
+  assert.equal(await run(A => A.matchRecipe(['iron_ore', 'charcoal'], false)), null);
+  assert.equal(await run(A => A.matchRecipe(['wood', 'flint'], false)), 'fire');
+  assert.equal(await run(A => A.matchRecipe(['flint', 'wood', 'flint'], false)), 'stone_axe');
+  assert.equal(await run(A => A.matchRecipe(['H2O', 'clay'], true)), 'pottery');
+  assert.equal(await run(A => A.matchRecipe(['O2Si'], true)), 'glass');
+  assert.equal(await run(A => A.matchRecipe(['wood'], false)), null);
+});
+
+test('eraIndex advances when an era goal is complete', async () => {
+  assert.equal(await run(A => A.eraIndex([])), 0);
+  assert.equal(await run(A => A.eraIndex(['fire', 'stone_axe', 'charcoal', 'pottery'])), 1);
+  assert.equal(await run(A => A.eraIndex(['fire', 'stone_axe', 'charcoal', 'pottery', 'copper', 'tin', 'bronze'])), 2);
+});
+
+test('every recipe output and input is a known item or molecule', async () => {
+  const bad = await run(A => A.RECIPES.flatMap(r => [r.output, ...r.inputs])
+    .filter(id => !A.ITEMS[id] && !A.MOLECULES[id]));
+  assert.deepEqual(bad, []);
+});

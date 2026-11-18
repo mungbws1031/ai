@@ -85,3 +85,30 @@ test('blocked localStorage still renders the game without errors', async () => {
   assert.deepEqual(errors, []);
   await ctx.close();
 });
+
+test('wood + flint on the tray combine into fire', async () => {
+  const { ctx, page, errors } = await fresh();
+  assert.equal(await page.locator('#drawer [data-item=iron_ore]').count(), 0);
+  assert.ok(await page.locator('#heat-btn').isDisabled());
+  await page.click('#drawer [data-item=wood]');
+  await page.click('#drawer [data-item=flint]');
+  assert.equal(await page.locator('#tray [data-item]').count(), 2);
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /불/);
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#heat-btn').isEnabled());
+  assert.equal(await page.locator('#drawer [data-item=fire]').count(), 1);
+  assert.equal(await page.locator('#tray [data-item]').count(), 0);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('a wrong combination gives no penalty and keeps the tray', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#drawer [data-item=clay]');
+  await page.click('#combine-btn');
+  assert.ok(await page.locator('#card').isHidden());
+  assert.equal(await page.locator('#tray [data-item]').count(), 1);
+  await ctx.close();
+});

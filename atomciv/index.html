@@ -66,6 +66,15 @@ button:disabled{opacity:.4}
 #card-why{font-size:18px;line-height:1.5;margin:12px 0 18px;word-break:keep-all}
 #card-why:before{content:"왜 그럴까? ";font-weight:800;color:var(--ok)}
 #card-ok{background:var(--ok);color:#fff;min-width:140px}
+.item-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:64px;font-size:13px}
+.item-chip .em{font-size:28px;line-height:1.1}
+#tray{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;padding:6px 10px;min-height:76px;
+  background:rgba(255,255,255,.75);border:3px dashed #d4b47c;border-radius:20px;max-width:calc(100% - 310px)}
+#tray .tray-label{font-size:26px}
+#tray-items{display:flex;gap:6px;flex-wrap:wrap}
+#tray.bounce{animation:bounce .4s}
+@keyframes bounce{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+#heat-btn[aria-pressed=true]{background:#ff5a36;color:#fff}
 @media (orientation:portrait){
   #stage{grid-template-columns:1fr;grid-template-rows:1fr auto}
   #drawer{order:2;max-height:36vh}
@@ -88,16 +97,18 @@ button:disabled{opacity:.4}
   <main id="stage">
     <section id="drawer" aria-label="재료 서랍">
       <h3>원자</h3><div id="drawer-atoms" class="chips"></div>
-      <!--DRAWER2-->
+      <div id="drawer-more"></div>
     </section>
     <section id="bench-wrap">
       <svg id="village" aria-hidden="true"></svg>
       <svg id="bench" aria-label="실험대"></svg>
       <!--MISSIONBAR-->
       <div id="bench-tools">
-        <!--TOOLS2-->
+        <button id="heat-btn" aria-pressed="false" disabled>🔥 불</button>
+        <button id="combine-btn" disabled>✨ 합치기</button>
         <button id="clear-btn">🧹 비우기</button>
       </div>
+      <div id="tray" aria-label="재료 접시"><span class="tray-label">🍽️</span><div id="tray-items"></div></div>
       <div id="toast" role="status"></div>
     </section>
     <div id="panel" hidden>
@@ -225,9 +236,61 @@ function saveState(s) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { /* 저장 불가: 계속 진행 */ }
 }
 
-/*LOGIC3*/
+/* ================= ITEMS · RECIPES · ERAS ================= */
+const ITEMS = {
+  wood:       { name: '나무',     emoji: '🪵', raw: true, why: '나무 속에는 탄소가 아주 많아서 불에 잘 타!' },
+  flint:      { name: '부싯돌',   emoji: '🪨', raw: true, why: '아주 단단한 돌이라 깨면 날카로워지고, 부딪히면 불꽃이 튀어!' },
+  clay:       { name: '점토',     emoji: '🟤', raw: true, why: '아주 고운 흙이라 물을 섞으면 말랑말랑해져!' },
+  copper_ore: { name: '구리광석', emoji: '🟢', raw: true, why: '구리가 다른 원자들과 꼭 붙어서 숨어 있는 돌이야!' },
+  tin_ore:    { name: '주석광석', emoji: '⚪', raw: true, why: '주석이 산소와 손잡고 숨어 있는 돌이야!' },
+  iron_ore:   { name: '철광석',   emoji: '🔴', raw: true, why: '철이 산소와 붙어 있어서 녹슨 것처럼 붉어!' },
+  fire:       { name: '불',       emoji: '🔥', why: '단단한 돌을 세게 부딪히면 작은 불꽃이 튀어. 그 불꽃으로 마른 나무에 불을 붙였어!' },
+  stone_axe:  { name: '돌도끼',   emoji: '🪓', why: '돌을 깨서 날카로운 날을 만들고 나무 손잡이를 달았어!' },
+  charcoal:   { name: '숯',       emoji: '⚫', why: '공기를 조금만 주고 나무를 구우면 거의 탄소만 남아. 그게 숯이야!' },
+  pottery:    { name: '토기',     emoji: '🏺', why: '젖은 점토를 불에 구우면 물이 빠져나가고 돌처럼 단단해져!' },
+  copper:     { name: '구리',     emoji: '🥉', why: '뜨거운 불 속에서 숯의 탄소가 광석에서 다른 원자를 떼어 내서 구리만 남아!' },
+  tin:        { name: '주석',     emoji: '🥈', why: '숯 속 탄소가 주석광석의 산소를 빼앗아 가서 주석만 남아!' },
+  bronze:     { name: '청동',     emoji: '🔔', why: '구리에 주석을 녹여 섞으면 훨씬 단단해져! 이걸로 칼과 종을 만들었어.' },
+  iron:       { name: '철',       emoji: '⚙️', why: '숯 속 탄소가 철광석에서 산소를 빼앗아 가서 철만 남아!' },
+  glass:      { name: '유리',     emoji: '🪟', why: '모래를 아주아주 뜨겁게 녹였다가 식히면 투명한 유리가 돼!' },
+};
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, loadState, saveState /*EXPORTS*/ };
+const RECIPES = [
+  { inputs: ['wood', 'flint'], heat: false, output: 'fire' },
+  { inputs: ['flint', 'flint', 'wood'], heat: false, output: 'stone_axe' },
+  { inputs: ['wood'], heat: true, output: 'charcoal' },
+  { inputs: ['clay', 'H2O'], heat: true, output: 'pottery' },
+  { inputs: ['copper_ore', 'charcoal'], heat: true, output: 'copper' },
+  { inputs: ['tin_ore', 'charcoal'], heat: true, output: 'tin' },
+  { inputs: ['copper', 'tin'], heat: true, output: 'bronze' },
+  { inputs: ['iron_ore', 'charcoal'], heat: true, output: 'iron' },
+  { inputs: ['O2Si'], heat: true, output: 'glass' },
+];
+
+const ERAS = [
+  { id: 'stone',  name: '석기시대',   emoji: '🪨', raws: ['wood', 'flint', 'clay'],      goal: ['fire', 'stone_axe', 'charcoal', 'pottery'] },
+  { id: 'bronze', name: '청동기시대', emoji: '🔔', raws: ['copper_ore', 'tin_ore'],     goal: ['copper', 'tin', 'bronze'] },
+  { id: 'iron',   name: '철기시대',   emoji: '⚙️', raws: ['iron_ore'],                  goal: ['iron', 'glass'] },
+];
+
+function sameBag(a, b) {
+  if (a.length !== b.length) return false;
+  const x = [...a].sort(), y = [...b].sort();
+  return x.every((v, i) => v === y[i]);
+}
+function matchRecipe(inputs, heat) {
+  const r = RECIPES.find(r => r.heat === !!heat && sameBag(r.inputs, inputs));
+  return r ? r.output : null;
+}
+function eraIndex(found) {
+  let i = 0;
+  while (i < ERAS.length - 1 && ERAS[i].goal.every(g => found.includes(g))) i++;
+  return i;
+}
+function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
+
+
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, loadState, saveState, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -297,7 +360,27 @@ function renderDrawer() {
     b.addEventListener('click', () => spawnAtom(sym));
     box.append(b);
   }
-  /*DRAWER_RENDER*/
+  const more = $('#drawer-more');
+  more.textContent = '';
+  const idx = eraIndex(state.found);
+  const raws = ERAS.slice(0, idx + 1).flatMap(e => e.raws);
+  const section = (title, ids) => {
+    if (!ids.length) return;
+    more.append(el('h3', {}, title));
+    const box = el('div', { class: 'chips' });
+    for (const id of ids) {
+      const it = ITEMS[id] || MOLECULES[id];
+      const b = el('button', { class: 'item-chip', 'data-item': id, 'aria-label': it.name });
+      b.append(el('span', { class: 'em' }, it.emoji), el('span', { class: 'lbl' }, it.name));
+      b.addEventListener('click', () => addToTray(id));
+      box.append(b);
+    }
+    more.append(box);
+  };
+  section('분자', Object.keys(MOLECULES).filter(k => state.found.includes(k)));
+  section('자연 재료', raws);
+  section('발명', Object.keys(ITEMS).filter(k => !ITEMS[k].raw && state.found.includes(k)));
+  renderTools();
 }
 
 /* ---- bench ---- */
@@ -485,7 +568,85 @@ function discover(key) {
   state.found.push(key); saveState(state);
   return true;
 }
-function afterMake(key) { /*AFTER_MAKE*/ }
+function afterMake(key) {
+  renderDrawer();
+  checkEra();
+  /*AFTER_MAKE*/
+}
+
+/* ---- tray & combine ---- */
+let tray = [];
+let heatOn = false;
+const TRAY_MAX = 4;
+function addToTray(id) {
+  if (tray.length >= TRAY_MAX) { toast('접시에는 4개까지만 올릴 수 있어!'); return; }
+  tray.push(id); beep(520, 0.05); renderTray();
+}
+function renderTray() {
+  const box = $('#tray-items');
+  box.textContent = '';
+  tray.forEach((id, i) => {
+    const it = ITEMS[id] || MOLECULES[id];
+    const b = el('button', { class: 'item-chip', 'data-item': id, 'aria-label': it.name + ' 빼기' });
+    b.append(el('span', { class: 'em' }, it.emoji), el('span', { class: 'lbl' }, it.name));
+    b.addEventListener('click', () => { tray.splice(i, 1); renderTray(); });
+    box.append(b);
+  });
+  $('#tray').classList.toggle('empty', !tray.length);
+  renderTools();
+}
+function renderTools() {
+  const hb = $('#heat-btn');
+  hb.disabled = !state.found.includes('fire');
+  if (hb.disabled) heatOn = false;
+  hb.setAttribute('aria-pressed', String(heatOn));
+  $('#combine-btn').disabled = !tray.length;
+}
+$('#heat-btn').addEventListener('click', () => { heatOn = !heatOn; beep(heatOn ? 700 : 350, 0.06); renderTools(); });
+$('#combine-btn').addEventListener('click', () => {
+  const out = matchRecipe(tray, heatOn);
+  if (!out) {
+    const tray_ = $('#tray');
+    tray_.classList.remove('bounce'); void tray_.offsetWidth; tray_.classList.add('bounce');
+    beep(220, 0.12);
+    if (matchRecipe(tray, !heatOn) && !$('#heat-btn').disabled) toast(heatOn ? '불 없이 해 볼까?' : '🔥 불을 써 볼까?');
+    else if (matchRecipe(tray, !heatOn)) toast('불이 있어야 할 것 같아!');
+    else toast('이 조합으로는 아무것도 안 생겨. 다른 걸 섞어 봐!');
+    return;
+  }
+  const it = ITEMS[out];
+  const isNew = discover(out);
+  tray = []; heatOn = false; renderTray();
+  if (isNew) fanfare(); else beep(880, 0.1);
+  queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 발명!' : '또 만들었어!', name: it.name, why: it.why,
+    onClose: () => afterMake(out) });
+});
+
+/* ---- era ---- */
+let shownEra = null;
+function renderEra() {
+  const e = ERAS[eraIndex(state.found)];
+  $('#era-emoji').textContent = e.emoji;
+  $('#era-name').textContent = e.name;
+  /*RENDER_ERA*/
+}
+function checkEra() {
+  const idx = eraIndex(state.found);
+  if (shownEra !== null && idx > shownEra) {
+    const e = ERAS[idx];
+    fanfare();
+    queueCard({ emoji: e.emoji, tag: '🎉 새 시대!', name: e.name + '가 열렸어!',
+      why: '새 자연 재료가 서랍에 생겼어: ' + e.raws.map(r => ITEMS[r].emoji + ITEMS[r].name).join(', ') });
+  }
+  if (!state.allDone && allErasDone(state.found)) {
+    state.allDone = true; saveState(state);
+    queueCard({ emoji: '🏆', tag: '대단해!', name: '철기시대까지 완성!',
+      why: '사람들이 수천 년 걸려 해낸 일을 해냈어. 다음 시대는 곧 열릴 거야!' });
+  }
+  shownEra = idx;
+  renderEra();
+}
+
 
 /* ---- card ---- */
 const cards = [];
@@ -535,6 +696,7 @@ function dexSection(body, title, entries) {
 }
 function renderDex(body) {
   dexSection(body, '분자', Object.entries(MOLECULES));
+  dexSection(body, '발명', Object.entries(ITEMS).filter(([, it]) => !it.raw));
   /*DEX_MORE*/
 }
 function renderMap(body) { /*MAP*/ }
@@ -552,6 +714,8 @@ window.addEventListener('resize', () => {
 
 /*INIT_MORE*/
 renderDrawer();
+renderTray();
+checkEra();
 renderMute();
 setTab(START_TAB());
 renderBench();
