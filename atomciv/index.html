@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>원자에서 문명까지</title>
+<style>
+/*STYLE*/
+</style>
+</head>
+<body>
+<!--BODY-->
+<script>
+'use strict';
+/* ================= DATA ================= */
+const ATOMS = {
+  H:  { hands: 1, name: '수소',   color: '#7cc6ff', trait: '가장 작고 가벼워' },
+  O:  { hands: 2, name: '산소',   color: '#ff6b6b', trait: '전자를 꽤 욕심내' },
+  N:  { hands: 3, name: '질소',   color: '#7b8cff', trait: '공기의 대부분이 나야' },
+  C:  { hands: 4, name: '탄소',   color: '#5b5b66', trait: '손이 4개라 뭐든 만들어' },
+  Cl: { hands: 1, name: '염소',   color: '#7ddc6a', trait: '전자 욕심쟁이' },
+  Na: { hands: 1, name: '나트륨', color: '#c79bff', trait: '전자를 잘 줘 버려' },
+  Si: { hands: 4, name: '규소',   color: '#d9a85b', trait: '모래와 돌 속에 있어' },
+};
+
+const MOLECULES = {
+  H2:   { id: 'H2',   name: '수소 기체',   emoji: '🎈', why: '수소 둘이 손을 잡았어. 우주에서 가장 흔한 물질이야!' },
+  O2:   { id: 'O2',   name: '산소 기체',   emoji: '🌬️', why: '산소 둘이 두 손씩 꽉 잡았어. 우리가 숨 쉬는 공기야!' },
+  N2:   { id: 'N2',   name: '질소 기체',   emoji: '☁️', why: '세 손을 다 잡아서 아주 튼튼해. 공기의 대부분이 이거야!' },
+  H2O:  { id: 'H2O',  name: '물',         emoji: '💧', why: '산소가 수소 둘과 손잡았어. 네 몸의 절반 넘게가 물이야!' },
+  CO2:  { id: 'CO2',  name: '이산화탄소',  emoji: '😮‍💨', why: '탄소가 산소 둘과 두 손씩 잡았어. 우리가 내쉬는 숨에 들어 있어!' },
+  CH4:  { id: 'CH4',  name: '메테인(메탄)', emoji: '🔥', why: '탄소가 네 손으로 수소 넷을 잡았어. 가스레인지 불의 연료야!' },
+  H3N:  { id: 'H3N',  name: '암모니아',    emoji: '🧪', why: '질소가 세 손으로 수소 셋을 잡았어. 식물 비료를 만드는 재료야!' },
+  ClH:  { id: 'ClH',  name: '염화수소',    emoji: '🫧', why: '물에 녹으면 염산이 돼. 위장에서 음식을 녹이는 위산이 바로 이거야!' },
+  ClNa: { id: 'ClNa', name: '소금',        emoji: '🧂', why: 'Na가 전자를 Cl에게 줘 버려서, 서로 끌어당겨 붙었어!', ionic: true },
+  O2Si: { id: 'O2Si', name: '모래(이산화규소)', emoji: '🏖️', why: '규소가 산소 둘과 두 손씩 잡았어. 모래알과 수정이 이거야!' },
+};
+
+/* ================= LOGIC ================= */
+function formulaKey(syms) {
+  const c = {};
+  for (const s of syms) c[s] = (c[s] || 0) + 1;
+  return Object.keys(c).sort().map(s => s + (c[s] > 1 ? c[s] : '')).join('');
+}
+
+function freeHands(group) {
+  const f = {};
+  for (const a of group.atoms) f[a.id] = ATOMS[a.sym].hands;
+  for (const b of group.bonds) { f[b.a] -= b.order; f[b.b] -= b.order; }
+  return f;
+}
+
+function findBond(group, aId, bId) {
+  return group.bonds.find(b => (b.a === aId && b.b === bId) || (b.a === bId && b.b === aId));
+}
+
+function canBond(group, aId, bId) {
+  if (aId === bId) return false;
+  const f = freeHands(group);
+  if (!(f[aId] >= 1) || !(f[bId] >= 1)) return false;
+  const ex = findBond(group, aId, bId);
+  return !ex || ex.order < 3;
+}
+
+function addBond(group, aId, bId) {
+  const bonds = group.bonds.map(b => ({ ...b }));
+  const ex = bonds.find(b => (b.a === aId && b.b === bId) || (b.a === bId && b.b === aId));
+  if (ex) ex.order += 1; else bonds.push({ a: aId, b: bId, order: 1 });
+  return { atoms: group.atoms.map(a => ({ ...a })), bonds };
+}
+
+function components(group) {
+  const adj = {};
+  for (const a of group.atoms) adj[a.id] = [];
+  for (const b of group.bonds) { adj[b.a].push(b.b); adj[b.b].push(b.a); }
+  const seen = new Set(), out = [];
+  for (const a of group.atoms) {
+    if (seen.has(a.id)) continue;
+    const ids = new Set(), stack = [a.id];
+    while (stack.length) {
+      const x = stack.pop();
+      if (ids.has(x)) continue;
+      ids.add(x); seen.add(x);
+      stack.push(...adj[x]);
+    }
+    out.push({
+      atoms: group.atoms.filter(t => ids.has(t.id)).map(t => ({ ...t })),
+      bonds: group.bonds.filter(b => ids.has(b.a)).map(b => ({ ...b })),
+    });
+  }
+  return out;
+}
+
+function judge(group) {
+  return components(group).map(comp => {
+    const key = formulaKey(comp.atoms.map(a => a.sym));
+    const f = freeHands(comp);
+    const full = comp.atoms.length > 1 && Object.values(f).every(v => v === 0);
+    if (!full) return { status: 'incomplete', key, ids: comp.atoms.map(a => a.id) };
+    const molecule = MOLECULES[key];
+    return molecule
+      ? { status: 'known', key, molecule, ids: comp.atoms.map(a => a.id) }
+      : { status: 'unknown', key, ids: comp.atoms.map(a => a.id) };
+  });
+}
+
+/*LOGIC2*/
+
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge /*EXPORTS*/ };
+
+/*UI*/
+</script>
+</body>
+</html>
