@@ -1592,8 +1592,7 @@ function renderShop(){
   const m=loadMeal(); const names=[];
   MEAL_DAYS.forEach(([dk])=>slotsFor(dk).forEach(([sk])=>{ const n=(m[dk]||{})[sk]; if(n&&!names.includes(n)) names.push(n); }));
   if(!names.length){ el.innerHTML=`<div class="empty" style="padding:24px 20px">끼니를 채우면 장보기 리스트가 자동으로 만들어져요 🛒</div>`; return; }
-  const SKIP=["따뜻한","찬","다진","생","구운","삶은","불린","잘게"];
-  const items=[]; names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) r.ing.forEach(i=>{ const p=i.split(" "); let nm=(SKIP.includes(p[0])&&p[1])?p[1]:p[0]; nm=nm.replace(/[:：]$/,""); if(nm && !items.includes(nm)) items.push(nm); }); });
+  const items=[]; names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) r.ing.forEach(i=>{ const nm=splitIngLine(i).name; if(nm && !items.includes(nm)) items.push(nm); }); });
   el.innerHTML=`<div class="savedhdr" style="margin-top:8px">🛒 이번 주 장보기 <span>${items.length}</span></div><div class="shopwrap">${items.map(x=>`<span>${x}</span>`).join("")}</div>`;
 }
 /* ════ 장바구니 ════ */
@@ -1860,6 +1859,86 @@ const STYLE_VECTORS={
   fire_wok:{salt:7,sweet:3,sour:0,umami:8,spicy:2}, eolkeun:{salt:6,sweet:1,sour:1,umami:7,spicy:7},
   mala:{salt:7,sweet:2,sour:0,umami:6,spicy:9}, chojang:{salt:5,sweet:7,sour:7,umami:3,spicy:4}
 };
+/* 맛 → 대표 요리 (장바구니용). recipe가 있으면 RECIPES 재료 그대로, 없으면 main + 계산된 양념 */
+const TASTE_DISHES={
+  pa_oil:[
+    {name:"파기름 볶음밥",emoji:"🍳",cat:"rice_bowl",gPerServing:300,main:[{name:"밥",per1:1,unit:"공기"},{name:"계란",per1:1,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"계란볶음밥",emoji:"🍚",recipe:"계란볶음밥",main:[]},
+    {name:"파기름 비빔국수",emoji:"🍜",cat:"noodle_pasta",gPerServing:250,main:[{name:"소면",per1:100,unit:"g"},{name:"대파",per1:1,unit:"대"}]}
+  ],
+  oil_tteokbokki:[
+    {name:"기름떡볶이",emoji:"🔥",cat:"stir_fry",gPerServing:220,main:[{name:"떡볶이 떡",per1:200,unit:"g"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"김말이 기름떡볶이",emoji:"🍢",cat:"stir_fry",gPerServing:250,main:[{name:"떡볶이 떡",per1:150,unit:"g"},{name:"김말이",per1:3,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"어묵 볶음",emoji:"🍥",cat:"stir_fry",gPerServing:200,main:[{name:"어묵",per1:2,unit:"장"},{name:"양파",per1:0.5,unit:"개"}]}
+  ],
+  maepdan:[
+    {name:"매콤 제육볶음",emoji:"🥩",cat:"stir_fry",gPerServing:280,main:[{name:"돼지고기 앞다리살",per1:200,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"매콤 닭볶음",emoji:"🍗",cat:"braise",gPerServing:350,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"감자",per1:0.5,unit:"개"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"떡볶이",emoji:"🌶️",recipe:"떡볶이",main:[]}
+  ],
+  dan_jjan:[
+    {name:"소불고기",emoji:"🥩",cat:"stir_fry",gPerServing:250,main:[{name:"불고기용 소고기",per1:150,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"간장 닭조림",emoji:"🍗",cat:"braise",gPerServing:350,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"감자",per1:0.5,unit:"개"}]},
+    {name:"참치마요덮밥",emoji:"🍚",recipe:"참치마요덮밥",main:[]}
+  ],
+  chodding:[
+    {name:"소시지 야채볶음",emoji:"🌭",cat:"stir_fry",gPerServing:200,main:[{name:"비엔나소시지",per1:100,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"파프리카",per1:0.5,unit:"개"}]},
+    {name:"달콤 닭강정",emoji:"🍗",cat:"stir_fry",gPerServing:250,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"튀김가루",per1:30,unit:"g"}]},
+    {name:"참치마요덮밥",emoji:"🍚",recipe:"참치마요덮밥",main:[]}
+  ],
+  honey_butter:[
+    {name:"허니버터 감자구이",emoji:"🥔",cat:"grill",gPerServing:250,main:[{name:"감자",per1:1,unit:"개"},{name:"버터",per1:10,unit:"g"}]},
+    {name:"허니버터 고구마",emoji:"🍠",cat:"grill",gPerServing:250,main:[{name:"고구마",per1:1,unit:"개"},{name:"버터",per1:10,unit:"g"}]},
+    {name:"허니버터 토스트",emoji:"🍞",cat:"grill",gPerServing:100,main:[{name:"식빵",per1:2,unit:"장"},{name:"버터",per1:10,unit:"g"}]}
+  ],
+  fire_wok:[
+    {name:"불맛 볶음밥",emoji:"🔥",cat:"rice_bowl",gPerServing:300,main:[{name:"밥",per1:1,unit:"공기"},{name:"계란",per1:1,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"소고기 채소볶음",emoji:"🥬",cat:"stir_fry",gPerServing:250,main:[{name:"소고기 불고기감",per1:120,unit:"g"},{name:"양배추",per1:100,unit:"g"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"계란볶음밥",emoji:"🍳",recipe:"계란볶음밥",main:[]}
+  ],
+  eolkeun:[
+    {name:"얼큰 김치찌개",emoji:"🍲",cat:"stew",gPerServing:400,main:[{name:"김치",per1:150,unit:"g"},{name:"돼지고기 목살",per1:100,unit:"g"},{name:"두부",per1:0.25,unit:"모"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"얼큰 순두부찌개",emoji:"🥘",cat:"stew",gPerServing:400,main:[{name:"순두부",per1:0.5,unit:"봉"},{name:"애호박",per1:0.25,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]}
+  ],
+  mala:[
+    {name:"마라 볶음면",emoji:"🍜",cat:"noodle_pasta",gPerServing:300,main:[{name:"중화면",per1:1,unit:"인분"},{name:"청경채",per1:2,unit:"포기"},{name:"숙주",per1:50,unit:"g"}]},
+    {name:"마라 두부볶음",emoji:"🧈",cat:"stir_fry",gPerServing:250,main:[{name:"두부",per1:0.5,unit:"모"},{name:"청경채",per1:2,unit:"포기"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"마라 닭볶음",emoji:"🍗",cat:"stir_fry",gPerServing:300,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"피망",per1:0.5,unit:"개"}]}
+  ],
+  chojang:[
+    {name:"골뱅이무침",emoji:"🥗",cat:"muchim",gPerServing:250,main:[{name:"골뱅이 통조림",per1:0.5,unit:"캔"},{name:"오이",per1:0.5,unit:"개"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"오이 초무침",emoji:"🥒",cat:"muchim",gPerServing:150,main:[{name:"오이",per1:1,unit:"개"},{name:"양파",per1:0.25,unit:"개"}]},
+    {name:"해물파전",emoji:"🥞",recipe:"해물파전",main:[]}
+  ]
+};
+
+/* 재료 한 줄 → {name, qty}. 앞의 수식어 제거, 첫 공백 앞 = 이름, 나머지 = 양 (renderShop과 공유) */
+const ING_SKIP=["따뜻한","찬","다진","생","구운","삶은","불린","잘게"];
+function splitIngLine(line){
+  const p=String(line).trim().split(" ");
+  const hasMod=ING_SKIP.includes(p[0])&&!!p[1];
+  const name=(hasMod?p[1]:p[0]).replace(/[:：]$/,"");
+  return {name, qty:p.slice(hasMod?2:1).join(" ")};
+}
+/* 숫자(정수/소수/분수)+단위 하나뿐인 양만 배수 적용, 나머지는 그대로 */
+function scaleQty(qty,factor){
+  const m=String(qty).trim().match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s*([^\d\s\/.~(]+)$/);
+  if(!m) return qty;
+  let n; if(m[1].includes("/")){ const [a,b]=m[1].split("/").map(Number); n=b?a/b:NaN; } else n=Number(m[1]);
+  if(!isFinite(n)) return qty;
+  return fmtNum(Math.max(0.5,round05(n*factor)))+m[2];
+}
+function dishLines(styleId,dish,servings){
+  if(dish.recipe){
+    const r=RECIPES.find(x=>x.name===dish.recipe); if(!r) return [];
+    return r.ing.map(i=>{ const s=splitIngLine(i); return {name:s.name, qty:scaleQty(s.qty,servings/2)}; });
+  }
+  const out=dish.main.map(m=>({name:m.name, qty:fmtNum(m.per1*servings)+m.unit}));
+  const res=calcRecipe({categoryId:dish.cat, stylePresetId:styleId, foodWeightG:dish.gPerServing*servings, intensity:"normal"});
+  res.ingredients.forEach(i=>{ if(i.id==="water"||i.id==="starch_water") return; out.push({name:i.name, qty:fmtG(i.amountG)+"g"}); });
+  return out;
+}
+
 function nearestStyle(tv){ let best=null,bd=1e9;
   for(const st of STYLES){ const v=STYLE_VECTORS[st.id]; if(!v)continue;
     const d=Math.sqrt(["salt","sweet","sour","umami","spicy"].reduce((a,k)=>a+(tv[k]-v[k])**2,0));
