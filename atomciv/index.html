@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>원자에서 문명까지</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#ffd98a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{
   --bg:#fff7e8; --ink:#2d2a32; --top:#ffd98a; --drawer:#fff0d0; --accent:#ff8c42;
@@ -817,6 +821,9 @@ checkEra();
 renderMute();
 setTab(START_TAB());
 renderBench();
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
 function START_TAB() { return currentMission(state.found) ? 'mission' : 'lab'; }
 </script>
 </body>
