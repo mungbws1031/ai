@@ -1596,6 +1596,55 @@ function renderShop(){
   const items=[]; names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) r.ing.forEach(i=>{ const p=i.split(" "); let nm=(SKIP.includes(p[0])&&p[1])?p[1]:p[0]; nm=nm.replace(/[:：]$/,""); if(nm && !items.includes(nm)) items.push(nm); }); });
   el.innerHTML=`<div class="savedhdr" style="margin-top:8px">🛒 이번 주 장보기 <span>${items.length}</span></div><div class="shopwrap">${items.map(x=>`<span>${x}</span>`).join("")}</div>`;
 }
+/* ════ 장바구니 ════ */
+const CART_KEY="et_cart", HOME_KEY="et_home";
+function parseQty(s){
+  const t=String(s==null?"":s).trim();
+  const m=t.match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s*([^\d\s\/.]+)$/);
+  if(!m) return {amt:null,unit:"",text:t};
+  let amt;
+  if(m[1].includes("/")){ const [a,b]=m[1].split("/").map(Number); amt=b?a/b:null; } else amt=Number(m[1]);
+  if(amt==null||!isFinite(amt)) return {amt:null,unit:"",text:t};
+  return {amt,unit:m[2]};
+}
+function loadCart(){ try{ const a=JSON.parse(localStorage.getItem(CART_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function saveCart(a){ try{ localStorage.setItem(CART_KEY, JSON.stringify(a)); }catch(e){} }
+function loadHome(){ try{ const a=JSON.parse(localStorage.getItem(HOME_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function fmtQty(it){
+  if(it.amt!=null) return fmtNum(it.amt)+it.unit+(it.text?" + "+it.text:"");
+  return it.text||"";
+}
+function addToCart(lines,from){
+  const cart=loadCart();
+  (lines||[]).forEach(l=>{
+    const name=String(l.name||"").trim(); if(!name) return;
+    const q=parseQty(l.qty);
+    let it=cart.find(x=>x.name===name);
+    if(!it){ it={name,amt:q.amt,unit:q.unit,from:[]}; if(q.text) it.text=q.text; cart.push(it); }
+    else if(q.amt!=null && it.amt!=null && it.unit===q.unit){ it.amt=Math.round((it.amt+q.amt)*100)/100; }
+    else {
+      const add=q.amt!=null?fmtNum(q.amt)+q.unit:q.text;
+      if(add){ if(it.amt==null && !it.text && q.amt!=null){ it.amt=q.amt; it.unit=q.unit; } else it.text=it.text?it.text+" + "+add:add; }
+    }
+    if(from && !it.from.includes(from)) it.from.push(from);
+  });
+  saveCart(cart);
+}
+function removeFromCart(name){ saveCart(loadCart().filter(x=>x.name!==name)); }
+function clearCart(){ saveCart([]); }
+function setHome(name,on){
+  const h=loadHome().filter(x=>x!==name); if(on) h.push(name);
+  try{ localStorage.setItem(HOME_KEY, JSON.stringify(h)); }catch(e){}
+}
+function isHome(name){
+  return loadHome().includes(name) || loadFridge().some(x=>x&&typeof x.name==="string"&&x.name.includes(name));
+}
+function cartView(){
+  const buy=[], home=[];
+  loadCart().forEach(it=>(isHome(it.name)?home:buy).push(it));
+  return {buy,home};
+}
+
 function mealFill(){ const mm={}; MEAL_DAYS.forEach(([dk])=>{ mm[dk]={}; slotsFor(dk).forEach(([sk])=>{ mm[dk][sk]=RECIPES[Math.floor(Math.random()*RECIPES.length)].name; }); }); saveMeal(mm); buildMeal(); }
 function mealClear(){ saveMeal({}); buildMeal(); }
 if($("mealFill")) $("mealFill").onclick=mealFill;
