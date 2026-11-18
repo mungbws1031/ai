@@ -649,11 +649,11 @@ const STYLES = [
   {id:"chili_crisp",name:"칠리크리스프/바삭매콤",desc:"매운맛보다 바삭한 기름향이 핵심. 튀긴 마늘·양파·깨를 더하면 완성도 ↑.",over:{saltPct:[1.0,1.3],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[10,20],umami:4},rec:["chili_powder","oil","fried_garlic","fried_onion","soy_sauce","sesame"]},
   {id:"yuzu_lime_spicy",name:"유자라임 새콤매콤",desc:"산미와 단맛이 살아있는 상큼한 매콤함.",over:{saltPct:[0.9,1.2],sweetPct:[3,7],acidPct:[3,8],fatPct:[1,5],umami:3},rec:["soy_sauce","yuzu_syrup","lime_juice","vinegar","chili_sauce"]},
   {id:"gochujang_mayo",name:"고추장마요/김치마요",desc:"고소한 마요 중심의 매콤새콤.",over:{saltPct:[1.0,1.5],sweetPct:[2,6],acidPct:[1,5],fatPct:[35,70],umami:4},rec:["mayo","gochujang","sugar","vinegar","soy_sauce"]},
-  {id:"baek_jongwon",name:"백종원식 대중 한식",desc:"단짠·마늘·파기름으로 밥이랑 잘 맞는 진한 한식.",over:{saltPct:[1.1,1.4],sweetPct:[2,6],acidPct:[0,0.5],fatPct:[4,8],umami:5},rec:["soy_sauce","sugar","garlic","green_onion","oil","sesame_oil"]},
-  {id:"ryu_sooyoung",name:"류수영식 원팬 집밥",desc:"진하고 눅진한 원팬 밥반찬 스타일.",over:{saltPct:[1.0,1.3],sweetPct:[2,5],acidPct:[0,0.5],fatPct:[5,10],umami:5},rec:["soy_sauce","oyster_sauce","sugar","garlic","oil","gochujang"]},
-  {id:"lee_yeonbok",name:"이연복식 중식풍",desc:"파마늘생강 기름향, 굴소스, 전분 농도 중심.",over:{saltPct:[1.0,1.3],sweetPct:[1,4],acidPct:[0.5,3],fatPct:[8,15],umami:5},rec:["soy_sauce","oyster_sauce","sugar","vinegar","oil","starch_water","garlic","ginger"]},
-  {id:"choi_kangrok",name:"최강록식 섬세한 감칠맛",desc:"다시·간장·미림으로 조용하게 깊은 맛.",over:{saltPct:[0.8,1.1],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[2,6],umami:5},rec:["soy_sauce","mirin","dashi","sugar"]},
-  {id:"gordon_ramsay",name:"고든 램지식 서양식",desc:"정확한 소금 간, 버터·허브, 마지막 산미 마무리.",over:{saltPct:[0.9,1.2],sweetPct:[0,1],acidPct:[0.5,2],fatPct:[8,20],umami:3},rec:["salt","butter","olive_oil","lemon_juice","herbs","garlic","pepper"]},
+  {id:"baek_jongwon",name:"밥도둑 대중 한식",desc:"단짠·마늘·파기름으로 밥이랑 잘 맞는 진한 한식.",over:{saltPct:[1.1,1.4],sweetPct:[2,6],acidPct:[0,0.5],fatPct:[4,8],umami:5},rec:["soy_sauce","sugar","garlic","green_onion","oil","sesame_oil"]},
+  {id:"ryu_sooyoung",name:"원팬 눅진 집밥",desc:"진하고 눅진한 원팬 밥반찬 스타일.",over:{saltPct:[1.0,1.3],sweetPct:[2,5],acidPct:[0,0.5],fatPct:[5,10],umami:5},rec:["soy_sauce","oyster_sauce","sugar","garlic","oil","gochujang"]},
+  {id:"lee_yeonbok",name:"중식당 웍 스타일",desc:"파마늘생강 기름향, 굴소스, 전분 농도 중심.",over:{saltPct:[1.0,1.3],sweetPct:[1,4],acidPct:[0.5,3],fatPct:[8,15],umami:5},rec:["soy_sauce","oyster_sauce","sugar","vinegar","oil","starch_water","garlic","ginger"]},
+  {id:"choi_kangrok",name:"다시 우린 섬세한 감칠맛",desc:"다시·간장·미림으로 조용하게 깊은 맛.",over:{saltPct:[0.8,1.1],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[2,6],umami:5},rec:["soy_sauce","mirin","dashi","sugar"]},
+  {id:"gordon_ramsay",name:"버터·허브 정통 서양식",desc:"정확한 소금 간, 버터·허브, 마지막 산미 마무리.",over:{saltPct:[0.9,1.2],sweetPct:[0,1],acidPct:[0.5,2],fatPct:[8,20],umami:3},rec:["salt","butter","olive_oil","lemon_juice","herbs","garlic","pepper"]},
   {id:"fine_dining",name:"파인다이닝풍",desc:"절제된 간·산미·향, 식감 포인트.",over:{saltPct:[0.8,1.1],sweetPct:[0,2],acidPct:[1,3],fatPct:[5,15],umami:4},rec:["salt","lemon_juice","olive_oil","herbs","butter"]},
   // ── 우리가 흔히 말하는 '~맛' ──
   {id:"pa_oil",netSalt:true,name:"🧅 파기름맛",desc:"대파를 기름에 천천히 튀기듯 볶아 낸 고소하고 달큰한 향이 주인공. 간은 간장으로 심플하게.",over:{saltPct:[0.9,1.2],sweetPct:[0.5,2],acidPct:[0,0.3],fatPct:[6,12],umami:4},rec:["oil","green_onion","garlic","soy_sauce","sugar"],extra:[["green_onion",0.06,"early"]],
@@ -1332,7 +1332,7 @@ const RECIPES=[
   {emoji:"🪼",name:"해파리 냉채",diff:"★★☆",time:"20분",
    ing:["염장 해파리 200g","오이 1개","당근 1/4개","연겨자 2t","식초 3T","설탕 2T","간장 1t","참기름 1t","소금"],
    steps:["해파리를 찬물에 30분~1시간 담가 염분을 뺀다.","70℃ 뜨거운 물에 5~10초 데쳐 오그라들면 바로 얼음물에 담가 식힌다.","오이·당근을 곱게 채썰고 소금에 살짝 절인 뒤 물기를 짠다.","연겨자·식초·설탕·간장·참기름을 섞어 드레싱을 만들고 해파리·채소를 버무린다."],
-   tip:"이연복 셰프 스타일 중식당 시그니처. 해파리는 뜨거운 물에 10초 이상 두면 녹아버려요 — 타이밍이 전부입니다."},
+   tip:"중식당 시그니처 냉채 스타일. 해파리는 뜨거운 물에 10초 이상 두면 녹아버려요 — 타이밍이 전부입니다."},
   {emoji:"🥩",name:"한우 육회 샐러드",diff:"★★☆",time:"15분",
    ing:["한우 우둔살(홍두깨) 150g","배 1/4개","잣 1T","간장 1T","참기름 1T","설탕 1t","다진 마늘 1/2t","생강즙 1/2t","달걀노른자 1개"],
    steps:["한우를 0.3cm 두께로 가늘게 채썰어 키친타월로 핏물을 닦는다.","간장·참기름·설탕·마늘·생강즙을 섞어 양념을 만든다.","배를 채썰고 잣과 함께 고기에 넣어 가볍게 버무린다.","접시에 담고 달걀노른자를 중앙에 올린다."],
@@ -1340,11 +1340,11 @@ const RECIPES=[
   {emoji:"🎃",name:"단호박 크림 샐러드",diff:"★☆☆",time:"30분",
    ing:["단호박 1/2개(400g)","크림치즈 50g","마요네즈 2T","꿀 1T","호두·아몬드 30g","건크랜베리 1T","소금"],
    steps:["단호박을 씻어 랩 씌워 전자레인지에 8~10분 익힌다.","씨를 제거하고 속을 파내 뜨거울 때 포크로 굵게 으깨고 소금으로 간한다.","식으면 크림치즈·마요네즈·꿀을 넣고 부드럽게 섞는다.","그릇에 담고 견과류·건크랜베리를 올려 완성."],
-   tip:"마켓컬리에서 꾸준히 상위권인 인기 메뉴. 따뜻하게도, 냉장 보관 후 차갑게도 맛있어요. 크림치즈가 느끼하면 사워크림으로 대체."},
+   tip:"온라인 장보기에서 꾸준히 인기 있는 메뉴. 따뜻하게도, 냉장 보관 후 차갑게도 맛있어요. 크림치즈가 느끼하면 사워크림으로 대체."},
   {emoji:"🫘",name:"흑임자 두부 샐러드",diff:"★☆☆",time:"10분",
    ing:["연두부 1팩(300g)","오이 1/2개","방울토마토 6개","드레싱(흑임자 2T·간장 1T·식초 1T·참기름 1T·설탕 1t·다진 마늘 1/2t)"],
    steps:["흑임자를 절구나 분쇄기로 살짝 갈아 향을 낸다.","드레싱 재료를 모두 고르게 섞는다.","두부를 접시에 물기 없이 담고 오이·방울토마토를 곁들인다.","드레싱을 뿌리고 흑임자를 더 올려 마무리."],
-   tip:"서울 건강식 카페와 마켓컬리에서 인기 있는 저칼로리 샐러드. 흑임자를 직접 갈면 고소함이 완전히 달라요."},
+   tip:"서울 건강식 카페와 온라인 장보기에서 인기 있는 저칼로리 샐러드. 흑임자를 직접 갈면 고소함이 완전히 달라요."},
   {emoji:"🍱",name:"연어 포케볼",diff:"★☆☆",time:"15분",
    ing:["생연어(횟감) 150g","아보카도 1개","에다마메(풋콩) 50g","오이 1/2개","밥 1공기","간장 2T","참기름 1T","레몬즙 1T","고추냉이 1t","참깨"],
    steps:["연어를 한입 크기로 깍둑썰기하고 간장·참기름·레몬즙·고추냉이로 양념한다.","아보카도를 썰고, 오이를 반달썰기하고, 에다마메는 껍질을 깐다.","그릇에 밥을 담고 연어·아보카도·오이·에다마메를 색깔별로 예쁘게 배열한다.","남은 양념 간장을 뿌리고 참깨를 올린다."],
@@ -1413,11 +1413,11 @@ function goRecipe(dishName){
 /* ── 소스 배합소 ── */
 const SAUCE_DENS={"간장":1.15,"설탕":0.85,"고추장":1.2,"고춧가루":0.5,"올리고당":1.35,"물엿":1.35,"꿀":1.4,"케첩":1.1,"마요네즈":0.95,"식초":1.0,"다진마늘":1.0,"버터":0.96,"우유/생크림":1.0,"다시다":0.65,"두반장":1.2,"마라소스":1.0,"청양고추":1.0,"후추":0.5,"화자오":0.5,"카레가루":0.5,"참기름":0.92,"통깨":0.6,"물":1.0,"된장":1.15,"생강":1.0,"미림":1.0,"춘장":1.2,"굴소스":1.2,"식용유":0.92,"양파":1.0,"머스터드":1.0,"레몬즙":1.0,"우스터소스":1.1,"피클":1.0,"파마산치즈":1.0,"소금":1.2,"사과즙":1.0,"적포도주":1.0,"와사비":1.0};
 const SAUCES=[
-  {emoji:"🍗",name:"허니콤보",desc:"바삭한 위에 달콤짭짤 간장+꿀. 안 매운 단짠의 정석.",base:{salt:6,sweet:8,sour:1,umami:5,spicy:1},
+  {emoji:"🍗",name:"허니갈릭 간장치킨",desc:"바삭한 위에 달콤짭짤 간장+꿀. 안 매운 단짠의 정석.",base:{salt:6,sweet:8,sour:1,umami:5,spicy:1},
    ing:[{n:"간장",g:30,ax:"salt"},{n:"꿀",g:30,ax:"sweet"},{n:"올리고당",g:15,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"버터",g:10,ax:null},{n:"후추",g:1,ax:null}]},
   {emoji:"🔥",name:"불닭볶음",desc:"혀가 얼얼한 극강 매움 위에 단짠. 캡사이신 폭탄.",base:{salt:6,sweet:6,sour:1,umami:6,spicy:10},
    ing:[{n:"고추장",g:25,ax:"spicy"},{n:"고춧가루",g:15,ax:"spicy"},{n:"청양고추",g:15,ax:"spicy"},{n:"간장",g:15,ax:"salt"},{n:"설탕",g:20,ax:"sweet"},{n:"물엿",g:15,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"다시다",g:3,ax:"umami"}]},
-  {emoji:"😈",name:"엽기떡볶이",desc:"매운데 자꾸 먹게 되는 중독 매콤 단짠 감칠.",base:{salt:6,sweet:6,sour:1,umami:7,spicy:9},
+  {emoji:"😈",name:"극강 매운 떡볶이",desc:"매운데 자꾸 먹게 되는 중독 매콤 단짠 감칠.",base:{salt:6,sweet:6,sour:1,umami:7,spicy:9},
    ing:[{n:"고추장",g:30,ax:"spicy"},{n:"고춧가루",g:15,ax:"spicy"},{n:"청양고추",g:20,ax:"spicy"},{n:"설탕",g:25,ax:"sweet"},{n:"간장",g:10,ax:"salt"},{n:"다시다",g:5,ax:"umami"},{n:"다진마늘",g:10,ax:"umami"},{n:"카레가루",g:2,ax:null}]},
   {emoji:"🏫",name:"국민학교 떡볶이",desc:"덜 맵고 달달한 추억의 분식집 맛.",base:{salt:5,sweet:7,sour:1,umami:5,spicy:4},
    ing:[{n:"고추장",g:20,ax:"spicy"},{n:"고춧가루",g:5,ax:"spicy"},{n:"설탕",g:20,ax:"sweet"},{n:"물엿",g:20,ax:"sweet"},{n:"간장",g:10,ax:"salt"},{n:"다진마늘",g:6,ax:"umami"}]},
@@ -1433,7 +1433,7 @@ const SAUCES=[
    ing:[{n:"간장",g:20,ax:"salt"},{n:"버터",g:10,ax:null},{n:"참기름",g:5,ax:null},{n:"설탕",g:5,ax:"sweet"},{n:"다진마늘",g:5,ax:"umami"},{n:"통깨",g:2,ax:null}]},
   {emoji:"🍱",name:"치킨마요",desc:"고소한 마요 + 단짠 데리야끼 간장. 밥에 올리는 치킨마요덮밥 소스.",base:{salt:6,sweet:6,sour:1,umami:5,spicy:1},
    ing:[{n:"마요네즈",g:30,ax:null},{n:"간장",g:20,ax:"salt"},{n:"설탕",g:10,ax:"sweet"},{n:"물엿",g:12,ax:"sweet"},{n:"다진마늘",g:4,ax:"umami"},{n:"후추",g:1,ax:null}]},
-  {emoji:"🥣",name:"본죽st 비빔장",desc:"안 매운 달달 간장 비빔장. 본죽st 정갈한 비빔밥에 — 애들 성공률 최고.",base:{salt:7,sweet:5,sour:1,umami:4,spicy:1},
+  {emoji:"🥣",name:"죽집 스타일 비빔장",desc:"안 매운 달달 간장 비빔장. 죽집 스타일 정갈한 비빔밥에 — 애들 성공률 최고.",base:{salt:7,sweet:5,sour:1,umami:4,spicy:1},
    ing:[{n:"간장",g:30,ax:"salt"},{n:"올리고당",g:15,ax:"sweet"},{n:"물",g:15,ax:null},{n:"참기름",g:5,ax:null},{n:"다진마늘",g:3,ax:"umami"},{n:"통깨",g:2,ax:null}]},
   {emoji:"🥬",name:"쌈장",desc:"고기 쌈에 필수. 된장·고추장에 마늘·참기름.",base:{salt:7,sweet:3,sour:1,umami:7,spicy:3},
    ing:[{n:"된장",g:30,ax:"salt"},{n:"고추장",g:15,ax:"spicy"},{n:"다진마늘",g:10,ax:"umami"},{n:"물엿",g:8,ax:"sweet"},{n:"참기름",g:10,ax:null},{n:"통깨",g:3,ax:null},{n:"대파",g:10,ax:null}]},
@@ -1484,9 +1484,9 @@ const sauceColor=k=>{ const x=TASTES.find(t=>t.key===k); return x?x.color:"#9C94
 let sauceState={...SAUCES[0].base}, currentSauce=null;
 const sauceChips=$("sauceChips");
 const SAUCE_CAT={
-  "허니콤보":"chicken","양념치킨":"chicken","간장치킨":"chicken",
-  "불닭볶음":"tteok","엽기떡볶이":"tteok","국민학교 떡볶이":"tteok","제육볶음 양념":"tteok","닭갈비 양념":"tteok",
-  "간장계란밥":"rice","치킨마요":"rice","본죽st 비빔장":"rice","데리야끼":"rice",
+  "허니갈릭 간장치킨":"chicken","양념치킨":"chicken","간장치킨":"chicken",
+  "불닭볶음":"tteok","극강 매운 떡볶이":"tteok","국민학교 떡볶이":"tteok","제육볶음 양념":"tteok","닭갈비 양념":"tteok",
+  "간장계란밥":"rice","치킨마요":"rice","죽집 스타일 비빔장":"rice","데리야끼":"rice",
   "쌈장":"korean","초고추장":"korean","간장초장":"korean","부침개 간장":"korean","두부 양념간장":"korean","와사비 간장":"korean","기름장":"korean",
   "허니머스타드":"fry","돈가스소스":"fry","스윗칠리":"fry","타르타르":"fry","경양식 돈까스":"fry","일본식 돈카츠":"fry","수제 데미글라스":"fry","애들 돈까스소스":"fry",
   "로제":"western","갈릭버터간장":"western","까르보나라":"western","BBQ소스":"western",
@@ -1495,9 +1495,9 @@ const SAUCE_CAT={
 const SAUCE_CATS=[["chicken","🍗 치킨·양념"],["tteok","🌶️ 떡볶이·매콤볶음"],["rice","🍚 밥·비빔·덮밥"],["korean","🥬 한식 디핑·찍먹"],["fry","🍤 튀김·돈까스"],["western","🍝 양식·크림"],["chinese","🥡 중식"],["기타","✨ 기타"]];
 const sauceCatOf=s=>SAUCE_CAT[s.name]||"기타";
 const SAUCE_PROD={
-  "허니콤보":"시판 허니갈릭·간장마늘 소스","불닭볶음":"삼양 불닭소스","엽기떡볶이":"엽떡 밀키트 소스","국민학교 떡볶이":"오뚜기 옛날 떡볶이 소스",
+  "허니갈릭 간장치킨":"시판 허니갈릭·간장마늘 소스","불닭볶음":"삼양 불닭소스","극강 매운 떡볶이":"엽떡 밀키트 소스","국민학교 떡볶이":"오뚜기 옛날 떡볶이 소스",
   "양념치킨":"오뚜기 양념치킨 소스","로제":"시판 로제 떡볶이 소스","마라(마라장)":"하이디라오 마라장·두반장","간장치킨":"시판 간장치킨 소스",
-  "간장계란밥":"진간장 + 버터","치킨마요":"기꼬만 데리야끼 + 큐피 마요","본죽st 비빔장":"청정원 양조간장 + 올리고당",
+  "간장계란밥":"진간장 + 버터","치킨마요":"기꼬만 데리야끼 + 큐피 마요","죽집 스타일 비빔장":"청정원 양조간장 + 올리고당",
   "쌈장":"해찬들 쌈장","초고추장":"오뚜기 초고추장","간장초장":"시판 초간장","제육볶음 양념":"청정원 제육볶음 양념",
   "데리야끼":"기꼬만 데리야끼 소스","닭갈비 양념":"시판 춘천닭갈비 양념","짜장(춘장)":"사자표 춘장 · 오뚜기 짜장",
   "허니머스타드":"하인즈 허니머스타드","돈가스소스":"오뚜기 돈까스소스","스윗칠리":"팬타이 스윗칠리소스","타르타르":"오뚜기·큐피 타르타르소스",
@@ -1507,7 +1507,18 @@ const SAUCE_PROD={
   "와사비 간장":"S&B 와사비 + 기꼬만 간장","기름장":"참기름 + 맛소금"
 };
 const FAV_SAUCE_KEY="et_fav_sauces";
-function loadFavSauce(){ try{ return JSON.parse(localStorage.getItem(FAV_SAUCE_KEY)||"[]"); }catch(e){ return []; } }
+const SAUCE_RENAMES={"허니콤보":"허니갈릭 간장치킨","엽기떡볶이":"극강 매운 떡볶이","본죽st 비빔장":"죽집 스타일 비빔장"};
+function loadFavSauce(){
+  try{
+    const raw=JSON.parse(localStorage.getItem(FAV_SAUCE_KEY)||"[]");
+    if(!Array.isArray(raw)) return [];
+    let changed=false;
+    const out=[];
+    raw.forEach(n=>{ const m=SAUCE_RENAMES[n]||n; if(m!==n) changed=true; if(out.indexOf(m)<0) out.push(m); else changed=true; });
+    if(changed) saveFavSauce(out);
+    return out;
+  }catch(e){ return []; }
+}
 function saveFavSauce(a){ try{ localStorage.setItem(FAV_SAUCE_KEY, JSON.stringify(a)); }catch(e){} }
 function isFavSauce(n){ return loadFavSauce().includes(n); }
 function toggleFavSauce(name){ let a=loadFavSauce(); a=a.includes(name)?a.filter(x=>x!==name):[name,...a]; saveFavSauce(a); renderSauceRecipe(); renderSaved(); }
