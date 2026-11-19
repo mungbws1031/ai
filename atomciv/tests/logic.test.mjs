@@ -154,7 +154,7 @@ test('industry era: recipes, era index, missions', async () => {
   }));
   assert.equal(r.steam, 'steam'); assert.equal(r.steel, 'steel'); assert.equal(r.engine, 'steam_engine');
   assert.equal(r.train, 'train'); assert.equal(r.lime, 'quicklime'); assert.equal(r.cement, 'cement');
-  assert.equal(r.concrete, 'concrete'); assert.equal(r.eras, 4); assert.equal(r.idx, 3);
+  assert.equal(r.concrete, 'concrete'); assert.equal(r.eras, 5); assert.equal(r.idx, 3);
   for (const t of ['steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete']) assert.ok(r.missionTargets.includes(t), t);
 });
 
@@ -203,4 +203,22 @@ test('hex map: every invention has its own tile and territory grows with discove
   assert.ok(r.fireOwned);
   assert.ok(r.fireFoggedAtStart);
   assert.ok(r.visibleBiggerThanOwned);
+});
+
+test('electric era: recipes, eras, tiles', async () => {
+  const r = await run(A => ({
+    salt: A.matchRecipe(['H2O', 'ClNa'], false),
+    zinc: A.matchRecipe(['charcoal', 'zinc_ore'], true),
+    wire: A.matchRecipe(['copper'], false),
+    battery: A.matchRecipe(['salt_water', 'zinc', 'copper'], false),
+    bulb: A.matchRecipe(['battery', 'wire', 'glass'], false),
+    motor: A.matchRecipe(['wire', 'battery', 'lodestone'], false),
+    gen: A.matchRecipe(['steam_engine', 'wire', 'lodestone'], false),
+    eras: A.ERAS.map(e => e.id),
+    last: A.ERAS[A.ERAS.length - 1].goal,
+  }));
+  assert.equal(r.salt, 'salt_water'); assert.equal(r.zinc, 'zinc'); assert.equal(r.wire, 'wire');
+  assert.equal(r.battery, 'battery'); assert.equal(r.bulb, 'bulb'); assert.equal(r.motor, 'motor'); assert.equal(r.gen, 'generator');
+  assert.deepEqual(r.eras, ['stone', 'bronze', 'iron', 'industry', 'electric']);
+  assert.deepEqual(r.last, ['battery', 'bulb', 'motor', 'generator']);
 });
