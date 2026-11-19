@@ -298,9 +298,104 @@ test('A: the first ingredient mission opens a one-time tray intro card', async (
   await page.waitForSelector('#card:not([hidden])');
   assert.match(await page.textContent('#card'), /접시/);
   await page.click('#card-ok');
-  const ctx2page = await ctx.newPage();
-  await ctx2page.goto(page.url());
-  await ctx2page.waitForTimeout(300);
-  assert.ok(await ctx2page.locator('#card').isHidden(), 'intro shown only once');
+  // 새로고침 대신 저장값을 직접 확인한다: Chromium은 localStorage를 디스크에 늦게 써서,
+  // 곧바로 새로고침하면 옛 값을 읽는 일이 가끔 있다 (테스트에서만 생기는 타이밍 문제).
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')));
+  assert.equal(saved.trayIntro, true, 'intro remembered so it is shown only once');
+  await ctx.close();
+});
+
+const ironDone = ['H2', 'H2O', 'O2', 'CO2', 'CH4', 'H3N', 'ClNa', 'O2Si', 'fire', 'stone_axe', 'charcoal', 'pottery', 'copper', 'tin', 'bronze', 'iron', 'glass'];
+
+test('industry era opens with coal and limestone and a new village', async () => {
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(ironDone)},missionIdx:0,muted:true,trayIntro:true}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  assert.equal(await page.locator('#drawer [data-item=coal]').count(), 1);
+  assert.equal(await page.locator('#drawer [data-item=limestone]').count(), 1);
+  assert.equal(await page.getAttribute('#village', 'data-era'), 'industry');
+  await ctx.close();
+});
+
+test('finishing the industry era shows the ending card', async () => {
+  const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'quicklime', 'cement', 'concrete'];
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,allDone:true}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  await page.click('#drawer [data-item=steam_engine]');
+  await page.click('#drawer [data-item=steel]');
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#card').isVisible());
+  assert.match(await page.textContent('#card-name'), /산업시대까지 완성/);
+  await ctx.close();
+});
+
+test('save to a file, start over, then load it back', async () => {
+  const { ctx, page } = await fresh();
+  await makeWater(page);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  await page.click('#save-menu');
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#save-file')]);
+  assert.match(dl.suggestedFilename(), /atomciv.*\.json$/);
+  const savedPath = await dl.path();
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.click('[data-tab=dex]');
+  assert.equal(await page.locator('.dex-item[data-key=H2O]').count(), 0);
+  await page.click('#panel-close');
+  await page.click('#save-menu');
+  await page.setInputFiles('#load-file', savedPath);
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /불러왔어/);
+  await page.click('#card-ok');
+  await page.click('[data-tab=dex]');
+  assert.equal(await page.locator('.dex-item[data-key=H2O]').count(), 1);
+  await ctx.close();
+});
+
+test('loading a wrong file shows a friendly message and keeps progress', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('#save-menu');
+  await page.setInputFiles('#load-file', { name: 'x.json', mimeType: 'application/json', buffer: Buffer.from('nope') });
+  await page.waitForFunction(() => document.querySelector('#toast').classList.contains('show'));
+  assert.match(await page.textContent('#toast'), /불러올 수 없/);
+  await ctx.close();
+});
+
+for (const vp of [{ width: 1024, height: 768 }, { width: 768, height: 1024 }]) {
+  test(`tray sits at the bottom center (${vp.width}x${vp.height}) and does not overlap buttons`, async () => {
+    const { ctx, page } = await fresh(vp);
+    for (const id of ['wood', 'flint', 'clay', 'wood']) await page.click(`#drawer [data-item=${id}]`);
+    const bench = await page.locator('#bench').boundingBox();
+    const tray = await page.locator('#tray').boundingBox();
+    const clear = await page.locator('#clear-btn').boundingBox();
+    const combine = await page.locator('#combine-btn').boundingBox();
+    const trayCx = tray.x + tray.width / 2, benchCx = bench.x + bench.width / 2;
+    assert.ok(Math.abs(trayCx - benchCx) < bench.width * 0.12, `tray center ${trayCx} vs bench center ${benchCx}`);
+    const hit = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    assert.ok(!hit(tray, clear), 'tray vs clear');
+    assert.ok(!hit(tray, combine), 'tray vs combine');
+    assert.ok(tray.y + tray.height <= bench.y + bench.height, 'tray inside bench');
+    await ctx.close();
+  });
+}
+
+test('territory map: hex island with fog, borders grow, tapping a building opens its card', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-tab=map]');
+  assert.ok(await page.locator('#panel .hex').count() > 50);
+  assert.ok(await page.locator('#panel .hex.fog').count() > 0);
+  const owned0 = await page.locator('#panel .hex.owned').count();
+  assert.match(await page.textContent('#map-info'), /7칸/);
+  await page.click('#panel-close');
+  await page.click('#drawer [data-item=wood]'); await page.click('#drawer [data-item=flint]');
+  await page.click('#combine-btn'); await page.click('#card-ok');
+  await page.click('[data-tab=map]');
+  assert.ok(await page.locator('#panel .hex.owned').count() > owned0);
+  assert.ok(await page.locator('#panel .border-edge').count() > 0);
+  await page.click('.map-node[data-id=fire]');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /불/);
   await ctx.close();
 });

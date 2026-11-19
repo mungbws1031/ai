@@ -138,3 +138,69 @@ test('topic particle follows the final consonant (은/는)', async () => {
 test('oxygen mission says to connect twice', async () => {
   assert.match(await run(A => A.MISSIONS.find(m => m.target === 'O2').text), /두 번/);
 });
+
+test('industry era: recipes, era index, missions', async () => {
+  const r = await run(A => ({
+    steam: A.matchRecipe(['H2O'], true),
+    steel: A.matchRecipe(['coal', 'iron'], true),
+    engine: A.matchRecipe(['steam', 'steel'], false),
+    train: A.matchRecipe(['steel', 'steam_engine'], false),
+    lime: A.matchRecipe(['limestone'], true),
+    cement: A.matchRecipe(['clay', 'quicklime'], true),
+    concrete: A.matchRecipe(['H2O', 'O2Si', 'cement'], false),
+    eras: A.ERAS.length,
+    idx: A.eraIndex(['fire', 'stone_axe', 'charcoal', 'pottery', 'copper', 'tin', 'bronze', 'iron', 'glass']),
+    missionTargets: A.MISSIONS.map(m => m.target),
+  }));
+  assert.equal(r.steam, 'steam'); assert.equal(r.steel, 'steel'); assert.equal(r.engine, 'steam_engine');
+  assert.equal(r.train, 'train'); assert.equal(r.lime, 'quicklime'); assert.equal(r.cement, 'cement');
+  assert.equal(r.concrete, 'concrete'); assert.equal(r.eras, 4); assert.equal(r.idx, 3);
+  for (const t of ['steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete']) assert.ok(r.missionTargets.includes(t), t);
+});
+
+test('every mission target is reachable from recipes or molecules', async () => {
+  const bad = await run(A => A.MISSIONS.map(m => m.target).filter(t => !A.MOLECULES[t] && !A.RECIPES.some(r => r.output === t)));
+  assert.deepEqual(bad, []);
+});
+
+test('save file round-trips and rejects junk', async () => {
+  const r = await run(A => {
+    const text = A.exportSave({ found: ['H2O', 'fire'], missionIdx: 0, muted: true, trayIntro: true });
+    const back = A.importSave(text);
+    const junk = A.importSave('hello');
+    const other = A.importSave(JSON.stringify({ app: 'other', found: ['H2O'] }));
+    const unknown = A.importSave(JSON.stringify({ app: 'atomciv', version: 1, state: { found: ['H2O', 'rocket'] } }));
+    return { hasApp: JSON.parse(text).app, back, junk, other, unknown };
+  });
+  assert.equal(r.hasApp, 'atomciv');
+  assert.deepEqual(r.back.found, ['H2O', 'fire']);
+  assert.equal(r.back.muted, true);
+  assert.equal(r.junk, null);
+  assert.equal(r.other, null);
+  assert.deepEqual(r.unknown.found, ['H2O']);
+});
+
+test('hex map: every invention has its own tile and territory grows with discoveries', async () => {
+  const r = await run(A => {
+    const inv = Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw);
+    const keys = inv.map(k => A.MAP_TILES[k] && A.MAP_TILES[k].join(','));
+    const t0 = A.territory([]), t1 = A.territory(['fire']);
+    const fireKey = A.MAP_TILES.fire.join(',');
+    return {
+      missing: inv.filter(k => !A.MAP_TILES[k]),
+      unique: new Set(keys).size === keys.length,
+      inRange: inv.every(k => A.hexDist(A.MAP_TILES[k], [0, 0]) <= A.MAP_RADIUS - 1),
+      owned0: t0.owned.size, owned1: t1.owned.size, fireOwned: t1.owned.has(fireKey),
+      fireFoggedAtStart: !t0.visible.has(A.MAP_TILES.copper.join(',')),
+      visibleBiggerThanOwned: t0.visible.size > t0.owned.size,
+    };
+  });
+  assert.deepEqual(r.missing, []);
+  assert.ok(r.unique, 'unique tiles');
+  assert.ok(r.inRange, 'inside the island');
+  assert.equal(r.owned0, 7);
+  assert.ok(r.owned1 > r.owned0);
+  assert.ok(r.fireOwned);
+  assert.ok(r.fireFoggedAtStart);
+  assert.ok(r.visibleBiggerThanOwned);
+});
