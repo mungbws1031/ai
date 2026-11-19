@@ -53,8 +53,16 @@ await page.click("#dishSheet .dish-opt >> nth=0");
 await page.click('#dishSheet [data-serv="2"]');
 await shot("2-dish-sheet.png");
 
-// 3) 장바구니
+// 3) 장바구니: 살 것 + 집에 있음(냉장고·직접 체크)이 섞인 모습
 await page.click("#dishSheet .dish-add");
+await page.evaluate(() => {
+  // 재료 중 일부는 집에 있는 상태로: 대파는 냉장고에, 다진마늘은 "집에 있어요"
+  saveFridge([{ name: "대파 한 단", bought: frToday(), days: 7 }]);
+  setHome("다진마늘", true);
+  // 화면에 다 보이도록 살 것은 앞의 3개만 남긴다 (나머지는 샀어요 처리 — 헤더 숫자와 보이는 줄을 맞춘다)
+  const keep = ["떡볶이 떡", "고춧가루", "설탕"];
+  loadCart().forEach(it => { if (!keep.includes(it.name) && !isHome(it.name)) removeFromCart(it.name); });
+});
 await page.click("#cartFab");
 await page.waitForSelector("#toast.show, #toastMsg", { state: "hidden", timeout: 6000 }).catch(() => {});
 await page.waitForTimeout(3000); // 토스트가 사라질 때까지
