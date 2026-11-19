@@ -9,6 +9,11 @@ async function withApp(opts, fn) {
   try { await fn(page); assert.deepStrictEqual(page.__errors, []); } finally { await browser.close(); }
 }
 
+async function goMore(page, viewId) {
+  await page.click('.nav button[data-view="more"]');
+  await page.click(`#view-more [data-go="${viewId}"]`);
+}
+
 async function addOilTteokbokki(page) {
   await page.click('.nav button[data-view="sense"]');
   await page.click(".scard:has-text('기름떡볶이맛')");
@@ -20,19 +25,19 @@ async function addOilTteokbokki(page) {
 
 test("감성 카드 → 요리 고르기 → 담기 → 장바구니에 떡", () => withApp({}, async page => {
   await addOilTteokbokki(page);
-  await page.waitForSelector("#cartFab", { state: "visible" });
+  await page.waitForSelector("#cartCount", { state: "visible" });
   const n = Number(await page.innerText("#cartCount"));
   assert.ok(n > 0);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   const txt = await page.innerText("#cartList");
   assert.ok(txt.includes("떡볶이 떡"), txt);
   assert.ok(txt.includes("400g"), txt);
-  assert.strictEqual(await page.isVisible("#cartFab"), false);
+  assert.strictEqual(await page.getAttribute('.nav button[data-view="cart"]', "class"), "on");
 }));
 
 test("집에 있어요를 누르면 아래 칸으로 내려간다", () => withApp({}, async page => {
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.click('#cartList .cart-row:has-text("고춧가루") [data-act="home"]');
   assert.ok((await page.innerText("#cartHome")).includes("고춧가루"));
   assert.ok(!(await page.innerText("#cartList")).includes("고춧가루"));
@@ -42,7 +47,7 @@ test("집에 있어요를 누르면 아래 칸으로 내려간다", () => withAp
 
 test("샀어요를 누르면 목록에서 빠지고 비우기도 된다", () => withApp({}, async page => {
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.click('#cartList .cart-row:has-text("떡볶이 떡") [data-act="bought"]');
   assert.ok(!(await page.innerText("#cartList")).includes("떡볶이 떡"));
   page.on("dialog", d => d.accept());
@@ -53,14 +58,14 @@ test("샀어요를 누르면 목록에서 빠지고 비우기도 된다", () => 
 test("새로고침해도 장바구니가 남는다", () => withApp({}, async page => {
   await addOilTteokbokki(page);
   await page.reload();
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   assert.ok((await page.innerText("#cartList")).includes("떡볶이 떡"));
 }));
 
 test("식단 탭 담기 버튼", () => withApp({ storage: { et_meal_plan: JSON.stringify({ mon: { d: "김밥" } }) } }, async page => {
-  await page.click('.nav button[data-view="meal"]');
+  await goMore(page, "meal");
   await page.click("#mealShop button");
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   assert.ok((await page.innerText("#cartList")).includes("김밥김"));
 }));
 
@@ -79,13 +84,13 @@ test("재료 양이 빈 줄은 이름만 보인다", () => withApp({}, async pag
 
 test("모바일 폭에서 가로 스크롤이 없다", () => withApp({}, async page => {
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   const r = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   assert.ok(r[0] <= r[1], JSON.stringify(r));
 }));
 
 test("식단 담기 버튼을 두 번 눌러도 양이 두 배가 되지 않는다", () => withApp({ storage: { et_meal_plan: JSON.stringify({ mon: { d: "김밥" } }) } }, async page => {
-  await page.click('.nav button[data-view="meal"]');
+  await goMore(page, "meal");
   await page.click("#mealShop button");
   const once = await page.evaluate(() => JSON.stringify(loadCart()));
   await page.click("#mealShop button");
@@ -114,7 +119,7 @@ const TTEOK_URL = "https://www.coupang.com/np/search?q=%EB%96%A1%EB%B3%B6%EC%9D%
 
 test("구매 버튼 링크는 검색 URL이고 고지 문구는 없다", () => withApp({}, async page => {
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   const btn = page.locator('#cartList .cart-row:has-text("떡볶이 떡") .cart-buy a, #cartList .cart-row:has-text("떡볶이 떡") .cart-buy button').first();
   assert.strictEqual((await btn.innerText()).trim(), "구매 →");
   const href = await btn.evaluate(el => el.getAttribute("href") || el.dataset.url);
@@ -125,7 +130,7 @@ test("구매 버튼 링크는 검색 URL이고 고지 문구는 없다", () => w
 
 test("affiliate=true면 고지 문구가 장바구니 상단에 보인다", () => withApp({}, async page => {
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.evaluate(() => { SHOP_CONFIG.affiliate = true; renderCart(); });
   const first = await page.evaluate(() => document.querySelector("#view-cart").children[0].innerText);
   const disc = await page.evaluate(() => SHOP_CONFIG.disclosure);
@@ -138,7 +143,7 @@ test("affiliate=true면 고지 문구가 장바구니 상단에 보인다", () =
 test("공유 문구 형식", () => withApp({}, async page => {
   await addOilTteokbokki(page);
   await page.evaluate(() => { addToCart([{ name: "후추", qty: "" }], "x"); });
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.click('#cartList .cart-row:has-text("고춧가루") [data-act="home"]');
   const t = await page.evaluate(() => cartShareText());
   const lines = t.split("\n");
@@ -162,7 +167,7 @@ test("공유: navigator.share → 클립보드 폴백", () => withApp({}, async 
   });
   await page.reload();
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.click("#cartShare");
   const shared = await page.evaluate(() => window.__shared);
   assert.strictEqual(shared.length, 1);
@@ -178,7 +183,7 @@ test("네이티브 흉내일 때 구매 버튼은 _system으로 연다", () => w
   await page.addInitScript(NATIVE_INIT);
   await page.reload();
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.click('#cartList .cart-row:has-text("떡볶이 떡") .cart-buy >> text=구매');
   const opens = await page.evaluate(() => window.__opens);
   assert.deepStrictEqual(opens, [[TTEOK_URL, "_system"]]);
@@ -188,7 +193,7 @@ test("웹에서는 구매 버튼이 _blank noopener로 연다", () => withApp({}
   await page.addInitScript(() => { window.__opens = []; window.open = (...a) => { window.__opens.push(a); return null; }; });
   await page.reload();
   await addOilTteokbokki(page);
-  await page.click("#cartFab");
+  await page.click('.nav button[data-view="cart"]');
   await page.click('#cartList .cart-row:has-text("떡볶이 떡") .cart-buy >> text=구매');
   assert.deepStrictEqual(await page.evaluate(() => window.__opens), [[TTEOK_URL, "_blank", "noopener"]]);
 }));
@@ -205,7 +210,7 @@ test("네이티브 흉내일 때 SW 등록 안 함·알림 버튼 숨김", () =>
   await page.waitForLoadState("load");
   await page.waitForTimeout(300);
   assert.strictEqual(await page.evaluate(() => window.__swReg), 0);
-  await page.click('.nav button[data-view="fridge"]');
+  await goMore(page, "fridge");
   assert.strictEqual(await page.locator("#frNotif").isVisible(), false);
 }));
 
@@ -223,9 +228,9 @@ test("냉장고 때문에 집에 있는 재료는 눌러서 사야 해요로 되
 }));
 
 test("냉장고 저장값이 {} 여도 로드 오류 없이 장바구니 버튼이 동작한다", () => withApp({ storage: { et_fridge: "{}" } }, async page => {
-  await page.evaluate(() => { addToCart([{ name: "간장", qty: "1병" }], "x"); updateCartFab(); });
-  assert.ok(await page.locator("#cartFab").isVisible());
-  await page.click("#cartFab");
+  await page.evaluate(() => { addToCart([{ name: "간장", qty: "1병" }], "x"); updateCartBadge(); });
+  assert.ok(await page.locator("#cartCount").isVisible());
+  await page.click('.nav button[data-view="cart"]');
   assert.ok((await page.innerText("#cartList")).includes("간장"));
 }));
 

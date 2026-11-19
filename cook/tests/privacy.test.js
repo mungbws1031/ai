@@ -40,7 +40,8 @@ test("모바일 폭(360px)에서 가로 스크롤이 없다", async () => {
 test("저장 탭 하단에 개인정보처리방침 링크가 있다", async () => {
   const { browser, page } = await openApp({ device: DEVICE });
   try {
-    await page.click('.nav button[data-view="saved"]');
+    await page.click('.nav button[data-view="more"]');
+    await page.click('#view-more [data-go="saved"]');
     const link = page.locator('#view-saved a[href="./privacy.html"]');
     assert.strictEqual(await link.count(), 1);
     assert.strictEqual((await link.innerText()).trim(), "개인정보처리방침");
@@ -51,5 +52,5 @@ test("저장 탭 하단에 개인정보처리방침 링크가 있다", async () 
 test("서비스워커 캐시에 privacy.html이 들어가고 버전이 올라갔다", () => {
   const sw = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
   assert.ok(sw.includes('"./privacy.html"'));
-  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v6"'));
+  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v7"'));
 });

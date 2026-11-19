@@ -310,12 +310,6 @@
 
 
   /* 장바구니 */
-  .cartfab{position:fixed;right:14px;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 12px);z-index:30;display:none;align-items:center;gap:6px;
-    font-family:var(--body);font-weight:900;font-size:14px;color:#1a130c;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;border-radius:99px;padding:11px 16px;cursor:pointer;box-shadow:0 10px 22px -8px rgba(255,138,76,.8)}
-  .cartfab.show{display:flex}
-  .frame.hasfab{padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px)}
-  .cartfab .cnt{background:#1a130c;color:#fff;border-radius:99px;min-width:20px;padding:1px 6px;font-size:12px;text-align:center}
-  @media (min-width:480px){.cartfab{position:absolute}}
   .cart-sum{padding:12px 18px 4px;font-size:13px;color:var(--muted)}
   .cart-row{margin:0 16px 8px;padding:11px 13px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
   .cart-row .cr-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
@@ -355,9 +349,22 @@
   .nav button{flex:1;background:none;border:none;color:var(--faint);padding:9px 2px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;height:var(--navh)}
   .nav button{padding:9px 1px 8px}
   .nav button .ic{font-size:18px;line-height:1}
-  .nav button .tx{font-size:9.5px;font-weight:700}
+  .nav button .tx{font-size:11px;font-weight:700}
   .nav button.on{color:var(--accent)}
   .nav button.on .ic{transform:translateY(-1px)}
+  .nav button .ic{position:relative}
+  .nav button .cnt{position:absolute;top:-5px;right:-12px;background:var(--accent);color:#fff;border-radius:99px;min-width:16px;padding:1px 4px;font-size:10px;line-height:14px;text-align:center;font-family:var(--body);font-weight:800}
+  .nav button .cnt[hidden]{display:none}
+  /* 더보기 */
+  .morelist{padding:14px 16px;display:flex;flex-direction:column;gap:9px}
+  .morelist button{display:flex;align-items:center;gap:13px;text-align:left;font-family:var(--body);color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:13px 14px;cursor:pointer;min-height:56px}
+  .morelist .mi{font-size:22px;width:30px;text-align:center;flex-shrink:0}
+  .morelist .mt{font-size:15px;font-weight:800;line-height:1.2}
+  .morelist .md{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .morelist .ma{margin-left:auto;color:var(--faint);font-size:18px}
+  .moreback{display:none;width:100%;text-align:left;font-family:var(--body);font-weight:800;font-size:14px;color:var(--accent);background:none;border:none;border-bottom:1px solid var(--border);padding:calc(env(safe-area-inset-top) + 12px) 18px 10px;cursor:pointer;min-height:44px}
+  .moreback.show{display:block}
+  .frame.inmore .hd{padding-top:14px}
 
   /* 맛 스타일 말풍선(토스트) */
   .bubble{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 16px);
@@ -395,6 +402,7 @@
 </head>
 <body>
 <div class="frame" id="frame">
+  <button class="moreback" id="moreBack" type="button">← 더보기</button>
 
   <!-- ════════ 계산 ════════ -->
   <section class="view" id="view-calc">
@@ -470,7 +478,7 @@
   </section>
 
   <!-- ════════ 탐색 ════════ -->
-  <section class="view active" id="view-explore">
+  <section class="view" id="view-explore">
     <div class="hd">
       <div class="kicker">Taste Engine · 배합 시뮬레이터</div>
       <div class="row">
@@ -603,7 +611,7 @@
   </section>
 
   <!-- ════════ 감성 맛표현 ════════ -->
-  <section class="view" id="view-sense">
+  <section class="view active" id="view-sense">
     <div class="hd">
       <div class="kicker">Taste Language · 맛 감성어</div>
       <div class="row">
@@ -615,20 +623,34 @@
     <div id="senseDetail"></div>
   </section>
 
+  <!-- ════════ 더보기 ════════ -->
+  <section class="view" id="view-more">
+    <div class="hd">
+      <div class="kicker">More · 더보기</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#8A7F6E,#4E463A)">☰</div>
+        <div><div class="name">더보기</div><div class="sub">레시피·냉장고·저장한 배합 등 나머지 기능</div></div>
+      </div>
+    </div>
+    <div class="morelist">
+      <button type="button" data-go="recipe"><span class="mi">🍙</span><span><div class="mt">요리 레시피</div><div class="md">요리별 재료와 만드는 순서</div></span><span class="ma">›</span></button>
+      <button type="button" data-go="sauce"><span class="mi">🥫</span><span><div class="mt">소스</div><div class="md">집에서 만드는 소스 배합</div></span><span class="ma">›</span></button>
+      <button type="button" data-go="meal"><span class="mi">📅</span><span><div class="mt">식단</div><div class="md">한 주 식단 짜고 장보기</div></span><span class="ma">›</span></button>
+      <button type="button" data-go="fridge"><span class="mi">🧊</span><span><div class="mt">냉장고</div><div class="md">재료 소비기한 챙기기</div></span><span class="ma">›</span></button>
+      <button type="button" data-go="fix"><span class="mi">🩹</span><span><div class="mt">맛 보정</div><div class="md">싱겁거나 짠 음식 살리기</div></span><span class="ma">›</span></button>
+      <button type="button" data-go="saved"><span class="mi">★</span><span><div class="mt">저장한 배합</div><div class="md">내가 저장한 레시피 모음</div></span><span class="ma">›</span></button>
+      <button type="button" data-go="explore"><span class="mi">🎚️</span><span><div class="mt">맛 그래프</div><div class="md">맛 슬라이더로 직접 탐색</div></span><span class="ma">›</span></button>
+    </div>
+  </section>
+
   <!-- 하단 네비 -->
   <nav class="nav" id="nav">
-    <button data-view="explore" class="on"><span class="ic">🎚️</span><span class="tx">탐색</span></button>
+    <button data-view="sense" class="on"><span class="ic">🍽️</span><span class="tx">맛 고르기</span></button>
+    <button data-view="cart"><span class="ic">🛒<span class="cnt" id="cartCount" hidden>0</span></span><span class="tx">장바구니</span></button>
     <button data-view="calc"><span class="ic">🧮</span><span class="tx">계산</span></button>
-    <button data-view="recipe"><span class="ic">🍙</span><span class="tx">요리</span></button>
-    <button data-view="sauce"><span class="ic">🥫</span><span class="tx">소스</span></button>
-    <button data-view="meal"><span class="ic">📅</span><span class="tx">식단</span></button>
-    <button data-view="fridge"><span class="ic">🧊</span><span class="tx">냉장</span></button>
-    <button data-view="fix"><span class="ic">🩹</span><span class="tx">보정</span></button>
-    <button data-view="saved"><span class="ic">★</span><span class="tx">저장</span></button>
-    <button data-view="sense"><span class="ic">言</span><span class="tx">감성</span></button>
+    <button data-view="more"><span class="ic">☰</span><span class="tx">더보기</span></button>
   </nav>
   <div class="bubble" id="styleBubble"></div>
-  <button class="cartfab" id="cartFab" aria-label="장바구니 열기">🛒 장바구니 <span class="cnt" id="cartCount">0</span></button>
   <div class="toastmsg" id="toastMsg" role="status"></div>
   <div class="dishsheet-bg" id="dishSheet"></div>
 </div>
@@ -1153,15 +1175,23 @@ function condColor(id){ const c=C(id);
 const STORAGE_KEY="electronic_tongue_saved_recipes";
 
 /* ── 네비게이션 ── */
-$("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return;
-  const v=b.dataset.view;
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x===b));
+const MORE_VIEWS=["recipe","sauce","meal","fridge","fix","saved","explore"];
+function showView(viewId){
+  const el=$("view-"+viewId); if(!el) return;
+  const more=MORE_VIEWS.includes(viewId), tab=more?"more":viewId;
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  $("view-"+v).classList.add("active");
-  if(v==="saved") renderSaved();
-  if(v==="fridge") renderFridge();
+  el.classList.add("active");
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view===tab));
+  $("moreBack").classList.toggle("show",more);
+  $("frame").classList.toggle("inmore",more);
+  if(viewId==="saved") renderSaved();
+  if(viewId==="fridge") renderFridge();
+  if(viewId==="cart") renderCart();
   window.scrollTo(0,0);
-});
+}
+$("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) showView(b.dataset.view); });
+$("view-more").addEventListener("click", e=>{ const b=e.target.closest("[data-go]"); if(b) showView(b.dataset.go); });
+$("moreBack").onclick=()=>showView("more");
 
 /* ── 계산: 폼 빌드 ── */
 const calcState={categoryId:"stir_fry", foodWeightG:300, stylePresetId:"basic_home", intensity:"normal"};
@@ -1469,10 +1499,7 @@ function buildRecipes(){ const el=$("recipeList"); if(!el) return;
 buildRecipes();
 
 function goRecipe(dishName){
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view==="recipe"));
-  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  $("view-recipe").classList.add("active");
-  window.scrollTo(0,0);
+  showView("recipe");
   const el=$("recipeList"); if(!el) return;
   // 정확히 일치하거나 요리명 키워드 포함 레시피 카드 찾기
   let card=el.querySelector(`.rc[data-name="${dishName}"]`);
@@ -1599,8 +1626,7 @@ function saveFavSauce(a){ try{ localStorage.setItem(FAV_SAUCE_KEY, JSON.stringif
 function isFavSauce(n){ return loadFavSauce().includes(n); }
 function toggleFavSauce(name){ let a=loadFavSauce(); a=a.includes(name)?a.filter(x=>x!==name):[name,...a]; saveFavSauce(a); renderSauceRecipe(); renderSaved(); }
 function goSauce(name){ const s=SAUCES.find(x=>x.name===name); if(!s) return; selectSauce(s);
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on", x.dataset.view==="sauce"));
-  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active")); $("view-sauce").classList.add("active"); window.scrollTo(0,0); }
+  showView("sauce"); }
 SAUCE_CATS.forEach(([key,label])=>{
   const list=SAUCES.filter(s=>sauceCatOf(s)===key); if(!list.length) return;
   const h=document.createElement("div"); h.className="saucecat"; h.textContent=label; sauceChips.appendChild(h);
@@ -1703,7 +1729,7 @@ function mealToCart(names){
   if(!fresh.length){ toast("이미 장바구니에 담겨 있어요"); return; }
   /* 식단은 2인분 기준: 1인분 레시피(serves:1)는 2배로 */
   fresh.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) addToCart(recipeLines(r,2/recipeServes(r)), n); });
-  toast("담았어요 · 장바구니 "+loadCart().length+"개"); updateCartFab();
+  toast("담았어요 · 장바구니 "+loadCart().length+"개"); updateCartBadge();
 }
 /* ════ 장바구니 ════ */
 const CART_KEY="et_cart", HOME_KEY="et_home", NEED_KEY="et_need";
@@ -1920,10 +1946,7 @@ function renderSenseDetail(idx){
 }
 function applySenseToExplore(idx){
   const w=TASTE_WORDS[idx];
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view==="explore"));
-  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  $("view-explore").classList.add("active");
-  window.scrollTo(0,0);
+  showView("explore");
   animateTo(w.v);
 }
 buildSense();
@@ -2059,10 +2082,7 @@ function goCalcWithStyle(id){
   calcState.stylePresetId=id;
   [...styleChips.children].forEach((el,i)=>el.classList.toggle("on", STYLES[i].id===id));
   showStyleDesc();
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on", x.dataset.view==="calc"));
-  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  $("view-calc").classList.add("active");
-  window.scrollTo(0,0);
+  showView("calc");
 }
 let _bubbleTO=null, _lastMatchId=null, _bubbleArmed=false;
 function showBubble(style, gold){ const b=$("styleBubble"); if(!b)return;
@@ -2125,19 +2145,11 @@ async function shareCart(){
 }
 let _toastTO=null;
 function toast(msg){ const t=$("toastMsg"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(_toastTO); _toastTO=setTimeout(()=>t.classList.remove("show"),2200); }
-function updateCartFab(){
-  const n=loadCart().length, fab=$("cartFab"); if(!fab) return;
-  $("cartCount").textContent=String(n);
-  const on=n>0 && !$("view-cart").classList.contains("active");
-  fab.classList.toggle("show", on);
-  const fr=document.querySelector(".frame"); if(fr) fr.classList.toggle("hasfab", on);
+function updateCartBadge(){
+  const n=loadCart().length, b=$("cartCount"); if(!b) return;
+  b.textContent=String(n); b.hidden=n<=0;
 }
-function showCart(){
-  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
-  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-  $("view-cart").classList.add("active");
-  renderCart(); window.scrollTo(0,0);
-}
+function showCart(){ showView("cart"); }
 function renderCart(){
   const {buy,home}=cartView();
   const dis=$("shopDisclosure"); dis.textContent=SHOP_CONFIG.affiliate?SHOP_CONFIG.disclosure:""; dis.hidden=!SHOP_CONFIG.affiliate;
@@ -2150,7 +2162,7 @@ function renderCart(){
   }).join(""):`<div class="empty" style="padding:30px 20px">${home.length?"살 재료가 없어요 🎉":"장바구니가 비어 있어요.<br>맛·식단에서 재료를 담아보세요 🛒"}</div>`;
   $("cartHomeHdr").innerHTML=home.length?`<div class="savedhdr">🏠 집에 있음 <span>${home.length}</span></div>`:"";
   $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>loadHome().includes(it.name)?`<button data-name="${escAttr(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`:`<button class="cart-fridge" data-need="${escAttr(it.name)}">🧊 ${esc(it.name)} · 냉장고에 있음 (눌러서 사야 해요)</button>`).join("")}</div>`:"";
-  updateCartFab();
+  updateCartBadge();
 }
 $("cartList").addEventListener("click",e=>{
   const a=e.target.closest("a[data-buy]"); if(a){ e.preventDefault(); openExternal(buyUrl(a.dataset.buy)); return; }
@@ -2160,11 +2172,9 @@ $("cartHome").addEventListener("click",e=>{
   const nb=e.target.closest("button[data-need]"); if(nb){ setNeed(nb.dataset.need,true); renderCart(); return; }
   const b=e.target.closest("button[data-name]"); if(!b) return; setHome(b.dataset.name,false); renderCart(); });
 $("cartClear").onclick=()=>{ if(!confirm("장바구니를 모두 비울까요?")) return; clearCart(); renderCart(); };
-$("cartFab").onclick=showCart;
 $("cartShare").onclick=shareCart;
 if(isNative()&&$("frNotif")) $("frNotif").style.display="none";
-$("nav").addEventListener("click",()=>setTimeout(updateCartFab,0));
-updateCartFab();
+updateCartBadge();
 _dishesReady=true; showStyleDesc();
 
 /* ── 요리 고르기 시트 ── */
@@ -2183,7 +2193,7 @@ function openDishPicker(styleId){
     const o=e.target.closest(".dish-opt"), sv=e.target.closest("[data-serv]"), ad=e.target.closest(".dish-add");
     if(o){ di=+o.dataset.i; draw(); }
     else if(sv){ serv=+sv.dataset.serv; draw(); }
-    else if(ad){ const d=dishes[di]; addToCart(dishLines(styleId,d,serv), d.name); closeDishSheet(); updateCartFab(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); }
+    else if(ad){ const d=dishes[di]; addToCart(dishLines(styleId,d,serv), d.name); closeDishSheet(); updateCartBadge(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); }
   };
 }
 </script>
