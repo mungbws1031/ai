@@ -331,17 +331,32 @@ test('finishing the industry era opens the electric era', async () => {
   await ctx.close();
 });
 
-test('finishing the electric era shows the ending card', async () => {
-  const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete',
-    'salt_water', 'zinc', 'wire', 'battery', 'bulb', 'motor'];
-  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,endingEras:4}))`;
+const electricAlmost = [...ironDone, 'steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete',
+  'salt_water', 'zinc', 'wire', 'battery', 'bulb', 'motor'];
+
+test('finishing the electric era opens the information era', async () => {
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(electricAlmost)},missionIdx:0,muted:true,trayIntro:true,endingEras:4}))`;
   const { ctx, page } = await fresh(undefined, init);
   for (const id of ['lodestone', 'wire', 'steam_engine']) await page.click(`#drawer [data-item=${id}]`);
   await page.click('#combine-btn');
   await page.waitForSelector('#card:not([hidden])');
   await page.click('#card-ok');
   assert.ok(await page.locator('#card').isVisible());
-  assert.match(await page.textContent('#card-name'), /전기시대까지 완성/);
+  assert.match(await page.textContent('#card-name'), /정보시대가 열렸어/);
+  assert.equal(await page.locator('#drawer [data-item=oil]').count(), 1);
+  await ctx.close();
+});
+
+test('finishing the information era shows the ending card', async () => {
+  const found = [...electricAlmost, 'generator', 'silicon', 'chip', 'computer', 'radio', 'plastic', 'phone'];
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,endingEras:5}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  for (const id of ['computer', 'wire', 'radio']) await page.click(`#drawer [data-item=${id}]`);
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#card').isVisible());
+  assert.match(await page.textContent('#card-name'), /정보시대까지 완성/);
   await ctx.close();
 });
 
