@@ -12,10 +12,11 @@ function loadPlaywright() {
 
 const APP_URL = pathToFileURL(path.join(__dirname, "..", "index.html")).href;
 
-async function openApp({ storage } = {}) {
-  const { chromium } = loadPlaywright();
+async function openApp({ storage, device } = {}) {
+  const pw = loadPlaywright();
+  const { chromium } = pw;
   const browser = await chromium.launch();
-  const context = await browser.newContext();
+  const context = await browser.newContext(device ? pw.devices[device] : {});
   if (storage) {
     await context.addInitScript((data) => {
       try {

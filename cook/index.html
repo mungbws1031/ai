@@ -308,6 +308,42 @@
   .combo .cn{font-size:13px;font-weight:700}.combo .cd{font-size:11px;color:var(--muted);margin-top:1px}
   .combo .cr{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--chef-brown);white-space:nowrap;margin-left:10px}
 
+
+  /* 장바구니 */
+  .cartfab{position:fixed;right:14px;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 12px);z-index:30;display:none;align-items:center;gap:6px;
+    font-family:var(--body);font-weight:900;font-size:14px;color:#1a130c;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;border-radius:99px;padding:11px 16px;cursor:pointer;box-shadow:0 10px 22px -8px rgba(255,138,76,.8)}
+  .cartfab.show{display:flex}
+  .frame.hasfab{padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px)}
+  .cartfab .cnt{background:#1a130c;color:#fff;border-radius:99px;min-width:20px;padding:1px 6px;font-size:12px;text-align:center}
+  @media (min-width:480px){.cartfab{position:absolute}}
+  .cart-sum{padding:12px 18px 4px;font-size:13px;color:var(--muted)}
+  .cart-row{margin:0 16px 8px;padding:11px 13px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+  .cart-row .cr-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .cart-row .cr-nm{font-size:14px;font-weight:700;word-break:keep-all}
+  .cart-row .cr-q{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--chef-brown)}
+  .cart-row .cr-from{font-size:11px;color:var(--faint);margin-top:2px}
+  .cart-row .cr-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .cart-btn{font-family:var(--body);font-weight:700;font-size:12px;color:var(--text);background:var(--bg-frame);border:1px solid var(--border);border-radius:9px;padding:7px 10px;cursor:pointer}
+  .cart-btn:active{transform:scale(.96)}
+  .cart-btn.primary{background:var(--accent);border-color:var(--accent);color:#1a130c}
+  .cart-homewrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 16px 12px}
+  .cart-homewrap button{font-family:var(--body);font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+  .cart-foot{display:flex;gap:8px;padding:8px 16px 24px}
+  .cart-foot button{flex:1}
+  .dishsheet-bg{position:fixed;inset:0;background:rgba(43,38,32,.45);z-index:50;display:none}
+  .dishsheet-bg.show{display:block}
+  .dishsheet{position:absolute;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;background:var(--bg-frame);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));max-height:80dvh;overflow:auto}
+  .dishsheet h3{margin:0 0 10px;font-size:15px;font-family:var(--display)}
+  .dish-list{display:flex;flex-direction:column;gap:7px}
+  .dish-opt{text-align:left;font-family:var(--body);font-weight:700;font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 13px;cursor:pointer}
+  .dish-opt.on{background:var(--accent-soft);border-color:var(--accent)}
+  .dish-serv{display:flex;align-items:center;gap:8px;margin:12px 0}
+  .dish-serv span{font-size:12px;color:var(--muted);margin-right:4px}
+  .dish-add{display:block;width:100%;font-family:var(--body);font-weight:900;font-size:14px;color:#1a130c;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;border-radius:13px;padding:13px;cursor:pointer}
+  .toastmsg{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px);transform:translateX(-50%);background:#2B2620;color:#fff;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90%}
+  .toastmsg.show{opacity:1}
+  .style-cart-btn{margin-top:10px}
+
   /* 하단 네비 */
   .nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:rgba(255,252,246,.92);backdrop-filter:blur(10px);
     border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);z-index:20}
@@ -387,6 +423,7 @@
       <div class="lab"><b>3</b> 어떤 맛 스타일로?</div>
       <div class="chips" id="styleChips"></div>
       <div class="presetdesc" id="styleDesc"></div>
+      <div id="styleCart"></div>
     </div>
 
     <div class="sec">
@@ -509,6 +546,22 @@
     <div id="mealShop"></div>
   </section>
 
+  <!-- ════════ 장바구니 ════════ -->
+  <section class="view" id="view-cart">
+    <div class="hd">
+      <div class="kicker">Shopping Cart · 장바구니</div>
+      <div class="row">
+        <div class="avatar" style="background:linear-gradient(135deg,#FFB36B,#F2722B)">🛒</div>
+        <div><div class="name">장바구니</div><div class="sub">담은 요리의 살 재료를 한곳에</div></div>
+      </div>
+    </div>
+    <div class="cart-sum" id="cartSum"></div>
+    <div id="cartList"></div>
+    <div id="cartHomeHdr"></div>
+    <div id="cartHome"></div>
+    <div class="cart-foot"><button class="cart-btn" id="cartShare">공유하기</button><button class="cart-btn" id="cartClear">비우기</button></div>
+  </section>
+
   <!-- ════════ 냉장고 ════════ -->
   <section class="view" id="view-fridge">
     <div class="hd">
@@ -569,6 +622,9 @@
     <button data-view="sense"><span class="ic">言</span><span class="tx">감성</span></button>
   </nav>
   <div class="bubble" id="styleBubble"></div>
+  <button class="cartfab" id="cartFab" aria-label="장바구니 열기">🛒 장바구니 <span class="cnt" id="cartCount">0</span></button>
+  <div class="toastmsg" id="toastMsg" role="status"></div>
+  <div class="dishsheet-bg" id="dishSheet"></div>
 </div>
 
 <script>
@@ -1114,7 +1170,9 @@ const styleChips=$("styleChips");
 STYLES.forEach(s=>{ const el=document.createElement("button"); el.className="chip"+(s.id===calcState.stylePresetId?" on":"");
   el.textContent=s.name; el.onclick=()=>{ calcState.stylePresetId=s.id; [...styleChips.children].forEach(x=>x.classList.remove("on")); el.classList.add("on"); showStyleDesc(); };
   styleChips.appendChild(el); });
-function showStyleDesc(){ const s=STYLE(calcState.stylePresetId); $("styleDesc").textContent=s.desc + (TEMPLATES[s.id]?" · (검증된 전용 레시피 적용)":""); }
+let _dishesReady=false;
+function showStyleDesc(){ const s=STYLE(calcState.stylePresetId); $("styleDesc").textContent=s.desc + (TEMPLATES[s.id]?" · (검증된 전용 레시피 적용)":"");
+  const sc=$("styleCart"); if(sc) sc.innerHTML=(_dishesReady&&TASTE_DISHES[s.id])?`<button class="sd-apply-btn style-cart-btn" id="styleCartBtn" onclick="openDishPicker('${s.id}')">🛒 살 재료 담기</button>`:""; }
 showStyleDesc();
 $("intensitySeg").addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b)return;
   calcState.intensity=b.dataset.v; [...$("intensitySeg").children].forEach(x=>x.classList.toggle("on",x===b)); });
@@ -1608,8 +1666,13 @@ function renderShop(){
   const m=loadMeal(); const names=[];
   MEAL_DAYS.forEach(([dk])=>slotsFor(dk).forEach(([sk])=>{ const n=(m[dk]||{})[sk]; if(n&&!names.includes(n)) names.push(n); }));
   if(!names.length){ el.innerHTML=`<div class="empty" style="padding:24px 20px">끼니를 채우면 장보기 리스트가 자동으로 만들어져요 🛒</div>`; return; }
-  const items=[]; names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) r.ing.forEach(i=>{ const nm=splitIngLine(i).name; if(nm && !items.includes(nm)) items.push(nm); }); });
-  el.innerHTML=`<div class="savedhdr" style="margin-top:8px">🛒 이번 주 장보기 <span>${items.length}</span></div><div class="shopwrap">${items.map(x=>`<span>${x}</span>`).join("")}</div>`;
+  const withRecipe=names.filter(n=>RECIPES.some(x=>x.name===n));
+  el.innerHTML=`<div class="mealtools" style="padding-top:12px"><button id="mealToCart" ${withRecipe.length?"":"disabled"}>🛒 이번 주 재료 장바구니에 담기 (요리 ${withRecipe.length}개)</button></div>`;
+  $("mealToCart").onclick=()=>{ mealToCart(withRecipe); };
+}
+function mealToCart(names){
+  names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) addToCart(r.ing.map(splitIngLine), n); });
+  toast("담았어요 · 장바구니 "+loadCart().length+"개"); updateCartFab();
 }
 /* ════ 장바구니 ════ */
 const CART_KEY="et_cart", HOME_KEY="et_home";
@@ -1807,7 +1870,7 @@ function renderSenseDetail(idx){
   const w=TASTE_WORDS[idx];
   const bars=SW_KEYS.map((k,ki)=>`<div class="sd-taste-item"><div class="sd-taste-label" style="color:${SW_COLORS[ki]}">${SW_LABELS[ki]}</div><div class="sd-taste-bar-wrap"><div class="sd-taste-bar" style="width:${(w.v[k]||0)*10}%;background:${SW_COLORS[ki]}"></div></div><div class="sd-taste-val">${(w.v[k]||0).toFixed(1)}</div></div>`).join("");
   const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="goRecipe('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
-  $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div><div class="sd-eng">${w.eng}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 시뮬레이터 열기</button>${w.sid?`<button class="sd-apply-btn" style="margin-top:8px" onclick="goCalcWithStyle('${w.sid}')">⚖️ 이 맛으로 g 배합 계산하기</button>`:""}</div></div>`;
+  $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div><div class="sd-eng">${w.eng}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 시뮬레이터 열기</button>${w.sid?`<button class="sd-apply-btn" style="margin-top:8px" onclick="goCalcWithStyle('${w.sid}')">⚖️ 이 맛으로 g 배합 계산하기</button>`:""}${w.sid&&TASTE_DISHES[w.sid]?`<button class="sd-apply-btn" style="margin-top:8px" onclick="openDishPicker('${w.sid}')">🛒 살 재료 담기</button>`:""}</div></div>`;
 }
 function applySenseToExplore(idx){
   const w=TASTE_WORDS[idx];
@@ -1986,6 +2049,64 @@ function renderExplore(){
   morphRadar();
 }
 renderExplore(); drawRadarValue(displayVec,isGold); _bubbleArmed=true;
+
+/* ── 장바구니 화면 ── */
+let _toastTO=null;
+function toast(msg){ const t=$("toastMsg"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(_toastTO); _toastTO=setTimeout(()=>t.classList.remove("show"),2200); }
+function updateCartFab(){
+  const n=loadCart().length, fab=$("cartFab"); if(!fab) return;
+  $("cartCount").textContent=String(n);
+  const on=n>0 && !$("view-cart").classList.contains("active");
+  fab.classList.toggle("show", on);
+  const fr=document.querySelector(".frame"); if(fr) fr.classList.toggle("hasfab", on);
+}
+function showCart(){
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("on"));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+  $("view-cart").classList.add("active");
+  renderCart(); window.scrollTo(0,0);
+}
+function renderCart(){
+  const {buy,home}=cartView();
+  $("cartSum").textContent=buy.length?`살 것 ${buy.length}개`:"";
+  $("cartList").innerHTML=buy.length?buy.map(it=>{
+    const q=fmtQty(it), n=esc(it.name);
+    return `<div class="cart-row" data-name="${n}"><div class="cr-top"><span class="cr-nm">${n}</span>${q?`<span class="cr-q">${esc(q)}</span>`:""}</div>`+
+      (it.from&&it.from.length?`<div class="cr-from">${esc(it.from.join(" · "))}</div>`:"")+
+      `<div class="cr-acts"><button class="cart-btn" data-act="home" data-name="${n}">□ 집에 있어요</button><button class="cart-btn primary" data-act="bought" data-name="${n}">✓ 샀어요</button><span class="cart-buy" data-buy="${n}"></span></div></div>`;
+  }).join(""):`<div class="empty" style="padding:30px 20px">${home.length?"살 재료가 없어요 🎉":"장바구니가 비어 있어요.<br>맛·식단에서 재료를 담아보세요 🛒"}</div>`;
+  $("cartHomeHdr").innerHTML=home.length?`<div class="savedhdr">🏠 집에 있음 <span>${home.length}</span></div>`:"";
+  $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>`<button data-name="${esc(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`).join("")}</div>`:"";
+  updateCartFab();
+}
+$("cartList").addEventListener("click",e=>{ const b=e.target.closest("button[data-act]"); if(!b) return;
+  const n=b.dataset.name; if(b.dataset.act==="home") setHome(n,true); else removeFromCart(n); renderCart(); });
+$("cartHome").addEventListener("click",e=>{ const b=e.target.closest("button[data-name]"); if(!b) return; setHome(b.dataset.name,false); renderCart(); });
+$("cartClear").onclick=()=>{ if(!confirm("장바구니를 모두 비울까요?")) return; clearCart(); renderCart(); };
+$("cartFab").onclick=showCart;
+$("nav").addEventListener("click",()=>setTimeout(updateCartFab,0));
+updateCartFab();
+_dishesReady=true; showStyleDesc();
+
+/* ── 요리 고르기 시트 ── */
+function closeDishSheet(){ $("dishSheet").classList.remove("show"); $("dishSheet").innerHTML=""; }
+function openDishPicker(styleId){
+  const dishes=TASTE_DISHES[styleId]; if(!dishes||!dishes.length) return;
+  let di=0, serv=2;
+  const sh=$("dishSheet");
+  const draw=()=>{
+    sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="요리 고르기"><h3>어떤 요리를 만들까요?</h3><div class="dish-list">${dishes.map((d,i)=>`<button class="dish-opt${i===di?" on":""}" data-i="${i}">${esc(d.emoji||"")} ${esc(d.name)}</button>`).join("")}</div>`+
+      `<div class="dish-serv"><span>인분</span>${[1,2,4].map(n=>`<button class="chip${n===serv?" on":""}" data-serv="${n}">${n}</button>`).join("")}</div><button class="dish-add">🛒 장바구니에 담기</button></div>`;
+  };
+  draw(); sh.classList.add("show");
+  sh.onclick=e=>{
+    if(e.target===sh){ closeDishSheet(); return; }
+    const o=e.target.closest(".dish-opt"), sv=e.target.closest("[data-serv]"), ad=e.target.closest(".dish-add");
+    if(o){ di=+o.dataset.i; draw(); }
+    else if(sv){ serv=+sv.dataset.serv; draw(); }
+    else if(ad){ const d=dishes[di]; addToCart(dishLines(styleId,d,serv), d.name); closeDishSheet(); updateCartFab(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); }
+  };
+}
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
 </body>

@@ -64,11 +64,11 @@ test("재료 줄 분리: 수식어 제거, 숫자+단위만 스케일", () => wi
   assert.strictEqual(r.g, "1개"); assert.strictEqual(r.h, "2컵(400ml)");
 }));
 
-test("저장된 식단이 있어도 로드 시 오류 없고 장보기 칩이 나온다", async () => {
+test("저장된 식단이 있어도 로드 시 오류 없고 장바구니 담기 버튼이 나온다", async () => {
   const { browser, page } = await openApp({ storage: { et_meal_plan: JSON.stringify({ mon: { d: "떡볶이" }, sat: { l: "계란볶음밥" } }) } });
   try {
     assert.deepStrictEqual(page.__errors, []);
-    const n = await page.evaluate(() => document.querySelectorAll("#mealShop .shopwrap span").length);
+    const n = await page.evaluate(() => document.querySelectorAll("#mealShop #mealToCart").length);
     assert.ok(n >= 1);
   } finally { await browser.close(); }
 });
