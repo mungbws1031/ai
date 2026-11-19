@@ -123,7 +123,7 @@
 - **그래픽 파일**:
   - 휴대전화 스크린샷(1080×1920) 4장이 이미 있습니다 → `cook/app/store/` (`1-gamseong.png`, `2-dish-sheet.png`, `3-cart.png`, `4-calc.png`). 다시 만들려면 `node cook/app/scripts/screenshots.mjs`
   - 앱 아이콘 512×512: `cook/icon-512.png` 사용
-  - [ ] **피처 그래픽(그래픽 이미지) 1024×500 PNG/JPG 는 아직 없습니다.** 스토어 등록에 필수라 비어 있으면 출시가 막힙니다. 따로 만들어(Canva 등) 스토어 등록정보 → 그래픽 이미지에 올리세요.
+  - [ ] **피처 그래픽(그래픽 이미지) 1024×500**: `cook/app/store/feature-graphic.png` 를 스토어 등록정보 → 그래픽 이미지에 올리세요. 스토어 등록에 필수라 비어 있으면 출시가 막힙니다. (문구·화면을 바꾼 뒤 다시 만들려면 `node cook/app/scripts/feature-graphic.mjs`)
 
 ## 8. 비공개 테스트 → 테스터 12명 → 14일 연속 → 프로덕션 신청
 
