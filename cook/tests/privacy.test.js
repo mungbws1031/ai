@@ -17,6 +17,8 @@ test("개인정보처리방침 페이지 내용", async () => {
     assert.ok(body.includes("{{CONTACT_EMAIL}}"));
     assert.ok(body.includes("쿠팡 파트너스") || body.includes("제휴"));
     assert.ok(body.includes("삭제"));
+    assert.ok(body.includes("Google Fonts"), body);
+    assert.ok(body.includes("외부 연결"), body);
     assert.strictEqual(await page.getAttribute('a[href="./index.html"]', "href"), "./index.html");
     assert.deepStrictEqual(page.__errors, []);
   } finally { await browser.close(); }
