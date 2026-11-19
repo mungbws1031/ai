@@ -380,3 +380,22 @@ for (const vp of [{ width: 1024, height: 768 }, { width: 768, height: 1024 }]) {
     await ctx.close();
   });
 }
+
+test('territory map: hex island with fog, borders grow, tapping a building opens its card', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-tab=map]');
+  assert.ok(await page.locator('#panel .hex').count() > 50);
+  assert.ok(await page.locator('#panel .hex.fog').count() > 0);
+  const owned0 = await page.locator('#panel .hex.owned').count();
+  assert.match(await page.textContent('#map-info'), /7칸/);
+  await page.click('#panel-close');
+  await page.click('#drawer [data-item=wood]'); await page.click('#drawer [data-item=flint]');
+  await page.click('#combine-btn'); await page.click('#card-ok');
+  await page.click('[data-tab=map]');
+  assert.ok(await page.locator('#panel .hex.owned').count() > owned0);
+  assert.ok(await page.locator('#panel .border-edge').count() > 0);
+  await page.click('.map-node[data-id=fire]');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /불/);
+  await ctx.close();
+});

@@ -94,13 +94,11 @@ button:disabled{opacity:.4}
 #mission-text{word-break:keep-all}
 #hint-btn{background:#ffe066;flex:none}
 #app[data-mode=lab] #mission-bar{display:none}
-.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-.map-col{background:#fff;border-radius:18px;padding:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
-.map-col h3{margin:4px 0;text-align:center}
-.map-col.locked{opacity:.5}
-.map-node{display:flex;align-items:center;gap:8px;padding:8px;border-radius:12px;background:#eee6d6;font-weight:700}
-.map-node .em{font-size:28px}
-.map-node[data-lit=true]{background:#fff3b0;box-shadow:0 0 0 3px #ffd23f}
+#map-info{font-size:18px;font-weight:800;margin:4px 0 2px}
+#map-next{color:var(--muted);font-weight:700;margin-bottom:8px}
+#map-svg{display:block;width:100%;max-width:820px;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);margin:0 auto;touch-action:manipulation}
+#map-svg .map-node{cursor:pointer}
+#map-svg .map-node[data-lit=true] circle{filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 .save-note{font-size:18px;margin:6px 0;word-break:keep-all}
 .save-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 .load-btn{display:inline-flex;align-items:center;min-height:56px;padding:0 14px;border-radius:16px;background:#fff;box-shadow:var(--shadow);font-size:18px;font-weight:700;cursor:pointer}
@@ -386,10 +384,55 @@ const MISSIONS = [
 ];
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
+/* ---- 영토 지도 (육각 타일, axial 좌표 q,r) ---- */
+const MAP_RADIUS = 5; // 5번째 고리는 바다
+// 발명품이 세워질 타일과 그 땅의 지형
+const MAP_TILES = {
+  fire: [2, -1], stone_axe: [-2, 1], charcoal: [-1, -1], pottery: [1, 1],
+  copper: [3, 0], tin: [2, 1], bronze: [3, -1], iron: [-3, 1], glass: [0, 3],
+  steam: [1, -3], steel: [-2, -2], steam_engine: [0, -4], train: [2, -4],
+  quicklime: [-3, 0], cement: [-4, 2], concrete: [-3, -1],
+};
+const TILE_TERRAIN = {
+  fire: 'grass', stone_axe: 'forest', charcoal: 'forest', pottery: 'river', copper: 'river', tin: 'hills',
+  bronze: 'river', iron: 'hills', glass: 'sand', steam: 'grass', steel: 'hills', steam_engine: 'plains',
+  train: 'plains', quicklime: 'hills', cement: 'plains', concrete: 'plains',
+};
+const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]]; // 모서리 0~5 순서와 맞춘 이웃 방향
+function hexDist(a, b) {
+  const dq = a[0] - b[0], dr = a[1] - b[1];
+  return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(dq + dr));
+}
+function hexNeighbors([q, r]) { return HEX_DIRS.map(([dq, dr]) => [q + dq, r + dr]); }
+function territory(found) {
+  const owned = new Set(), visible = new Set();
+  const claim = c => [c, ...hexNeighbors(c)].forEach(t => { if (hexDist(t, [0, 0]) <= MAP_RADIUS) owned.add(t.join(',')); });
+  claim([0, 0]); // 수도
+  for (const id of found) if (MAP_TILES[id]) claim(MAP_TILES[id]);
+  for (const k of owned) {
+    const c = k.split(',').map(Number);
+    visible.add(k);
+    hexNeighbors(c).forEach(t => { if (hexDist(t, [0, 0]) <= MAP_RADIUS) visible.add(t.join(',')); });
+  }
+  return { owned, visible };
+}
+function terrainAt(q, r) {
+  const d = hexDist([q, r], [0, 0]);
+  if (d >= MAP_RADIUS) return 'water';
+  for (const id in MAP_TILES) if (MAP_TILES[id][0] === q && MAP_TILES[id][1] === r) return TILE_TERRAIN[id];
+  if (d <= 1) return 'grass';
+  const h = (((q + 11) * 73856093) ^ ((r + 7) * 19349663)) >>> 0;
+  const v = h % 100;
+  if (v < 22) return 'forest';
+  if (v < 34) return 'hills';
+  if (v < 40 && d >= 3) return 'water';
+  return 'grass';
+}
+
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission /*EXPORTS*/ };
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -829,7 +872,7 @@ function setTab(t) {
 function openPanel(kind) {
   const body = $('#panel-body');
   body.textContent = '';
-  $('#panel-title').textContent = kind === 'dex' ? '📖 도감' : kind === 'save' ? '💾 저장 / 불러오기' : '🗺️ 기술 지도';
+  $('#panel-title').textContent = kind === 'dex' ? '📖 도감' : kind === 'save' ? '💾 저장 / 불러오기' : '🗺️ 영토 지도';
   if (kind === 'dex') renderDex(body); else if (kind === 'save') renderSave(body); else renderMap(body);
   $('#panel').hidden = false;
 }
@@ -855,21 +898,70 @@ function renderDex(body) {
   dexSection(body, '발명', Object.entries(ITEMS).filter(([, it]) => !it.raw));
   /*DEX_MORE*/
 }
+const TERRAIN_COLOR = { grass: '#a8d977', forest: '#74b45e', hills: '#cdb27c', river: '#86c9ea', sand: '#f0dca0', water: '#5aa9e6', plains: '#d6e39a' };
+const TERRAIN_DECO = { forest: '🌲', hills: '⛰️', water: '', river: '〰️' };
 function renderMap(body) {
-  const idx = eraIndex(state.found);
-  const wrap = el('div', { class: 'map' });
-  ERAS.forEach((e, i) => {
-    const col = el('div', { class: 'map-col' + (i > idx ? ' locked' : '') });
-    col.append(el('h3', {}, (i > idx ? '🔒 ' : e.emoji + ' ') + e.name));
-    for (const id of e.goal) {
-      const lit = state.found.includes(id);
-      const n = el('div', { class: 'map-node', 'data-id': id, 'data-lit': String(lit) });
-      n.append(el('span', { class: 'em' }, lit ? ITEMS[id].emoji : '❓'), el('span', {}, lit ? ITEMS[id].name : '???'));
-      col.append(n);
-    }
-    wrap.append(col);
+  const { owned, visible } = territory(state.found);
+  const idx = eraIndex(state.found), era = ERAS[idx];
+  const left = era.goal.filter(g => !state.found.includes(g)).length;
+  body.append(el('div', { id: 'map-info' }, `${era.emoji} ${era.name} · 우리 땅 ${owned.size}칸`));
+  body.append(el('div', { id: 'map-next' }, left ? `다음 시대까지 발명 ${left}개 남았어` : '이 시대의 발명을 다 했어! 🎉'));
+  const S = 28, W = Math.sqrt(3) * S;
+  const px = (q, r) => [W * (q + r / 2), 1.5 * S * r];
+  const corners = (cx, cy) => [0, 1, 2, 3, 4, 5].map(i => {
+    const a = Math.PI / 180 * (60 * i - 30);
+    return [cx + S * Math.cos(a), cy + S * Math.sin(a)];
   });
-  body.append(wrap);
+  const R = MAP_RADIUS, vw = W * (2 * R + 1) + 8, vh = 1.5 * S * 2 * R + 2 * S + 8;
+  const svg = sv('svg', { id: 'map-svg', viewBox: `${-vw / 2} ${-vh / 2} ${vw} ${vh}`, role: 'img', 'aria-label': '우리 영토 지도' });
+  const tiles = sv('g'), borders = sv('g'), marks = sv('g');
+  for (let q = -R; q <= R; q++) for (let r = -R; r <= R; r++) {
+    if (hexDist([q, r], [0, 0]) > R) continue;
+    const key = q + ',' + r, [cx, cy] = px(q, r), cs = corners(cx, cy);
+    const terr = terrainAt(q, r), isOwned = owned.has(key), isFog = !visible.has(key);
+    const g = sv('g', { class: `hex ${terr}${isOwned ? ' owned' : ''}${isFog ? ' fog' : ''}`, 'data-q': q, 'data-r': r });
+    const pts = cs.map(c => c.join(',')).join(' ');
+    g.append(sv('polygon', { points: pts, fill: TERRAIN_COLOR[terr], stroke: 'rgba(0,0,0,.12)', 'stroke-width': 1 }));
+    if (isOwned) g.append(sv('polygon', { points: pts, fill: 'rgba(255,140,66,.28)' }));
+    const isSite = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r);
+    if (!isFog && TERRAIN_DECO[terr] && !isSite && !(q === 0 && r === 0)) {
+      const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .75 });
+      t.textContent = TERRAIN_DECO[terr]; g.append(t);
+    }
+    if (isFog) {
+      g.append(sv('polygon', { points: pts, fill: '#efe9dd', opacity: .93 }));
+      if ((q * 7 + r * 13 + 100) % 3 === 0) {
+        const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .6 });
+        t.textContent = '☁️'; g.append(t);
+      }
+    }
+    tiles.append(g);
+    if (isOwned) cs.forEach((c, i) => { // 영토 경계선: 이웃이 우리 땅이 아니면 그 모서리를 그린다
+      const [dq, dr] = HEX_DIRS[i];
+      if (owned.has((q + dq) + ',' + (r + dr))) return;
+      const n = cs[(i + 1) % 6];
+      borders.append(sv('line', { class: 'border-edge', x1: c[0], y1: c[1], x2: n[0], y2: n[1],
+        stroke: '#e0662a', 'stroke-width': 4, 'stroke-linecap': 'round' }));
+    });
+  }
+  const [ccx, ccy] = px(0, 0);
+  marks.append(sv('circle', { cx: ccx, cy: ccy, r: 17, fill: '#fff8e6', stroke: '#e0662a', 'stroke-width': 3 }));
+  const cap = sv('text', { x: ccx, y: ccy + 8, 'text-anchor': 'middle', 'font-size': 22 }); cap.textContent = '🏛️'; marks.append(cap);
+  for (const id in MAP_TILES) {
+    const [q, r] = MAP_TILES[id], [cx, cy] = px(q, r), key = q + ',' + r;
+    const lit = state.found.includes(id), seen = visible.has(key);
+    const g = sv('g', { class: 'map-node', 'data-id': id, 'data-lit': String(lit) });
+    if (lit) {
+      g.append(sv('circle', { cx, cy, r: 16, fill: '#fff', stroke: '#ffd23f', 'stroke-width': 3 }));
+      const t = sv('text', { x: cx, y: cy + 7, 'text-anchor': 'middle', 'font-size': 20 }); t.textContent = ITEMS[id].emoji; g.append(t);
+      g.addEventListener('click', () => queueCard({ emoji: ITEMS[id].emoji, name: ITEMS[id].name, why: ITEMS[id].why }));
+    } else if (seen) {
+      const t = sv('text', { x: cx, y: cy + 7, 'text-anchor': 'middle', 'font-size': 18, opacity: .45 }); t.textContent = '❔'; g.append(t);
+    }
+    marks.append(g);
+  }
+  svg.append(tiles, borders, marks);
+  body.append(svg);
 }
 
 /* ---- missions ---- */

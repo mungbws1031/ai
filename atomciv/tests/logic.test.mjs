@@ -179,3 +179,28 @@ test('save file round-trips and rejects junk', async () => {
   assert.equal(r.other, null);
   assert.deepEqual(r.unknown.found, ['H2O']);
 });
+
+test('hex map: every invention has its own tile and territory grows with discoveries', async () => {
+  const r = await run(A => {
+    const inv = Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw);
+    const keys = inv.map(k => A.MAP_TILES[k] && A.MAP_TILES[k].join(','));
+    const t0 = A.territory([]), t1 = A.territory(['fire']);
+    const fireKey = A.MAP_TILES.fire.join(',');
+    return {
+      missing: inv.filter(k => !A.MAP_TILES[k]),
+      unique: new Set(keys).size === keys.length,
+      inRange: inv.every(k => A.hexDist(A.MAP_TILES[k], [0, 0]) <= A.MAP_RADIUS - 1),
+      owned0: t0.owned.size, owned1: t1.owned.size, fireOwned: t1.owned.has(fireKey),
+      fireFoggedAtStart: !t0.visible.has(A.MAP_TILES.copper.join(',')),
+      visibleBiggerThanOwned: t0.visible.size > t0.owned.size,
+    };
+  });
+  assert.deepEqual(r.missing, []);
+  assert.ok(r.unique, 'unique tiles');
+  assert.ok(r.inRange, 'inside the island');
+  assert.equal(r.owned0, 7);
+  assert.ok(r.owned1 > r.owned0);
+  assert.ok(r.fireOwned);
+  assert.ok(r.fireFoggedAtStart);
+  assert.ok(r.visibleBiggerThanOwned);
+});
