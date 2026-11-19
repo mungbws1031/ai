@@ -162,3 +162,20 @@ test('every mission target is reachable from recipes or molecules', async () => 
   const bad = await run(A => A.MISSIONS.map(m => m.target).filter(t => !A.MOLECULES[t] && !A.RECIPES.some(r => r.output === t)));
   assert.deepEqual(bad, []);
 });
+
+test('save file round-trips and rejects junk', async () => {
+  const r = await run(A => {
+    const text = A.exportSave({ found: ['H2O', 'fire'], missionIdx: 0, muted: true, trayIntro: true });
+    const back = A.importSave(text);
+    const junk = A.importSave('hello');
+    const other = A.importSave(JSON.stringify({ app: 'other', found: ['H2O'] }));
+    const unknown = A.importSave(JSON.stringify({ app: 'atomciv', version: 1, state: { found: ['H2O', 'rocket'] } }));
+    return { hasApp: JSON.parse(text).app, back, junk, other, unknown };
+  });
+  assert.equal(r.hasApp, 'atomciv');
+  assert.deepEqual(r.back.found, ['H2O', 'fire']);
+  assert.equal(r.back.muted, true);
+  assert.equal(r.junk, null);
+  assert.equal(r.other, null);
+  assert.deepEqual(r.unknown.found, ['H2O']);
+});
