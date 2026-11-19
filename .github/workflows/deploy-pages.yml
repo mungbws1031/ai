@@ -11,6 +11,7 @@ name: Deploy apps to GitHub Pages
 #   land-price/        -> https://<user>.github.io/<repo>/land-price/  (초강리 땅값; phone.html = 휴대폰·큰 글씨)
 #   gulza/             -> https://<user>.github.io/<repo>/gulza/       (GULZA 모션 자막 제작기)
 #   atomciv/           -> https://<user>.github.io/<repo>/atomciv/     (원자에서 문명까지 — 초등 과학 게임)
+#   parking-game/      -> https://<user>.github.io/<repo>/parking-game/ (잠깐 세워도 될까 — 주차 판단 연습)
 # One-time setup: repo Settings -> Pages -> Source: "GitHub Actions".
 
 on:
@@ -28,6 +29,7 @@ on:
       - "land-price/phone.html"
       - "gulza/**"
       - "atomciv/**"
+      - "parking-game/**"
       - ".github/workflows/deploy-pages.yml"
   workflow_dispatch: {}
 
@@ -100,6 +102,9 @@ jobs:
           mkdir -p _site/atomciv
           cp -r atomciv/. _site/atomciv/
           rm -rf _site/atomciv/tests
+          mkdir -p _site/parking-game
+          cp parking-game/index.html parking-game/*.js _site/parking-game/
+          rm -f _site/parking-game/test-judge.js
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
