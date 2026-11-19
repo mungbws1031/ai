@@ -75,6 +75,11 @@ jobs:
             echo "::warning::CJ_KEYSTORE_BASE64 시크릿이 없어 서명되지 않은 AAB를 빌드합니다."
             exit 0
           fi
+          # 스토어에 올릴(서명된) 빌드인데 방침 연락처가 자리표시자 그대로면 중단
+          if grep -q '{{CONTACT_EMAIL}}' cook/privacy.html; then
+            echo "::error::cook/privacy.html 에 {{CONTACT_EMAIL}} 가 그대로 남아 있습니다. 실제 연락처 이메일로 바꾼 뒤(docs/RELEASE.md 6번) 다시 빌드하세요."
+            exit 1
+          fi
           for name in CJ_KEYSTORE_PASSWORD CJ_KEY_ALIAS CJ_KEY_PASSWORD; do
             if [ -z "${!name:-}" ]; then
               echo "::error::CJ_KEYSTORE_BASE64 는 설정됐지만 $name 시크릿이 비어 있습니다."

@@ -14,7 +14,8 @@ test("개인정보처리방침 페이지 내용", async () => {
     const body = await page.innerText("body");
     assert.ok(body.includes("수집하지 않"), body);
     assert.ok(body.includes("2026-11-18"));
-    assert.ok(body.includes("{{CONTACT_EMAIL}}"));
+    // 출시 전에는 자리표시자, 이메일을 넣은 뒤에는 실제 이메일 — 둘 다 통과해야 CI 가 막히지 않는다
+    assert.match(body, /문의[^\n]*?(\S+@\S+\.\S+|\{\{CONTACT_EMAIL\}\})/);
     assert.ok(body.includes("쿠팡 파트너스") || body.includes("제휴"));
     assert.ok(body.includes("삭제"));
     assert.ok(body.includes("Google Fonts"), body);
@@ -50,5 +51,5 @@ test("저장 탭 하단에 개인정보처리방침 링크가 있다", async () 
 test("서비스워커 캐시에 privacy.html이 들어가고 버전이 올라갔다", () => {
   const sw = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
   assert.ok(sw.includes('"./privacy.html"'));
-  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v5"'));
+  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v6"'));
 });
