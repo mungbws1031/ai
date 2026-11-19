@@ -1,0 +1,17 @@
+{
+  "name": "PM 역량 맵",
+  "short_name": "PM 역량 맵",
+  "description": "PM 역량 16개를 맵으로 보고, 이번 일에 필요한 역량을 하이라이트하고, 일이 끝나면 퀴즈로 확인하는 앱",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#121315",
+  "theme_color": "#121315",
+  "categories": ["productivity", "education"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

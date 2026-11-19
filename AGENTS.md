@@ -11,7 +11,8 @@ companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF
 `land-price/` (영동군 심천면 초강리 농지 실거래 인포그래픽 — 국토부 실거래 CSV + 단일 HTML), and
 `gulza/` (무료 모션 자막 제작기 — ruruoni1/gulza v0.16.1 사본, MIT, 정적 웹앱 + AE 패널), and
 `atomciv/` (원자에서 문명까지 — 초등학생용 원자→분자→발명→시대 과학 게임, 단일 HTML PWA), and
-`parking-game/` (가로 화면 주차 게임 프로토타입 — 도로교통법 기준 정차·주차 판정, 정적 HTML + 바닐라 JS).
+`parking-game/` (가로 화면 주차 게임 프로토타입 — 도로교통법 기준 정차·주차 판정, 정적 HTML + 바닐라 JS), and
+`pm-map/` (PM 역량 맵 PWA — 16개 역량 맵·업무별 하이라이트·회고 퀴즈, 단일 HTML).
 
 ## Scope of rules
 

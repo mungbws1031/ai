@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="PM 역량 16개를 맵으로 보고, 이번 일에 필요한 역량을 하이라이트하고, 일이 끝나면 퀴즈로 확인하는 앱">
+<meta name="theme-color" content="#121315">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PM 역량 맵">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>PM 역량 맵</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: 6개 분야 열로 된 역량 보드(좌) + 이번 일/상세 패널(우). 좁은 화면에서는 분야가 가로줄로 쌓인다. */
+:root{
+  --bg:#f3f1ec; --surface:#ffffff; --sunk:#e9e5dc; --line:#d9d3c6;
+  --fg:#22201c; --muted:#6e675b;
+  --amber:#e2791f; --amber-ink:#2a1606; --amber-soft:#f6dcc2;
+  --task:#2f6fe0; --task-soft:#dce7fb; --warn:#c2410c; --ok:#2f7d4f;
+  --font-body:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121315; --surface:#1b1d20; --sunk:#24272b; --line:#33373d;
+  --fg:#ecebe7; --muted:#9a978f;
+  --amber:#f08a2e; --amber-ink:#1d0f03; --amber-soft:#4a2c12;
+  --task:#5b93ff; --task-soft:#1c2c4c; --warn:#ff8a4c; --ok:#5fc48a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121315; --surface:#1b1d20; --sunk:#24272b; --line:#33373d;
+  --fg:#ecebe7; --muted:#9a978f;
+  --amber:#f08a2e; --amber-ink:#1d0f03; --amber-soft:#4a2c12;
+  --task:#5b93ff; --task-soft:#1c2c4c; --warn:#ff8a4c; --ok:#5fc48a; color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.toolbar .btn{padding:6px 12px;font-size:13px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+.lede{color:var(--muted);margin:4px 0 0;max-width:62ch}
+.eyebrow{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--task);outline-offset:2px}
+
+/* Task bar */
+.taskbar{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--task);border-color:var(--task);color:#fff}
+.free{display:flex;gap:8px;flex-wrap:wrap}
+.free input{flex:1 1 260px;min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:9px 12px;font:inherit}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 14px;font-weight:500;font-size:14px}
+.btn.primary{background:var(--amber);border-color:var(--amber);color:var(--amber-ink)}
+.btn.blue{background:var(--task);border-color:var(--task);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Main grid */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.board{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;position:relative;min-width:0}
+.board-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.taskpill{display:inline-flex;align-items:center;gap:8px;background:var(--task-soft);color:var(--task);border:1px solid var(--task);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700}
+.taskpill::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--task)}
+.legend{display:flex;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:14px;height:10px;border-radius:3px;display:inline-block}
+.map{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.colhead{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--muted);padding-bottom:4px}
+.colhead::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--muted)}
+.col.hot .colhead{color:var(--task)}
+.col.hot .colhead::after{background:var(--task)}
+.tile{position:relative;text-align:left;border-radius:9px;border:1.5px solid var(--line);background:var(--sunk);padding:10px 10px 9px;min-height:82px;display:flex;flex-direction:column;justify-content:space-between;gap:8px;transition:transform .15s,box-shadow .15s}
+.tile:hover{transform:translateY(-1px)}
+.tile .nm{font-size:13px;font-weight:700;line-height:1.3;word-break:keep-all}
+.tile .ft{display:flex;justify-content:space-between;align-items:center;gap:4px}
+.dots{display:flex;gap:3px}
+.dots i{width:7px;height:7px;border-radius:2px;background:var(--line)}
+.tile .no{font-family:var(--font-mono);font-size:10px;color:var(--muted)}
+/* level fills */
+.tile[data-lv="1"]{background:var(--amber-soft);border-color:var(--amber-soft)}
+.tile[data-lv="2"]{background:color-mix(in srgb,var(--amber) 55%,var(--amber-soft));border-color:transparent;color:var(--amber-ink)}
+.tile[data-lv="3"],.tile[data-lv="4"]{background:var(--amber);border-color:var(--amber);color:var(--amber-ink)}
+.tile[data-lv="2"] .no,.tile[data-lv="3"] .no,.tile[data-lv="4"] .no{color:var(--amber-ink);opacity:.7}
+.tile[data-lv="2"] .dots i,.tile[data-lv="3"] .dots i,.tile[data-lv="4"] .dots i{background:color-mix(in srgb,var(--amber-ink) 22%,transparent)}
+.dots i.on{background:var(--amber)!important}
+.tile[data-lv="2"] .dots i.on,.tile[data-lv="3"] .dots i.on,.tile[data-lv="4"] .dots i.on{background:var(--amber-ink)!important}
+.tile.need{border-color:var(--task)!important;box-shadow:0 0 0 2px var(--task)}
+.tile.dim{opacity:.4}
+.tile.sel{outline:2px dashed var(--fg);outline-offset:2px}
+.tag{position:absolute;top:-8px;right:6px;font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--warn);color:#fff}
+.tag.review{background:var(--fg);color:var(--bg)}
+
+/* Side panel */
+.side{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.card h2{font-size:17px}
+.needlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.needlist li button{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;font-size:14px;text-align:left}
+.st{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.st.gap{background:var(--warn);color:#fff}.st.okay{background:var(--sunk);color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:12px;color:var(--muted);margin:0}
+.lvbtns{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.lvbtns button{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 0;font-size:12px}
+.lvbtns button[aria-pressed="true"]{background:var(--amber);border-color:var(--amber);color:var(--amber-ink);font-weight:700}
+.skills{margin:0;padding-left:18px;font-size:14px}
+.kw{display:flex;flex-wrap:wrap;gap:4px}
+.kw span{font-family:var(--font-mono);font-size:11px;background:var(--sunk);border-radius:4px;padding:1px 6px;color:var(--muted)}
+.desc{margin:0;font-size:14px}
+
+/* Quiz */
+.quiz{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.qhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.prog{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+.qtext{font-size:17px;font-weight:700;max-width:62ch}
+.opts{display:grid;gap:8px}
+.opt{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:11px 14px;font-size:14px}
+.opt.right{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 15%,var(--bg))}
+.opt.wrong{border-color:var(--warn);background:color-mix(in srgb,var(--warn) 14%,var(--bg))}
+.explain{border-left:3px solid var(--task);padding:6px 12px;background:var(--task-soft);border-radius:0 8px 8px 0;font-size:14px;margin:0}
+.result{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.result div{border:1px solid var(--line);border-radius:8px;padding:10px;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px;z-index:20}
+textarea.fallback{width:100%;min-height:160px;font:12px var(--font-mono);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px}
+
+@media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){
+  .map{grid-template-columns:minmax(0,1fr);gap:14px}
+  .col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .colhead{grid-column:1/-1;flex-direction:row;justify-content:flex-start;padding:0}
+  .colhead::after{order:-1}
+  .tile{min-height:76px}
+}
+@media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:hover{transform:none}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Product Manager · 16 competencies</div>
+      <h1>PM 역량 맵</h1>
+      <p class="lede">새로운 일이 생기면 맵에 넣어 필요한 역량을 하이라이트하고, 일이 끝나면 그 역량으로 퀴즈를 풀어 확인합니다. 타일을 눌러 지금 내 수준(0–4)을 기록하세요.</p>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary" type="button" id="installBtn" hidden>앱 설치</button>
+      <button class="btn" type="button" id="exportBtn">백업 저장</button>
+      <button class="btn" type="button" id="importBtn">백업 불러오기</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+      <button class="btn" type="button" id="resetBtn">초기화</button>
+    </div>
+  </header>
+  <div class="card" id="confirmReset" hidden>
+    <strong>수준과 퀴즈 기록을 모두 지울까요?</strong>
+    <p class="note">지우기 전에 백업 저장을 해 두면 나중에 되돌릴 수 있습니다.</p>
+    <div class="row"><button class="btn primary" type="button" id="resetYes">모두 지우기</button><button class="btn" type="button" id="resetNo">취소</button></div>
+  </div>
+
+  <section class="taskbar" aria-label="이번 일">
+    <div class="eyebrow">이번 일 선택 또는 입력</div>
+    <div class="chips" id="presets"></div>
+    <form class="free" id="freeForm">
+      <input id="freeInput" type="text" placeholder="예) 결제 이탈 줄이기 위한 실험 설계, 영업팀 요청 기능 검토" aria-label="이번 일 설명">
+      <button class="btn blue" type="submit">맵에서 찾기</button>
+    </form>
+  </section>
+
+  <div class="main">
+    <section class="board" aria-label="역량 맵">
+      <div class="board-head">
+        <span class="taskpill" id="taskPill" hidden></span>
+        <span class="eyebrow" id="noTask">선택한 일이 없습니다</span>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--sunk);border:1px solid var(--line)"></i>0</span>
+          <span><i class="sw" style="background:var(--amber-soft)"></i>1</span>
+          <span><i class="sw" style="background:var(--amber)"></i>3–4</span>
+          <span><i class="sw" style="box-shadow:0 0 0 2px var(--task)"></i>이번 일에 필요</span>
+          <span><i class="sw" style="background:var(--warn)"></i>보강 필요</span>
+        </div>
+      </div>
+      <div class="map" id="map"></div>
+    </section>
+
+    <aside class="side">
+      <div class="card" id="taskCard">
+        <div class="eyebrow">이번 일에 필요한 역량</div>
+        <h2 id="taskTitle">일을 골라 보세요</h2>
+        <ul class="needlist" id="needList"></ul>
+        <div class="row">
+          <button class="btn primary" id="quizBtn" type="button" disabled>일 끝 · 퀴즈 풀기</button>
+          <button class="btn" id="promptBtn" type="button" disabled>AI 프롬프트 복사</button>
+        </div>
+        <p class="note">AI 프롬프트에는 내 역량 맵, 현재 수준, 이번 일이 함께 들어갑니다. Claude에 붙여넣으면 필요한 역량 분석과 맞춤 퀴즈를 받을 수 있습니다.</p>
+        <div id="fallbackBox" hidden><textarea class="fallback" id="fallbackText" readonly aria-label="복사할 프롬프트"></textarea></div>
+      </div>
+
+      <div class="card" id="detail">
+        <div class="eyebrow" id="dCat"></div>
+        <h2 id="dName"></h2>
+        <p class="desc" id="dDesc"></p>
+        <div>
+          <div class="eyebrow" style="margin-bottom:6px">내 수준</div>
+          <div class="lvbtns" id="lvBtns"></div>
+          <p class="note" id="lvHint" style="margin-top:6px"></p>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:4px">핵심 스킬</div>
+          <ul class="skills" id="dSkills"></ul>
+        </div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:4px">이런 일에 쓰여요 (키워드)</div>
+          <div class="kw" id="dKw"></div>
+        </div>
+        <p class="note" id="dQuiz"></p>
+      </div>
+    </aside>
+  </div>
+
+  <section class="quiz" id="quiz" hidden aria-live="polite"></section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const CATS=[
+  {id:'cus',name:'고객'},{id:'data',name:'데이터'},{id:'str',name:'전략'},
+  {id:'exe',name:'실행'},{id:'com',name:'소통'},{id:'tech',name:'기술'}];
+const LV=['모름','들어봄','도움받아 가능','혼자 가능','가르칠 수 있음'];
+const COMP=[
+ {id:'c01',cat:'cus',name:'고객 리서치',desc:'인터뷰·관찰·설문으로 고객의 실제 행동과 맥락을 파악합니다.',
+  skills:['인터뷰 가이드 설계','유도 질문 피하기','관찰 내용을 인사이트로 합성'],
+  kw:['인터뷰','리서치','고객','사용자','설문','페르소나','유저'],
+  q:[{q:'고객 인터뷰에서 가장 믿을 만한 정보는?',o:['앞으로 이 기능을 쓰겠냐는 답','최근에 실제로 그 문제를 겪은 구체적 경험','원하는 기능 목록','가격에 대한 의견'],a:1,e:'미래 의향은 과대평가되기 쉽습니다. 과거의 구체적인 행동이 가장 믿을 만한 근거입니다.'},
+     {q:'다음 중 유도 질문은?',o:['지난주에 그 작업을 어떻게 하셨어요?','이 기능이 있으면 편하시겠죠?','그때 가장 번거로웠던 단계는 뭐였나요?','지금은 어떤 도구를 쓰세요?'],a:1,e:'답을 정해 둔 질문은 동의만 끌어냅니다. 행동과 경험을 묻는 열린 질문이 좋습니다.'}]},
+ {id:'c02',cat:'cus',name:'문제 정의',desc:'해결책보다 문제를 먼저 정의합니다. 누가, 어떤 상황에서, 무엇 때문에 막히는지.',
+  skills:['문제 진술문 작성','JTBD로 고객의 목적 파악','근본 원인 찾기(5 Whys)'],
+  kw:['문제','원인','니즈','jtbd','페인','불편','개선'],
+  q:[{q:'좋은 문제 정의 문장은?',o:['검색창에 필터 기능을 추가한다','신규 사용자의 40%가 첫 주에 원하는 상품을 찾지 못하고 이탈한다','UX를 개선한다','경쟁사처럼 추천 기능을 만든다'],a:1,e:'누가, 어떤 상황에서, 어떤 결과를 겪는지가 담기고 측정할 수 있어야 합니다. 나머지는 해결책이나 모호한 목표입니다.'},
+     {q:'JTBD 관점에서 드릴을 사는 고객이 원하는 것은?',o:['성능 좋은 드릴','벽의 구멍, 그리고 그걸로 이루려는 일','저렴한 가격','유명 브랜드'],a:1,e:'고객은 제품이 아니라 해내려는 일(job)을 위해 제품을 고용합니다.'}]},
+ {id:'c03',cat:'cus',name:'VOC·고객 관리',desc:'문의·리뷰·영업 피드백을 모아 패턴을 찾고 대응 원칙을 세웁니다.',
+  skills:['VOC 태깅·분류','고객 요청 뒤의 문제 파악','주요 고객사 관계 관리'],
+  kw:['voc','문의','리뷰','cs','피드백','요청','고객사','클레임','b2b'],
+  q:[{q:'대형 고객 한 곳이 기능을 강하게 요청했다. 먼저 할 일은?',o:['바로 로드맵에 넣는다','정중히 거절한다','요청 뒤의 문제를 파악하고 다른 고객도 같은 문제를 겪는지 확인한다','영업팀에 맡긴다'],a:2,e:'요청된 기능이 아니라 그 뒤의 문제와 그 문제의 범위를 먼저 봐야 합니다.'},
+     {q:'VOC를 볼 때 흔한 함정은?',o:['목소리 큰 소수를 전체 고객 의견으로 착각한다','주제별로 태깅한다','빈도를 센다','원문을 보존한다'],a:0,e:'요청 빈도, 고객 규모, 이탈 위험을 함께 봐야 소수 의견에 끌려가지 않습니다.'}]},
+ {id:'c04',cat:'data',name:'지표 설계',desc:'North Star와 지표 트리로 성공을 정의하고, 선행·후행 지표를 구분합니다.',
+  skills:['North Star Metric 정하기','지표 트리 분해','OKR·목표 수치 설정'],
+  kw:['지표','kpi','메트릭','리텐션','전환율','대시보드','okr','목표','활성'],
+  q:[{q:'음악 스트리밍 서비스의 North Star Metric으로 가장 알맞은 것은?',o:['앱 다운로드 수','월 매출','주간 활성 사용자의 총 청취 시간','푸시 알림 오픈율'],a:2,e:'고객이 얻는 가치를 반영하면서 매출보다 먼저 움직이는 지표가 좋습니다.'},
+     {q:'다음 중 선행 지표는?',o:['분기 매출','연간 해지율','가입 첫날 핵심 기능 사용 여부','작년 MAU'],a:2,e:'초기 행동은 이후 리텐션과 매출을 미리 알려 주는 선행 신호입니다.'}]},
+ {id:'c05',cat:'data',name:'실험·A/B 테스트',desc:'가설을 세우고 실험으로 검증합니다. 표본, 기간, 판단 기준을 미리 정합니다.',
+  skills:['검증 가능한 가설 쓰기','표본 크기·기간 정하기','결과 해석과 의사결정'],
+  kw:['실험','a/b','ab','가설','테스트','검증','mvp'],
+  q:[{q:'A/B 테스트 3일째에 유의미한 결과가 나와 바로 종료했다. 문제는?',o:['문제 없다','중간에 반복해 확인하다 멈추면 거짓 양성 확률이 커진다','표본이 너무 커진다','효과가 더 커 보인다'],a:1,e:'미리 정한 표본 크기와 기간을 채운 뒤 판단해야 합니다(peeking 문제).'},
+     {q:'좋은 가설 형식은?',o:['버튼을 바꿔 보자','CTA 문구를 혜택 중심으로 바꾸면 비용 걱정이 줄어 결제 전환율이 2%p 오를 것이다','사용자가 좋아할 것이다','디자인을 개선한다'],a:1,e:'변경, 이유, 측정할 지표와 기대 효과가 모두 들어가야 검증할 수 있습니다.'}]},
+ {id:'c06',cat:'data',name:'데이터 분석',desc:'퍼널·코호트·세그먼트로 숫자의 변화를 분해하고 원인을 좁힙니다.',
+  skills:['퍼널·코호트 분석','세그먼트별 분해','기본 SQL로 직접 확인'],
+  kw:['분석','데이터','sql','퍼널','코호트','하락','로그','이탈','감소'],
+  q:[{q:'전환율이 갑자기 떨어졌다. 먼저 확인할 것은?',o:['경쟁사 동향','트래킹 이상 여부와 플랫폼·채널·앱 버전별 분해','전체 리디자인 계획','가격 인하'],a:1,e:'데이터 수집 오류부터 배제하고, 세그먼트로 나눠 어디서 떨어졌는지 좁혀야 합니다.'},
+     {q:'코호트 분석이 가장 잘 답하는 질문은?',o:['오늘 방문자 수','3월 가입자와 4월 가입자의 4주 리텐션 차이','서버 응답 시간','총 누적 가입자 수'],a:1,e:'같은 시점에 들어온 집단을 시간에 따라 비교할 때 코호트를 씁니다.'}]},
+ {id:'c07',cat:'str',name:'시장·경쟁 분석',desc:'시장 규모와 경쟁 구도, 고객이 쓰는 대체재를 파악합니다.',
+  skills:['TAM·SAM·SOM 추정','경쟁·대체재 맵','트렌드에서 기회 찾기'],
+  kw:['시장','경쟁','경쟁사','트렌드','벤치마크','tam','진출'],
+  q:[{q:'TAM·SAM·SOM 중 SOM은?',o:['전체 시장 규모','우리 제품이 접근 가능한 시장','현실적으로 단기간에 획득 가능한 시장','경쟁사 매출 합계'],a:2,e:'SOM(Serviceable Obtainable Market)은 실제로 가져올 수 있는 몫입니다.'},
+     {q:'경쟁 분석에서 가장 중요한 질문은?',o:['경쟁사 기능 개수','고객이 지금 그 문제를 무엇으로(대체재 포함) 해결하고 있나','경쟁사 직원 수','경쟁사 브랜드 색상'],a:1,e:'엑셀, 수작업, 아무것도 안 하기도 경쟁자입니다.'}]},
+ {id:'c08',cat:'str',name:'제품 비전·전략',desc:'어디로 갈지, 무엇을 하지 않을지 정하고 팀이 같은 방향을 보게 합니다.',
+  skills:['비전·포지셔닝 문장','하지 않을 것 정하기','전략을 목표로 번역'],
+  kw:['비전','전략','방향','포지셔닝','차별화','장기','로드맵'],
+  q:[{q:'좋은 제품 전략에 꼭 들어가야 하는 것은?',o:['할 일 목록','하지 않을 것에 대한 선택','모든 고객 요구 수용','경쟁사 기능 따라잡기'],a:1,e:'전략은 선택입니다. 포기할 것을 정하지 않으면 전략이 아니라 희망 목록입니다.'},
+     {q:'비전과 로드맵의 관계는?',o:['같은 것이다','비전은 도달할 상태, 로드맵은 거기로 가는 순서에 대한 현재의 가설','로드맵을 먼저 정하고 비전이 따라온다','관계없다'],a:1,e:'로드맵은 학습에 따라 바뀌지만 비전은 오래 유지됩니다.'}]},
+ {id:'c09',cat:'str',name:'비즈니스 모델·GTM',desc:'돈이 어떻게 벌리는지 이해하고, 누구에게 어떤 메시지로 어떻게 팔지 설계합니다.',
+  skills:['수익 구조·가격 정책','LTV·CAC 이해','출시 메시지·채널 설계'],
+  kw:['매출','수익','가격','과금','비즈니스','gtm','마케팅','유료','결제','구독','출시'],
+  q:[{q:'LTV/CAC 비율이 1 미만이라는 뜻은?',o:['건강하게 성장 중','고객 한 명을 얻는 비용이 그 고객이 남기는 가치보다 크다','마케팅을 더 늘려야 한다','가격을 낮춰야 한다'],a:1,e:'고객을 얻을수록 손해입니다. 보통 3 이상을 건강한 기준으로 봅니다.'},
+     {q:'GTM 계획에 들어가지 않는 것은?',o:['타깃 세그먼트','메시지·포지셔닝','판매·유통 채널','DB 인덱스 설계'],a:3,e:'GTM은 누구에게, 무엇을, 어떻게 전달하고 팔지에 대한 계획입니다.'}]},
+ {id:'c10',cat:'exe',name:'우선순위 결정',desc:'제한된 자원으로 가장 큰 영향을 낼 일을 고르고, 그 기준을 공개합니다.',
+  skills:['RICE·ICE 같은 프레임워크','트레이드오프 설명','거절하는 법'],
+  kw:['우선순위','백로그','rice','트레이드오프','선택','분기','요청','로드맵'],
+  q:[{q:'RICE 점수의 구성요소가 아닌 것은?',o:['Reach','Impact','Confidence','Revenue'],a:3,e:'RICE는 Reach, Impact, Confidence, Effort입니다.'},
+     {q:'모든 요청이 긴급하다고 할 때 PM이 할 일은?',o:['들어온 순서대로 처리','직급이 높은 순서대로 처리','공통 목표에 비춘 기준을 공개하고 그 기준으로 순위를 정한다','전부 동시에 진행'],a:2,e:'기준이 공개되어야 결정이 납득되고, 다음 논쟁도 줄어듭니다.'}]},
+ {id:'c11',cat:'exe',name:'요구사항·PRD',desc:'문제, 목표, 범위, 수용 기준을 문서로 정리해 팀이 같은 것을 만들게 합니다.',
+  skills:['PRD 구조 잡기','유저 스토리·수용 기준','엣지 케이스 정책'],
+  kw:['prd','기획서','요구사항','스펙','유저스토리','정책','문서','기획'],
+  q:[{q:'PRD에서 가장 먼저 와야 하는 것은?',o:['화면 설계','문제와 목표(성공 지표)','DB 스키마','개발 일정'],a:1,e:'왜 만드는지와 성공 기준이 먼저 있어야 범위와 설계를 판단할 수 있습니다.'},
+     {q:'좋은 수용 기준은?',o:['빠르게 동작해야 한다','사용하기 쉬워야 한다','검색 결과가 0건이면 추천 키워드 3개를 보여준다','완성도 있게 만든다'],a:2,e:'테스트로 통과·실패를 판정할 수 있게 구체적이어야 합니다.'}]},
+ {id:'c12',cat:'exe',name:'딜리버리·출시',desc:'일정과 리스크를 관리하고, 안전하게 출시하고, 출시 후를 운영합니다.',
+  skills:['범위·일정·품질 조정','단계적 출시와 롤백','출시 후 모니터링'],
+  kw:['일정','출시','런칭','배포','스프린트','qa','릴리즈','마감','운영'],
+  q:[{q:'출시 2주 전, 핵심 기능이 지연된다. 가장 좋은 대응은?',o:['조용히 일정을 미룬다','범위·일정·품질 중 무엇을 조정할지 선택지를 만들어 빨리 공유한다','야근으로 해결한다','QA를 생략한다'],a:1,e:'나쁜 소식은 빨리, 선택지와 함께 전해야 결정할 시간이 생깁니다.'},
+     {q:'단계적 출시(staged rollout)의 주된 목적은?',o:['홍보 효과','위험을 줄이고 문제를 일찍 발견','개발 시간 단축','비용 절감'],a:1,e:'일부 사용자에게 먼저 내보내 지표와 오류를 보고 확대 여부를 결정합니다.'}]},
+ {id:'c13',cat:'com',name:'이해관계자 정렬',desc:'경영진, 영업, 운영 등 이해관계자의 목표를 이해하고 같은 결정으로 모읍니다.',
+  skills:['결론부터 보고하기','반대 의견 다루기','기대치 관리'],
+  kw:['이해관계자','보고','경영진','설득','합의','정렬','리더','영업','공유'],
+  q:[{q:'경영진 보고에서 가장 효과적인 구조는?',o:['진행 과정을 시간순으로','결론과 요청 사항을 먼저, 근거는 뒤에','데이터를 최대한 많이','질문을 받지 않는다'],a:1,e:'바쁜 의사결정자는 무엇을 결정해야 하는지부터 알아야 합니다.'},
+     {q:'반대하는 이해관계자를 만났을 때 먼저 할 일은?',o:['상사에게 에스컬레이션','그 사람이 걱정하는 리스크와 인센티브를 이해한다','무시하고 진행한다','회의에서 공개적으로 반박한다'],a:1,e:'반대 뒤에는 대개 합리적인 걱정이 있습니다. 그걸 풀면 지지자가 되기도 합니다.'}]},
+ {id:'c14',cat:'com',name:'협업·퍼실리테이션',desc:'회의와 워크숍을 이끌어 디자인·개발·데이터 팀이 함께 결정하게 합니다.',
+  skills:['결정하는 회의 설계','갈등 중재','결정 기록 남기기'],
+  kw:['회의','협업','워크숍','팀','커뮤니케이션','갈등','의사결정','디자이너','개발자'],
+  q:[{q:'회의가 결론 없이 끝나는 것을 막는 방법은?',o:['참석자를 늘린다','목적·결정할 것·결정자를 미리 정하고, 끝에 결정과 담당자를 정리한다','회의 시간을 늘린다','회의를 녹화한다'],a:1,e:'무엇을 결정하는 회의인지가 분명해야 결정이 납니다.'},
+     {q:'개발자와 디자이너 의견이 충돌할 때 PM의 역할은?',o:['PM이 바로 결정한다','다수결로 정한다','공통 목표, 사용자 영향, 비용을 기준으로 선택지를 비교하도록 돕는다','다음 스프린트로 미룬다'],a:2,e:'개인 선호가 아니라 공통 기준으로 대화를 옮기는 것이 PM의 일입니다.'}]},
+ {id:'c15',cat:'tech',name:'기술 이해',desc:'시스템 구조, API, 데이터 흐름, AI 모델의 특성을 이해하고 기술 트레이드오프를 판단합니다.',
+  skills:['아키텍처·API 기본 개념','기술 부채의 비용 이해','AI 기능의 한계와 평가'],
+  kw:['기술','api','개발','아키텍처','서버','인프라','ai','모델','시스템','연동','추천'],
+  q:[{q:'개발자가 기술 부채 때문에 2주가 더 필요하다고 한다. 좋은 질문은?',o:['더 빨리는 안 되나요?','지금 갚지 않으면 앞으로 무엇이 얼마나 느려지거나 위험해지나요?','기술 부채가 뭔가요?','다음 분기에 하죠'],a:1,e:'부채를 비즈니스 비용과 위험으로 번역해야 다른 일과 비교할 수 있습니다.'},
+     {q:'외부 API 연동 기능을 기획할 때 꼭 확인할 것은?',o:['버튼 색','호출 한도, 실패 시 동작, 응답 지연','로고 위치','폰트'],a:1,e:'외부 의존성은 실패를 전제로 설계해야 합니다.'}]},
+ {id:'c16',cat:'tech',name:'UX·디자인 감각',desc:'사용자 흐름과 화면을 읽고, 사용성 문제를 찾아 디자이너와 같은 언어로 이야기합니다.',
+  skills:['유저 플로우 그리기','사용성 테스트','와이어프레임으로 소통'],
+  kw:['ux','ui','디자인','화면','온보딩','사용성','플로우','와이어프레임','가입'],
+  q:[{q:'정성 사용성 테스트에서 흔히 권장하는 인원은?',o:['1명','약 5명','50명','500명'],a:1,e:'Nielsen에 따르면 5명 정도로 주요 사용성 문제 대부분을 발견할 수 있습니다.'},
+     {q:'온보딩 개선의 핵심 목표는?',o:['설명 화면을 늘린다','사용자가 첫 가치(aha moment)에 빨리 도달하게 한다','가입 입력 항목을 늘린다','튜토리얼을 필수로 만든다'],a:1,e:'온보딩의 성공은 설명량이 아니라 첫 가치 도달 속도로 봅니다.'}]}
+];
+const PRESETS=[
+ {id:'t1',name:'온보딩 플로우 개선',need:['c01','c02','c16','c05','c04']},
+ {id:'t2',name:'유료 전환율 하락 원인 분석',need:['c06','c04','c02','c13']},
+ {id:'t3',name:'대형 고객사 맞춤 기능 요청',need:['c03','c10','c13','c15']},
+ {id:'t4',name:'다음 분기 로드맵 수립',need:['c08','c10','c07','c13','c14']},
+ {id:'t5',name:'AI 추천 기능 출시',need:['c15','c11','c12','c09','c05']}
+];
+const byId=Object.fromEntries(COMP.map(c=>[c.id,c]));
+const catName=id=>CATS.find(c=>c.id===id).name;
+
+/* state */
+const KEY='pm-competency-map-v1';
+let S={lv:{},quiz:{},task:null,sel:'c01'};
+try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+if(!S.task)S.task={name:PRESETS[0].name,need:PRESETS[0].need,preset:'t1'};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const lv=id=>S.lv[id]||0;
+const isGap=id=>lv(id)<2;
+const needsReview=id=>S.quiz[id]&&S.quiz[id].wrong>0&&S.quiz[id].last===false;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+function renderPresets(){
+  $('#presets').innerHTML=PRESETS.map(p=>`<button type="button" class="chip" data-p="${p.id}" aria-pressed="${S.task&&S.task.preset===p.id}">${esc(p.name)}</button>`).join('');
+}
+function renderMap(){
+  const need=new Set(S.task?S.task.need:[]);
+  let n=0;
+  $('#map').innerHTML=CATS.map(cat=>{
+    const items=COMP.filter(c=>c.cat===cat.id);
+    const hot=items.some(c=>need.has(c.id));
+    return `<div class="col${hot?' hot':''}"><div class="colhead">${cat.name}</div>`+items.map(c=>{
+      const no=String(COMP.indexOf(c)+1).padStart(2,'0');
+      const cls=['tile'];
+      if(need.has(c.id))cls.push('need');else if(need.size)cls.push('dim');
+      if(S.sel===c.id)cls.push('sel');
+      let tag='';
+      if(need.has(c.id)&&isGap(c.id))tag='<span class="tag">보강</span>';
+      else if(needsReview(c.id))tag='<span class="tag review">복습</span>';
+      const dots=[1,2,3,4].map(i=>`<i class="${i<=lv(c.id)?'on':''}"></i>`).join('');
+      return `<button type="button" class="${cls.join(' ')}" data-lv="${lv(c.id)}" data-c="${c.id}" aria-label="${esc(c.name)}, 수준 ${lv(c.id)}${need.has(c.id)?', 이번 일에 필요':''}">${tag}<span class="nm">${esc(c.name)}</span><span class="ft"><span class="dots">${dots}</span><span class="no">${no}</span></span></button>`;
+    }).join('')+'</div>';
+  }).join('');
+}
+function renderTask(){
+  const t=S.task;
+  const has=t&&t.need.length;
+  $('#taskPill').hidden=!has; $('#noTask').hidden=!!has;
+  if(has)$('#taskPill').textContent='Task · '+t.name;
+  $('#taskTitle').textContent=t?t.name:'일을 골라 보세요';
+  $('#needList').innerHTML=has?t.need.map(id=>{
+    const c=byId[id];const gap=isGap(id);
+    return `<li><button type="button" data-c="${id}"><span>${esc(c.name)} <span class="note" style="display:inline">· ${catName(c.cat)}</span></span><span class="st ${gap?'gap':'okay'}">${gap?'보강 필요 · '+lv(id):'수준 '+lv(id)}</span></button></li>`;
+  }).join(''):`<li class="note">${t?'맞는 역량을 찾지 못했습니다. 다른 표현으로 적거나 AI 프롬프트를 써 보세요.':'위에서 일을 고르거나 직접 적어 보세요.'}</li>`;
+  $('#quizBtn').disabled=!has; $('#promptBtn').disabled=!t;
+}
+function renderDetail(){
+  const c=byId[S.sel];
+  $('#dCat').textContent=catName(c.cat)+' · '+String(COMP.indexOf(c)+1).padStart(2,'0');
+  $('#dName').textContent=c.name;
+  $('#dDesc').textContent=c.desc;
+  $('#lvBtns').innerHTML=[0,1,2,3,4].map(i=>`<button type="button" data-lv="${i}" aria-pressed="${lv(c.id)===i}" title="${LV[i]}">${i}</button>`).join('');
+  $('#lvHint').textContent=lv(c.id)+' · '+LV[lv(c.id)];
+  $('#dSkills').innerHTML=c.skills.map(s=>`<li>${esc(s)}</li>`).join('');
+  $('#dKw').innerHTML=c.kw.map(k=>`<span>${esc(k)}</span>`).join('');
+  const r=S.quiz[c.id];
+  $('#dQuiz').textContent=r?`퀴즈 기록: ${r.right}번 정답, ${r.wrong}번 오답${r.last===false?' · 마지막 문제를 틀려 복습 표시 중':''}`:'아직 푼 퀴즈가 없습니다.';
+}
+function renderAll(){renderPresets();renderMap();renderTask();renderDetail();save()}
+
+function matchTask(text){
+  const t=text.toLowerCase().replace(/\s+/g,'');
+  const scored=COMP.map(c=>({id:c.id,s:c.kw.filter(k=>t.includes(k.replace(/\s+/g,''))).length})).filter(x=>x.s>0);
+  scored.sort((a,b)=>b.s-a.s);
+  return scored.slice(0,5).map(x=>x.id);
+}
+
+/* events */
+document.addEventListener('click',e=>{
+  const p=e.target.closest('[data-p]');
+  if(p){const pr=PRESETS.find(x=>x.id===p.dataset.p);S.task={name:pr.name,need:pr.need,preset:pr.id};S.sel=pr.need[0];closeQuiz();renderAll();return}
+  const c=e.target.closest('[data-c]');
+  if(c){S.sel=c.dataset.c;renderAll();if(innerWidth<=980)$('#detail').scrollIntoView({behavior:'smooth',block:'start'});return}
+  const l=e.target.closest('#lvBtns [data-lv]');
+  if(l){S.lv[S.sel]=+l.dataset.lv;renderAll();return}
+});
+$('#freeForm').addEventListener('submit',e=>{
+  e.preventDefault();const v=$('#freeInput').value.trim();if(!v)return;
+  const need=matchTask(v);S.task={name:v,need,preset:null};if(need[0])S.sel=need[0];closeQuiz();renderAll();
+});
+
+/* prompt */
+function buildPrompt(){
+  const lines=CATS.map(cat=>`- ${cat.name}: `+COMP.filter(c=>c.cat===cat.id).map(c=>`${c.name}(${lv(c.id)}/4)`).join(', ')).join('\n');
+  const need=S.task.need.length?S.task.need.map(id=>byId[id].name).join(', '):'(아직 매칭 안 됨)';
+  return `나는 PM이고, 아래 16개 역량 맵으로 일하면서 배우고 있어. 괄호 안은 내 자기평가 수준(0=모름, 4=가르칠 수 있음)이야.
+
+[내 PM 역량 맵]
+${lines}
+
+[이번 일]
+${S.task.name}
+(맵 키워드 매칭으로 고른 역량: ${need})
+
+부탁:
+1. 이번 일에 필요한 역량 3~5개를 맵에서 골라 하이라이트하고, 각각 왜 필요한지 한 줄씩 설명해줘.
+2. 내 수준을 보고 지금 가장 부족한 역량과, 이번 일 안에서 그걸 보강할 구체적인 방법을 알려줘.
+3. 일을 끝낸 뒤 풀 퀴즈 5문제를 만들어줘. 내가 그 역량을 제대로 이해했는지 확인할 수 있는 상황형 문제로, 정답과 해설은 맨 아래에 따로 적어줘.`;
+}
+$('#promptBtn').addEventListener('click',()=>{
+  const txt=buildPrompt();
+  const fb=()=>{$('#fallbackBox').hidden=false;const ta=$('#fallbackText');ta.value=txt;ta.focus();ta.select();toast('자동 복사가 막혀 있어요. 아래 글을 선택해 복사하세요')};
+  try{navigator.clipboard.writeText(txt).then(()=>{$('#fallbackBox').hidden=true;toast('프롬프트를 복사했습니다')},fb)}catch(err){fb()}
+});
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400)}
+
+/* quiz */
+let Q=null;
+function startQuiz(){
+  const ids=S.task.need;
+  Q={items:ids.map(id=>{const c=byId[id];const r=S.quiz[id]||{right:0,wrong:0};const idx=(r.right+r.wrong)%c.q.length;return{id,q:c.q[idx]}}),i:0,answered:false,res:{}};
+  $('#quiz').hidden=false;renderQuiz();$('#quiz').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function closeQuiz(){Q=null;$('#quiz').hidden=true;$('#quiz').innerHTML=''}
+function renderQuiz(){
+  const el=$('#quiz');
+  if(Q.i>=Q.items.length){
+    const ok=Object.values(Q.res).filter(Boolean).length;
+    el.innerHTML=`<div class="qhead"><div><div class="eyebrow">회고 퀴즈 결과 · ${esc(S.task.name)}</div><h2>${Q.items.length}문제 중 ${ok}문제 정답</h2></div><button class="btn" type="button" id="qClose">닫기</button></div>
+    <div class="result">${Q.items.map(it=>`<div><span>${esc(byId[it.id].name)}</span><span class="st ${Q.res[it.id]?'okay':'gap'}">${Q.res[it.id]?'정답':'복습'}</span></div>`).join('')}</div>
+    <p class="note">틀린 역량은 맵에 복습 표시가 붙습니다. 다음에 풀면 다른 문제가 나와요. 맞힌 역량은 타일을 눌러 수준을 올려 보세요.</p>`;
+    $('#qClose').onclick=closeQuiz;return;
+  }
+  const it=Q.items[Q.i];const c=byId[it.id];
+  el.innerHTML=`<div class="qhead"><div class="eyebrow">회고 퀴즈 · ${esc(c.name)} · ${catName(c.cat)}</div><span class="prog">${Q.i+1} / ${Q.items.length}</span></div>
+  <div class="qtext">${esc(it.q.q)}</div>
+  <div class="opts">${it.q.o.map((o,k)=>`<button type="button" class="opt" data-k="${k}">${'ABCD'[k]}. ${esc(o)}</button>`).join('')}</div>
+  <div id="qAfter"></div>`;
+  el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(+b.dataset.k));
+}
+function answer(k){
+  if(Q.answered)return;Q.answered=true;
+  const it=Q.items[Q.i];const right=k===it.q.a;
+  const r=S.quiz[it.id]||{right:0,wrong:0};right?r.right++:r.wrong++;r.last=right;S.quiz[it.id]=r;Q.res[it.id]=right;
+  document.querySelectorAll('#quiz .opt').forEach(b=>{const kk=+b.dataset.k;if(kk===it.q.a)b.classList.add('right');else if(kk===k)b.classList.add('wrong');b.disabled=true});
+  $('#qAfter').innerHTML=`<p class="explain"><strong>${right?'정답':'오답'}.</strong> ${esc(it.q.e)}</p><div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="qNext">${Q.i+1<Q.items.length?'다음 문제':'결과 보기'}</button></div>`;
+  $('#qNext').onclick=()=>{Q.i++;Q.answered=false;renderQuiz()};
+  renderMap();renderDetail();save();
+}
+$('#quizBtn').addEventListener('click',startQuiz);
+
+/* backup / restore / reset */
+$('#exportBtn').addEventListener('click',()=>{
+  const data=JSON.stringify({app:'pm-competency-map',version:1,savedAt:new Date().toISOString(),state:S},null,2);
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  a.download='pm-map-backup-'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);toast('백업 파일을 저장했습니다');
+});
+$('#importBtn').addEventListener('click',()=>$('#importFile').click());
+$('#importFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{const j=JSON.parse(r.result);if(!j||j.app!=='pm-competency-map'||!j.state)throw 0;
+    S=Object.assign({lv:{},quiz:{},task:null,sel:'c01'},j.state);if(!byId[S.sel])S.sel='c01';closeQuiz();renderAll();toast('백업을 불러왔습니다')}
+    catch(err){toast('PM 역량 맵 백업 파일이 아닙니다. 백업 저장으로 만든 .json 파일을 고르세요')}
+    e.target.value=''};
+  r.readAsText(f);
+});
+$('#resetBtn').addEventListener('click',()=>{$('#confirmReset').hidden=false});
+$('#resetNo').addEventListener('click',()=>{$('#confirmReset').hidden=true});
+$('#resetYes').addEventListener('click',()=>{S={lv:{},quiz:{},task:{name:PRESETS[0].name,need:PRESETS[0].need,preset:'t1'},sel:'c01'};$('#confirmReset').hidden=true;closeQuiz();renderAll();toast('초기화했습니다')});
+
+/* PWA: offline + install */
+if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+let deferredPrompt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').hidden=false});
+$('#installBtn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installBtn').hidden=true});
+addEventListener('appinstalled',()=>{$('#installBtn').hidden=true;toast('앱을 설치했습니다')});
+
+renderAll();
+</script>
+</body>
+</html>
