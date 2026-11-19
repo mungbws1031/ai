@@ -265,3 +265,42 @@ test('after a first O-O bond the child is told to connect again for a double bon
   assert.match(await page.textContent('#card-name'), /산소/);
   await ctx.close();
 });
+
+test('C: water made on the bench drops into the tray; plain H2 does not', async () => {
+  const { ctx, page } = await fresh();
+  await makeWater(page);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.equal(await page.locator('#tray [data-item=H2O]').count(), 1);
+  await page.click('[data-atom=H]'); await page.click('[data-atom=H]');
+  const hs = await benchIds(page, 'H');
+  await drag(page, `.atom[data-id="${hs[0]}"]`, `.atom[data-id="${hs[1]}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.equal(await page.locator('#tray [data-item=H2]').count(), 0);
+  assert.equal(await page.locator('#tray [data-item]').count(), 1);
+  await ctx.close();
+});
+
+test('A: empty tray shows how to use it', async () => {
+  const { ctx, page } = await fresh();
+  assert.ok(await page.locator('#tray-empty').isVisible());
+  assert.match(await page.textContent('#tray-empty'), /재료/);
+  await page.click('#drawer [data-item=wood]');
+  assert.ok(await page.locator('#tray-empty').isHidden());
+  await ctx.close();
+});
+
+test('A: the first ingredient mission opens a one-time tray intro card', async () => {
+  const molecules = () => { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify(
+    { found: ['H2', 'H2O', 'O2', 'CO2', 'CH4', 'H3N', 'ClNa', 'O2Si'], missionIdx: 0, muted: true })); };
+  const { ctx, page } = await fresh(undefined, molecules, true);
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /접시/);
+  await page.click('#card-ok');
+  const ctx2page = await ctx.newPage();
+  await ctx2page.goto(page.url());
+  await ctx2page.waitForTimeout(300);
+  assert.ok(await ctx2page.locator('#card').isHidden(), 'intro shown only once');
+  await ctx.close();
+});

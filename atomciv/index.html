@@ -76,6 +76,9 @@ button:disabled{opacity:.4}
 #tray{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;padding:6px 10px;min-height:76px;
   background:rgba(255,255,255,.75);border:3px dashed #d4b47c;border-radius:20px;max-width:calc(100% - 310px)}
 #tray .tray-label{font-size:26px}
+#tray-empty{color:var(--muted);font-weight:700;font-size:15px;white-space:nowrap}
+#tray-items .item-chip.pop-in{animation:popin .45s ease-out}
+@keyframes popin{0%{transform:translateY(-60px) scale(.4);opacity:0}100%{transform:none;opacity:1}}
 #tray-items{display:flex;gap:6px;flex-wrap:wrap}
 #tray.bounce{animation:bounce .4s}
 @keyframes bounce{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
@@ -126,7 +129,7 @@ button:disabled{opacity:.4}
         <button id="combine-btn" disabled>✨ 합치기</button>
         <button id="clear-btn">🧹 비우기</button>
       </div>
-      <div id="tray" aria-label="재료 접시"><span class="tray-label">🍽️</span><div id="tray-items"></div></div>
+      <div id="tray" aria-label="재료 접시"><span class="tray-label">🍽️</span><span id="tray-empty">재료를 누르면 여기 올라가요</span><div id="tray-items"></div></div>
       <div id="toast" role="status"></div>
     </section>
     <div id="panel" hidden>
@@ -644,7 +647,7 @@ function checkComplete() {
       const isNew = r.status === 'known' && discover(r.key);
       queueCard(r.status === 'known'
         ? { emoji: r.molecule.emoji, tag: isNew ? '✨ 새 발견!' : '또 만들었어!', name: r.molecule.name,
-            formula: r.molecule.formula, why: r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); } }
+            formula: r.molecule.formula, why: r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); dropIntoTray(r.key); } }
         : { emoji: '🤔', tag: '규칙은 맞지만', name: '아직 이름 모르는 분자!', formula: pretty(r.key),
             why: '모든 손을 다 잡았어! 과학자들은 더 많은 분자를 알고 있단다.', onClose: () => removeAtoms(r.ids) });
       if (isNew) fanfare();
@@ -663,6 +666,15 @@ function afterMake(key) {
 }
 
 /* ---- tray & combine ---- */
+// 레시피 재료로 쓰이는 분자(물, 모래)는 만들자마자 접시로 쏙 넣어 준다
+function dropIntoTray(key) {
+  if (!RECIPES.some(r => r.inputs.includes(key))) return;
+  if (tray.includes(key) || tray.length >= TRAY_MAX) return;
+  tray.push(key); renderTray();
+  const chips = document.querySelectorAll('#tray-items .item-chip');
+  if (chips.length) chips[chips.length - 1].classList.add('pop-in');
+  toast(`${MOLECULES[key].emoji} ${MOLECULES[key].name} 접시로 쏙!`);
+}
 let tray = [];
 let heatOn = false;
 const TRAY_MAX = 4;
@@ -681,6 +693,7 @@ function renderTray() {
     box.append(b);
   });
   $('#tray').classList.toggle('empty', !tray.length);
+  $('#tray-empty').hidden = tray.length > 0;
   renderTools();
 }
 function renderTools() {
@@ -814,6 +827,12 @@ function renderMission() {
   const m = currentMission(state.found);
   $('#mission-text').textContent = m ? '🎯 ' + m.text : '🏅 미션을 모두 깼어! 실험실에서 마음껏 실험해 봐';
   $('#hint-btn').hidden = !m;
+  const madeAnyInvention = Object.keys(ITEMS).some(k => !ITEMS[k].raw && state.found.includes(k));
+  if (m && ITEMS[m.target] && !state.trayIntro && !madeAnyInvention) {
+    state.trayIntro = true; saveState(state);
+    queueCard({ plain: true, emoji: '🍽️', tag: '새로운 방법!', name: '이제 재료를 섞어 볼 차례',
+      why: '서랍의 재료를 누르면 아래 접시에 올라가. 다 올렸으면 ✨합치기를 눌러 봐! 원자로 만든 분자도 재료가 될 수 있어.' });
+  }
 }
 $('#hint-btn').addEventListener('click', () => {
   const m = currentMission(state.found);
