@@ -1928,7 +1928,7 @@ function buildSense(){
     TASTE_WORDS.forEach((w,i)=>{
       if(w.cat!==cat) return;
       const bars=SW_KEYS.map((k,ki)=>`<div class="sc-bar" style="flex:${w.v[k]||0.5};background:${SW_COLORS[ki]}"></div>`).join("");
-      html+=`<div class="scard" data-idx="${i}" id="sc-${i}"><div class="sc-em">${w.em}</div><div class="sc-nm">${w.nm}</div><div class="sc-sub">${w.eng}</div><div class="sc-bars">${bars}</div></div>`;
+      html+=`<div class="scard" data-idx="${i}" id="sc-${i}"><div class="sc-em">${w.em}</div><div class="sc-nm">${w.nm}</div><div class="sc-bars">${bars}</div></div>`;
     });
     html+=`</div></div>`;
   });
@@ -1953,7 +1953,7 @@ function renderSenseDetail(idx){
   const w=TASTE_WORDS[idx];
   const bars=SW_KEYS.map((k,ki)=>`<div class="sd-taste-item"><div class="sd-taste-label" style="color:${SW_COLORS[ki]}">${SW_LABELS[ki]}</div><div class="sd-taste-bar-wrap"><div class="sd-taste-bar" style="width:${(w.v[k]||0)*10}%;background:${SW_COLORS[ki]}"></div></div><div class="sd-taste-val">${(w.v[k]||0).toFixed(1)}</div></div>`).join("");
   const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="goRecipe('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
-  $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div><div class="sd-eng">${w.eng}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 시뮬레이터 열기</button>${w.sid?`<button class="sd-apply-btn" style="margin-top:8px" onclick="goCalcWithStyle('${w.sid}')">⚖️ 이 맛으로 g 배합 계산하기</button>`:""}${w.sid&&TASTE_DISHES[w.sid]?`<button class="sd-apply-btn" style="margin-top:8px" onclick="openDishPicker('${w.sid}')">🛒 살 재료 담기</button>`:""}</div></div>`;
+  $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 맛 그래프 열기</button>${w.sid?`<button class="sd-apply-btn" style="margin-top:8px" onclick="goCalcWithStyle('${w.sid}')">⚖️ 이 맛으로 g 배합 계산하기</button>`:""}${w.sid&&TASTE_DISHES[w.sid]?`<button class="sd-apply-btn" style="margin-top:8px" onclick="openDishPicker('${w.sid}')">🛒 살 재료 담기</button>`:""}</div></div>`;
 }
 function applySenseToExplore(idx){
   const w=TASTE_WORDS[idx];

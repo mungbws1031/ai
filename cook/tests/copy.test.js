@@ -5,7 +5,7 @@ const path = require("node:path");
 const { openApp } = require("./helpers");
 
 // 사용자에게 보이는 말에 전문용어·옛 이름이 남지 않았는지 확인한다.
-const BANNED = /셰프 미강|味江|味|요똥|존맛|조절좌|GOLDEN ZONE|황금 균형|Na⁺|글루탐산|이노신산|캡사이신|배합 시뮬레이터|5축|Taste Engine|TASTE ENGINE|Electronic Tongue|산미|산도|염도|지방감|시너지|Weekly Plan|Shopping Cart|Privacy Policy/i;
+const BANNED = /셰프 미강|味江|味|요똥|존맛|조절좌|GOLDEN ZONE|황금 균형|Na⁺|글루탐산|이노신산|캡사이신|배합 시뮬레이터|5축|Taste Engine|TASTE ENGINE|Electronic Tongue|산미|산도|염도|지방감|시너지|Weekly Plan|Shopping Cart|Privacy Policy|시뮬레이터/i;
 
 // 화면에 보이는 글자 + 접근성/입력 안내 속성을 모은다.
 const collect = page => page.evaluate(() => {
@@ -104,4 +104,16 @@ test("개인정보처리방침 페이지에도 옛 말·영어 머리말이 없�
   const html = fs.readFileSync(path.join(__dirname, "..", "privacy.html"), "utf8");
   const text = html.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ");
   assert.ok(!BANNED.test(text), "금지어: " + (text.match(BANNED) || [])[0]);
+});
+
+test("맛 카드와 맛 설명에 영어 부제가 없다", async () => {
+  const { browser, page } = await openApp({ device: "Pixel 7" });
+  page.setDefaultTimeout(4000);
+  try {
+    const grid = await page.locator("#senseGrid").innerText();
+    assert.ok(!/[A-Za-z]{3,}/.test(grid), "카드 영어: " + (grid.match(/[A-Za-z]{3,}/) || [])[0]);
+    await page.locator("#senseGrid .scard").first().click();
+    const d = await page.locator("#senseDetail").innerText();
+    assert.ok(!/[A-Za-z]{3,}/.test(d), "설명 영어: " + (d.match(/[A-Za-z]{3,}/) || [])[0]);
+  } finally { await browser.close(); }
 });
