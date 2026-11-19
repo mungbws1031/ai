@@ -616,7 +616,7 @@
       <div class="kicker">Taste Language · 맛 감성어</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">感</div>
-        <div><div class="name">감성 맛표현</div><div class="sub">고향의맛, 뭉근하게 끓인맛… 맛 언어로 바로 튜닝</div></div>
+        <div><div class="name">맛 고르기</div><div class="sub">먹고 싶은 맛을 고르면 재료와 양을 알려줘요</div></div>
       </div>
     </div>
     <div id="senseGrid"></div>
@@ -1176,9 +1176,15 @@ const STORAGE_KEY="electronic_tongue_saved_recipes";
 
 /* ── 네비게이션 ── */
 const MORE_VIEWS=["recipe","sauce","meal","fridge","fix","saved","explore"];
-function showView(viewId){
+function showView(viewId, opts={}){
   const el=$("view-"+viewId); if(!el) return;
   const more=MORE_VIEWS.includes(viewId), tab=more?"more":viewId;
+  if(!opts.fromHistory){
+    try{
+      if(more){ if(!(history.state&&history.state.v===viewId)) history.pushState({v:viewId},""); }
+      else history.replaceState({v:viewId},"");
+    }catch(e){}
+  }
   document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
   el.classList.add("active");
   document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("on",x.dataset.view===tab));
@@ -1191,7 +1197,12 @@ function showView(viewId){
 }
 $("nav").addEventListener("click", e=>{ const b=e.target.closest("button"); if(b) showView(b.dataset.view); });
 $("view-more").addEventListener("click", e=>{ const b=e.target.closest("[data-go]"); if(b) showView(b.dataset.go); });
-$("moreBack").onclick=()=>showView("more");
+$("moreBack").onclick=()=>{
+  const v=history.state&&history.state.v;
+  if(MORE_VIEWS.includes(v)) history.back(); else showView("more");
+};
+document.addEventListener("click", e=>{ if(e.target.closest('a[href="./privacy.html"]')){ try{ sessionStorage.setItem("et_from_app","1"); }catch(x){} } });
+window.addEventListener("popstate", e=>showView((e.state&&e.state.v)||"more",{fromHistory:true}));
 
 /* ── 계산: 폼 빌드 ── */
 const calcState={categoryId:"stir_fry", foodWeightG:300, stylePresetId:"basic_home", intensity:"normal"};
@@ -1308,11 +1319,11 @@ function renderSaved(){
   const favs=loadFav().map(n=>RECIPES.find(r=>r.name===n)).filter(Boolean);
   const calc=loadSaved();
   let html=`<div class="savedhdr">❤️ 찜한 요리 <span>${favs.length}</span></div>`;
-  if(!favs.length) html+=`<div class="empty" style="padding:22px 20px">요리 탭에서 🤍를 눌러 찜해보세요.</div>`;
+  if(!favs.length) html+=`<div class="empty" style="padding:22px 20px">더보기 › 요리 레시피에서 🤍를 눌러 찜해보세요.</div>`;
   else html+=`<div id="favWrap">${favs.map(recipeCardHTML).join("")}</div>`;
   const favSauces=loadFavSauce().map(n=>SAUCES.find(s=>s.name===n)).filter(Boolean);
   html+=`<div class="savedhdr" style="margin-top:14px">🥫 찜한 소스 <span>${favSauces.length}</span></div>`;
-  if(!favSauces.length) html+=`<div class="empty" style="padding:22px 20px">소스 탭에서 🤍를 눌러 찜해보세요.</div>`;
+  if(!favSauces.length) html+=`<div class="empty" style="padding:22px 20px">더보기 › 소스에서 🤍를 눌러 찜해보세요.</div>`;
   else html+=`<div class="chips" style="padding:0 16px 2px">${favSauces.map(s=>`<button class="chip favsaucechip" data-name="${s.name}">${s.emoji} ${s.name}</button>`).join("")}</div>`;
   html+=`<div class="savedhdr" style="margin-top:14px">🧂 저장한 배합 <span>${calc.length}</span></div>`;
   if(!calc.length) html+=`<div class="empty" style="padding:22px 20px">계산 탭에서 배합을 만들고 💾 저장을 눌러보세요.</div>`;
@@ -1849,8 +1860,8 @@ function fridgeNotify(force){
   else if(force) alert("⚠️ 곧 써야 할 재료\n\n"+msg);
 }
 function enableFridgeNotif(){
-  if(!("Notification" in window)){ alert("이 브라우저는 알림을 지원하지 않아요. 대신 냉장 탭 상단에 경고가 떠요."); return; }
-  Notification.requestPermission().then(p=>{ if(p==="granted") fridgeNotify(true); else alert("알림이 꺼져 있어요. 냉장 탭을 열면 상단에 임박/만료 경고가 표시됩니다."); });
+  if(!("Notification" in window)){ alert("이 브라우저는 알림을 지원하지 않아요. 대신 냉장고 화면 상단에 경고가 떠요."); return; }
+  Notification.requestPermission().then(p=>{ if(p==="granted") fridgeNotify(true); else alert("알림이 꺼져 있어요. 냉장고 화면을 열면 상단에 임박/만료 경고가 표시됩니다."); });
 }
 /* 주문내역 붙여넣기 → 식품 자동 추출 (키워드별 보관기간 추정) */
 const FOOD_KW=[
@@ -2146,8 +2157,8 @@ async function shareCart(){
 let _toastTO=null;
 function toast(msg){ const t=$("toastMsg"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(_toastTO); _toastTO=setTimeout(()=>t.classList.remove("show"),2200); }
 function updateCartBadge(){
-  const n=loadCart().length, b=$("cartCount"); if(!b) return;
-  b.textContent=String(n); b.hidden=n<=0;
+  const n=cartView().buy.length, b=$("cartCount"); if(!b) return;
+  b.textContent=String(n); b.hidden=n<=0; b.setAttribute("aria-label","살 재료 "+n+"개");
 }
 function showCart(){ showView("cart"); }
 function renderCart(){
@@ -2176,6 +2187,11 @@ $("cartShare").onclick=shareCart;
 if(isNative()&&$("frNotif")) $("frNotif").style.display="none";
 updateCartBadge();
 _dishesReady=true; showStyleDesc();
+(function(){ /* 첫 진입: 새로고침·뒤로가기로 돌아오면 저장된 화면 복원 */
+  let v="sense"; try{ const s=history.state&&history.state.v; if(s&&$("view-"+s)) v=s; }catch(e){}
+  if(v!=="sense") showView(v,{fromHistory:true});
+  try{ history.replaceState({v:v},""); }catch(e){}
+})();
 
 /* ── 요리 고르기 시트 ── */
 function closeDishSheet(){ $("dishSheet").classList.remove("show"); $("dishSheet").innerHTML=""; }
