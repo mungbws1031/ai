@@ -362,3 +362,21 @@ test('loading a wrong file shows a friendly message and keeps progress', async (
   assert.match(await page.textContent('#toast'), /불러올 수 없/);
   await ctx.close();
 });
+
+for (const vp of [{ width: 1024, height: 768 }, { width: 768, height: 1024 }]) {
+  test(`tray sits at the bottom center (${vp.width}x${vp.height}) and does not overlap buttons`, async () => {
+    const { ctx, page } = await fresh(vp);
+    for (const id of ['wood', 'flint', 'clay', 'wood']) await page.click(`#drawer [data-item=${id}]`);
+    const bench = await page.locator('#bench').boundingBox();
+    const tray = await page.locator('#tray').boundingBox();
+    const clear = await page.locator('#clear-btn').boundingBox();
+    const combine = await page.locator('#combine-btn').boundingBox();
+    const trayCx = tray.x + tray.width / 2, benchCx = bench.x + bench.width / 2;
+    assert.ok(Math.abs(trayCx - benchCx) < bench.width * 0.12, `tray center ${trayCx} vs bench center ${benchCx}`);
+    const hit = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+    assert.ok(!hit(tray, clear), 'tray vs clear');
+    assert.ok(!hit(tray, combine), 'tray vs combine');
+    assert.ok(tray.y + tray.height <= bench.y + bench.height, 'tray inside bench');
+    await ctx.close();
+  });
+}
