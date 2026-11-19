@@ -41,6 +41,9 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # 기본값(`tools` 패키지)은 cmdline-tools 16.0 에서 실패한다. 필요한 패키지만 명시.
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
 
       - name: Install deps & sync web assets into Android project
         working-directory: cook/app
