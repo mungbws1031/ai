@@ -111,7 +111,7 @@ jobs:
           ls -l "$AAB"
 
       - name: Summary
-        if: always()
+        if: success()
         env:
           SIGNED: ${{ steps.signing.outputs.signed }}
         run: |
