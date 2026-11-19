@@ -12,6 +12,10 @@ function loadPlaywright() {
 
 const APP_URL = pathToFileURL(path.join(__dirname, "..", "index.html")).href;
 
+function pageUrl(relPath) {
+  return pathToFileURL(path.join(__dirname, "..", relPath)).href;
+}
+
 async function openApp({ storage, device } = {}) {
   const pw = loadPlaywright();
   const { chromium } = pw;
@@ -48,4 +52,4 @@ async function engineSnapshot(page) {
   });
 }
 
-module.exports = { openApp, engineSnapshot, APP_URL };
+module.exports = { openApp, engineSnapshot, APP_URL, pageUrl, loadPlaywright };
