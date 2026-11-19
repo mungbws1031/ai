@@ -328,6 +328,7 @@
   .cart-btn.primary{background:var(--accent);border-color:var(--accent);color:#1a130c}
   .cart-homewrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 16px 12px}
   .cart-homewrap button{font-family:var(--body);font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
+  .cart-homewrap .cart-fridge{font-size:12px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:6px 10px}
   .cart-foot{display:flex;gap:8px;padding:8px 16px 24px}
   .cart-foot button{flex:1}
   .dishsheet-bg{position:fixed;inset:0;background:rgba(43,38,32,.45);z-index:50;display:none}
@@ -1671,7 +1672,10 @@ function renderShop(){
   $("mealToCart").onclick=()=>{ mealToCart(withRecipe); };
 }
 function mealToCart(names){
-  names.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) addToCart(r.ing.map(splitIngLine), n); });
+  const had=new Set(); loadCart().forEach(it=>(it.from||[]).forEach(f=>had.add(f)));
+  const fresh=names.filter(n=>!had.has(n));
+  if(!fresh.length){ toast("이미 장바구니에 담겨 있어요"); return; }
+  fresh.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) addToCart(r.ing.map(splitIngLine), n); });
   toast("담았어요 · 장바구니 "+loadCart().length+"개"); updateCartFab();
 }
 /* ════ 장바구니 ════ */
@@ -1732,6 +1736,7 @@ buildMeal();
 /* ── 냉장고 재료 관리 ── */
 const FRIDGE_KEY="et_fridge";
 const FR_PRESETS=[["잎채소·상추",4],["채소·뿌리채소",14],["과일",7],["소·돼지고기",3],["닭고기",2],["생선·해산물",2],["다진고기",1],["계란",21],["우유·유제품",7],["두부(개봉)",3],["김치",30],["소스·장류(개봉)",30],["밥·반찬",3],["냉동식품",90]];
+function escAttr(s){ return esc(s).replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function esc(s){ const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
 function loadFridge(){ try{ return JSON.parse(localStorage.getItem(FRIDGE_KEY)||"[]"); }catch(e){ return []; } }
 function saveFridge(a){ try{ localStorage.setItem(FRIDGE_KEY, JSON.stringify(a)); }catch(e){} }
@@ -2070,13 +2075,13 @@ function renderCart(){
   const {buy,home}=cartView();
   $("cartSum").textContent=buy.length?`살 것 ${buy.length}개`:"";
   $("cartList").innerHTML=buy.length?buy.map(it=>{
-    const q=fmtQty(it), n=esc(it.name);
-    return `<div class="cart-row" data-name="${n}"><div class="cr-top"><span class="cr-nm">${n}</span>${q?`<span class="cr-q">${esc(q)}</span>`:""}</div>`+
+    const q=fmtQty(it), n=esc(it.name), na=escAttr(it.name);
+    return `<div class="cart-row" data-name="${na}"><div class="cr-top"><span class="cr-nm">${n}</span>${q?`<span class="cr-q">${esc(q)}</span>`:""}</div>`+
       (it.from&&it.from.length?`<div class="cr-from">${esc(it.from.join(" · "))}</div>`:"")+
-      `<div class="cr-acts"><button class="cart-btn" data-act="home" data-name="${n}">□ 집에 있어요</button><button class="cart-btn primary" data-act="bought" data-name="${n}">✓ 샀어요</button><span class="cart-buy" data-buy="${n}"></span></div></div>`;
+      `<div class="cr-acts"><button class="cart-btn" data-act="home" data-name="${na}">□ 집에 있어요</button><button class="cart-btn primary" data-act="bought" data-name="${na}">✓ 샀어요</button><span class="cart-buy" data-buy="${n}"></span></div></div>`;
   }).join(""):`<div class="empty" style="padding:30px 20px">${home.length?"살 재료가 없어요 🎉":"장바구니가 비어 있어요.<br>맛·식단에서 재료를 담아보세요 🛒"}</div>`;
   $("cartHomeHdr").innerHTML=home.length?`<div class="savedhdr">🏠 집에 있음 <span>${home.length}</span></div>`:"";
-  $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>`<button data-name="${esc(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`).join("")}</div>`:"";
+  $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>loadHome().includes(it.name)?`<button data-name="${escAttr(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`:`<span class="cart-fridge">🧊 ${esc(it.name)} · 냉장고에 있음</span>`).join("")}</div>`:"";
   updateCartFab();
 }
 $("cartList").addEventListener("click",e=>{ const b=e.target.closest("button[data-act]"); if(!b) return;

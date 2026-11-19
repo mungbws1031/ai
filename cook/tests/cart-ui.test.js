@@ -83,3 +83,23 @@ test("모바일 폭에서 가로 스크롤이 없다", () => withApp({}, async p
   const r = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
   assert.ok(r[0] <= r[1], JSON.stringify(r));
 }));
+
+test("식단 담기 버튼을 두 번 눌러도 양이 두 배가 되지 않는다", () => withApp({ storage: { et_meal_plan: JSON.stringify({ mon: { d: "김밥" } }) } }, async page => {
+  await page.click('.nav button[data-view="meal"]');
+  await page.click("#mealShop button");
+  const once = await page.evaluate(() => JSON.stringify(loadCart()));
+  await page.click("#mealShop button");
+  assert.strictEqual(await page.evaluate(() => JSON.stringify(loadCart())), once);
+  assert.ok((await page.innerText("#toastMsg")).includes("이미"));
+}));
+
+test("냉장고 때문에 집에 있는 재료는 냉장고에 있음으로 표시된다", () => withApp({ storage: { et_fridge: JSON.stringify([{ name: "대파 1단", bought: "2026-11-18", days: 7 }]) } }, async page => {
+  await page.evaluate(() => { addToCart([{ name: "대파", qty: "1대" }], "x"); showCart(); });
+  assert.ok((await page.innerText("#cartHome")).includes("냉장고에 있음"));
+}));
+
+test("이름에 따옴표가 있어도 샀어요가 동작한다", () => withApp({}, async page => {
+  await page.evaluate(() => { addToCart([{ name: 'a"b\'c', qty: "1개" }], "x"); showCart(); });
+  await page.click('#cartList [data-act="bought"]');
+  assert.strictEqual(await page.evaluate(() => loadCart().length), 0);
+}));
