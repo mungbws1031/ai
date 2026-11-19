@@ -49,6 +49,8 @@
     if (slot.type === 'ev') return 'ev_charge';
     if (slot.type === 'compact') return 'compact_slot';
     if (slot.type === 'pregnant') return 'pregnant_slot';
+    if (slot.type === 'women') return 'women_slot';
+    if (slot.type === 'resident') return 'resident_slot';
     return slot.kind === 'street' ? 'street_slot' : 'slot';
   }
 

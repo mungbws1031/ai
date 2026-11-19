@@ -445,12 +445,165 @@
     samples: [],
   };
 
-  // 1단계 레벨은 보너스(직접 운전 전용)로 유지
-  Object.assign(L1, { id: 5, bonus: true });
-  Object.assign(L2, { id: 6, bonus: true });
-  Object.assign(L3, { id: 7, bonus: true });
+  // ── 쇼핑몰 지하주차장 ── (사유지, 기둥·경사로·비상구)
+  const mallSit = {
+    title: '쇼핑몰 지하 2층', text: '친구와 영화 보러 쇼핑몰에 왔어요. 지하 2층으로 내려왔는데 자리가 거의 없어요. 영화는 2시간이에요.',
+    who: '친구', stay: 120, extra: 180,
+    event: ['영화 끝나고 저녁까지 먹고 가자!', '한 시간은 더 있어야겠다.'],
+  };
+  const M5 = {
+    id: 3, key: 'mall', title: '쇼핑몰 지하주차장', place: '쇼핑몰 지하 2층 · 사유지',
+    goal: '비상구·경사로처럼 "통로"인 곳과 진짜 주차 칸을 구분하세요.',
+    timeLimit: 240, clock: '13:10', situation: mallSit, story: storyFrom(mallSit),
+    world: { w: 72, h: 24 },
+    start: { x: 68, y: 15, heading: PI },
+    destination: { x: 31, y: 6, label: '매장 연결 출입구', radius: 18 },
+    buildings: [{ x: 0, y: 0, w: 72, h: 6, label: '엘리베이터 · 매장 연결 통로', dest: true }],
+    roads: [], sidewalks: [], lines: [], crosswalks: [],
+    lots: [{ x: 0, y: 6, w: 72, h: 18 }],
+    zones: [
+      { type: 'fire_exit', x: 28, y: 6, w: 6, h: 5.5, label: '비상구 앞', paint: '비상구' },
+      { type: 'ramp', x: 62, y: 11.5, w: 10, h: 7, label: '지하 1층 경사로', paint: '경사로 ↑' },
+    ],
+    slots: [
+      { id: 'W1', x: 2, y: 6.5, w: 2.5, h: 5, kind: 'lot', type: 'women', occupied: false },
+      { id: 'W2', x: 4.5, y: 6.5, w: 2.5, h: 5, kind: 'lot', type: 'women', occupied: true, color: '#d6d0c0' },
+      ...slotRow('A', 7, 6.5, 8, 2.5, 5, 'lot', { seed: 1 }),
+      { id: 'E1', x: 34, y: 6.5, w: 2.5, h: 5, kind: 'lot', type: 'ev', occupied: false },
+      { id: 'E2', x: 36.5, y: 6.5, w: 2.5, h: 5, kind: 'lot', type: 'ev', occupied: true, color: '#2f4a6b' },
+      ...slotRow('C', 39, 6.5, 9, 2.5, 5, 'lot', { seed: 4 }),
+      ...slotRow('B', 2, 18.5, 24, 2.5, 5, 'lot', { seed: 7, empty: [10] }),
+    ],
+    parked: [],
+    props: [{ type: 'sign', x: 31, y: 12.6, label: '비상구 앞 주차 금지' }],
+    candidates: [
+      { x: 3.25, y: 9, heading: -PI / 2, expect: 'women_slot', answer: 'manner' },
+      { x: 31, y: 9, heading: -PI / 2, expect: 'fire_exit', answer: 'no' },
+      { x: 35.25, y: 9, heading: -PI / 2, expect: 'ev_charge', answer: 'no' },
+      { x: 66, y: 15, heading: PI, expect: 'ramp', answer: 'no' },
+      { x: 45, y: 15, heading: PI, expect: 'lot_aisle', answer: 'stop' },
+      { x: 28.25, y: 21, heading: PI / 2, expect: 'slot', answer: 'park' },
+    ],
+    samples: [],
+  };
 
-  const LEVELS = [M1, M2, M3, M4, L1, L2, L3];
+  // ── 주택가 골목 ── (인도 없는 이면도로, 거주자우선주차)
+  const houseSit = {
+    title: '친구 집들이', text: '친구 집들이에 왔어요. 인도도 없는 좁은 골목이에요. 선물만 잠깐 내려줄 생각이에요.',
+    who: '친구', stay: 10, extra: 180,
+    event: ['왔으면 밥 먹고 가!', '세 시간은 놀다 가야지.'],
+  };
+  const M6 = {
+    id: 4, key: 'house', title: '주택가 골목', place: '인도 없는 이면도로 · 거주자우선주차',
+    goal: '흰 칸이라고 다 내 자리가 아니에요. 골목에서 세울 수 있는 곳을 찾으세요.',
+    timeLimit: 220, clock: '17:50', situation: houseSit, story: storyFrom(houseSit),
+    world: { w: 100, h: 40 },
+    start: { x: 96, y: 15.6, heading: PI },
+    destination: { x: 56, y: 11, label: '친구 집', radius: 22 },
+    buildings: [
+      { x: 0, y: 0, w: 42, h: 12, label: '다가구 주택' },
+      { x: 42, y: 0, w: 10, h: 12, label: '이웃집 차고' },
+      { x: 52, y: 0, w: 14, h: 12, label: '친구 집', dest: true },
+      { x: 66, y: 0, w: 34, h: 12, label: '빌라' },
+      { x: 0, y: 20, w: 60, h: 20, label: '주택' },
+      { x: 66, y: 20, w: 34, h: 20, label: '주택' },
+    ],
+    roads: [{ x: 0, y: 12, w: 100, h: 8 }, { x: 60, y: 20, w: 6, h: 20 }],
+    lots: [], sidewalks: [], lines: [], crosswalks: [],
+    zones: [
+      { type: 'white_edge', x: 0, y: 12, w: 44, h: 2.2, curb: 'top', dir: PI },
+      { type: 'driveway', x: 44, y: 12, w: 6, h: 2.2, curb: 'top', dir: PI, label: '이웃집 차고 앞', paint: '차고' },
+      { type: 'yellow_dashed', x: 50, y: 12, w: 10, h: 2.2, curb: 'top', dir: PI, label: '친구 집 앞' },
+      { type: 'yellow_solid', x: 60, y: 12, w: 10, h: 2.2, curb: 'top', dir: PI },
+      { type: 'white_edge', x: 70, y: 12, w: 30, h: 2.2, curb: 'top', dir: PI },
+      { type: 'yellow_solid', x: 0, y: 17.8, w: 55, h: 2.2, curb: 'bottom', dir: 0 },
+      { type: 'corner', x: 55, y: 17.8, w: 5, h: 2.2, curb: 'bottom', dir: 0 },
+      { type: 'intersection', x: 60, y: 14.2, w: 6, h: 5.8 },
+      { type: 'corner', x: 66, y: 17.8, w: 5, h: 2.2, curb: 'bottom', dir: 0 },
+      { type: 'yellow_solid', x: 71, y: 17.8, w: 29, h: 2.2, curb: 'bottom', dir: 0 },
+      { type: 'corner', x: 60, y: 20, w: 1.8, h: 5 },
+      { type: 'corner', x: 64.2, y: 20, w: 1.8, h: 5 },
+    ],
+    slots: slotRow('R', 4, 12.1, 6, 6, 2.0, 'street', { seed: 3, empty: [2], dir: PI }).map(s => ({ ...s, type: 'resident' })),
+    parked: [72.85, 77.95, 90.55, 95.65].map((x, i) => car(x, 13.1, PI, i + 3)),
+    props: [
+      { type: 'sign', x: 22, y: 11.2, label: '거주자우선주차 · 배정 차량만' },
+      { type: 'sign', x: 84.25, y: 11.2, label: '빈 가장자리 7.9m' },
+      { type: 'reporter', x: 47, y: 11.3, label: '차고 앞 이웃 주민', phone: true },
+    ],
+    candidates: [
+      { x: 19, y: 13.1, heading: PI, expect: 'resident_slot', answer: 'no' },
+      { x: 47, y: 13.1, heading: PI, expect: 'driveway', answer: 'manner' },
+      { x: 55, y: 13.1, heading: PI, expect: 'yellow_dashed', answer: 'stop' },
+      { x: 57.5, y: 18.9, heading: 0, expect: 'corner', answer: 'no' },
+      { x: 84.25, y: 13.1, heading: PI, expect: 'white_edge', answer: 'park' },
+    ],
+    samples: [],
+  };
+
+  // ── 강 건너 휴게소 길 ── (교외 도로, 다리·공사구역)
+  const bridgeSit = {
+    title: '강 건너 휴게소', text: '교외 드라이브 중 강 건너 휴게소 식당에서 친구를 만나요. 식당 앞 주차장은 공사 중이래요.',
+    who: '친구', stay: 10, extra: 90,
+    event: ['웨이팅이 길어.', '한 시간 반은 걸릴 것 같아. 차 제대로 대고 와.'],
+  };
+  const M7 = {
+    id: 6, key: 'bridge', title: '강 건너 휴게소 길', place: '왕복 2차로 교외 도로 · 다리 · 공사 구간',
+    goal: '"잠깐은 되지만 세워 두면 안 되는" 다리 위·공사 구간을 가려내세요.',
+    timeLimit: 240, clock: '12:20', situation: bridgeSit, story: storyFrom(bridgeSit),
+    world: { w: 120, h: 40 },
+    start: { x: 116, y: 17.6, heading: PI },
+    destination: { x: 20, y: 12, label: '휴게소 식당', radius: 24 },
+    buildings: [
+      { x: 0, y: 0, w: 40, h: 12, label: '휴게소 식당 (약속장소)', dest: true },
+      { x: 40, y: 0, w: 40, h: 14, label: '강', water: true },
+      { x: 40, y: 26, w: 40, h: 14, label: '', water: true },
+      { x: 80, y: 0, w: 40, h: 12, label: '농가' },
+      { x: 92, y: 12, w: 12, h: 4.5, label: '공사 중', barrier: true },
+      { x: 0, y: 28, w: 4, h: 12, label: '' },
+      { x: 34, y: 28, w: 6, h: 12, label: '' },
+      { x: 4, y: 38, w: 30, h: 2, label: '' },
+      { x: 80, y: 28, w: 40, h: 12, label: '밭' },
+    ],
+    roads: [{ x: 0, y: 14, w: 120, h: 12 }, { x: 28, y: 26, w: 4, h: 2 }],
+    lots: [{ x: 4, y: 28, w: 30, h: 10, label: '휴게소 공영주차장' }],
+    sidewalks: [{ x: 0, y: 12, w: 40, h: 2 }, { x: 80, y: 12, w: 12, h: 2 }, { x: 104, y: 12, w: 16, h: 2 },
+      { x: 0, y: 26, w: 28, h: 2 }, { x: 32, y: 26, w: 8, h: 2 }, { x: 80, y: 26, w: 40, h: 2 }],
+    lines: [{ x1: 0, y1: 20, x2: 120, y2: 20, type: 'yellowDouble' }],
+    crosswalks: [],
+    zones: [
+      { type: 'white_edge', x: 0, y: 14, w: 40, h: 2.5, curb: 'top', dir: PI },
+      { type: 'bridge', x: 40, y: 14, w: 40, h: 2.5, curb: 'top', dir: PI, label: '다리 위 가장자리' },
+      { type: 'white_edge', x: 80, y: 14, w: 7, h: 2.5, curb: 'top', dir: PI },
+      { type: 'construction', x: 87, y: 14, w: 5, h: 2.5, curb: 'top', dir: PI, label: '공사구역 앞 5m' },
+      { type: 'construction', x: 104, y: 14, w: 5, h: 2.5, curb: 'top', dir: PI, label: '공사구역 뒤 5m' },
+      { type: 'white_edge', x: 109, y: 14, w: 11, h: 2.5, curb: 'top', dir: PI },
+      { type: 'white_edge', x: 0, y: 23.5, w: 40, h: 2.5, curb: 'bottom', dir: 0 },
+      { type: 'bridge', x: 40, y: 23.5, w: 40, h: 2.5, curb: 'bottom', dir: 0, label: '다리 위 가장자리' },
+      { type: 'yellow_solid', x: 80, y: 23.5, w: 40, h: 2.5, curb: 'bottom', dir: 0 },
+    ],
+    slots: slotRow('P', 5, 32.8, 9, 2.5, 5, 'lot', { seed: 2, empty: [4] }),
+    parked: [2.85, 8.05, 13.25, 18.45, 23.65, 28.85, 34.05].map((x, i) => car(x, 15.25, PI, i + 1)),
+    props: [{ type: 'sign', x: 30, y: 29.2, label: 'P 공영주차장 →' }],
+    candidates: [
+      { x: 60, y: 15.25, heading: PI, expect: 'bridge', answer: 'stop' },
+      { x: 89.5, y: 15.25, heading: PI, expect: 'construction', answer: 'stop' },
+      { x: 83.5, y: 15.25, heading: PI, expect: 'white_edge', answer: 'park' },
+      { x: 20, y: 24.75, heading: PI, expect: 'wrong_way', answer: 'no' },
+      { x: 16.25, y: 35.3, heading: PI / 2, expect: 'slot', answer: 'park' },
+    ],
+    samples: [],
+  };
+
+  // 레벨 번호: 쉬운 곳 → 어려운 곳
+  M3.id = 5; M4.id = 7;
+
+  // 1단계 레벨은 보너스(직접 운전 전용)로 유지
+  Object.assign(L1, { id: 8, key: 'cafe', bonus: true });
+  Object.assign(L2, { id: 9, key: 'academy', bonus: true });
+  Object.assign(L3, { id: 10, key: 'alley', bonus: true });
+
+  const LEVELS = [M1, M2, M5, M6, M3, M7, M4, L1, L2, L3];
   if (typeof module !== 'undefined' && module.exports) module.exports = { LEVELS };
   else root.LEVELS = LEVELS;
 })(typeof window !== 'undefined' ? window : globalThis);
