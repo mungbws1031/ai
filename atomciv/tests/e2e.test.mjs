@@ -253,3 +253,15 @@ test('every mission text fits on one line in portrait', async () => {
   assert.deepEqual(wrapped, []);
   await ctx.close();
 });
+
+test('after a first O-O bond the child is told to connect again for a double bond', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=O]'); await page.click('[data-atom=O]');
+  const [a, b] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${a}"]`, `.atom[data-id="${b}"]`);
+  assert.match(await page.textContent('#toast'), /한 번 더/);
+  await drag(page, `.atom[data-id="${a}"]`, `.atom[data-id="${b}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /산소/);
+  await ctx.close();
+});

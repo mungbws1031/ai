@@ -134,3 +134,7 @@ test('topic particle follows the final consonant (은/는)', async () => {
   assert.equal(await run(A => A.topic('염소')), '염소는');
   assert.equal(await run(A => A.topic('규소')), '규소는');
 });
+
+test('oxygen mission says to connect twice', async () => {
+  assert.match(await run(A => A.MISSIONS.find(m => m.target === 'O2').text), /두 번/);
+});

@@ -315,7 +315,7 @@ function eraIndex(found) {
 const MISSIONS = [
   { target: 'H2',        text: '수소 둘이 손을 잡게 해 봐! (수소 기체)',  hint: ['H'] },
   { target: 'H2O',       text: '물을 만들어 봐! 💧',                      hint: ['H', 'O'] },
-  { target: 'O2',        text: '산소 기체를 만들어 봐! 손 두 개를 다 잡아야 해', hint: ['O'] },
+  { target: 'O2',        text: '산소 둘을 두 번 붙여 봐! 손을 두 개씩 잡아야 해', hint: ['O'] },
   { target: 'CO2',       text: '우리가 내쉬는 숨, 이산화탄소를 만들어 봐!', hint: ['C', 'O'] },
   { target: 'CH4',       text: '탄소의 네 손을 수소로 채워 봐!',           hint: ['C', 'H'] },
   { target: 'H3N',       text: '질소의 세 손을 수소로 채워 봐!',           hint: ['N', 'H'] },
@@ -602,6 +602,8 @@ function finishDrag(e) {
       beep(880, 0.08);
       renderBench();
       checkComplete();
+      // 둘 다 손이 남았으면 이중·삼중결합을 할 수 있다고 알려 준다
+      if (!busy.has(id) && canBond(bench, id, target)) toast('손이 남았어! 한 번 더 붙이면 손을 하나 더 잡아 👐');
     } else {
       const f = freeHands(bench);
       const name = sid => ATOMS[bench.atoms.find(a => a.id === sid).sym].name;
