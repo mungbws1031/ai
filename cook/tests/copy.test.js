@@ -5,7 +5,7 @@ const path = require("node:path");
 const { openApp } = require("./helpers");
 
 // 사용자에게 보이는 말에 전문용어·옛 이름이 남지 않았는지 확인한다.
-const BANNED = /셰프 미강|味江|味|요똥|존맛|조절좌|GOLDEN ZONE|황금 균형|Na⁺|글루탐산|이노신산|캡사이신|배합 시뮬레이터|5축|Taste Engine|TASTE ENGINE|Electronic Tongue/i;
+const BANNED = /셰프 미강|味江|味|요똥|존맛|조절좌|GOLDEN ZONE|황금 균형|Na⁺|글루탐산|이노신산|캡사이신|배합 시뮬레이터|5축|Taste Engine|TASTE ENGINE|Electronic Tongue|산미|산도|염도|지방감|시너지|Weekly Plan|Shopping Cart|Privacy Policy/i;
 
 // 화면에 보이는 글자 + 접근성/입력 안내 속성을 모은다.
 const collect = page => page.evaluate(() => {
@@ -30,14 +30,23 @@ test("모든 화면에 옛 이름·전문용어가 없다", async () => {
     await page.click("#calcBtn");
     texts.calcResult = await collect(page);
     await page.evaluate(() => showView("fix"));
-    await page.click("#fixChips > *");
-    texts.fixResult = await collect(page);
+    const clickAll = async (sel, key) => {
+      const count = await page.locator(sel).count();
+      for (let i = 0; i < count; i++) {
+        await page.locator(sel).nth(i).click();
+        texts[key + i] = await collect(page);
+      }
+    };
+    await clickAll("#fixChips > *", "fix");
     await page.evaluate(() => showView("sauce"));
-    await page.click("#sauceChips > *");
-    texts.sauce = await collect(page);
+    await clickAll("#sauceChips > *", "sauce");
     await page.evaluate(() => showView("sense"));
-    await page.click("#senseGrid .scard");
-    texts.senseDetail = await collect(page);
+    const cards = await page.locator("#senseGrid .scard").count();
+    for (let i = 0; i < cards; i++) {
+      await page.evaluate(() => showView("sense"));
+      await page.locator("#senseGrid .scard").nth(i).click();
+      texts["sense" + i] = await collect(page);
+    }
     // 맛 그래프: 여러 슬라이더 상태 (딱 좋은 맛 / 짜게 / 맵게 / 달게 / 시니 / 싱겁게)
     await page.evaluate(() => showView("explore"));
     const setSliders = vals => page.evaluate(vals => {
@@ -89,4 +98,10 @@ test("document.title 과 manifest 는 전자혀이고 옛 말이 없다", async 
   const m = JSON.parse(raw);
   assert.ok(m.name.includes("전자혀"));
   assert.ok(!BANNED.test(raw), raw);
+});
+
+test("개인정보처리방침 페이지에도 옛 말·영어 머리말이 없다", () => {
+  const html = fs.readFileSync(path.join(__dirname, "..", "privacy.html"), "utf8");
+  const text = html.replace(/<style[\s\S]*?<\/style>|<script[\s\S]*?<\/script>/g, "").replace(/<[^>]+>/g, " ");
+  assert.ok(!BANNED.test(text), "금지어: " + (text.match(BANNED) || [])[0]);
 });

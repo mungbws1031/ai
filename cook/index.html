@@ -480,7 +480,7 @@
   <!-- ════════ 탐색 ════════ -->
   <section class="view" id="view-explore">
     <div class="hd">
-      <div class="kicker">맛 그래프</div>
+      <div class="kicker">다섯 가지 맛 직접 조절</div>
       <div class="row">
         <div class="avatar">맛</div>
         <div>
@@ -1664,7 +1664,7 @@ function renderSauceRecipe(){ const s=currentSauce; if(!s) return;
   }).join("");
   $("sauceRecipe").innerHTML=`<div class="rcard hero"><h3 style="display:flex;align-items:center;gap:6px">🥫 ${s.name} 소스 <span class="heronote">— 2인분 기준</span><button class="favbtn" id="sauceFav" style="margin-left:auto" aria-label="찜">${isFavSauce(s.name)?"❤️":"🤍"}</button></h3>${rows}</div>
     ${SAUCE_PROD[s.name]?`<div class="rcard"><div class="rsummary">🛒 <b>이 맛 시판 제품</b> — ${SAUCE_PROD[s.name]}</div></div>`:""}
-    <div class="rcard"><div class="rsummary">위 맛 조절(맵기·단맛 등)를 움직이면 재료 양이 <b>실시간</b>으로 바뀌어요. 맵기 0으로 내리면 매운 재료는 '빼기'!</div></div>`;
+    <div class="rcard"><div class="rsummary">위 슬라이더(맵기·단맛 등)를 움직이면 재료 양이 <b>실시간</b>으로 바뀌어요. 맵기 0으로 내리면 매운 재료는 '빼기'!</div></div>`;
   const sf=$("sauceFav"); if(sf) sf.onclick=()=>toggleFavSauce(s.name);
 }
 selectSauce(SAUCES[0]);
