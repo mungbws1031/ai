@@ -326,6 +326,9 @@
     const allRows = [...candRows, ...results];
     const passN = allRows.filter(r => r.includes('class="pass"')).length;
     const timed = store.get('pg-timed', false);
+    const locked = !!lv.candidates && !store.get('pg-done', {})[lv.id];
+    const lockedNote = `<section class="locked"><h3>가능·금지 구역과 판정 근거</h3>
+      <p>판단 연습을 한 번 끝내면 열립니다. 먼저 스스로 판단해 보세요.</p></section>`;
     const who = lv.situation ? `<dt>상황</dt><dd>${lv.situation.text}</dd>` : `<dt>약속 상대</dt><dd>${lv.story.friend} · 머무는 시간 ${lv.story.meetingMinutes}분</dd>`;
     $('#levelInfo').innerHTML = `
       <section><h3>목표</h3><p>${lv.goal}</p></section>
@@ -333,13 +336,15 @@
         <button class="btn ${lv.candidates ? '' : 'primary'}" id="btnStart">직접 운전</button></div>
       <section><dl class="kv"><dt>장소</dt><dd>${lv.place}</dd>${who}
         <dt>제한시간</dt><dd><label><input type="checkbox" id="chkTimed" ${timed ? 'checked' : ''}> 직접 운전에서 ${Math.floor(lv.timeLimit / 60)}분 제한 켜기</label></dd></dl></section>
+      ${locked ? lockedNote : `
       <section><h3>주차 OK</h3>${chips(groups.ok) || '<small>없음</small>'}</section>
       <section><h3>정차만</h3>${chips(groups.stop) || '<small>없음</small>'}</section>
       <section><h3>법은 OK · 비매너</h3>${chips(groups.manner) || '<small>없음</small>'}</section>
       <section><h3>안 돼요</h3>${chips(groups.ban)}</section>
       <section class="basis"><h3>판정 근거</h3><ul>${keys.map(k => `<li><b>${RULES[k].short}</b> — ${RULES[k].law}</li>`).join('')}
         <li>${REPORT_NOTE}</li><li>${TOW_NOTE}</li><li>${OVERTIME_NOTE}</li></ul></section>
-      <details><summary>판정 테스트 ${passN}/${allRows.length} 통과 (정답이 보이니 연습 뒤에 여세요)</summary><table class="tests">${allRows.join('')}</table></details>
+      <details><summary>판정 테스트 ${passN}/${allRows.length} 통과</summary><table class="tests">${allRows.join('')}</table></details>
+      `}
       <p style="font-size:12px;color:var(--muted)">게임용 단순화 모델입니다. 과태료는 승용차 기준 대표값이며 지자체·시간대·표지판에 따라 다릅니다. 실제 운전 시 현장 표지와 law.go.kr의 최신 법령을 확인하세요.</p>`;
     $('#levelInfo').querySelectorAll('.chip').forEach(c => c.onclick = e => showBubble(e.clientX, e.clientY, ruleCard(c.dataset.k)));
     $('#levelInfo').querySelectorAll('[data-s]').forEach(b => b.onclick = () => startLevel(selected, lv.samples[+b.dataset.s]));
@@ -1025,6 +1030,7 @@
     const stars = !j.legal ? 0 : right === picks.length && j.answer === 'park' ? 3 : right >= Math.ceil(picks.length / 2) ? 2 : 1;
     const best = store.get('pg-stars', {});
     if (stars > (best[lv.id] || 0)) { best[lv.id] = stars; store.set('pg-stars', best); }
+    const done = store.get('pg-done', {}); done[lv.id] = true; store.set('pg-done', done);
     const wrong = picks.filter(p => !p.correct);
     const tips = wrong.length ? wrong.map(p => `<div class="ev bad"><div class="kind">${p.i + 1}번 자리 · 고른 답 ${ANS[p.a].label}</div>
         <h5>정답: ${ANS[p.j.answer].label} — ${p.j.rule.name}</h5><p>${p.j.rule.easy}</p></div>`).join('')
