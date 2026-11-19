@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-<title>전자혀 · 요똥을 위한 맛 튜닝</title>
+<title>전자혀 · 요리 초보를 위한 맛 튜닝</title>
 <meta name="theme-color" content="#F2722B" />
-<meta name="description" content="요리 초보(요똥)를 위한 맛·소스 배합 계산기" />
+<meta name="description" content="요리 초보를 위한 맛·소스 배합 계산기" />
 <meta name="mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -407,12 +407,12 @@
   <!-- ════════ 계산 ════════ -->
   <section class="view" id="view-calc">
     <div class="hd">
-      <div class="kicker">Electronic Tongue · 맛 튜닝 계산기</div>
+      <div class="kicker">맛 튜닝 계산기</div>
       <div class="row">
-        <div class="avatar">味</div>
+        <div class="avatar">맛</div>
         <div>
-          <div class="name">전자혀 <small>요똥 맞춤</small></div>
-          <div class="sub">음식 무게만 알려줘. 존맛 배합은 계산해줄게.</div>
+          <div class="name">전자혀 <small>요리 초보 맞춤</small></div>
+          <div class="sub">음식 무게만 알려줘. 맛있는 배합은 계산해줄게.</div>
         </div>
       </div>
     </div>
@@ -454,9 +454,9 @@
   <!-- ════════ 보정 ════════ -->
   <section class="view" id="view-fix">
     <div class="hd">
-      <div class="kicker">Taste Rescue · 망한 음식 살리기</div>
+      <div class="kicker">망한 음식 살리기</div>
       <div class="row">
-        <div class="avatar" style="background:linear-gradient(135deg,#E0584E,#7A2A24)">救</div>
+        <div class="avatar" style="background:linear-gradient(135deg,#E0584E,#7A2A24)">살</div>
         <div>
           <div class="name">맛 보정</div>
           <div class="sub">맛봤는데 이상해요? 증상만 고르면 처방해드려요.</div>
@@ -480,12 +480,12 @@
   <!-- ════════ 탐색 ════════ -->
   <section class="view" id="view-explore">
     <div class="hd">
-      <div class="kicker">Taste Engine · 배합 시뮬레이터</div>
+      <div class="kicker">맛 그래프</div>
       <div class="row">
-        <div class="avatar">味</div>
+        <div class="avatar">맛</div>
         <div>
-          <div class="name">셰프 미강 <small>味江</small></div>
-          <div class="sub">5축 맛을 직접 빚어 존맛 지수를 봐요</div>
+          <div class="name">맛 그래프</div>
+          <div class="sub">다섯 가지 맛을 직접 조절해 맛 점수를 봐요</div>
         </div>
       </div>
     </div>
@@ -494,7 +494,7 @@
       <svg class="radar" id="radar" viewBox="0 0 320 218" preserveAspectRatio="xMidYMid meet" aria-hidden="true"></svg>
       <div class="score">
         <span class="num" id="scoreNum">0</span><span class="den"> / 100</span>
-        <div class="tag" id="scoreTag">존맛 지수</div>
+        <div class="tag" id="scoreTag">맛 점수</div>
       </div>
       <div class="gaugebar"><i id="gauge"></i></div>
     </div>
@@ -503,13 +503,13 @@
       <div class="body" id="chefBody"></div>
     </div>
     <div class="sliders">
-      <div class="lab">조절좌 — 맛을 직접 빚어보세요</div>
+      <div class="lab">맛 조절 — 맛을 직접 바꿔 보세요</div>
       <div id="sliders"></div>
     </div>
     <div class="syn">
-      <div class="top"><span class="nm">감칠맛 시너지</span><span class="val" id="synVal">0.0</span></div>
-      <input type="range" id="synRange" min="0" max="1" step="0.1" value="0" aria-label="감칠맛 시너지" />
-      <div class="hint">두 감칠맛원을 함께 쓰면(간장+멸치/고기 등) 글루탐산×이노신산 시너지로 감칠맛이 최대 1.5배 [R1]</div>
+      <div class="top"><span class="nm">감칠맛 겹치기</span><span class="val" id="synVal">0.0</span></div>
+      <input type="range" id="synRange" min="0" max="1" step="0.1" value="0" aria-label="감칠맛 겹치기" />
+      <div class="hint">간장+멸치처럼 감칠맛 재료를 둘 이상 쓰면 더 깊어져요</div>
     </div>
     <div class="preset-row" id="presets"></div>
     <div class="card" style="margin-top:6px"><div style="font-size:11px;color:var(--muted);margin-bottom:3px">이 맛으로 만들 수 있는 요리 →</div>
@@ -520,7 +520,7 @@
   <!-- ════════ 쉬운 요리 ════════ -->
   <section class="view" id="view-recipe">
     <div class="hd">
-      <div class="kicker">Easy Recipes · 요똥도 성공</div>
+      <div class="kicker">요리 초보도 성공</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#5FA236,#2f6a1c)">🍙</div>
         <div><div class="name">쉬운 요리</div><div class="sub">계량·머리 안 써도 되는 초간단 레시피</div></div>
@@ -532,22 +532,22 @@
   <!-- ════════ 소스 배합소 ════════ -->
   <section class="view" id="view-sauce">
     <div class="hd">
-      <div class="kicker">Sauce Lab · 유명한 그 맛</div>
+      <div class="kicker">유명한 그 맛</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#E0584E,#7a2a24)">🥫</div>
-        <div><div class="name">소스 배합소</div><div class="sub">유명한 소스를 골라 조절좌로 내 입맛에</div></div>
+        <div><div class="name">소스 배합소</div><div class="sub">유명한 소스를 골라 맛 조절로 내 입맛에</div></div>
       </div>
     </div>
     <div class="sec"><div class="lab">유명한 맛 고르기</div><div class="chips" id="sauceChips"></div></div>
     <div class="presetdesc" id="sauceDesc" style="margin:8px 18px 0"></div>
-    <div class="sliders"><div class="lab">조절좌 — 맵기·단맛 등을 입맛대로</div><div id="sauceSliders"></div></div>
+    <div class="sliders"><div class="lab">맛 조절 — 맵기·단맛 등을 입맛대로</div><div id="sauceSliders"></div></div>
     <div class="result" id="sauceRecipe"></div>
   </section>
 
   <!-- ════════ 일주일 식단표 ════════ -->
   <section class="view" id="view-meal">
     <div class="hd">
-      <div class="kicker">Weekly Plan · 일주일 식단</div>
+      <div class="kicker">일주일 식단</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#5FA236,#2f6a1c)">📅</div>
         <div><div class="name">일주일 식단표</div><div class="sub">요일·끼니에 요리를 배치하면 장보기까지</div></div>
@@ -562,7 +562,7 @@
   <section class="view" id="view-cart">
     <div class="shop-disclosure" id="shopDisclosure" hidden></div>
     <div class="hd">
-      <div class="kicker">Shopping Cart · 장바구니</div>
+      <div class="kicker">장바구니</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#FFB36B,#F2722B)">🛒</div>
         <div><div class="name">장바구니</div><div class="sub">담은 요리의 살 재료를 한곳에</div></div>
@@ -578,7 +578,7 @@
   <!-- ════════ 냉장고 ════════ -->
   <section class="view" id="view-fridge">
     <div class="hd">
-      <div class="kicker">My Fridge · 재료 관리</div>
+      <div class="kicker">재료 관리</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#3F6FD8,#274a9a)">🧊</div>
         <div><div class="name">냉장고</div><div class="sub">산 날짜 넣으면 언제까지 쓸지 알려줘요</div></div>
@@ -600,7 +600,7 @@
   <!-- ════════ 저장 ════════ -->
   <section class="view" id="view-saved">
     <div class="hd">
-      <div class="kicker">My Recipes · 나만의 배합</div>
+      <div class="kicker">나만의 배합</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#FFD23F,#B98A12);color:#3a2c05">★</div>
         <div><div class="name">저장한 레시피</div><div class="sub">계산한 배합을 모아두고 다시 꺼내봐요</div></div>
@@ -613,9 +613,9 @@
   <!-- ════════ 감성 맛표현 ════════ -->
   <section class="view active" id="view-sense">
     <div class="hd">
-      <div class="kicker">Taste Language · 맛 감성어</div>
+      <div class="kicker">맛 표현</div>
       <div class="row">
-        <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">感</div>
+        <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">맛</div>
         <div><div class="name">맛 고르기</div><div class="sub">먹고 싶은 맛을 고르면 재료와 양을 알려줘요</div></div>
       </div>
     </div>
@@ -626,7 +626,7 @@
   <!-- ════════ 더보기 ════════ -->
   <section class="view" id="view-more">
     <div class="hd">
-      <div class="kicker">More · 더보기</div>
+      <div class="kicker">더보기</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#8A7F6E,#4E463A)">☰</div>
         <div><div class="name">더보기</div><div class="sub">레시피·냉장고·저장한 배합 등 나머지 기능</div></div>
@@ -731,14 +731,14 @@ const STYLES = [
   {id:"trendy_rose",name:"요즘 로제/크리미 매콤",desc:"크리미함에 매콤달콤을 얹은 요즘식. 우유·치즈·고추장·케첩이 잘 맞아요.",over:{saltPct:[1.0,1.3],sweetPct:[3,7],acidPct:[0.3,1.0],fatPct:[8,15],umami:5},rec:["gochujang","ketchup","soy_sauce","sugar","butter","milk_or_cream","cheese"]},
   {id:"hot_honey_chicken",name:"핫허니/양념치킨",desc:"달콤함이 먼저, 뒤에 매콤함이 오는 분식/치킨집 스타일.",over:{saltPct:[1.0,1.3],sweetPct:[6,12],acidPct:[1,3],fatPct:[2,6],umami:4},rec:["gochujang","ketchup","soy_sauce","honey","vinegar","garlic"]},
   {id:"chili_crisp",name:"칠리크리스프/바삭매콤",desc:"매운맛보다 바삭한 기름향이 핵심. 튀긴 마늘·양파·깨를 더하면 완성도 ↑.",over:{saltPct:[1.0,1.3],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[10,20],umami:4},rec:["chili_powder","oil","fried_garlic","fried_onion","soy_sauce","sesame"]},
-  {id:"yuzu_lime_spicy",name:"유자라임 새콤매콤",desc:"산미와 단맛이 살아있는 상큼한 매콤함.",over:{saltPct:[0.9,1.2],sweetPct:[3,7],acidPct:[3,8],fatPct:[1,5],umami:3},rec:["soy_sauce","yuzu_syrup","lime_juice","vinegar","chili_sauce"]},
+  {id:"yuzu_lime_spicy",name:"유자라임 새콤매콤",desc:"신맛과 단맛이 살아있는 상큼한 매콤함.",over:{saltPct:[0.9,1.2],sweetPct:[3,7],acidPct:[3,8],fatPct:[1,5],umami:3},rec:["soy_sauce","yuzu_syrup","lime_juice","vinegar","chili_sauce"]},
   {id:"gochujang_mayo",name:"고추장마요/김치마요",desc:"고소한 마요 중심의 매콤새콤.",over:{saltPct:[1.0,1.5],sweetPct:[2,6],acidPct:[1,5],fatPct:[35,70],umami:4},rec:["mayo","gochujang","sugar","vinegar","soy_sauce"]},
   {id:"baek_jongwon",name:"밥도둑 대중 한식",desc:"단짠·마늘·파기름으로 밥이랑 잘 맞는 진한 한식.",over:{saltPct:[1.1,1.4],sweetPct:[2,6],acidPct:[0,0.5],fatPct:[4,8],umami:5},rec:["soy_sauce","sugar","garlic","green_onion","oil","sesame_oil"]},
   {id:"ryu_sooyoung",name:"원팬 눅진 집밥",desc:"진하고 눅진한 원팬 밥반찬 스타일.",over:{saltPct:[1.0,1.3],sweetPct:[2,5],acidPct:[0,0.5],fatPct:[5,10],umami:5},rec:["soy_sauce","oyster_sauce","sugar","garlic","oil","gochujang"]},
   {id:"lee_yeonbok",name:"중식당 웍 스타일",desc:"파마늘생강 기름향, 굴소스, 전분 농도 중심.",over:{saltPct:[1.0,1.3],sweetPct:[1,4],acidPct:[0.5,3],fatPct:[8,15],umami:5},rec:["soy_sauce","oyster_sauce","sugar","vinegar","oil","starch_water","garlic","ginger"]},
   {id:"choi_kangrok",name:"다시 우린 섬세한 감칠맛",desc:"다시·간장·미림으로 조용하게 깊은 맛.",over:{saltPct:[0.8,1.1],sweetPct:[1,3],acidPct:[0,0.5],fatPct:[2,6],umami:5},rec:["soy_sauce","mirin","dashi","sugar"]},
-  {id:"gordon_ramsay",name:"버터·허브 정통 서양식",desc:"정확한 소금 간, 버터·허브, 마지막 산미 마무리.",over:{saltPct:[0.9,1.2],sweetPct:[0,1],acidPct:[0.5,2],fatPct:[8,20],umami:3},rec:["salt","butter","olive_oil","lemon_juice","herbs","garlic","pepper"]},
-  {id:"fine_dining",name:"파인다이닝풍",desc:"절제된 간·산미·향, 식감 포인트.",over:{saltPct:[0.8,1.1],sweetPct:[0,2],acidPct:[1,3],fatPct:[5,15],umami:4},rec:["salt","lemon_juice","olive_oil","herbs","butter"]},
+  {id:"gordon_ramsay",name:"버터·허브 정통 서양식",desc:"정확한 소금 간, 버터·허브, 마지막 신맛 마무리.",over:{saltPct:[0.9,1.2],sweetPct:[0,1],acidPct:[0.5,2],fatPct:[8,20],umami:3},rec:["salt","butter","olive_oil","lemon_juice","herbs","garlic","pepper"]},
+  {id:"fine_dining",name:"파인다이닝풍",desc:"절제된 간·신맛·향, 식감 포인트.",over:{saltPct:[0.8,1.1],sweetPct:[0,2],acidPct:[1,3],fatPct:[5,15],umami:4},rec:["salt","lemon_juice","olive_oil","herbs","butter"]},
   // ── 우리가 흔히 말하는 '~맛' ──
   {id:"pa_oil",netSalt:true,name:"🧅 파기름맛",desc:"대파를 기름에 천천히 튀기듯 볶아 낸 고소하고 달큰한 향이 주인공. 간은 간장으로 심플하게.",over:{saltPct:[0.9,1.2],sweetPct:[0.5,2],acidPct:[0,0.3],fatPct:[6,12],umami:4},rec:["oil","green_onion","garlic","soy_sauce","sugar"],extra:[["green_onion",0.06,"early"]],
    tips:["파기름 핵심: 찬 팬에 기름과 대파를 같이 넣고 약~중불에서 3~5분, 파 가장자리가 노릇해질 때까지 볶으세요. 센 불이면 탄 맛이 납니다.","간장은 팬 가장자리에 둘러 살짝 눌려야 향이 확 살아요."]},
@@ -768,7 +768,7 @@ const TEMPLATES = {
   hot_honey_chicken:{base:300,ings:[
     {id:"gochujang",g:20,t:"middle"},{id:"ketchup",g:20,t:"middle"},{id:"soy_sauce",g:8,t:"middle"},
     {id:"honey",g:25,t:"middle"},{id:"vinegar",g:5,t:"finish"},{id:"garlic",g:4,t:"early"}],
-    steps:["고추장·케첩·간장·꿀·다진마늘을 섞어 양념장을 만듭니다.","팬에 재료를 넣고 양념을 더해 중불에 조립니다.","마지막에 식초로 새콤함을 살립니다. 매운맛·산미는 조금씩 조절하세요."]},
+    steps:["고추장·케첩·간장·꿀·다진마늘을 섞어 양념장을 만듭니다.","팬에 재료를 넣고 양념을 더해 중불에 조립니다.","마지막에 식초로 새콤함을 살립니다. 매운맛·신맛은 조금씩 조절하세요."]},
   lee_yeonbok:{base:300,ings:[
     {id:"oyster_sauce",g:15,t:"middle"},{id:"soy_sauce",g:8,t:"middle"},{id:"sugar",g:5,t:"middle"},
     {id:"oil",g:25,t:"early"},{id:"garlic",g:4,t:"early"},{id:"ginger",g:1,t:"early"},{id:"starch_water",g:20,t:"finish"}],
@@ -798,7 +798,7 @@ const INTENSITY = {mild:0.85, normal:1.0, strong:1.15};
 function intMul(axis, mode){ const m = INTENSITY[mode]; if((axis==="acid"||axis==="spice")) return Math.min(m,1.1); return m; }
 
 const mid = r => (r[0]+r[1])/2;
-const acidPoint = r => r[0] + 0.25*(r[1]-r[0]); // 산미는 마무리 액센트 — 범위 하한쪽(소량)
+const acidPoint = r => r[0] + 0.25*(r[1]-r[0]); // 신맛은 마무리 액센트 — 범위 하한쪽(소량)
 const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
 
 /* ════════════════════════════════════════════════════════════════════
@@ -940,7 +940,7 @@ function buildSteps(ings){
   const s=[];
   if(has("early")) s.push("기름을 두르고 향채(마늘·생강·파 등)를 약한 불에 볶아 향을 냅니다.");
   s.push("재료를 넣고 주 양념(간장·설탕·소스류)을 더해 간이 배도록 볶거나 조립니다. 짠 양념은 80%만 먼저 넣으세요.");
-  if(has("finish")) s.push("마무리로 산미·향(식초·참기름·후추·전분물)을 더하고 맛을 보며 조절해 완성합니다.");
+  if(has("finish")) s.push("마무리로 신맛·향(식초·참기름·후추·전분물)을 더하고 맛을 보며 조절해 완성합니다.");
   return s;
 }
 function buildWarnings(state, ings, cat, style){
@@ -950,27 +950,27 @@ function buildWarnings(state, ings, cat, style){
   if(ings.some(i=>["soy_sauce","salt","fish_sauce","low_sodium_soy_sauce","oyster_sauce","doenjang"].includes(i.id)))
     w.push({stop:false,t:"짠 양념(간장·소금·액젓)은 처음에 80%만 넣고 맛보며 조절하세요."});
   if(ings.some(i=>["vinegar","lemon_juice","lime_juice"].includes(i.id)))
-    w.push({stop:false,t:"식초·레몬즙은 절반만 먼저 넣으세요. 산미는 되돌리기 어렵습니다."});
+    w.push({stop:false,t:"식초·레몬즙은 절반만 먼저 넣으세요. 신맛은 되돌리기 어렵습니다."});
   if(ings.some(i=>["chili_powder","gochujang","chili_sauce"].includes(i.id)))
     w.push({stop:false,t:"매운 재료는 한 번에 넣지 말고 조금씩 추가하세요."});
   if(state.categoryId==="kids_side" || style.id==="kids_sweet_savory")
-    w.push({stop:false,t:"아이용은 염도를 0.8% 이하로 낮추면 더 부드러워요. 매운 재료는 빼세요."});
+    w.push({stop:false,t:"아이용은 소금기를 0.8% 이하로 낮추면 더 부드러워요. 매운 재료는 빼세요."});
   w.push({stop:false,t:"제품마다 농도가 달라요 — 숟가락 환산은 대략값입니다. 정확히 하려면 저울을 쓰세요."});
   return w;
 }
 
 /* 맛 보정 (PRD 6.3) */
 const FIX = [
-  {id:"bland",name:"밍밍해요",p1:{t:"간장 또는 소금 추가",id:"soy_sauce",pct:[0.1,0.2],axis:"salt"},p2:{t:"감칠맛 재료(굴소스·액젓) 한 스푼"},desc:"밍밍한 건 대부분 염도나 감칠맛이 부족한 상태예요. 먼저 간장을 아주 조금 넣고 섞은 뒤 다시 맛보세요."},
+  {id:"bland",name:"밍밍해요",p1:{t:"간장 또는 소금 추가",id:"soy_sauce",pct:[0.1,0.2],axis:"salt"},p2:{t:"감칠맛 재료(굴소스·액젓) 한 스푼"},desc:"밍밍한 건 대부분 간이나 감칠맛이 부족한 상태예요. 먼저 간장을 아주 조금 넣고 섞은 뒤 다시 맛보세요."},
   {id:"too_salty",name:"짜기만 해요",p1:{t:"물·무염 재료 추가로 희석",id:"water",pct:[3,6]},p2:{t:"설탕 약간 + 기름 약간으로 짠맛을 둥글게"},desc:"짠맛은 빼기 어렵습니다. 소금·간장은 절대 추가하지 마세요. 물이나 재료를 더해 농도를 낮추는 게 우선이에요.",noSalt:true},
-  {id:"too_sweet",name:"너무 달아요",p1:{t:"식초로 단맛 정리",id:"vinegar",pct:[0.3,0.8],axis:"acid"},p2:{t:"소금 아주 약간"},desc:"단맛은 산미와 짠맛으로 눌러요. 식초를 조금 넣어 균형을 잡으면 단맛이 가벼워집니다."},
-  {id:"too_sour",name:"너무 셔요",p1:{t:"설탕으로 산미 완화",id:"sugar",pct:[0.5,1.0],axis:"sweet"},p2:{t:"기름 약간으로 둥글게"},desc:"신맛은 단맛과 기름으로 둥글려요. 설탕을 조금씩 넣으며 맛보세요."},
-  {id:"greasy",name:"너무 느끼해요",p1:{t:"식초·레몬으로 지방감 끊기",id:"lemon_juice",pct:[0.3,1.0],axis:"acid"},p2:{t:"매운맛·향채(후추·파)로 포인트"},desc:"느끼함은 산미로 끊는 게 가장 빨라요. 레몬즙이나 식초를 살짝 더하세요."},
+  {id:"too_sweet",name:"너무 달아요",p1:{t:"식초로 단맛 정리",id:"vinegar",pct:[0.3,0.8],axis:"acid"},p2:{t:"소금 아주 약간"},desc:"단맛은 신맛과 짠맛으로 눌러요. 식초를 조금 넣어 균형을 잡으면 단맛이 가벼워집니다."},
+  {id:"too_sour",name:"너무 셔요",p1:{t:"설탕으로 신맛 완화",id:"sugar",pct:[0.5,1.0],axis:"sweet"},p2:{t:"기름 약간으로 둥글게"},desc:"신맛은 단맛과 기름으로 둥글려요. 설탕을 조금씩 넣으며 맛보세요."},
+  {id:"greasy",name:"너무 느끼해요",p1:{t:"식초·레몬으로 느끼함 끊기",id:"lemon_juice",pct:[0.3,1.0],axis:"acid"},p2:{t:"매운맛·향채(후추·파)로 포인트"},desc:"느끼함은 신맛으로 끊는 게 가장 빨라요. 레몬즙이나 식초를 살짝 더하세요."},
   {id:"shallow",name:"감칠맛이 없어요",p1:{t:"간장·액젓·굴소스 추가",id:"oyster_sauce",pct:[0.2,0.5],axis:"salt"},p2:{t:"마늘·파기름으로 향 보강"},desc:"맛이 얕은 건 감칠맛 부족이에요. 굴소스나 액젓을 소량 더해 깊이를 한 겹 올리세요."},
   {id:"disjoint",name:"맛이 따로 놀아요",p1:{t:"설탕 + 기름으로 맛 접착",id:"sugar",pct:[0.3,0.5],axis:"sweet"},p2:{t:"약불에 한 번 더 졸이기"},desc:"맛이 따로 놀면 단맛·기름으로 묶고, 살짝 졸여서 하나로 합쳐주세요."},
-  {id:"dull",name:"텁텁해요",p1:{t:"물 추가로 농도 조절",id:"water",pct:[2,5]},p2:{t:"산미 약간으로 산뜻하게"},desc:"텁텁함은 농도나 양념 과다예요. 물을 조금 더해 풀고, 산미를 아주 살짝 올리세요."},
-  {id:"only_spicy",name:"매운맛만 튀어요",p1:{t:"설탕 + 기름으로 매운맛 완화",id:"sugar",pct:[0.5,1.0],axis:"sweet"},p2:{t:"유제품·마요로 캡사이신 잡기"},desc:"캡사이신은 단맛·지방으로 눌러요. 설탕·기름이나 마요·우유를 더하면 매운맛이 둥글어집니다."},
-  {id:"kid_reject",name:"아이가 안 먹어요",p1:{t:"매운맛·산미부터 줄이기",id:null},p2:{t:"단맛 + 기름 + 감칠맛으로 둥글게"},desc:"아이는 날카로운 맛을 싫어해요. 매운맛·신맛을 줄이고 단맛·고소함·감칠맛으로 부드럽게 만드세요."}
+  {id:"dull",name:"텁텁해요",p1:{t:"물 추가로 농도 조절",id:"water",pct:[2,5]},p2:{t:"신맛 약간으로 산뜻하게"},desc:"텁텁함은 농도나 양념 과다예요. 물을 조금 더해 풀고, 신맛을 아주 살짝 올리세요."},
+  {id:"only_spicy",name:"매운맛만 튀어요",p1:{t:"설탕 + 기름으로 매운맛 완화",id:"sugar",pct:[0.5,1.0],axis:"sweet"},p2:{t:"유제품·마요로 매운맛 잡기"},desc:"매운 성분은 단맛·기름기로 눌러요. 설탕·기름이나 마요·우유를 더하면 매운맛이 둥글어집니다."},
+  {id:"kid_reject",name:"아이가 안 먹어요",p1:{t:"매운맛·신맛부터 줄이기",id:null},p2:{t:"단맛 + 기름 + 감칠맛으로 둥글게"},desc:"아이는 날카로운 맛을 싫어해요. 매운맛·신맛을 줄이고 단맛·고소함·감칠맛으로 부드럽게 만드세요."}
 ];
 function fixRecipe(weight, fixId){
   const r = FIX.find(f=>f.id===fixId); if(!r) return null;
@@ -989,8 +989,8 @@ function fixRecipe(weight, fixId){
 /* ════════════════════════════════════════════════════════════════════
    PART C. 탐색 엔진 (tasteEngine v2) — 기존 그대로
    ════════════════════════════════════════════════════════════════════ */
-const TASTES=[{key:"salt",label:"짠맛",color:"#5B8DEF",sci:"Na⁺"},{key:"sweet",label:"단맛",color:"#F2A0C4",sci:"당류"},
- {key:"sour",label:"신맛",color:"#E8C547",sci:"산도"},{key:"umami",label:"감칠맛",color:"#C77B3C",sci:"글루탐산"},{key:"spicy",label:"매운맛",color:"#E60044",sci:"캡사이신"}];
+const TASTES=[{key:"salt",label:"짠맛",color:"#5B8DEF",sci:"간장·소금"},{key:"sweet",label:"단맛",color:"#F2A0C4",sci:"설탕·꿀"},
+ {key:"sour",label:"신맛",color:"#E8C547",sci:"식초·레몬"},{key:"umami",label:"감칠맛",color:"#C77B3C",sci:"다시다·멸치"},{key:"spicy",label:"매운맛",color:"#E60044",sci:"고추·고춧가루"}];
 const GOLD_ENTER=78, GOLD_EXIT=74;
 function effectiveUmami(u,s=0){return Math.min(10,u*(1+0.5*Math.max(0,Math.min(1,s))));}
 function deliciousness(t,synergy=0){
@@ -1011,11 +1011,11 @@ function chefVerdict(t,score){const{salt,sweet,sour,umami,spicy}=t;
   if(salt<2.5)return{mood:"fix",title:"간이 빠졌습니다.",body:"모든 맛의 토대는 짠맛입니다. 간장·소금 계열을 조금 더. 베이스가 서야 나머지가 살아납니다."};
   if(salt>8)return{mood:"fix",title:"너무 짭니다.",body:"혀가 짠맛에 막혀 다른 맛을 못 느낍니다. 물이나 단맛으로 풀어주세요."};
   if(sweet>8)return{mood:"fix",title:"단맛이 다 덮었습니다.",body:"단맛은 다른 맛을 가장 강하게 누릅니다. 한 단계만 내리면 짠맛·감칠맛이 살아납니다."};
-  if(spicy>8)return{mood:"fix",title:"매운맛이 다 덮었습니다.",body:"캡사이신이 강하면 감칠맛·단맛이 가려집니다. 매운맛을 한 단계만 내려보시죠."};
-  if(sour>7)return{mood:"fix",title:"신맛이 앞섭니다.",body:"산도가 높으면 날카로워집니다. 단맛을 조금 올려 균형을 잡으면 둥글어집니다."};
+  if(spicy>8)return{mood:"fix",title:"매운맛이 다 덮었습니다.",body:"매운맛이 강하면 감칠맛·단맛이 가려집니다. 매운맛을 한 단계만 내려보시죠."};
+  if(sour>7)return{mood:"fix",title:"신맛이 앞섭니다.",body:"신맛이 강하면 날카로워집니다. 단맛을 조금 올려 균형을 잡으면 둥글어집니다."};
   if(umami<2)return{mood:"fix",title:"맛이 얕습니다.",body:"감칠맛이 부족합니다. 간장·굴소스·발효장류로 깊이를 한 겹 더하세요."};
   if(salt>=3&&sweet<1.5)return{mood:"tune",title:"조금 단조롭습니다.",body:"짠맛은 잡혔으나 단맛이 받쳐주지 않습니다. 단짠의 대비가 식욕을 만듭니다. 설탕·물엿을 살짝."};
-  return{mood:"tune",title:"거의 왔습니다.",body:"방향은 맞습니다. 한두 축만 미세하게 조정하면 황금 균형에 도달합니다."};
+  return{mood:"tune",title:"거의 왔습니다.",body:"방향은 맞습니다. 한두 가지 맛만 살짝 조정하면 딱 좋은 맛이 돼요."};
 }
 function matchDish(t){const{salt,sweet,sour,umami,spicy}=t;
   if(spicy>=6&&salt>=4)return"제육·매운 볶음 양념"; if(sour>=5&&sweet>=4)return"새콤달콤 무침·초장";
@@ -1095,10 +1095,10 @@ const TASTE_WORDS=[
  desc:"맛의 밀도가 높은 상태. 한 수저에 여러 층의 맛이 담겨 있고 여운이 오래 간다.",
  v:{salt:7,sweet:5,sour:1,umami:8,spicy:2},dishes:["갈비찜","김치찜","짬뽕"]},
 {cat:"강도·균형",em:"⚡",nm:"칼칼한맛",eng:"Sharp Spicy",
- desc:"따뜻하게 매운 것이 아니라 혀 끝을 날카롭게 찌르는 매움. 고추의 캡사이신이 직접적으로 올라온다.",
+ desc:"따뜻하게 매운 것이 아니라 혀 끝을 날카롭게 찌르는 매움. 고추의 매운 성분이 곧바로 올라온다.",
  v:{salt:5,sweet:2,sour:2,umami:6,spicy:8},dishes:["순대국밥","칼국수","닭개장"]},
 {cat:"강도·균형",em:"💫",nm:"알싸한맛",eng:"Pungent / Tingling",
- desc:"캡사이신이 아닌 다른 종류의 자극. 마늘·생강·겨자·와사비처럼 코를 찌르고 빠르게 사라진다.",
+ desc:"고추 말고 다른 종류의 자극. 마늘·생강·겨자·와사비처럼 코를 찌르고 빠르게 사라진다.",
  v:{salt:3,sweet:1,sour:1,umami:3,spicy:6},dishes:["와사비 간장회","생강 드레싱","마늘쫑볶음"]},
 {cat:"강도·균형",em:"💨",nm:"시원한맛",eng:"Refreshing",
  desc:"한국에서 '시원하다'는 건 차갑다는 뜻이 아니다. 속이 뚫리는 느낌. 동치미 국물 같은 개운한 자극.",
@@ -1116,7 +1116,7 @@ const TASTE_WORDS=[
  desc:"설탕의 직접적인 단맛이 아니라 양파·당근이 오래 볶아지면서 나는 자연스러운 단맛. 짠맛과 어울린다.",
  v:{salt:5,sweet:5,sour:1,umami:6,spicy:1},dishes:["잡채","갈비찜","소불고기"]},
 {cat:"대비·복합",em:"🍋",nm:"새콤달콤한맛",eng:"Sweet & Sour",
- desc:"산미와 당이 팽팽하게 맞선 상태. 어느 쪽도 압도하지 않아 식욕을 계속 자극한다.",
+ desc:"신맛과 단맛이 팽팽하게 맞선 상태. 어느 쪽도 압도하지 않아 식욕을 계속 자극한다.",
  v:{salt:4,sweet:7,sour:6,umami:3,spicy:1},dishes:["탕수육소스","오징어초무침","파인애플닭"]},
 {cat:"대비·복합",em:"🧂",nm:"짭짤한맛",eng:"Pleasantly Salty",
  desc:"짜지만 거슬리지 않는 상태. 감칠맛이 뒤에서 받쳐주어 소금 자체가 아니라 풍미로 느껴진다.",
@@ -1246,11 +1246,11 @@ function renderCalcResult(r){
 
   // 존맛 지수 그래프
   const z=r.zon, zc=gaugeColor(z.score);
-  const zmsg=z.gold ? "★ 존맛 존 진입! 이 배합이면 거의 실패 없어요." : `존맛 존까지 <b>${Math.max(0,GOLD_ENTER-z.score)}점</b> — 감칠맛(굴소스·간장)이나 단짠을 살짝 더 올려보세요.`;
+  const zmsg=z.gold ? "★ 딱 좋은 맛 도착! 이 배합이면 거의 실패 없어요." : `딱 좋은 맛까지 <b>${Math.max(0,GOLD_ENTER-z.score)}점</b> — 감칠맛(굴소스·간장)이나 단짠을 살짝 더 올려보세요.`;
   const zonGraph=`<div class="zon ${z.gold?'gold':''}">
-    <div class="zhead"><span class="znum" style="color:${zc}">${z.score}</span><span class="zden">/ 100 존맛 지수</span>${z.gold?'<span class="zbadge">★ 존맛 존</span>':''}</div>
+    <div class="zhead"><span class="znum" style="color:${zc}">${z.score}</span><span class="zden">/ 100 맛 점수</span>${z.gold?'<span class="zbadge">★ 딱 좋은 맛</span>':''}</div>
     <div class="ztrack"><div class="zzone"></div><div class="zfill" style="width:${z.score}%;background:${zc}"></div><div class="zmark" style="left:${z.score}%"></div></div>
-    <div class="zticks"><span class="z0">0</span><span class="zz">존맛존 ${GOLD_ENTER}↑</span><span class="z100">100</span></div>
+    <div class="zticks"><span class="z0">0</span><span class="zz">딱 좋은 맛 ${GOLD_ENTER}↑</span><span class="z100">100</span></div>
     <div class="zmsg">${zmsg}</div></div>`;
 
   const barRows=Object.keys(AXIS_LABEL).map(k=>{
@@ -1332,7 +1332,7 @@ function renderSaved(){
     const stars=[1,2,3,4,5].map(n=>`<span class="${n<=s.rating?'on':''}" data-r="${n}">★</span>`).join("");
     return `<div class="srow" data-i="${idx}">
       <div class="st"><span class="stt">${s.title}</span><span class="sd">${s.createdAt}</span></div>
-      <div class="sm">${s.foodWeightG}g · ${s.categoryName} · ${s.styleName}${s.zon!=null?` · <span style="color:${s.zon>=78?'var(--gold)':'var(--muted)'}">존맛 ${s.zon}${s.zon>=78?'★':''}</span>`:''}</div>
+      <div class="sm">${s.foodWeightG}g · ${s.categoryName} · ${s.styleName}${s.zon!=null?` · <span style="color:${s.zon>=78?'var(--gold)':'var(--muted)'}">맛 점수 ${s.zon}${s.zon>=78?'★':''}</span>`:''}</div>
       <div class="stars" data-i="${idx}">${stars}</div>
       <div class="sing">${ing}</div>
       <div class="act"><button class="toggle">재료 보기</button><button class="del" data-i="${idx}">삭제</button></div>
@@ -1529,7 +1529,7 @@ const SAUCE_DENS={"간장":1.15,"설탕":0.85,"고추장":1.2,"고춧가루":0.5
 const SAUCES=[
   {emoji:"🍗",name:"허니갈릭 간장치킨",desc:"바삭한 위에 달콤짭짤 간장+꿀. 안 매운 단짠의 정석.",base:{salt:6,sweet:8,sour:1,umami:5,spicy:1},
    ing:[{n:"간장",g:30,ax:"salt"},{n:"꿀",g:30,ax:"sweet"},{n:"올리고당",g:15,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"버터",g:10,ax:null},{n:"후추",g:1,ax:null}]},
-  {emoji:"🔥",name:"불닭볶음",desc:"혀가 얼얼한 극강 매움 위에 단짠. 캡사이신 폭탄.",base:{salt:6,sweet:6,sour:1,umami:6,spicy:10},
+  {emoji:"🔥",name:"불닭볶음",desc:"혀가 얼얼한 극강 매움 위에 단짠. 매운맛 폭탄.",base:{salt:6,sweet:6,sour:1,umami:6,spicy:10},
    ing:[{n:"고추장",g:25,ax:"spicy"},{n:"고춧가루",g:15,ax:"spicy"},{n:"청양고추",g:15,ax:"spicy"},{n:"간장",g:15,ax:"salt"},{n:"설탕",g:20,ax:"sweet"},{n:"물엿",g:15,ax:"sweet"},{n:"다진마늘",g:10,ax:"umami"},{n:"다시다",g:3,ax:"umami"}]},
   {emoji:"😈",name:"극강 매운 떡볶이",desc:"매운데 자꾸 먹게 되는 중독 매콤 단짠 감칠.",base:{salt:6,sweet:6,sour:1,umami:7,spicy:9},
    ing:[{n:"고추장",g:30,ax:"spicy"},{n:"고춧가루",g:15,ax:"spicy"},{n:"청양고추",g:20,ax:"spicy"},{n:"설탕",g:25,ax:"sweet"},{n:"간장",g:10,ax:"salt"},{n:"다시다",g:5,ax:"umami"},{n:"다진마늘",g:10,ax:"umami"},{n:"카레가루",g:2,ax:null}]},
@@ -1664,7 +1664,7 @@ function renderSauceRecipe(){ const s=currentSauce; if(!s) return;
   }).join("");
   $("sauceRecipe").innerHTML=`<div class="rcard hero"><h3 style="display:flex;align-items:center;gap:6px">🥫 ${s.name} 소스 <span class="heronote">— 2인분 기준</span><button class="favbtn" id="sauceFav" style="margin-left:auto" aria-label="찜">${isFavSauce(s.name)?"❤️":"🤍"}</button></h3>${rows}</div>
     ${SAUCE_PROD[s.name]?`<div class="rcard"><div class="rsummary">🛒 <b>이 맛 시판 제품</b> — ${SAUCE_PROD[s.name]}</div></div>`:""}
-    <div class="rcard"><div class="rsummary">위 조절좌(맵기·단맛 등)를 움직이면 재료 양이 <b>실시간</b>으로 바뀌어요. 맵기 0으로 내리면 매운 재료는 '빼기'!</div></div>`;
+    <div class="rcard"><div class="rsummary">위 맛 조절(맵기·단맛 등)를 움직이면 재료 양이 <b>실시간</b>으로 바뀌어요. 맵기 0으로 내리면 매운 재료는 '빼기'!</div></div>`;
   const sf=$("sauceFav"); if(sf) sf.onclick=()=>toggleFavSauce(s.name);
 }
 selectSauce(SAUCES[0]);
@@ -2098,7 +2098,7 @@ function goCalcWithStyle(id){
 let _bubbleTO=null, _lastMatchId=null, _bubbleArmed=false;
 function showBubble(style, gold){ const b=$("styleBubble"); if(!b)return;
   b.className="bubble show"+(gold?" gold":"");
-  b.innerHTML=`<div class="bbl-t">${gold?"★ 존맛존 · ":""}이 맛 ≈ ${style.name}</div><div class="bbl-s">탭하면 이 맛으로 계산하기 →</div>`;
+  b.innerHTML=`<div class="bbl-t">${gold?"★ 딱 좋은 맛 · ":""}이 맛 ≈ ${style.name}</div><div class="bbl-s">탭하면 이 맛으로 계산하기 →</div>`;
   b.onclick=()=>{ goCalcWithStyle(style.id); hideBubble(); };
   clearTimeout(_bubbleTO); _bubbleTO=setTimeout(hideBubble, 2800);
 }
@@ -2107,7 +2107,7 @@ function renderExplore(){
   const score=deliciousness(t,synergy);
   if(!isGold&&score>=GOLD_ENTER)isGold=true; else if(isGold&&score<GOLD_EXIT)isGold=false;
   $("scoreNum").textContent=score; $("scoreNum").style.color=gaugeColor(score);
-  $("scoreTag").textContent=isGold?"★ 존맛 존 GOLDEN ZONE ★":"존맛 지수";
+  $("scoreTag").textContent=isGold?"★ 딱 좋은 맛 ★":"맛 점수";
   $("gauge").style.width=score+"%"; $("gauge").style.background=gaugeColor(score);
   $("frame").classList.toggle("gold",isGold);
   TASTES.forEach(x=>{sliderVals[x.key].textContent=t[x.key].toFixed(1);});

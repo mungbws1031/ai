@@ -1,7 +1,7 @@
 {
-  "name": "전자혀 — 요똥 맛 튜닝",
+  "name": "전자혀 — 요리 초보 맛 튜닝",
   "short_name": "전자혀",
-  "description": "요리 초보(요똥)를 위한 맛·소스 배합 계산기",
+  "description": "요리 초보를 위한 맛·소스 배합 계산기",
   "lang": "ko",
   "start_url": "./",
   "scope": "./",
