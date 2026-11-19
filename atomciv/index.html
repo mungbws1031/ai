@@ -52,7 +52,11 @@ button:disabled{opacity:.4}
 #bench-tools{justify-self:start}
 #mix{display:flex;align-items:center;gap:8px;justify-self:start}
 #bottom-bar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
-@media (max-width:900px){#mix{flex-direction:column;align-items:stretch}}
+#mixer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;max-width:calc(100% - 24px)}
+#mixer #mix{justify-self:auto}
+.item-chip{touch-action:none}
+.drag-ghost{position:fixed;z-index:30;pointer-events:none;font-size:44px;transform:translate(-50%,-50%) scale(1.1);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+#tray.drop-ready{background:#fff6d6;border-color:#ff8c42}
 #toast{position:absolute;left:50%;bottom:150px;transform:translateX(-50%);background:#2d2a32;color:#fff;
   padding:10px 16px;border-radius:14px;font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
 #toast.show{opacity:1}
@@ -78,7 +82,7 @@ button:disabled{opacity:.4}
 #card-ok{background:var(--ok);color:#fff;min-width:140px}
 .item-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:64px;font-size:13px}
 .item-chip .em{font-size:28px;line-height:1.1}
-#tray{display:flex;align-items:center;gap:6px;padding:6px 10px;min-height:76px;
+#tray{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;padding:10px 14px;min-height:96px;min-width:240px;max-width:min(560px,100%);border-radius:30px 30px 70px 70px !important;
   background:rgba(255,255,255,.75);border:3px dashed #d4b47c;border-radius:20px}
 #tray .tray-label{font-size:26px}
 #tray-empty{color:var(--muted);font-weight:700;font-size:15px;white-space:nowrap}
@@ -132,13 +136,15 @@ button:disabled{opacity:.4}
       <svg id="village" aria-hidden="true"></svg>
       <svg id="bench" aria-label="실험대"></svg>
       <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn">💡 힌트</button></div>
-      <div id="bottom-bar">
-        <div id="bench-tools"><button id="clear-btn" aria-label="실험대 비우기">🧹</button></div>
-        <div id="tray" aria-label="재료 접시"><span class="tray-label">🍽️</span><span id="tray-empty">재료를 누르면 여기 올라가요</span><div id="tray-items"></div></div>
+      <div id="mixer">
+        <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><span id="tray-empty">재료를 여기로 끌어와!</span><div id="tray-items"></div></div>
         <div id="mix">
           <button id="heat-btn" aria-pressed="false" disabled>🔥 불</button>
           <button id="combine-btn" disabled>✨ 합치기</button>
         </div>
+      </div>
+      <div id="bottom-bar">
+        <div id="bench-tools"><button id="clear-btn" aria-label="실험대 비우기">🧹</button></div>
       </div>
       <div id="toast" role="status"></div>
     </section>
@@ -313,6 +319,15 @@ const ITEMS = {
   train:      { name: '기차',     emoji: '🚂', why: '증기기관을 강철 바퀴에 달았더니, 사람과 물건을 멀리 빠르게 나를 수 있게 됐어!' },
   quicklime:  { name: '생석회',   emoji: '⚪', why: '석회석을 아주 뜨겁게 구우면 이산화탄소가 빠져나가!' },
   cement:     { name: '시멘트',   emoji: '🩶', why: '생석회와 점토를 함께 구워 곱게 빻으면 시멘트가 돼!' },
+  zinc_ore:   { name: '아연광석', emoji: '🪨', raw: true, why: '아연이 다른 원자들과 붙어 숨어 있는 돌이야!' },
+  lodestone:  { name: '자철석',   emoji: '🧲', raw: true, why: '저절로 자석이 된 철광석이야. 쇠붙이를 끌어당겨!' },
+  salt_water: { name: '소금물',   emoji: '🫗', why: '소금이 물에 녹으면 Na⁺와 Cl⁻로 흩어져서, 전기가 흐르는 물이 돼!' },
+  zinc:       { name: '아연',     emoji: '🔘', why: '숯 속 탄소가 아연광석에서 산소를 빼앗아 가서 아연만 남아!' },
+  wire:       { name: '전선',     emoji: '🔌', why: '구리는 전기가 아주 잘 흘러서, 가늘게 늘이면 전선이 돼!' },
+  battery:    { name: '전지',     emoji: '🔋', why: '아연에서 구리 쪽으로 전자가 흘러가면서 전기가 생겨! 이게 맨 처음 만든 전지의 원리야.' },
+  bulb:       { name: '전구',     emoji: '💡', why: '아주 가는 실에 전기가 지나가면 뜨거워지면서 빛이 나!' },
+  motor:      { name: '모터',     emoji: '🌀', why: '전기가 흐르는 전선이 자석에 밀려서 빙글빙글 돌아!' },
+  generator:  { name: '발전기',   emoji: '⚡', why: '자석 옆에서 전선을 빙글빙글 돌리면 전기가 생겨! 모터를 거꾸로 쓰는 셈이야.' },
   concrete:   { name: '콘크리트', emoji: '🧱', why: '시멘트가 물과 반응해서 모래를 꽉 붙잡고 돌처럼 굳어!' },
 };
 
@@ -333,6 +348,13 @@ const RECIPES = [
   { inputs: ['limestone'], heat: true, output: 'quicklime' },
   { inputs: ['quicklime', 'clay'], heat: true, output: 'cement' },
   { inputs: ['cement', 'O2Si', 'H2O'], heat: false, output: 'concrete' },
+  { inputs: ['ClNa', 'H2O'], heat: false, output: 'salt_water' },
+  { inputs: ['zinc_ore', 'charcoal'], heat: true, output: 'zinc' },
+  { inputs: ['copper'], heat: false, output: 'wire' },
+  { inputs: ['copper', 'zinc', 'salt_water'], heat: false, output: 'battery' },
+  { inputs: ['glass', 'wire', 'battery'], heat: false, output: 'bulb' },
+  { inputs: ['lodestone', 'wire', 'battery'], heat: false, output: 'motor' },
+  { inputs: ['lodestone', 'wire', 'steam_engine'], heat: false, output: 'generator' },
 ];
 
 const ERAS = [
@@ -340,6 +362,7 @@ const ERAS = [
   { id: 'bronze', name: '청동기시대', emoji: '🔔', raws: ['copper_ore', 'tin_ore'],     goal: ['copper', 'tin', 'bronze'] },
   { id: 'iron',   name: '철기시대',   emoji: '⚙️', raws: ['iron_ore'],                  goal: ['iron', 'glass'] },
   { id: 'industry', name: '산업시대', emoji: '🏭', raws: ['coal', 'limestone'],         goal: ['steel', 'steam_engine', 'train', 'concrete'] },
+  { id: 'electric', name: '전기시대', emoji: '⚡', raws: ['zinc_ore', 'lodestone'],     goal: ['battery', 'bulb', 'motor', 'generator'] },
 ];
 
 function sameBag(a, b) {
@@ -365,7 +388,7 @@ const MISSIONS = [
   { target: 'H3N',       text: '질소의 세 손을 수소로 채워 봐!',           hint: ['N', 'H'] },
   { target: 'ClNa',      text: '소금을 만들어 봐! 🧂',                      hint: ['Na', 'Cl'] },
   { target: 'O2Si',      text: '모래를 만들어 봐! 🏖️',                      hint: ['Si', 'O'] },
-  { target: 'fire',      text: '불을 피워 봐! 접시에 재료를 올리고 합치기', hint: ['wood', 'flint'] },
+  { target: 'fire',      text: '불을 피워 봐! 그릇에 재료를 넣고 합치기', hint: ['wood', 'flint'] },
   { target: 'stone_axe', text: '부싯돌 두 개와 나무로 돌도끼를 만들어 봐! 🪓',                    hint: ['flint', 'wood'] },
   { target: 'charcoal',  text: '숯을 만들어 봐! 🔥 불 버튼을 써 봐',        hint: ['wood', 'heat'] },
   { target: 'pottery',   text: '물을 담을 토기를 구워 봐! 🏺',              hint: ['clay', 'H2O', 'heat'] },
@@ -381,6 +404,13 @@ const MISSIONS = [
   { target: 'quicklime', text: '석회석을 구워서 생석회를 만들어 봐!',       hint: ['limestone', 'heat'] },
   { target: 'cement',    text: '생석회와 점토로 시멘트를 만들어 봐!',       hint: ['quicklime', 'clay', 'heat'] },
   { target: 'concrete',  text: '시멘트, 모래, 물로 콘크리트를 만들어 봐! 🧱', hint: ['cement', 'O2Si', 'H2O'] },
+  { target: 'salt_water', text: '소금과 물로 소금물을 만들어 봐! 🫗',     hint: ['ClNa', 'H2O'] },
+  { target: 'zinc',      text: '아연광석에서 아연을 꺼내 봐!',              hint: ['zinc_ore', 'charcoal', 'heat'] },
+  { target: 'wire',      text: '구리로 전선을 만들어 봐! 🔌',               hint: ['copper'] },
+  { target: 'battery',   text: '구리, 아연, 소금물로 전지를 만들어 봐! 🔋',  hint: ['copper', 'zinc', 'salt_water'] },
+  { target: 'bulb',      text: '유리, 전선, 전지로 전구를 켜 봐! 💡',        hint: ['glass', 'wire', 'battery'] },
+  { target: 'motor',     text: '자석, 전선, 전지로 모터를 돌려 봐! 🌀',      hint: ['lodestone', 'wire', 'battery'] },
+  { target: 'generator', text: '자석, 전선, 증기기관으로 발전기를! ⚡',      hint: ['lodestone', 'wire', 'steam_engine'] },
 ];
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
@@ -392,11 +422,13 @@ const MAP_TILES = {
   copper: [3, 0], tin: [2, 1], bronze: [3, -1], iron: [-3, 1], glass: [0, 3],
   steam: [1, -3], steel: [-2, -2], steam_engine: [0, -4], train: [2, -4],
   quicklime: [-3, 0], cement: [-4, 2], concrete: [-3, -1],
+  salt_water: [4, -2], zinc: [4, -1], battery: [4, 0], wire: [3, 1], bulb: [2, 2], motor: [1, 3], generator: [-1, 4],
 };
 const TILE_TERRAIN = {
   fire: 'grass', stone_axe: 'forest', charcoal: 'forest', pottery: 'river', copper: 'river', tin: 'hills',
   bronze: 'river', iron: 'hills', glass: 'sand', steam: 'grass', steel: 'hills', steam_engine: 'plains',
   train: 'plains', quicklime: 'hills', cement: 'plains', concrete: 'plains',
+  salt_water: 'sand', zinc: 'hills', battery: 'plains', wire: 'plains', bulb: 'plains', motor: 'plains', generator: 'river',
 };
 const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]]; // 모서리 0~5 순서와 맞춘 이웃 방향
 function hexDist(a, b) {
@@ -514,7 +546,8 @@ function renderDrawer() {
       const it = ITEMS[id] || MOLECULES[id];
       const b = el('button', { class: 'item-chip', 'data-item': id, 'aria-label': it.name });
       b.append(el('span', { class: 'em' }, it.emoji), el('span', { class: 'lbl' }, it.name));
-      b.addEventListener('click', () => addToTray(id));
+      chipDrag(b, it.emoji, (x, y) => { if (overTray(x, y)) addToTray(id); });
+      b.addEventListener('click', () => { if (b.dataset.dragged) { delete b.dataset.dragged; return; } addToTray(id); });
       box.append(b);
     }
     more.append(box);
@@ -531,13 +564,13 @@ function overlaps(x, y, skip) {
   for (const id in pos) if (id !== skip && Math.hypot(pos[id].x - x, pos[id].y - y) < 2 * R + 6) return true;
   return false;
 }
-// 실험대 위에 겹쳐 있는 버튼들(접시·도구·미션) 영역: 원자가 그 밑에 숨지 않게
+// 실험대 위에 겹쳐 있는 버튼들(그릇·도구·미션) 영역: 원자가 그 밑에 숨지 않게
 function blockedRects() {
   const br = benchSvg.getBoundingClientRect();
   return ['#bench-tools', '#tray', '#mix', '#mission-bar'].map(sel => document.querySelector(sel))
     .filter(e => e && e.offsetParent !== null)
     .map(e => { const r = e.getBoundingClientRect();
-      return { l: r.left - br.left - R, t: r.top - br.top - R, r: r.right - br.left + R, b: r.bottom - br.top + R, bottom: r.top - br.top > br.height / 2 }; });
+      const m = R + 24; return { l: r.left - br.left - m, t: r.top - br.top - m, r: r.right - br.left + m, b: r.bottom - br.top + m, bottom: r.top - br.top > br.height / 2 }; });
 }
 function inBlocked(x, y) { return blockedRects().find(b => x > b.l && x < b.r && y > b.t && y < b.b) || null; }
 function escapeBlocked(p) {
@@ -759,20 +792,51 @@ function afterMake(key) {
 }
 
 /* ---- tray & combine ---- */
-// 레시피 재료로 쓰이는 분자(물, 모래)는 만들자마자 접시로 쏙 넣어 준다
+// 재료 칩을 손가락으로 끌기: 조금 움직이면 끌기 시작, 놓은 자리를 onDrop에 알려 준다
+function overTray(x, y) {
+  const r = $('#tray').getBoundingClientRect(), pad = 24;
+  return x >= r.left - pad && x <= r.right + pad && y >= r.top - pad && y <= r.bottom + pad;
+}
+function chipDrag(chip, emoji, onDrop) {
+  let start = null, ghost = null;
+  chip.addEventListener('pointerdown', e => {
+    start = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    try { chip.setPointerCapture(e.pointerId); } catch (err) { /* 무시 */ }
+  });
+  chip.addEventListener('pointermove', e => {
+    if (!start || e.pointerId !== start.id) return;
+    if (!ghost && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 10) return;
+    if (!ghost) { ghost = el('div', { class: 'drag-ghost' }, emoji); document.body.append(ghost); }
+    ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
+    $('#tray').classList.toggle('drop-ready', overTray(e.clientX, e.clientY));
+  });
+  const end = (e, cancelled) => {
+    if (!start || e.pointerId !== start.id) return;
+    start = null;
+    $('#tray').classList.remove('drop-ready');
+    if (!ghost) return;
+    ghost.remove(); ghost = null;
+    chip.dataset.dragged = '1'; // 끌기 뒤에 따라오는 click은 무시
+    setTimeout(() => { delete chip.dataset.dragged; }, 400);
+    if (!cancelled) onDrop(e.clientX, e.clientY);
+  };
+  chip.addEventListener('pointerup', e => end(e, false));
+  chip.addEventListener('pointercancel', e => end(e, true));
+}
+// 레시피 재료로 쓰이는 분자(물, 모래)는 만들자마자 그릇으로 쏙 넣어 준다
 function dropIntoTray(key) {
   if (!RECIPES.some(r => r.inputs.includes(key))) return;
   if (tray.includes(key) || tray.length >= TRAY_MAX) return;
   tray.push(key); renderTray();
   const chips = document.querySelectorAll('#tray-items .item-chip');
   if (chips.length) chips[chips.length - 1].classList.add('pop-in');
-  toast(`${MOLECULES[key].emoji} ${MOLECULES[key].name} 접시로 쏙!`);
+  toast(`${MOLECULES[key].emoji} ${MOLECULES[key].name} 그릇으로 쏙!`);
 }
 let tray = [];
 let heatOn = false;
-const TRAY_MAX = 4;
+const TRAY_MAX = 6;
 function addToTray(id) {
-  if (tray.length >= TRAY_MAX) { toast('접시에는 4개까지만 올릴 수 있어!'); return; }
+  if (tray.length >= TRAY_MAX) { toast('그릇에는 6개까지만 넣을 수 있어!'); return; }
   tray.push(id); beep(520, 0.05); renderTray();
 }
 function renderTray() {
@@ -782,7 +846,8 @@ function renderTray() {
     const it = ITEMS[id] || MOLECULES[id];
     const b = el('button', { class: 'item-chip', 'data-item': id, 'aria-label': it.name + ' 빼기' });
     b.append(el('span', { class: 'em' }, it.emoji), el('span', { class: 'lbl' }, it.name));
-    b.addEventListener('click', () => { tray.splice(i, 1); renderTray(); });
+    chipDrag(b, it.emoji, (x, y) => { if (!overTray(x, y)) { tray.splice(i, 1); renderTray(); } });
+    b.addEventListener('click', () => { if (b.dataset.dragged) { delete b.dataset.dragged; return; } tray.splice(i, 1); renderTray(); });
     box.append(b);
   });
   $('#tray').classList.toggle('empty', !tray.length);
@@ -973,7 +1038,7 @@ function renderMission() {
   if (m && ITEMS[m.target] && !state.trayIntro && !madeAnyInvention) {
     state.trayIntro = true; saveState(state);
     queueCard({ plain: true, emoji: '🍽️', tag: '새로운 방법!', name: '이제 재료를 섞어 볼 차례',
-      why: '서랍의 재료를 누르면 아래 접시에 올라가. 다 올렸으면 ✨합치기를 눌러 봐! 원자로 만든 분자도 재료가 될 수 있어.' });
+      why: '서랍의 재료를 가운데 섞는 그릇으로 끌어오거나 눌러서 넣어. 다 넣었으면 ✨합치기를 눌러 봐! 원자로 만든 분자도 재료가 될 수 있어.' });
   }
 }
 $('#hint-btn').addEventListener('click', () => {
@@ -982,7 +1047,7 @@ $('#hint-btn').addEventListener('click', () => {
   const els = m.hint.map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
     : h === 'heat' ? $('#heat-btn') : document.querySelector(`#drawer [data-item="${h}"]`)).filter(Boolean);
   els.forEach(e => e.classList.add('glow'));
-  toast(MOLECULES[m.target] ? '원자를 실험대에 올리고, 끌어서 다른 원자에 붙여 봐! 👆' : '재료를 접시에 올리고 ✨합치기를 눌러 봐!');
+  toast(MOLECULES[m.target] ? '원자를 실험대에 올리고, 끌어서 다른 원자에 붙여 봐! 👆' : '재료를 가운데 그릇에 넣고 ✨합치기를 눌러 봐!');
   if (els[0]) els[0].scrollIntoView({ block: 'nearest' });
   setTimeout(() => els.forEach(e => e.classList.remove('glow')), 4000);
 });
@@ -1020,6 +1085,15 @@ const VILLAGE = {
     <rect x="430" y="440" width="150" height="48" rx="6" fill="#c0392b"/><rect x="560" y="410" width="20" height="34" fill="#333"/>
     <rect x="450" y="420" width="60" height="26" fill="#2c3e50"/><circle cx="460" cy="492" r="12" fill="#333"/><circle cx="510" cy="492" r="12" fill="#333"/><circle cx="560" cy="492" r="12" fill="#333"/>
     <circle cx="575" cy="392" r="12" fill="#ddd"/><circle cx="595" cy="370" r="16" fill="#e8e8e8"/></g>`,
+  electric: `<g opacity=".55">
+    <rect x="80" y="320" width="180" height="150" fill="#b7aca2"/><rect x="290" y="360" width="120" height="110" fill="#c9bfb5"/>
+    <rect x="105" y="345" width="34" height="30" fill="#ffe066"/><rect x="190" y="345" width="34" height="30" fill="#ffe066"/>
+    <rect x="105" y="405" width="34" height="30" fill="#ffe066"/><rect x="310" y="385" width="30" height="28" fill="#ffe066"/><rect x="360" y="385" width="30" height="28" fill="#ffe066"/>
+    <path d="M520 470 V250 M500 270 h40 M700 470 V250 M680 270 h40 M880 470 V250 M860 270 h40" stroke="#6b4a2b" stroke-width="8"/>
+    <path d="M500 270 Q610 300 700 270 Q790 300 880 270" stroke="#333" stroke-width="3" fill="none"/>
+    <path d="M540 270 Q610 290 720 270" stroke="#333" stroke-width="3" fill="none"/>
+    <path d="M610 470 V380 h30" stroke="#555" stroke-width="7" fill="none"/><circle cx="645" cy="384" r="12" fill="#fff3a0"/>
+    <circle cx="645" cy="384" r="26" fill="#fff3a0" opacity=".45"/></g>`,
 };
 function renderVillage(eraId) {
   const v = $('#village');

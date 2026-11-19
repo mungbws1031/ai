@@ -296,7 +296,7 @@ test('A: the first ingredient mission opens a one-time tray intro card', async (
     { found: ['H2', 'H2O', 'O2', 'CO2', 'CH4', 'H3N', 'ClNa', 'O2Si'], missionIdx: 0, muted: true })); };
   const { ctx, page } = await fresh(undefined, molecules, true);
   await page.waitForSelector('#card:not([hidden])');
-  assert.match(await page.textContent('#card'), /접시/);
+  assert.match(await page.textContent('#card'), /그릇/);
   await page.click('#card-ok');
   // 새로고침 대신 저장값을 직접 확인한다: Chromium은 localStorage를 디스크에 늦게 써서,
   // 곧바로 새로고침하면 옛 값을 읽는 일이 가끔 있다 (테스트에서만 생기는 타이밍 문제).
@@ -316,7 +316,7 @@ test('industry era opens with coal and limestone and a new village', async () =>
   await ctx.close();
 });
 
-test('finishing the industry era shows the ending card', async () => {
+test('finishing the industry era opens the electric era', async () => {
   const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'quicklime', 'cement', 'concrete'];
   const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,allDone:true}))`;
   const { ctx, page } = await fresh(undefined, init);
@@ -326,7 +326,22 @@ test('finishing the industry era shows the ending card', async () => {
   await page.waitForSelector('#card:not([hidden])');
   await page.click('#card-ok');
   assert.ok(await page.locator('#card').isVisible());
-  assert.match(await page.textContent('#card-name'), /산업시대까지 완성/);
+  assert.match(await page.textContent('#card-name'), /전기시대가 열렸어/);
+  assert.equal(await page.locator('#drawer [data-item=lodestone]').count(), 1);
+  await ctx.close();
+});
+
+test('finishing the electric era shows the ending card', async () => {
+  const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete',
+    'salt_water', 'zinc', 'wire', 'battery', 'bulb', 'motor'];
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,endingEras:4}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  for (const id of ['lodestone', 'wire', 'steam_engine']) await page.click(`#drawer [data-item=${id}]`);
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#card').isVisible());
+  assert.match(await page.textContent('#card-name'), /전기시대까지 완성/);
   await ctx.close();
 });
 
@@ -364,22 +379,35 @@ test('loading a wrong file shows a friendly message and keeps progress', async (
 });
 
 for (const vp of [{ width: 1024, height: 768 }, { width: 768, height: 1024 }]) {
-  test(`tray sits at the bottom center (${vp.width}x${vp.height}) and does not overlap buttons`, async () => {
+  test(`mixing bowl sits in the middle of the bench (${vp.width}x${vp.height}) with buttons below`, async () => {
     const { ctx, page } = await fresh(vp);
-    for (const id of ['wood', 'flint', 'clay', 'wood']) await page.click(`#drawer [data-item=${id}]`);
+    for (const id of ['wood', 'flint', 'clay', 'wood', 'flint', 'clay']) await page.click(`#drawer [data-item=${id}]`);
+    assert.equal(await page.locator('#tray [data-item]').count(), 6);
     const bench = await page.locator('#bench').boundingBox();
     const tray = await page.locator('#tray').boundingBox();
-    const clear = await page.locator('#clear-btn').boundingBox();
     const combine = await page.locator('#combine-btn').boundingBox();
-    const trayCx = tray.x + tray.width / 2, benchCx = bench.x + bench.width / 2;
-    assert.ok(Math.abs(trayCx - benchCx) < bench.width * 0.12, `tray center ${trayCx} vs bench center ${benchCx}`);
+    const clear = await page.locator('#clear-btn').boundingBox();
+    const cx = tray.x + tray.width / 2, cy = tray.y + tray.height / 2;
+    assert.ok(Math.abs(cx - (bench.x + bench.width / 2)) < bench.width * 0.08, 'centered horizontally');
+    assert.ok(Math.abs(cy - (bench.y + bench.height / 2)) < bench.height * 0.15, 'centered vertically');
+    assert.ok(combine.y >= tray.y + tray.height - 1, 'buttons below the bowl');
     const hit = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
-    assert.ok(!hit(tray, clear), 'tray vs clear');
-    assert.ok(!hit(tray, combine), 'tray vs combine');
-    assert.ok(tray.y + tray.height <= bench.y + bench.height, 'tray inside bench');
+    assert.ok(!hit(tray, clear) && !hit(combine, clear));
+    assert.ok(tray.x >= bench.x && tray.x + tray.width <= bench.x + bench.width, 'bowl fits on screen');
     await ctx.close();
   });
 }
+
+test('drag ingredients from the drawer into the bowl, and drag one back out', async () => {
+  const { ctx, page } = await fresh();
+  await drag(page, '#drawer [data-item=wood]', '#tray');
+  await drag(page, '#drawer [data-item=flint]', '#tray');
+  assert.equal(await page.locator('#tray [data-item]').count(), 2);
+  await drag(page, '#tray [data-item=wood]', '#drawer > h3:first-child');
+  assert.equal(await page.locator('#tray [data-item]').count(), 1);
+  assert.equal(await page.locator('#tray [data-item=flint]').count(), 1);
+  await ctx.close();
+});
 
 test('territory map: hex island with fog, borders grow, tapping a building opens its card', async () => {
   const { ctx, page } = await fresh();
