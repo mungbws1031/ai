@@ -53,3 +53,17 @@ test("소스 이름이 분류·제품 표에 모두 연결된다", async () => {
     await browser.close();
   }
 });
+
+test("저장한 배합의 제목이 옛 스타일 이름으로 시작하면 새 이름으로 이어진다", async () => {
+  const mk = (id, title) => ({ id, title, createdAt: "2026.01.01", categoryName: "볶음", styleName: "백종원식 대중 한식",
+    foodWeightG: 300, zon: null, ingredients: [], rating: 0, memo: "" });
+  const arr = [mk("a", "백종원식 대중 한식 볶음"), mk("b", "우리집 볶음 (백종원식 대중 한식)"), mk("c", "내가 정한 이름")];
+  const { browser, page } = await openApp({ storage: { electronic_tongue_saved_recipes: JSON.stringify(arr) } });
+  try {
+    assert.deepStrictEqual(await page.evaluate(() => loadSaved().map(e => e.title)),
+      ["밥도둑 대중 한식 볶음", "우리집 볶음 (백종원식 대중 한식)", "내가 정한 이름"]);
+    assert.strictEqual(JSON.parse(await page.evaluate(() => localStorage.getItem("electronic_tongue_saved_recipes")))[0].title, "밥도둑 대중 한식 볶음");
+  } finally {
+    await browser.close();
+  }
+});

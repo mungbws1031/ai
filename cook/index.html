@@ -36,7 +36,7 @@
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
   .frame{
-    width:100%;background:var(--bg-frame);min-height:100dvh;overflow:hidden;
+    width:100%;background:var(--bg-frame);min-height:100dvh;overflow:hidden;overflow:clip;
     padding-bottom:calc(var(--navh) + env(safe-area-inset-bottom));
   }
   @media (min-width:480px){
@@ -324,14 +324,14 @@
   .cart-row .cr-from{font-size:11px;color:var(--faint);margin-top:2px}
   .cart-row .cr-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .cart-btn{font-family:var(--body);font-weight:700;font-size:12px;color:var(--text);background:var(--bg-frame);border:1px solid var(--border);border-radius:9px;padding:7px 10px;cursor:pointer}
-  .cart-buy a{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-dim,var(--text));opacity:.75;text-decoration:none;padding:7px 4px;margin-left:auto}
-  .shop-disclosure{font-size:11px;line-height:1.5;color:var(--text-dim,var(--text));opacity:.8;padding:8px 14px;border-bottom:1px solid var(--border)}
+  .cart-buy a{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-dim,var(--text));opacity:.75;text-decoration:none;padding:0 8px;margin-left:auto;display:inline-flex;align-items:center;min-height:44px}
+  .shop-disclosure{position:sticky;top:0;z-index:5;background:var(--bg-frame);font-size:11px;line-height:1.5;color:var(--text-dim,var(--text));padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 8px;border-bottom:1px solid var(--border)}
   .shop-disclosure[hidden]{display:none}
   .cart-btn:active{transform:scale(.96)}
   .cart-btn.primary{background:var(--accent);border-color:var(--accent);color:#1a130c}
   .cart-homewrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 16px 12px}
   .cart-homewrap button{font-family:var(--body);font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer}
-  .cart-homewrap .cart-fridge{font-size:12px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:6px 10px}
+  .cart-homewrap .cart-fridge{font-size:12px;color:var(--muted);background:var(--surface2);border:1px dashed var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;text-align:left}
   .cart-foot{display:flex;gap:8px;padding:8px 16px 24px}
   .cart-foot button{flex:1}
   .dishsheet-bg{position:fixed;inset:0;background:rgba(43,38,32,.45);z-index:50;display:none}
@@ -1258,7 +1258,9 @@ function loadSaved(){
     const arr=JSON.parse(localStorage.getItem(STORAGE_KEY)||"[]");
     if(!Array.isArray(arr)) return [];
     let changed=false;
-    arr.forEach(e=>{ if(e&&STYLE_RENAMES[e.styleName]){ e.styleName=STYLE_RENAMES[e.styleName]; changed=true; } });
+    arr.forEach(e=>{ if(!e) return;
+      if(STYLE_RENAMES[e.styleName]){ e.styleName=STYLE_RENAMES[e.styleName]; changed=true; }
+      if(typeof e.title==="string"){ const old=Object.keys(STYLE_RENAMES).find(k=>e.title.startsWith(k)); if(old){ e.title=STYLE_RENAMES[old]+e.title.slice(old.length); changed=true; } } });
     if(changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
     return arr;
   }catch(e){ return []; }
@@ -1311,7 +1313,7 @@ const RECIPES=[
    ing:["밥 1.5공기","김밥김 2장","단무지 2줄","맛살 2개","계란 2개","당근·시금치 약간","참기름 1작은술","소금·통깨"],
    steps:["따뜻한 밥에 참기름 1작은술·소금 약간·깨를 살살 섞어 한 김 식힌다.","계란은 도톰하게 부쳐 길게 썰고, 당근채는 소금 간해 볶고, 시금치는 데쳐 참기름·소금에 무친다.","김 위에 밥을 2/3만 얇게 펴고 속재료를 가지런히 올린다.","끝에서부터 단단히 말고, 칼에 참기름을 발라 한입 크기로 썬다."],
    tip:"김 끝 1/4은 밥을 비워야 안 터져요. 밥은 뜨거울 때 간하고 식혀야 안 질척여요."},
-  {emoji:"🥪",name:"샌드위치",diff:"★☆☆",time:"10분",
+  {emoji:"🥪",name:"샌드위치",serves:1,diff:"★☆☆",time:"10분",
    ing:["식빵 2장","햄 2장","슬라이스치즈 1장","계란 1개","양상추 2장","마요네즈","머스터드(선택)"],
    steps:["식빵 안쪽 면에 마요네즈(+머스터드)를 얇게 바른다.","계란프라이를 반숙~완숙으로 부친다.","빵 → 양상추 → 치즈 → 햄 → 계란 순으로 쌓고 빵을 덮는다.","살짝 눌러 대각선으로 자른다."],
    tip:"양상추 물기를 키친타월로 닦으세요. 빵에 마요를 바르면 방수막이 돼서 안 눅눅해요."},
@@ -1319,7 +1321,7 @@ const RECIPES=[
    ing:["물 2컵(400ml)","미소된장 1큰술","두부 1/4모","건미역 약간","대파","다시팩(선택)"],
    steps:["물을 끓인다. 다시팩이 있으면 넣고 5분 우린 뒤 건진다.","미역·두부를 넣고 끓인다.","불을 줄이고 미소된장을 국자에 풀어 넣는다.","대파를 넣고 한소끔만 데우면 완성."],
    tip:"미소는 마지막에! 팔팔 끓이면 향이 날아가요. 물 400ml당 미소 1큰술이 적당한 간이에요."},
-  {emoji:"🍚",name:"김자반 비빔밥",diff:"★☆☆",time:"5분",
+  {emoji:"🍚",name:"김자반 비빔밥",serves:1,diff:"★☆☆",time:"5분",
    ing:["따뜻한 밥 1공기","김자반(조미김가루) 2~3큰술","계란 1개","참기름 1작은술","통깨","간장 약간(선택)"],
    steps:["계란프라이를 반숙으로 부친다.","따뜻한 밥에 김자반·참기름·깨를 넣고 비빈다.","계란프라이를 얹고 노른자를 터뜨려 비벼 먹는다."],
    tip:"김자반에 간·기름이 이미 있어 간장은 한 방울이면 충분. 싱거우면 김자반을 더 넣으세요."},
@@ -1327,11 +1329,11 @@ const RECIPES=[
    ing:["떡 300g","어묵 2장","물 2컵(400ml)","고추장 1.5큰술","고춧가루 1큰술","설탕 1.5큰술","간장 1큰술","다진마늘 0.5큰술","대파"],
    steps:["떡이 딱딱하면 따뜻한 물에 5분 불린다.","냄비에 물과 양념(고추장·고춧가루·설탕·간장·마늘)을 풀고 끓인다.","끓으면 떡·어묵을 넣고 중불에서 저으며 졸인다.","국물이 걸쭉해지면 대파를 넣고 1분 더 끓여 마무리."],
    tip:"단맛은 기호껏 설탕/물엿으로. 더 깊은맛은 다시다 약간. 너무 졸았으면 물을 조금 더 넣어요."},
-  {emoji:"🍳",name:"계란볶음밥",diff:"★☆☆",time:"10분",
+  {emoji:"🍳",name:"계란볶음밥",serves:1,diff:"★☆☆",time:"10분",
    ing:["찬밥 1공기","계란 2개","대파","식용유 1큰술","굴소스 1작은술(또는 간장)","소금·후추"],
    steps:["팬에 기름을 두르고 대파를 볶아 파기름을 낸다.","계란을 풀어 넣고 스크램블한 뒤 밥을 넣어 센 불에 볶는다.","굴소스(또는 간장)·소금·후추로 간하고 고슬하게 볶는다."],
    tip:"찬밥이 더 고슬해요. 간은 굴소스 1작은술이면 충분, 더 넣으면 짜져요."},
-  {emoji:"🐟",name:"참치마요덮밥",diff:"★☆☆",time:"7분",
+  {emoji:"🐟",name:"참치마요덮밥",serves:1,diff:"★☆☆",time:"7분",
    ing:["밥 1공기","참치캔 1개","마요네즈 1.5큰술","간장 1작은술","설탕 약간","계란 1개","김가루"],
    steps:["참치는 기름을 꾹 짜고 마요·간장·설탕 약간과 섞는다.","밥 위에 참치마요를 올린다.","계란프라이와 김가루를 얹어 비벼 먹는다."],
    tip:"참치 기름을 꼭 빼야 안 느끼해요. 매콤하게 원하면 스리라차를 살짝."},
@@ -1654,18 +1656,37 @@ function buildMeal(){
 /* 재료 한 줄 → {name, qty}. 앞의 수식어 제거, 첫 공백 앞 = 이름, 나머지 = 양 (renderShop과 공유) */
 const ING_SKIP=["따뜻한","찬","다진","생","구운","삶은","불린","잘게"];
 function splitIngLine(line){
-  const p=String(line).trim().split(" ");
+  const t=String(line).trim();
+  const p=t.split(" ");
   const hasMod=ING_SKIP.includes(p[0])&&!!p[1];
+  if(t.includes("(")){
+    /* 이름 칸의 괄호 부분("쌀(아르보리오)", "드레싱(흑임자 2T·…)")은 이름에서 빼고, 괄호 뒤에 남은 글이 양 */
+    const body=hasMod?p.slice(1).join(" "):t;
+    const o=body.indexOf("("), sp=body.indexOf(" ");
+    if(o>0&&(sp<0||o<sp)){
+      const c=body.indexOf(")",o);
+      return {name:body.slice(0,o).replace(/[:：]$/,""), qty:c<0?"":body.slice(c+1).trim()};
+    }
+  }
   const name=(hasMod?p[1]:p[0]).replace(/[:：]$/,"");
   return {name, qty:p.slice(hasMod?2:1).join(" ")};
 }
-/* 숫자(정수/소수/분수)+단위 하나뿐인 양만 배수 적용, 나머지는 그대로 */
+/* 레시피 한 개 → 장바구니 줄. 양은 factor 배, 물·생수는 사는 게 아니므로 뺀다 */
+const NOT_BOUGHT=["물","생수"];
+function recipeLines(r,factor){
+  return r.ing.map(splitIngLine).filter(s=>s.name&&!NOT_BOUGHT.includes(s.name)).map(s=>({name:s.name, qty:scaleQty(s.qty,factor)}));
+}
+function recipeServes(r){ return r&&r.serves>0?r.serves:2; }
+/* 숫자(정수/소수/분수)+단위 하나뿐인 양만 배수 적용("2컵(400ml)"처럼 괄호 속 숫자+단위도 함께), 나머지는 그대로 */
 function scaleQty(qty,factor){
-  const m=String(qty).trim().match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s*([^\d\s\/.~(]+)$/);
+  const m=String(qty).trim().match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s*([^\d\s\/.~(]+)(?:\((\d+(?:\.\d+)?)\s*([^\d\s\/.~()]+)\))?$/);
   if(!m) return qty;
   let n; if(m[1].includes("/")){ const [a,b]=m[1].split("/").map(Number); n=b?a/b:NaN; } else n=Number(m[1]);
   if(!isFinite(n)) return qty;
-  return fmtNum(Math.max(0.5,round05(n*factor)))+m[2];
+  const out=fmtNum(Math.max(0.5,round05(n*factor)))+m[2];
+  if(m[3]==null) return out;
+  const k=Math.round(Number(m[3])*factor*10)/10;
+  return out+"("+fmtNum(k)+m[4]+")";
 }
 function renderShop(){
   const el=$("mealShop"); if(!el) return;
@@ -1680,11 +1701,12 @@ function mealToCart(names){
   const had=new Set(); loadCart().forEach(it=>(it.from||[]).forEach(f=>had.add(f)));
   const fresh=names.filter(n=>!had.has(n));
   if(!fresh.length){ toast("이미 장바구니에 담겨 있어요"); return; }
-  fresh.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) addToCart(r.ing.map(splitIngLine), n); });
+  /* 식단은 2인분 기준: 1인분 레시피(serves:1)는 2배로 */
+  fresh.forEach(n=>{ const r=RECIPES.find(x=>x.name===n); if(r) addToCart(recipeLines(r,2/recipeServes(r)), n); });
   toast("담았어요 · 장바구니 "+loadCart().length+"개"); updateCartFab();
 }
 /* ════ 장바구니 ════ */
-const CART_KEY="et_cart", HOME_KEY="et_home";
+const CART_KEY="et_cart", HOME_KEY="et_home", NEED_KEY="et_need";
 function parseQty(s){
   const t=String(s==null?"":s).trim();
   const m=t.match(/^(\d+(?:\.\d+)?|\d+\/\d+)\s*([^\d\s\/.]+)$/);
@@ -1717,14 +1739,28 @@ function addToCart(lines,from){
   });
   saveCart(cart);
 }
-function removeFromCart(name){ saveCart(loadCart().filter(x=>x.name!==name)); }
-function clearCart(){ saveCart([]); }
+function loadNeed(){ try{ const a=JSON.parse(localStorage.getItem(NEED_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+/* et_need: 냉장고에 이름이 있어도 "사야 해요"로 되돌린 재료 (냉장고 매칭만 덮어쓴다) */
+function setNeed(name,on){
+  const h=loadNeed().filter(x=>x!==name); if(on) h.push(name);
+  try{ localStorage.setItem(NEED_KEY, JSON.stringify(h)); }catch(e){}
+}
+function removeFromCart(name){ saveCart(loadCart().filter(x=>x.name!==name)); setNeed(name,false); }
+function clearCart(){ const names=loadCart().map(x=>x.name); saveCart([]); const keep=loadNeed().filter(x=>!names.includes(x)); try{ localStorage.setItem(NEED_KEY, JSON.stringify(keep)); }catch(e){} }
 function setHome(name,on){
   const h=loadHome().filter(x=>x!==name); if(on) h.push(name);
   try{ localStorage.setItem(HOME_KEY, JSON.stringify(h)); }catch(e){}
 }
+/* 냉장고 이름이 재료 이름과 같거나, 공백으로 나뉜 단어로 들어 있을 때만 일치 ("대파 한 단"→대파 O, "순두부"→두부 X, "오이고추"→오이 X) */
+function fridgeHas(name){
+  const n=String(name).trim(); if(!n) return false;
+  return loadFridge().some(x=>{ if(!x||typeof x.name!=="string") return false;
+    const f=x.name.trim().replace(/\s+/g," "); return f===n||(" "+f+" ").includes(" "+n+" "); });
+}
 function isHome(name){
-  return loadHome().includes(name) || loadFridge().some(x=>x&&typeof x.name==="string"&&x.name.includes(name));
+  if(loadHome().includes(name)) return true;
+  if(loadNeed().includes(name)) return false;
+  return fridgeHas(name);
 }
 function cartView(){
   const buy=[], home=[];
@@ -1743,7 +1779,7 @@ const FRIDGE_KEY="et_fridge";
 const FR_PRESETS=[["잎채소·상추",4],["채소·뿌리채소",14],["과일",7],["소·돼지고기",3],["닭고기",2],["생선·해산물",2],["다진고기",1],["계란",21],["우유·유제품",7],["두부(개봉)",3],["김치",30],["소스·장류(개봉)",30],["밥·반찬",3],["냉동식품",90]];
 function escAttr(s){ return esc(s).replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function esc(s){ const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
-function loadFridge(){ try{ return JSON.parse(localStorage.getItem(FRIDGE_KEY)||"[]"); }catch(e){ return []; } }
+function loadFridge(){ try{ const a=JSON.parse(localStorage.getItem(FRIDGE_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function saveFridge(a){ try{ localStorage.setItem(FRIDGE_KEY, JSON.stringify(a)); }catch(e){} }
 function frPad(n){ return String(n).padStart(2,"0"); }
 function frToday(){ const d=new Date(); return d.getFullYear()+"-"+frPad(d.getMonth()+1)+"-"+frPad(d.getDate()); }
@@ -2004,7 +2040,7 @@ const TASTE_DISHES={
 function dishLines(styleId,dish,servings){
   if(dish.recipe){
     const r=RECIPES.find(x=>x.name===dish.recipe); if(!r) return [];
-    return r.ing.map(i=>{ const s=splitIngLine(i); return {name:s.name, qty:scaleQty(s.qty,servings/2)}; });
+    return recipeLines(r,servings/recipeServes(r));
   }
   const out=dish.main.map(m=>({name:m.name, qty:fmtNum(m.per1*servings)+m.unit}));
   const res=calcRecipe({categoryId:dish.cat, stylePresetId:styleId, foodWeightG:dish.gPerServing*servings, intensity:"normal"});
@@ -2113,14 +2149,16 @@ function renderCart(){
       `<div class="cr-acts"><button class="cart-btn" data-act="home" data-name="${na}">□ 집에 있어요</button><button class="cart-btn primary" data-act="bought" data-name="${na}">✓ 샀어요</button><span class="cart-buy"><a href="${escAttr(buyUrl(it.name))}" data-buy="${na}" rel="noopener">구매 →</a></span></div></div>`;
   }).join(""):`<div class="empty" style="padding:30px 20px">${home.length?"살 재료가 없어요 🎉":"장바구니가 비어 있어요.<br>맛·식단에서 재료를 담아보세요 🛒"}</div>`;
   $("cartHomeHdr").innerHTML=home.length?`<div class="savedhdr">🏠 집에 있음 <span>${home.length}</span></div>`:"";
-  $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>loadHome().includes(it.name)?`<button data-name="${escAttr(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`:`<span class="cart-fridge">🧊 ${esc(it.name)} · 냉장고에 있음</span>`).join("")}</div>`:"";
+  $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>loadHome().includes(it.name)?`<button data-name="${escAttr(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`:`<button class="cart-fridge" data-need="${escAttr(it.name)}">🧊 ${esc(it.name)} · 냉장고에 있음 (눌러서 사야 해요)</button>`).join("")}</div>`:"";
   updateCartFab();
 }
 $("cartList").addEventListener("click",e=>{
   const a=e.target.closest("a[data-buy]"); if(a){ e.preventDefault(); openExternal(buyUrl(a.dataset.buy)); return; }
   const b=e.target.closest("button[data-act]"); if(!b) return;
   const n=b.dataset.name; if(b.dataset.act==="home") setHome(n,true); else removeFromCart(n); renderCart(); });
-$("cartHome").addEventListener("click",e=>{ const b=e.target.closest("button[data-name]"); if(!b) return; setHome(b.dataset.name,false); renderCart(); });
+$("cartHome").addEventListener("click",e=>{
+  const nb=e.target.closest("button[data-need]"); if(nb){ setNeed(nb.dataset.need,true); renderCart(); return; }
+  const b=e.target.closest("button[data-name]"); if(!b) return; setHome(b.dataset.name,false); renderCart(); });
 $("cartClear").onclick=()=>{ if(!confirm("장바구니를 모두 비울까요?")) return; clearCart(); renderCart(); };
 $("cartFab").onclick=showCart;
 $("cartShare").onclick=shareCart;

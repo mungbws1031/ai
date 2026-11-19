@@ -208,3 +208,41 @@ test("네이티브 흉내일 때 SW 등록 안 함·알림 버튼 숨김", () =>
   await page.click('.nav button[data-view="fridge"]');
   assert.strictEqual(await page.locator("#frNotif").isVisible(), false);
 }));
+
+test("냉장고 때문에 집에 있는 재료는 눌러서 사야 해요로 되돌릴 수 있다", () => withApp({ storage: { et_fridge: JSON.stringify([{ name: "대파 한 단", bought: "2026-11-18", days: 7 }]) } }, async page => {
+  await page.evaluate(() => { addToCart([{ name: "대파", qty: "1대" }], "x"); showCart(); });
+  const btn = page.locator("#cartHome button[data-need]");
+  assert.strictEqual((await btn.innerText()).trim(), "🧊 대파 · 냉장고에 있음 (눌러서 사야 해요)");
+  await btn.click();
+  assert.deepStrictEqual(await page.evaluate(() => loadNeed()), ["대파"]);
+  assert.ok((await page.innerText("#cartList")).includes("대파"));
+  assert.strictEqual(await page.locator("#cartHome button[data-need]").count(), 0);
+  // 샀어요로 지우면 되돌림 기록도 사라진다
+  await page.click('#cartList [data-act="bought"]');
+  assert.deepStrictEqual(await page.evaluate(() => loadNeed()), []);
+}));
+
+test("냉장고 저장값이 {} 여도 로드 오류 없이 장바구니 버튼이 동작한다", () => withApp({ storage: { et_fridge: "{}" } }, async page => {
+  await page.evaluate(() => { addToCart([{ name: "간장", qty: "1병" }], "x"); updateCartFab(); });
+  assert.ok(await page.locator("#cartFab").isVisible());
+  await page.click("#cartFab");
+  assert.ok((await page.innerText("#cartList")).includes("간장"));
+}));
+
+test("구매 → 터치 영역이 44px 이상이다", () => withApp({}, async page => {
+  await page.evaluate(() => { addToCart([{ name: "간장", qty: "1병" }], "x"); showCart(); });
+  const h = await page.evaluate(() => document.querySelector("#cartList .cart-buy a").offsetHeight);
+  assert.ok(h >= 44, "height " + h);
+}));
+
+test("제휴 고지는 장바구니를 스크롤해도 화면 위에 붙어 있다", () => withApp({}, async page => {
+  await page.evaluate(() => {
+    SHOP_CONFIG.affiliate = true;
+    addToCart(Array.from({ length: 25 }, (_, i) => ({ name: "재료" + i, qty: "1개" })), "x"); showCart();
+  });
+  assert.strictEqual(await page.evaluate(() => getComputedStyle(document.getElementById("shopDisclosure")).position), "sticky");
+  await page.evaluate(() => window.scrollTo(0, 600));
+  await page.waitForTimeout(400);
+  const top = await page.evaluate(() => document.getElementById("shopDisclosure").getBoundingClientRect().top);
+  assert.ok(Math.abs(top) <= 1, "top " + top);
+}));
