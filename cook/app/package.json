@@ -1,0 +1,19 @@
+{
+  "name": "jeonjahyeo-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "전자혀 안드로이드 셸 (Capacitor). 웹 원본은 ../index.html 하나.",
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "sync": "npm run build:web && cap sync android",
+    "android:bundle": "npm run sync && cd android && ./gradlew bundleRelease"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/core": "^8.6.2",
+    "@capacitor/share": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.6.2"
+  }
+}
