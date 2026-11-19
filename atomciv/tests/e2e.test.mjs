@@ -211,3 +211,96 @@ test('hint on a molecule mission tells the child to drag atoms together', async 
   assert.match(await page.textContent('#toast'), /끌어/);
   await ctx.close();
 });
+
+test('full sodium toast uses 은, not 는', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Na]'); await page.click('[data-atom=O]'); await page.click('[data-atom=H]');
+  const [na] = await benchIds(page, 'Na'); const [o] = await benchIds(page, 'O'); const [h] = await benchIds(page, 'H');
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${o}"]`);
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${h}"]`);
+  assert.match(await page.textContent('#toast'), /나트륨은 손이 꽉 찼어/);
+  await ctx.close();
+});
+
+test('salt is drawn as an ionic bond with charges', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Na]'); await page.click('[data-atom=Cl]');
+  const [na] = await benchIds(page, 'Na'); const [cl] = await benchIds(page, 'Cl');
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${cl}"]`);
+  assert.equal(await page.locator('#bench .bond.ionic').count(), 1);
+  assert.equal(await page.textContent(`.atom[data-id="${na}"] .charge`), '+');
+  assert.equal(await page.textContent(`.atom[data-id="${cl}"] .charge`), '−');
+  await ctx.close();
+});
+
+test('every mission text fits on one line in portrait', async () => {
+  const { ctx, page } = await fresh({ width: 768, height: 1024 }, undefined, true);
+  const targets = await page.evaluate(() => window.AtomCiv.MISSIONS.map(m => m.target));
+  const wrapped = [];
+  for (let i = 0; i < targets.length; i++) {
+    await page.evaluate((found) => {
+      localStorage.setItem('atomciv.v1', JSON.stringify({ found, missionIdx: 0, muted: true }));
+    }, targets.slice(0, i));
+    await page.reload();
+    const r = await page.evaluate(() => {
+      const e = document.querySelector('#mission-text');
+      const rg = document.createRange(); rg.selectNodeContents(e);
+      const tops = new Set([...rg.getClientRects()].map(x => Math.round(x.top)));
+      return { lines: tops.size, t: e.textContent };
+    });
+    if (r.lines > 1) wrapped.push(r.t);
+  }
+  assert.deepEqual(wrapped, []);
+  await ctx.close();
+});
+
+test('after a first O-O bond the child is told to connect again for a double bond', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=O]'); await page.click('[data-atom=O]');
+  const [a, b] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${a}"]`, `.atom[data-id="${b}"]`);
+  assert.match(await page.textContent('#toast'), /한 번 더/);
+  await drag(page, `.atom[data-id="${a}"]`, `.atom[data-id="${b}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /산소/);
+  await ctx.close();
+});
+
+test('C: water made on the bench drops into the tray; plain H2 does not', async () => {
+  const { ctx, page } = await fresh();
+  await makeWater(page);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.equal(await page.locator('#tray [data-item=H2O]').count(), 1);
+  await page.click('[data-atom=H]'); await page.click('[data-atom=H]');
+  const hs = await benchIds(page, 'H');
+  await drag(page, `.atom[data-id="${hs[0]}"]`, `.atom[data-id="${hs[1]}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.equal(await page.locator('#tray [data-item=H2]').count(), 0);
+  assert.equal(await page.locator('#tray [data-item]').count(), 1);
+  await ctx.close();
+});
+
+test('A: empty tray shows how to use it', async () => {
+  const { ctx, page } = await fresh();
+  assert.ok(await page.locator('#tray-empty').isVisible());
+  assert.match(await page.textContent('#tray-empty'), /재료/);
+  await page.click('#drawer [data-item=wood]');
+  assert.ok(await page.locator('#tray-empty').isHidden());
+  await ctx.close();
+});
+
+test('A: the first ingredient mission opens a one-time tray intro card', async () => {
+  const molecules = () => { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify(
+    { found: ['H2', 'H2O', 'O2', 'CO2', 'CH4', 'H3N', 'ClNa', 'O2Si'], missionIdx: 0, muted: true })); };
+  const { ctx, page } = await fresh(undefined, molecules, true);
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /접시/);
+  await page.click('#card-ok');
+  const ctx2page = await ctx.newPage();
+  await ctx2page.goto(page.url());
+  await ctx2page.waitForTimeout(300);
+  assert.ok(await ctx2page.locator('#card').isHidden(), 'intro shown only once');
+  await ctx.close();
+});

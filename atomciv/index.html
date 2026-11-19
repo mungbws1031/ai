@@ -76,11 +76,14 @@ button:disabled{opacity:.4}
 #tray{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;padding:6px 10px;min-height:76px;
   background:rgba(255,255,255,.75);border:3px dashed #d4b47c;border-radius:20px;max-width:calc(100% - 310px)}
 #tray .tray-label{font-size:26px}
+#tray-empty{color:var(--muted);font-weight:700;font-size:15px;white-space:nowrap}
+#tray-items .item-chip.pop-in{animation:popin .45s ease-out}
+@keyframes popin{0%{transform:translateY(-60px) scale(.4);opacity:0}100%{transform:none;opacity:1}}
 #tray-items{display:flex;gap:6px;flex-wrap:wrap}
 #tray.bounce{animation:bounce .4s}
 @keyframes bounce{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 #heat-btn[aria-pressed=true]{background:#ff5a36;color:#fff}
-#mission-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;
+#mission-bar{position:absolute;top:10px;left:12px;right:12px;margin:0 auto;width:fit-content;display:flex;align-items:center;gap:10px;
   background:#fff;border-radius:18px;padding:6px 6px 6px 16px;box-shadow:var(--shadow);font-weight:800;font-size:18px;
   max-width:calc(100% - 24px);z-index:2}
 #mission-text{word-break:keep-all}
@@ -126,7 +129,7 @@ button:disabled{opacity:.4}
         <button id="combine-btn" disabled>✨ 합치기</button>
         <button id="clear-btn">🧹 비우기</button>
       </div>
-      <div id="tray" aria-label="재료 접시"><span class="tray-label">🍽️</span><div id="tray-items"></div></div>
+      <div id="tray" aria-label="재료 접시"><span class="tray-label">🍽️</span><span id="tray-empty">재료를 누르면 여기 올라가요</span><div id="tray-items"></div></div>
       <div id="toast" role="status"></div>
     </section>
     <div id="panel" hidden>
@@ -176,6 +179,13 @@ function formulaKey(syms) {
   const c = {};
   for (const s of syms) c[s] = (c[s] || 0) + 1;
   return Object.keys(c).sort().map(s => s + (c[s] > 1 ? c[s] : '')).join('');
+}
+
+// 받침이 있으면 '은', 없으면 '는' (예: 나트륨은, 수소는)
+function topic(word) {
+  const c = word.charCodeAt(word.length - 1);
+  const hasFinal = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0;
+  return word + (hasFinal ? '은' : '는');
 }
 
 function freeHands(group) {
@@ -308,7 +318,7 @@ function eraIndex(found) {
 const MISSIONS = [
   { target: 'H2',        text: '수소 둘이 손을 잡게 해 봐! (수소 기체)',  hint: ['H'] },
   { target: 'H2O',       text: '물을 만들어 봐! 💧',                      hint: ['H', 'O'] },
-  { target: 'O2',        text: '산소 기체를 만들어 봐! 손 두 개를 다 잡아야 해', hint: ['O'] },
+  { target: 'O2',        text: '산소 둘을 두 번 붙여 봐! 손을 두 개씩 잡아야 해', hint: ['O'] },
   { target: 'CO2',       text: '우리가 내쉬는 숨, 이산화탄소를 만들어 봐!', hint: ['C', 'O'] },
   { target: 'CH4',       text: '탄소의 네 손을 수소로 채워 봐!',           hint: ['C', 'H'] },
   { target: 'H3N',       text: '질소의 세 손을 수소로 채워 봐!',           hint: ['N', 'H'] },
@@ -329,7 +339,7 @@ function currentMission(found) { return MISSIONS.find(m => !found.includes(m.tar
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, loadState, saveState, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission /*EXPORTS*/ };
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -477,6 +487,11 @@ function removeAtoms(ids) {
   renderBench();
 }
 
+const symOf = id => bench.atoms.find(a => a.id === id).sym;
+function isIonic(b) {
+  const pair = [symOf(b.a), symOf(b.b)].sort().join('-');
+  return pair === 'Cl-Na';
+}
 function renderBench() {
   benchSvg.textContent = '';
   const f = freeHands(bench);
@@ -485,9 +500,14 @@ function renderBench() {
     const p = pos[b.a], q = pos[b.b];
     const dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy) || 1;
     const nx = -dy / L, ny = dx / L;
+    if (isIonic(b)) { // 이온결합: 전자를 주고받아 끌어당김 → 점선
+      bondLayer.append(sv('line', { class: 'bond ionic', x1: p.x, y1: p.y, x2: q.x, y2: q.y,
+        stroke: '#e0a100', 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-dasharray': '4 6' }));
+      continue;
+    }
     for (let i = 0; i < b.order; i++) {
       const o = (i - (b.order - 1) / 2) * 9;
-      bondLayer.append(sv('line', { x1: p.x + nx * o, y1: p.y + ny * o, x2: q.x + nx * o, y2: q.y + ny * o,
+      bondLayer.append(sv('line', { class: 'bond', x1: p.x + nx * o, y1: p.y + ny * o, x2: q.x + nx * o, y2: q.y + ny * o,
         stroke: '#4a3f35', 'stroke-width': 6, 'stroke-linecap': 'round' }));
     }
   }
@@ -525,6 +545,18 @@ function renderBench() {
     const t = sv('text', { y: 13, 'text-anchor': 'middle', 'font-size': 24, 'font-weight': 800, fill: ink });
     t.textContent = a.sym;
     body.append(t);
+    const ionic = bonded.find(isIonic);
+    if (ionic) { // Na는 전자를 줘서 +, Cl은 전자를 받아서 −
+      const sign = a.sym === 'Na' ? '+' : '−';
+      // 짝 원자와 반대쪽(조금 위)에 전하 표시를 붙여 겹치지 않게
+      const mate = pos[ionic.a === a.id ? ionic.b : ionic.a];
+      const away = Math.atan2(p.y - mate.y, p.x - mate.x) - Math.PI / 4;
+      const bx = Math.cos(away) * R, by = Math.sin(away) * R;
+      body.append(sv('circle', { cx: bx, cy: by, r: 12, fill: sign === '+' ? '#ff6b6b' : '#4d8dff', stroke: '#fff', 'stroke-width': 2 }));
+      const ct = sv('text', { class: 'charge', x: bx, y: by + 6, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 900, fill: '#fff' });
+      ct.textContent = sign;
+      body.append(ct);
+    }
     g.append(body);
     atomLayer.append(g);
   }
@@ -573,11 +605,13 @@ function finishDrag(e) {
       beep(880, 0.08);
       renderBench();
       checkComplete();
+      // 둘 다 손이 남았으면 이중·삼중결합을 할 수 있다고 알려 준다
+      if (!busy.has(id) && canBond(bench, id, target)) toast('손이 남았어! 한 번 더 붙이면 손을 하나 더 잡아 👐');
     } else {
       const f = freeHands(bench);
       const name = sid => ATOMS[bench.atoms.find(a => a.id === sid).sym].name;
-      if (f[id] < 1) toast(`${name(id)}는 손이 꽉 찼어!`);
-      else if (f[target] < 1) toast(`${name(target)}는 손이 꽉 찼어!`);
+      if (f[id] < 1) toast(`${topic(name(id))} 손이 꽉 찼어!`);
+      else if (f[target] < 1) toast(`${topic(name(target))} 손이 꽉 찼어!`);
       else toast('손은 세 개까지만 같이 잡을 수 있어!');
       pos[id] = start; beep(220, 0.12); renderBench();
     }
@@ -613,7 +647,7 @@ function checkComplete() {
       const isNew = r.status === 'known' && discover(r.key);
       queueCard(r.status === 'known'
         ? { emoji: r.molecule.emoji, tag: isNew ? '✨ 새 발견!' : '또 만들었어!', name: r.molecule.name,
-            formula: r.molecule.formula, why: r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); } }
+            formula: r.molecule.formula, why: r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); dropIntoTray(r.key); } }
         : { emoji: '🤔', tag: '규칙은 맞지만', name: '아직 이름 모르는 분자!', formula: pretty(r.key),
             why: '모든 손을 다 잡았어! 과학자들은 더 많은 분자를 알고 있단다.', onClose: () => removeAtoms(r.ids) });
       if (isNew) fanfare();
@@ -632,6 +666,15 @@ function afterMake(key) {
 }
 
 /* ---- tray & combine ---- */
+// 레시피 재료로 쓰이는 분자(물, 모래)는 만들자마자 접시로 쏙 넣어 준다
+function dropIntoTray(key) {
+  if (!RECIPES.some(r => r.inputs.includes(key))) return;
+  if (tray.includes(key) || tray.length >= TRAY_MAX) return;
+  tray.push(key); renderTray();
+  const chips = document.querySelectorAll('#tray-items .item-chip');
+  if (chips.length) chips[chips.length - 1].classList.add('pop-in');
+  toast(`${MOLECULES[key].emoji} ${MOLECULES[key].name} 접시로 쏙!`);
+}
 let tray = [];
 let heatOn = false;
 const TRAY_MAX = 4;
@@ -650,6 +693,7 @@ function renderTray() {
     box.append(b);
   });
   $('#tray').classList.toggle('empty', !tray.length);
+  $('#tray-empty').hidden = tray.length > 0;
   renderTools();
 }
 function renderTools() {
@@ -783,6 +827,12 @@ function renderMission() {
   const m = currentMission(state.found);
   $('#mission-text').textContent = m ? '🎯 ' + m.text : '🏅 미션을 모두 깼어! 실험실에서 마음껏 실험해 봐';
   $('#hint-btn').hidden = !m;
+  const madeAnyInvention = Object.keys(ITEMS).some(k => !ITEMS[k].raw && state.found.includes(k));
+  if (m && ITEMS[m.target] && !state.trayIntro && !madeAnyInvention) {
+    state.trayIntro = true; saveState(state);
+    queueCard({ plain: true, emoji: '🍽️', tag: '새로운 방법!', name: '이제 재료를 섞어 볼 차례',
+      why: '서랍의 재료를 누르면 아래 접시에 올라가. 다 올렸으면 ✨합치기를 눌러 봐! 원자로 만든 분자도 재료가 될 수 있어.' });
+  }
 }
 $('#hint-btn').addEventListener('click', () => {
   const m = currentMission(state.found);

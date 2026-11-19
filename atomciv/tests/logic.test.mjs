@@ -124,3 +124,17 @@ test('service worker fetches pages network-first so updates reach tablets', asyn
   const src = fs.readFileSync(new URL('../sw.js', import.meta.url), 'utf8');
   assert.match(src, /mode === "navigate"/);
 });
+
+test('topic particle follows the final consonant (은/는)', async () => {
+  assert.equal(await run(A => A.topic('나트륨')), '나트륨은');
+  assert.equal(await run(A => A.topic('수소')), '수소는');
+  assert.equal(await run(A => A.topic('질소')), '질소는');
+  assert.equal(await run(A => A.topic('산소')), '산소는');
+  assert.equal(await run(A => A.topic('탄소')), '탄소는');
+  assert.equal(await run(A => A.topic('염소')), '염소는');
+  assert.equal(await run(A => A.topic('규소')), '규소는');
+});
+
+test('oxygen mission says to connect twice', async () => {
+  assert.match(await run(A => A.MISSIONS.find(m => m.target === 'O2').text), /두 번/);
+});
