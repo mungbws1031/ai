@@ -103,3 +103,108 @@ test("이름에 따옴표가 있어도 샀어요가 동작한다", () => withApp
   await page.click('#cartList [data-act="bought"]');
   assert.strictEqual(await page.evaluate(() => loadCart().length), 0);
 }));
+
+/* ── Task 6: 구매 링크 · 고지 · 공유 · 앱 분기 ── */
+const NATIVE_INIT = () => {
+  window.Capacitor = { isNativePlatform: () => true, Plugins: {} };
+  window.__opens = [];
+  window.open = (...a) => { window.__opens.push(a); return null; };
+};
+const TTEOK_URL = "https://www.coupang.com/np/search?q=%EB%96%A1%EB%B3%B6%EC%9D%B4%20%EB%96%A1";
+
+test("구매 버튼 링크는 검색 URL이고 고지 문구는 없다", () => withApp({}, async page => {
+  await addOilTteokbokki(page);
+  await page.click("#cartFab");
+  const btn = page.locator('#cartList .cart-row:has-text("떡볶이 떡") .cart-buy a, #cartList .cart-row:has-text("떡볶이 떡") .cart-buy button').first();
+  assert.strictEqual((await btn.innerText()).trim(), "구매 →");
+  const href = await btn.evaluate(el => el.getAttribute("href") || el.dataset.url);
+  assert.strictEqual(href, TTEOK_URL);
+  const body = await page.evaluate(() => document.body.innerText + [...document.querySelectorAll("body *:not(script):not(style)")].map(e=>e.children.length?"":e.textContent).join(" "));
+  assert.ok(!body.includes("쿠팡 파트너스") && !body.includes("수수료"));
+}));
+
+test("affiliate=true면 고지 문구가 장바구니 상단에 보인다", () => withApp({}, async page => {
+  await addOilTteokbokki(page);
+  await page.click("#cartFab");
+  await page.evaluate(() => { SHOP_CONFIG.affiliate = true; renderCart(); });
+  const first = await page.evaluate(() => document.querySelector("#view-cart").children[0].innerText);
+  const disc = await page.evaluate(() => SHOP_CONFIG.disclosure);
+  assert.ok(first.includes(disc), first);
+  assert.ok(await page.locator("#view-cart .shop-disclosure").isVisible());
+  await page.evaluate(() => { SHOP_CONFIG.affiliate = false; renderCart(); });
+  assert.ok(!(await page.innerText("#view-cart")).includes("파트너스"));
+}));
+
+test("공유 문구 형식", () => withApp({}, async page => {
+  await addOilTteokbokki(page);
+  await page.evaluate(() => { addToCart([{ name: "후추", qty: "" }], "x"); });
+  await page.click("#cartFab");
+  await page.click('#cartList .cart-row:has-text("고춧가루") [data-act="home"]');
+  const t = await page.evaluate(() => cartShareText());
+  const lines = t.split("\n");
+  assert.strictEqual(lines[0], "🛒 전자혀 장보기");
+  assert.ok(lines.includes("□ 떡볶이 떡 400g"), t);
+  assert.ok(lines.includes("□ 후추"), t);
+  assert.ok(lines.every(l => !/ $/.test(l)), t);
+  assert.strictEqual(lines[lines.length - 1], "(집에 있음: 고춧가루)");
+  assert.ok(!t.includes("□ 고춧가루"));
+  // 집에 있음이 없으면 마지막 줄 생략
+  await page.click('#cartHome [data-name="고춧가루"]');
+  const t2 = await page.evaluate(() => cartShareText());
+  assert.ok(!t2.includes("집에 있음"), t2);
+}));
+
+test("공유: navigator.share → 클립보드 폴백", () => withApp({}, async page => {
+  await page.addInitScript(() => {
+    window.__shared = []; window.__copied = [];
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: async t => { window.__copied.push(t); } }, configurable: true });
+    Object.defineProperty(navigator, "share", { value: async d => { window.__shared.push(d); }, configurable: true });
+  });
+  await page.reload();
+  await addOilTteokbokki(page);
+  await page.click("#cartFab");
+  await page.click("#cartShare");
+  const shared = await page.evaluate(() => window.__shared);
+  assert.strictEqual(shared.length, 1);
+  assert.strictEqual(shared[0].title, "장보기 목록");
+  assert.ok(shared[0].text.startsWith("🛒 전자혀 장보기"));
+  await page.evaluate(() => { Object.defineProperty(navigator, "share", { value: undefined, configurable: true }); });
+  await page.click("#cartShare");
+  assert.ok((await page.evaluate(() => window.__copied))[0].startsWith("🛒 전자혀 장보기"));
+  assert.ok((await page.innerText("#toastMsg")).includes("복사했어요"));
+}));
+
+test("네이티브 흉내일 때 구매 버튼은 _system으로 연다", () => withApp({}, async page => {
+  await page.addInitScript(NATIVE_INIT);
+  await page.reload();
+  await addOilTteokbokki(page);
+  await page.click("#cartFab");
+  await page.click('#cartList .cart-row:has-text("떡볶이 떡") .cart-buy >> text=구매');
+  const opens = await page.evaluate(() => window.__opens);
+  assert.deepStrictEqual(opens, [[TTEOK_URL, "_system"]]);
+}));
+
+test("웹에서는 구매 버튼이 _blank noopener로 연다", () => withApp({}, async page => {
+  await page.addInitScript(() => { window.__opens = []; window.open = (...a) => { window.__opens.push(a); return null; }; });
+  await page.reload();
+  await addOilTteokbokki(page);
+  await page.click("#cartFab");
+  await page.click('#cartList .cart-row:has-text("떡볶이 떡") .cart-buy >> text=구매');
+  assert.deepStrictEqual(await page.evaluate(() => window.__opens), [[TTEOK_URL, "_blank", "noopener"]]);
+}));
+
+test("네이티브 흉내일 때 SW 등록 안 함·알림 버튼 숨김", () => withApp({}, async page => {
+  await page.addInitScript(() => {
+    window.Capacitor = { isNativePlatform: () => true, Plugins: {} };
+    window.__swReg = 0;
+    const sw = navigator.serviceWorker || {};
+    sw.register = () => { window.__swReg++; return Promise.resolve(); };
+    try { Object.defineProperty(navigator, "serviceWorker", { value: sw, configurable: true }); } catch (e) {}
+  });
+  await page.reload();
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(300);
+  assert.strictEqual(await page.evaluate(() => window.__swReg), 0);
+  await page.click('.nav button[data-view="fridge"]');
+  assert.strictEqual(await page.locator("#frNotif").isVisible(), false);
+}));

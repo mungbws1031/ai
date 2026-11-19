@@ -324,6 +324,9 @@
   .cart-row .cr-from{font-size:11px;color:var(--faint);margin-top:2px}
   .cart-row .cr-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
   .cart-btn{font-family:var(--body);font-weight:700;font-size:12px;color:var(--text);background:var(--bg-frame);border:1px solid var(--border);border-radius:9px;padding:7px 10px;cursor:pointer}
+  .cart-buy a{font-family:var(--body);font-weight:600;font-size:11px;color:var(--text-dim,var(--text));opacity:.75;text-decoration:none;padding:7px 4px;margin-left:auto}
+  .shop-disclosure{font-size:11px;line-height:1.5;color:var(--text-dim,var(--text));opacity:.8;padding:8px 14px;border-bottom:1px solid var(--border)}
+  .shop-disclosure[hidden]{display:none}
   .cart-btn:active{transform:scale(.96)}
   .cart-btn.primary{background:var(--accent);border-color:var(--accent);color:#1a130c}
   .cart-homewrap{display:flex;flex-wrap:wrap;gap:6px;padding:2px 16px 12px}
@@ -549,6 +552,7 @@
 
   <!-- ════════ 장바구니 ════════ -->
   <section class="view" id="view-cart">
+    <div class="shop-disclosure" id="shopDisclosure" hidden></div>
     <div class="hd">
       <div class="kicker">Shopping Cart · 장바구니</div>
       <div class="row">
@@ -2056,6 +2060,32 @@ function renderExplore(){
 renderExplore(); drawRadarValue(displayVec,isGold); _bubbleArmed=true;
 
 /* ── 장바구니 화면 ── */
+/* 쇼핑 링크 설정 — 제휴(어필리에이트)로 전환할 때 바꿀 곳은 이 객체뿐이다:
+   affiliate:true 로 켜고 searchUrl 을 제휴 링크 생성 함수로 교체하면 고지 문구가 자동 노출된다. */
+const SHOP_CONFIG={
+  affiliate:false,
+  label:"쿠팡",
+  searchUrl:q=>"https://www.coupang.com/np/search?q="+encodeURIComponent(q),
+  disclosure:"이 포스팅은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
+};
+function buyUrl(name){ return SHOP_CONFIG.searchUrl(name); }
+function isNative(){ return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform()); }
+function openExternal(url){ if(isNative()) window.open(url,"_system"); else window.open(url,"_blank","noopener"); }
+function cartShareText(){
+  const {buy,home}=cartView();
+  const lines=["🛒 전자혀 장보기"].concat(buy.map(it=>{ const q=fmtQty(it); return "□ "+it.name+(q?" "+q:""); }));
+  if(home.length) lines.push("(집에 있음: "+home.map(it=>it.name).join(", ")+")");
+  return lines.join("\n");
+}
+async function shareCart(){
+  const text=cartShareText();
+  try{
+    const cap=window.Capacitor&&window.Capacitor.Plugins&&window.Capacitor.Plugins.Share;
+    if(isNative()&&cap){ await cap.share({title:"장보기 목록",text}); return; }
+    if(navigator.share){ await navigator.share({title:"장보기 목록",text}); return; }
+    if(navigator.clipboard&&navigator.clipboard.writeText){ await navigator.clipboard.writeText(text); toast("복사했어요"); }
+  }catch(e){ /* 공유 취소 */ }
+}
 let _toastTO=null;
 function toast(msg){ const t=$("toastMsg"); if(!t) return; t.textContent=msg; t.classList.add("show"); clearTimeout(_toastTO); _toastTO=setTimeout(()=>t.classList.remove("show"),2200); }
 function updateCartFab(){
@@ -2073,22 +2103,27 @@ function showCart(){
 }
 function renderCart(){
   const {buy,home}=cartView();
+  const dis=$("shopDisclosure"); dis.textContent=SHOP_CONFIG.affiliate?SHOP_CONFIG.disclosure:""; dis.hidden=!SHOP_CONFIG.affiliate;
   $("cartSum").textContent=buy.length?`살 것 ${buy.length}개`:"";
   $("cartList").innerHTML=buy.length?buy.map(it=>{
     const q=fmtQty(it), n=esc(it.name), na=escAttr(it.name);
     return `<div class="cart-row" data-name="${na}"><div class="cr-top"><span class="cr-nm">${n}</span>${q?`<span class="cr-q">${esc(q)}</span>`:""}</div>`+
       (it.from&&it.from.length?`<div class="cr-from">${esc(it.from.join(" · "))}</div>`:"")+
-      `<div class="cr-acts"><button class="cart-btn" data-act="home" data-name="${na}">□ 집에 있어요</button><button class="cart-btn primary" data-act="bought" data-name="${na}">✓ 샀어요</button><span class="cart-buy" data-buy="${n}"></span></div></div>`;
+      `<div class="cr-acts"><button class="cart-btn" data-act="home" data-name="${na}">□ 집에 있어요</button><button class="cart-btn primary" data-act="bought" data-name="${na}">✓ 샀어요</button><span class="cart-buy"><a href="${escAttr(buyUrl(it.name))}" data-buy="${na}" rel="noopener">구매 →</a></span></div></div>`;
   }).join(""):`<div class="empty" style="padding:30px 20px">${home.length?"살 재료가 없어요 🎉":"장바구니가 비어 있어요.<br>맛·식단에서 재료를 담아보세요 🛒"}</div>`;
   $("cartHomeHdr").innerHTML=home.length?`<div class="savedhdr">🏠 집에 있음 <span>${home.length}</span></div>`:"";
   $("cartHome").innerHTML=home.length?`<div class="cart-homewrap">${home.map(it=>loadHome().includes(it.name)?`<button data-name="${escAttr(it.name)}" title="눌러서 되돌리기">${esc(it.name)}</button>`:`<span class="cart-fridge">🧊 ${esc(it.name)} · 냉장고에 있음</span>`).join("")}</div>`:"";
   updateCartFab();
 }
-$("cartList").addEventListener("click",e=>{ const b=e.target.closest("button[data-act]"); if(!b) return;
+$("cartList").addEventListener("click",e=>{
+  const a=e.target.closest("a[data-buy]"); if(a){ e.preventDefault(); openExternal(buyUrl(a.dataset.buy)); return; }
+  const b=e.target.closest("button[data-act]"); if(!b) return;
   const n=b.dataset.name; if(b.dataset.act==="home") setHome(n,true); else removeFromCart(n); renderCart(); });
 $("cartHome").addEventListener("click",e=>{ const b=e.target.closest("button[data-name]"); if(!b) return; setHome(b.dataset.name,false); renderCart(); });
 $("cartClear").onclick=()=>{ if(!confirm("장바구니를 모두 비울까요?")) return; clearCart(); renderCart(); };
 $("cartFab").onclick=showCart;
+$("cartShare").onclick=shareCart;
+if(isNative()&&$("frNotif")) $("frNotif").style.display="none";
 $("nav").addEventListener("click",()=>setTimeout(updateCartFab,0));
 updateCartFab();
 _dishesReady=true; showStyleDesc();
@@ -2113,6 +2148,6 @@ function openDishPicker(styleId){
   };
 }
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
+<script>if('serviceWorker' in navigator&&!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
 </body>
 </html>
