@@ -427,3 +427,29 @@ test('territory map: hex island with fog, borders grow, tapping a building opens
   assert.match(await page.textContent('#card-name'), /불/);
   await ctx.close();
 });
+
+const PHONE = { width: 412, height: 915 };
+
+test('phone: atoms never appear under the mixing bowl', async () => {
+  const { ctx, page } = await fresh(PHONE);
+  for (let i = 0; i < 6; i++) await page.click('[data-atom=H]');
+  const box = await page.locator('#mixer').boundingBox();
+  const bench = await page.locator('#bench').boundingBox();
+  const centers = await page.$$eval('#bench .atom', els => els.map(e => { const r = e.querySelector('.body > circle:last-of-type') || e; const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }));
+  for (const [x, y] of centers) {
+    assert.ok(!(x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height), `atom at ${x},${y} under bowl`);
+    assert.ok(y > bench.y && y < bench.y + bench.height, 'atom on the bench');
+  }
+  await ctx.close();
+});
+
+test('phone: empty bowl is compact and the hint button is small', async () => {
+  const { ctx, page } = await fresh(PHONE, undefined, true);
+  const tray = await page.locator('#tray').boundingBox();
+  const bench = await page.locator('#bench').boundingBox();
+  assert.ok(tray.width < bench.width * 0.6, `bowl width ${tray.width} of ${bench.width}`);
+  assert.ok(tray.height <= 80, `bowl height ${tray.height}`);
+  const hint = await page.locator('#hint-btn').boundingBox();
+  assert.ok(hint.width <= 64, `hint width ${hint.width}`);
+  await ctx.close();
+});

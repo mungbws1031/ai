@@ -54,6 +54,8 @@ button:disabled{opacity:.4}
 #bottom-bar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
 #mixer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;max-width:calc(100% - 24px)}
 #mixer #mix{justify-self:auto}
+#tray.empty{min-height:60px;min-width:0;padding:6px 16px}
+@media (max-width:600px){#hint-btn .t{display:none}#hint-btn{padding:0 10px}#mission-bar{font-size:15px;padding-left:12px}#tray{min-width:0}#tray-empty{font-size:13px}}
 .item-chip{touch-action:none}
 .drag-ghost{position:fixed;z-index:30;pointer-events:none;font-size:44px;transform:translate(-50%,-50%) scale(1.1);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
 #tray.drop-ready{background:#fff6d6;border-color:#ff8c42}
@@ -135,7 +137,7 @@ button:disabled{opacity:.4}
     <section id="bench-wrap">
       <svg id="village" aria-hidden="true"></svg>
       <svg id="bench" aria-label="실험대"></svg>
-      <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn">💡 힌트</button></div>
+      <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn" aria-label="힌트">💡<span class="t"> 힌트</span></button></div>
       <div id="mixer">
         <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><span id="tray-empty">재료를 여기로 끌어와!</span><div id="tray-items"></div></div>
         <div id="mix">
@@ -581,19 +583,26 @@ function escapeBlocked(p) {
   }
   return p;
 }
+// 새 원자 자리: 그릇·버튼 밑은 절대 피하고, 그 안에서 다른 원자와 덜 겹치는 곳을 고른다
 function freeSpot() {
   const { w, h } = benchSize();
-  const cx = w / 2, cy = h / 2;
-  for (let ring = 0; ring < 12; ring++) {
-    const n = Math.max(1, ring * 6);
-    for (let i = 0; i < n; i++) {
-      const ang = (i / n) * Math.PI * 2 + ring;
-      const x = cx + Math.cos(ang) * ring * (R + 18), y = cy + Math.sin(ang) * ring * (R + 18);
-      if (x < R + 8 || y < R + 8 || x > w - R - 8 || y > h - R - 80) continue;
-      if (!overlaps(x, y) && !inBlocked(x, y)) return { x, y };
-    }
+  const cx = w / 2, cy = h / 2, step = R + 10, m = R + 8;
+  const spots = [];
+  for (let y = m; y <= h - m; y += step) for (let x = m; x <= w - m; x += step) {
+    if (!inBlocked(x, y)) spots.push({ x, y, d: Math.hypot(x - cx, y - cy) });
   }
-  return { x: cx + (Math.random() - .5) * 60, y: cy + (Math.random() - .5) * 60 };
+  if (!spots.length) return { x: m, y: m };
+  spots.sort((p, q) => p.d - q.d);
+  const free = spots.find(p => !overlaps(p.x, p.y));
+  if (free) return { x: free.x, y: free.y };
+  // 꽉 찼으면 가장 덜 붐비는 자리
+  let best = spots[0], bestGap = -1;
+  for (const p of spots) {
+    let gap = Infinity;
+    for (const id in pos) gap = Math.min(gap, Math.hypot(pos[id].x - p.x, pos[id].y - p.y));
+    if (gap > bestGap) { bestGap = gap; best = p; }
+  }
+  return { x: best.x, y: best.y };
 }
 function spawnAtom(sym) {
   const id = 'a' + (++seq);
