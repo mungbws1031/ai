@@ -211,3 +211,45 @@ test('hint on a molecule mission tells the child to drag atoms together', async 
   assert.match(await page.textContent('#toast'), /끌어/);
   await ctx.close();
 });
+
+test('full sodium toast uses 은, not 는', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Na]'); await page.click('[data-atom=O]'); await page.click('[data-atom=H]');
+  const [na] = await benchIds(page, 'Na'); const [o] = await benchIds(page, 'O'); const [h] = await benchIds(page, 'H');
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${o}"]`);
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${h}"]`);
+  assert.match(await page.textContent('#toast'), /나트륨은 손이 꽉 찼어/);
+  await ctx.close();
+});
+
+test('salt is drawn as an ionic bond with charges', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Na]'); await page.click('[data-atom=Cl]');
+  const [na] = await benchIds(page, 'Na'); const [cl] = await benchIds(page, 'Cl');
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${cl}"]`);
+  assert.equal(await page.locator('#bench .bond.ionic').count(), 1);
+  assert.equal(await page.textContent(`.atom[data-id="${na}"] .charge`), '+');
+  assert.equal(await page.textContent(`.atom[data-id="${cl}"] .charge`), '−');
+  await ctx.close();
+});
+
+test('every mission text fits on one line in portrait', async () => {
+  const { ctx, page } = await fresh({ width: 768, height: 1024 }, undefined, true);
+  const targets = await page.evaluate(() => window.AtomCiv.MISSIONS.map(m => m.target));
+  const wrapped = [];
+  for (let i = 0; i < targets.length; i++) {
+    await page.evaluate((found) => {
+      localStorage.setItem('atomciv.v1', JSON.stringify({ found, missionIdx: 0, muted: true }));
+    }, targets.slice(0, i));
+    await page.reload();
+    const r = await page.evaluate(() => {
+      const e = document.querySelector('#mission-text');
+      const rg = document.createRange(); rg.selectNodeContents(e);
+      const tops = new Set([...rg.getClientRects()].map(x => Math.round(x.top)));
+      return { lines: tops.size, t: e.textContent };
+    });
+    if (r.lines > 1) wrapped.push(r.t);
+  }
+  assert.deepEqual(wrapped, []);
+  await ctx.close();
+});

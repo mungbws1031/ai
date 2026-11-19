@@ -80,7 +80,7 @@ button:disabled{opacity:.4}
 #tray.bounce{animation:bounce .4s}
 @keyframes bounce{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
 #heat-btn[aria-pressed=true]{background:#ff5a36;color:#fff}
-#mission-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;
+#mission-bar{position:absolute;top:10px;left:12px;right:12px;margin:0 auto;width:fit-content;display:flex;align-items:center;gap:10px;
   background:#fff;border-radius:18px;padding:6px 6px 6px 16px;box-shadow:var(--shadow);font-weight:800;font-size:18px;
   max-width:calc(100% - 24px);z-index:2}
 #mission-text{word-break:keep-all}
@@ -176,6 +176,13 @@ function formulaKey(syms) {
   const c = {};
   for (const s of syms) c[s] = (c[s] || 0) + 1;
   return Object.keys(c).sort().map(s => s + (c[s] > 1 ? c[s] : '')).join('');
+}
+
+// 받침이 있으면 '은', 없으면 '는' (예: 나트륨은, 수소는)
+function topic(word) {
+  const c = word.charCodeAt(word.length - 1);
+  const hasFinal = c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 !== 0;
+  return word + (hasFinal ? '은' : '는');
 }
 
 function freeHands(group) {
@@ -329,7 +336,7 @@ function currentMission(found) { return MISSIONS.find(m => !found.includes(m.tar
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, loadState, saveState, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission /*EXPORTS*/ };
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -477,6 +484,11 @@ function removeAtoms(ids) {
   renderBench();
 }
 
+const symOf = id => bench.atoms.find(a => a.id === id).sym;
+function isIonic(b) {
+  const pair = [symOf(b.a), symOf(b.b)].sort().join('-');
+  return pair === 'Cl-Na';
+}
 function renderBench() {
   benchSvg.textContent = '';
   const f = freeHands(bench);
@@ -485,9 +497,14 @@ function renderBench() {
     const p = pos[b.a], q = pos[b.b];
     const dx = q.x - p.x, dy = q.y - p.y, L = Math.hypot(dx, dy) || 1;
     const nx = -dy / L, ny = dx / L;
+    if (isIonic(b)) { // 이온결합: 전자를 주고받아 끌어당김 → 점선
+      bondLayer.append(sv('line', { class: 'bond ionic', x1: p.x, y1: p.y, x2: q.x, y2: q.y,
+        stroke: '#e0a100', 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-dasharray': '4 6' }));
+      continue;
+    }
     for (let i = 0; i < b.order; i++) {
       const o = (i - (b.order - 1) / 2) * 9;
-      bondLayer.append(sv('line', { x1: p.x + nx * o, y1: p.y + ny * o, x2: q.x + nx * o, y2: q.y + ny * o,
+      bondLayer.append(sv('line', { class: 'bond', x1: p.x + nx * o, y1: p.y + ny * o, x2: q.x + nx * o, y2: q.y + ny * o,
         stroke: '#4a3f35', 'stroke-width': 6, 'stroke-linecap': 'round' }));
     }
   }
@@ -525,6 +542,18 @@ function renderBench() {
     const t = sv('text', { y: 13, 'text-anchor': 'middle', 'font-size': 24, 'font-weight': 800, fill: ink });
     t.textContent = a.sym;
     body.append(t);
+    const ionic = bonded.find(isIonic);
+    if (ionic) { // Na는 전자를 줘서 +, Cl은 전자를 받아서 −
+      const sign = a.sym === 'Na' ? '+' : '−';
+      // 짝 원자와 반대쪽(조금 위)에 전하 표시를 붙여 겹치지 않게
+      const mate = pos[ionic.a === a.id ? ionic.b : ionic.a];
+      const away = Math.atan2(p.y - mate.y, p.x - mate.x) - Math.PI / 4;
+      const bx = Math.cos(away) * R, by = Math.sin(away) * R;
+      body.append(sv('circle', { cx: bx, cy: by, r: 12, fill: sign === '+' ? '#ff6b6b' : '#4d8dff', stroke: '#fff', 'stroke-width': 2 }));
+      const ct = sv('text', { class: 'charge', x: bx, y: by + 6, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 900, fill: '#fff' });
+      ct.textContent = sign;
+      body.append(ct);
+    }
     g.append(body);
     atomLayer.append(g);
   }
@@ -576,8 +605,8 @@ function finishDrag(e) {
     } else {
       const f = freeHands(bench);
       const name = sid => ATOMS[bench.atoms.find(a => a.id === sid).sym].name;
-      if (f[id] < 1) toast(`${name(id)}는 손이 꽉 찼어!`);
-      else if (f[target] < 1) toast(`${name(target)}는 손이 꽉 찼어!`);
+      if (f[id] < 1) toast(`${topic(name(id))} 손이 꽉 찼어!`);
+      else if (f[target] < 1) toast(`${topic(name(target))} 손이 꽉 찼어!`);
       else toast('손은 세 개까지만 같이 잡을 수 있어!');
       pos[id] = start; beep(220, 0.12); renderBench();
     }
