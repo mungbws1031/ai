@@ -138,3 +138,27 @@ test('topic particle follows the final consonant (은/는)', async () => {
 test('oxygen mission says to connect twice', async () => {
   assert.match(await run(A => A.MISSIONS.find(m => m.target === 'O2').text), /두 번/);
 });
+
+test('industry era: recipes, era index, missions', async () => {
+  const r = await run(A => ({
+    steam: A.matchRecipe(['H2O'], true),
+    steel: A.matchRecipe(['coal', 'iron'], true),
+    engine: A.matchRecipe(['steam', 'steel'], false),
+    train: A.matchRecipe(['steel', 'steam_engine'], false),
+    lime: A.matchRecipe(['limestone'], true),
+    cement: A.matchRecipe(['clay', 'quicklime'], true),
+    concrete: A.matchRecipe(['H2O', 'O2Si', 'cement'], false),
+    eras: A.ERAS.length,
+    idx: A.eraIndex(['fire', 'stone_axe', 'charcoal', 'pottery', 'copper', 'tin', 'bronze', 'iron', 'glass']),
+    missionTargets: A.MISSIONS.map(m => m.target),
+  }));
+  assert.equal(r.steam, 'steam'); assert.equal(r.steel, 'steel'); assert.equal(r.engine, 'steam_engine');
+  assert.equal(r.train, 'train'); assert.equal(r.lime, 'quicklime'); assert.equal(r.cement, 'cement');
+  assert.equal(r.concrete, 'concrete'); assert.equal(r.eras, 4); assert.equal(r.idx, 3);
+  for (const t of ['steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete']) assert.ok(r.missionTargets.includes(t), t);
+});
+
+test('every mission target is reachable from recipes or molecules', async () => {
+  const bad = await run(A => A.MISSIONS.map(m => m.target).filter(t => !A.MOLECULES[t] && !A.RECIPES.some(r => r.output === t)));
+  assert.deepEqual(bad, []);
+});

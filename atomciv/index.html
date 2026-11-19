@@ -89,7 +89,7 @@ button:disabled{opacity:.4}
 #mission-text{word-break:keep-all}
 #hint-btn{background:#ffe066;flex:none}
 #app[data-mode=lab] #mission-bar{display:none}
-.map{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.map{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 .map-col{background:#fff;border-radius:18px;padding:10px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
 .map-col h3{margin:4px 0;text-align:center}
 .map-col.locked{opacity:.5}
@@ -281,6 +281,15 @@ const ITEMS = {
   bronze:     { name: '청동',     emoji: '🔔', why: '구리에 주석을 녹여 섞으면 훨씬 단단해져! 이걸로 칼과 종을 만들었어.' },
   iron:       { name: '철',       emoji: '⚙️', why: '숯 속 탄소가 철광석에서 산소를 빼앗아 가서 철만 남아!' },
   glass:      { name: '유리',     emoji: '🪟', why: '모래를 아주아주 뜨겁게 녹였다가 식히면 투명한 유리가 돼!' },
+  coal:       { name: '석탄',     emoji: '⚫', raw: true, why: '아주 옛날 식물이 땅속에 묻혀 생긴 돌이야. 숯처럼 탄소가 많아!' },
+  limestone:  { name: '석회석',   emoji: '🪨', raw: true, why: '옛날 조개껍데기 같은 것이 쌓여 생긴 돌이야. 칼슘, 탄소, 산소가 들어 있어!' },
+  steam:      { name: '수증기',   emoji: '♨️', why: '물이 끓어 수증기가 되면 부피가 엄청 커져서 밀어내는 힘이 생겨!' },
+  steel:      { name: '강철',     emoji: '🔩', why: '철에 탄소를 아주 조금 섞으면 더 단단하고 질겨져!' },
+  steam_engine: { name: '증기기관', emoji: '🏭', why: '수증기가 피스톤을 밀어서 바퀴를 돌려! 사람 대신 기계가 일하기 시작했어.' },
+  train:      { name: '기차',     emoji: '🚂', why: '증기기관을 강철 바퀴에 달았더니, 사람과 물건을 멀리 빠르게 나를 수 있게 됐어!' },
+  quicklime:  { name: '생석회',   emoji: '⚪', why: '석회석을 아주 뜨겁게 구우면 이산화탄소가 빠져나가!' },
+  cement:     { name: '시멘트',   emoji: '🩶', why: '생석회와 점토를 함께 구워 곱게 빻으면 시멘트가 돼!' },
+  concrete:   { name: '콘크리트', emoji: '🧱', why: '시멘트가 물과 반응해서 모래를 꽉 붙잡고 돌처럼 굳어!' },
 };
 
 const RECIPES = [
@@ -293,12 +302,20 @@ const RECIPES = [
   { inputs: ['copper', 'tin'], heat: true, output: 'bronze' },
   { inputs: ['iron_ore', 'charcoal'], heat: true, output: 'iron' },
   { inputs: ['O2Si'], heat: true, output: 'glass' },
+  { inputs: ['H2O'], heat: true, output: 'steam' },
+  { inputs: ['iron', 'coal'], heat: true, output: 'steel' },
+  { inputs: ['steel', 'steam'], heat: false, output: 'steam_engine' },
+  { inputs: ['steam_engine', 'steel'], heat: false, output: 'train' },
+  { inputs: ['limestone'], heat: true, output: 'quicklime' },
+  { inputs: ['quicklime', 'clay'], heat: true, output: 'cement' },
+  { inputs: ['cement', 'O2Si', 'H2O'], heat: false, output: 'concrete' },
 ];
 
 const ERAS = [
   { id: 'stone',  name: '석기시대',   emoji: '🪨', raws: ['wood', 'flint', 'clay'],      goal: ['fire', 'stone_axe', 'charcoal', 'pottery'] },
   { id: 'bronze', name: '청동기시대', emoji: '🔔', raws: ['copper_ore', 'tin_ore'],     goal: ['copper', 'tin', 'bronze'] },
   { id: 'iron',   name: '철기시대',   emoji: '⚙️', raws: ['iron_ore'],                  goal: ['iron', 'glass'] },
+  { id: 'industry', name: '산업시대', emoji: '🏭', raws: ['coal', 'limestone'],         goal: ['steel', 'steam_engine', 'train', 'concrete'] },
 ];
 
 function sameBag(a, b) {
@@ -333,6 +350,13 @@ const MISSIONS = [
   { target: 'bronze',    text: '단단한 청동을 만들어 봐! 🔔',               hint: ['copper', 'tin', 'heat'] },
   { target: 'iron',      text: '철광석에서 철을 꺼내 봐! ⚙️',               hint: ['iron_ore', 'charcoal', 'heat'] },
   { target: 'glass',     text: '모래로 투명한 유리를 만들어 봐! 🪟',        hint: ['O2Si', 'heat'] },
+  { target: 'steam',     text: '물을 끓여서 수증기를 만들어 봐! ♨️',        hint: ['H2O', 'heat'] },
+  { target: 'steel',     text: '철에 석탄을 섞어 강철을 만들어 봐! 🔩',     hint: ['iron', 'coal', 'heat'] },
+  { target: 'steam_engine', text: '강철과 수증기로 증기기관을 만들어 봐!',  hint: ['steel', 'steam'] },
+  { target: 'train',     text: '증기기관으로 기차를 만들어 봐! 🚂',         hint: ['steam_engine', 'steel'] },
+  { target: 'quicklime', text: '석회석을 구워서 생석회를 만들어 봐!',       hint: ['limestone', 'heat'] },
+  { target: 'cement',    text: '생석회와 점토로 시멘트를 만들어 봐!',       hint: ['quicklime', 'clay', 'heat'] },
+  { target: 'concrete',  text: '시멘트, 모래, 물로 콘크리트를 만들어 봐! 🧱', hint: ['cement', 'O2Si', 'H2O'] },
 ];
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
@@ -739,9 +763,9 @@ function checkEra() {
     queueCard({ plain: true, emoji: e.emoji, tag: '🎉 새 시대!', name: e.name + '가 열렸어!',
       why: '새 자연 재료가 서랍에 생겼어: ' + e.raws.map(r => ITEMS[r].emoji + ITEMS[r].name).join(', ') });
   }
-  if (!state.allDone && allErasDone(state.found)) {
-    state.allDone = true; saveState(state);
-    queueCard({ plain: true, emoji: '🏆', tag: '대단해!', name: '철기시대까지 완성!',
+  if ((state.endingEras || 0) < ERAS.length && allErasDone(state.found)) {
+    state.endingEras = ERAS.length; saveState(state);
+    queueCard({ plain: true, emoji: '🏆', tag: '대단해!', name: ERAS[ERAS.length - 1].name + '까지 완성!',
       why: '사람들이 수천 년 걸려 해낸 일을 해냈어. 다음 시대는 곧 열릴 거야!' });
   }
   shownEra = idx;
@@ -868,6 +892,16 @@ const VILLAGE = {
     <circle cx="880" cy="250" r="16" fill="#ccc"/><circle cx="900" cy="222" r="20" fill="#ddd"/>
     <path d="M720 470 v-30 h70 v30Z" fill="#555"/><path d="M705 440 h100 l-15 -18 h-70Z" fill="#666"/>
     <rect x="740" y="395" width="44" height="34" fill="#bfe6ff" stroke="#555" stroke-width="4"/></g>`,
+  industry: `<g opacity=".5">
+    <rect x="70" y="330" width="230" height="140" fill="#9a8f86"/><path d="M70 330 l40 -30 v30 l40 -30 v30 l40 -30 v30 l40 -30 v30Z" fill="#7d726a"/>
+    <rect x="250" y="210" width="34" height="130" fill="#6e5f55"/><circle cx="270" cy="190" r="22" fill="#cfcfcf"/><circle cx="295" cy="160" r="28" fill="#dedede"/>
+    <rect x="110" y="380" width="34" height="30" fill="#ffe8a3" stroke="#555" stroke-width="4"/><rect x="190" y="380" width="34" height="30" fill="#ffe8a3" stroke="#555" stroke-width="4"/>
+    <rect x="720" y="300" width="160" height="170" fill="#b9b2aa"/><rect x="745" y="330" width="30" height="30" fill="#bfe6ff"/><rect x="825" y="330" width="30" height="30" fill="#bfe6ff"/>
+    <rect x="745" y="390" width="30" height="30" fill="#bfe6ff"/><rect x="825" y="390" width="30" height="30" fill="#bfe6ff"/>
+    <path d="M0 492 H1000" stroke="#5a4a3a" stroke-width="6"/><path d="M0 504 H1000" stroke="#5a4a3a" stroke-width="6"/>
+    <rect x="430" y="440" width="150" height="48" rx="6" fill="#c0392b"/><rect x="560" y="410" width="20" height="34" fill="#333"/>
+    <rect x="450" y="420" width="60" height="26" fill="#2c3e50"/><circle cx="460" cy="492" r="12" fill="#333"/><circle cx="510" cy="492" r="12" fill="#333"/><circle cx="560" cy="492" r="12" fill="#333"/>
+    <circle cx="575" cy="392" r="12" fill="#ddd"/><circle cx="595" cy="370" r="16" fill="#e8e8e8"/></g>`,
 };
 function renderVillage(eraId) {
   const v = $('#village');

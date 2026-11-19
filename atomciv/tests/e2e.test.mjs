@@ -304,3 +304,28 @@ test('A: the first ingredient mission opens a one-time tray intro card', async (
   assert.ok(await ctx2page.locator('#card').isHidden(), 'intro shown only once');
   await ctx.close();
 });
+
+const ironDone = ['H2', 'H2O', 'O2', 'CO2', 'CH4', 'H3N', 'ClNa', 'O2Si', 'fire', 'stone_axe', 'charcoal', 'pottery', 'copper', 'tin', 'bronze', 'iron', 'glass'];
+
+test('industry era opens with coal and limestone and a new village', async () => {
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(ironDone)},missionIdx:0,muted:true,trayIntro:true}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  assert.equal(await page.locator('#drawer [data-item=coal]').count(), 1);
+  assert.equal(await page.locator('#drawer [data-item=limestone]').count(), 1);
+  assert.equal(await page.getAttribute('#village', 'data-era'), 'industry');
+  await ctx.close();
+});
+
+test('finishing the industry era shows the ending card', async () => {
+  const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'quicklime', 'cement', 'concrete'];
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,allDone:true}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  await page.click('#drawer [data-item=steam_engine]');
+  await page.click('#drawer [data-item=steel]');
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#card').isVisible());
+  assert.match(await page.textContent('#card-name'), /산업시대까지 완성/);
+  await ctx.close();
+});
