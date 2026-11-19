@@ -37,7 +37,7 @@ const shot = async (name) => {
   console.log("saved", name);
 };
 
-// 1) 감성: 요즘 말하는 맛
+// 1) 맛 고르기: 요즘 말하는 맛
 await page.click('.nav button[data-view="sense"]');
 await page.click(".scard:has-text('기름떡볶이맛')");
 await page.waitForTimeout(500);
@@ -63,7 +63,7 @@ await page.evaluate(() => {
   const keep = ["떡볶이 떡", "고춧가루", "설탕"];
   loadCart().forEach(it => { if (!keep.includes(it.name) && !isHome(it.name)) removeFromCart(it.name); });
 });
-await page.click("#cartFab");
+await page.click('.nav button[data-view="cart"]');
 await page.waitForSelector("#toast.show, #toastMsg", { state: "hidden", timeout: 6000 }).catch(() => {});
 await page.waitForTimeout(3000); // 토스트가 사라질 때까지
 await page.evaluate(() => window.scrollTo(0, 0));
@@ -75,8 +75,6 @@ await page.click("#styleChips .chip:has-text('기름떡볶이')");
 await page.click("text=맛 계산하기");
 await page.waitForTimeout(3000); // 토스트가 사라질 때까지
 await page.evaluate(() => {
-  const f = document.getElementById("cartFab");
-  if (f) f.style.display = "none"; // 가운데 내용을 가리지 않게
   const r = document.getElementById("calcResult").firstElementChild;
   if (r) window.scrollTo(0, r.getBoundingClientRect().top + window.scrollY - 16);
 });
