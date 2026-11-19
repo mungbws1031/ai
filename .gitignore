@@ -1,1 +1,4 @@
 .arena/
+
+# Decision Council 개인 의사결정 기록 (비공개 유지)
+.claude/agent-memory/
