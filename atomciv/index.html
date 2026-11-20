@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>원자에서 문명까지</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#ffd98a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=Space+Grotesk:wght@500;700&display=swap">
+<meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
@@ -54,7 +57,7 @@ button:disabled{opacity:.4}
 #bottom-bar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
 #mixer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;max-width:calc(100% - 24px)}
 #mixer #mix{justify-self:auto}
-#tray.empty{min-height:60px;min-width:0;padding:6px 16px}
+#tray.empty{min-height:56px;min-width:0;padding:6px 16px;flex-wrap:nowrap}
 @media (max-width:600px){#hint-btn .t{display:none}#hint-btn{padding:0 10px}#mission-bar{font-size:15px;padding-left:12px}#tray{min-width:0}#tray-empty{font-size:13px}}
 .item-chip{touch-action:none}
 .drag-ghost{position:fixed;z-index:30;pointer-events:none;font-size:44px;transform:translate(-50%,-50%) scale(1.1);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
@@ -114,6 +117,58 @@ button:disabled{opacity:.4}
   #drawer{order:2;max-height:36vh}
 }
 @media (max-width:700px){#tabs button .t{display:none}#era-badge span{display:none}}
+
+/* ===== 테마: 모눈종이 실험 노트 + 주기율표 ===== */
+:root{--bg:#f4f7fb;--ink:#18233d;--muted:#5b6782;--line:#d6dfea;--grid:#e3eaf3;--cobalt:#2d5be3;--sun:#ffc53d;--mint:#16a673;--coral:#f0564a;
+  --top:#ffffff;--drawer:#ffffff;--accent:var(--cobalt);--ok:var(--mint);--card:#fff;--shadow:0 1px 0 var(--line)}
+html,body{font-family:"IBM Plex Sans KR",system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:var(--ink);background:var(--bg)}
+button{border:1.5px solid var(--line);border-radius:14px;box-shadow:0 2px 0 var(--line);font-weight:600;background:#fff}
+button:active{transform:translateY(2px);box-shadow:none}
+button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outline-offset:2px}
+#top{background:#fff;border-bottom:1.5px solid var(--line)}
+#era-badge{font-weight:700;letter-spacing:-.01em}
+#tabs{background:var(--bg);border:1.5px solid var(--line);border-radius:16px;padding:4px;gap:4px}
+#tabs button{border-color:transparent;box-shadow:none;background:transparent;min-height:48px}
+#tabs button[aria-current=true]{background:var(--ink);color:#fff;border-color:var(--ink)}
+#drawer{background:#fff;border-right:1.5px solid var(--line)}
+#drawer h3{font-size:14px;font-weight:600;color:var(--muted);margin:10px 2px 8px}
+/* 주기율표 칸 */
+.atom-btn{position:relative;display:grid;grid-template-rows:auto 1fr auto;justify-items:center;width:64px;min-height:76px;padding:6px 4px 5px;
+  border-radius:10px;border:1.5px solid var(--line);border-top:6px solid var(--el);box-shadow:0 2px 0 var(--line);gap:0}
+.atom-btn .z{position:absolute;top:2px;left:6px;font:500 11px/1 "Space Grotesk",system-ui,sans-serif;color:var(--muted)}
+.atom-btn .sym{font:700 24px/1.15 "Space Grotesk",system-ui,sans-serif;margin-top:6px;color:var(--ink)}
+.atom-btn .nm{font-size:12px;font-weight:600;color:var(--ink)}
+.atom-btn .hands{font-size:8px;letter-spacing:2px;color:var(--el);filter:saturate(1.2) brightness(.85)}
+.item-chip{border-radius:12px;font-weight:600}
+.item-chip .lbl{color:var(--ink)}
+/* 모눈종이 실험대 */
+#bench-wrap{background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+#village{opacity:.55;filter:saturate(.8)}
+#mission-bar{border:1.5px solid var(--line);box-shadow:0 2px 0 var(--line);border-radius:16px;font-weight:600}
+#hint-btn{background:var(--sun);border-color:#e9ad1f;box-shadow:0 2px 0 #e9ad1f}
+.glow{animation:glow2 1s ease-in-out infinite alternate}
+@keyframes glow2{from{box-shadow:0 0 0 0 var(--sun)}to{box-shadow:0 0 0 6px var(--sun)}}
+/* 섞는 그릇 */
+#tray{background:#fff;border:2px dashed #b9c6d8}
+#tray.drop-ready{background:#eef3ff;border-color:var(--cobalt);border-style:solid}
+#tray-empty{color:var(--muted)}
+#combine-btn:not(:disabled){background:var(--mint);border-color:#0f8a5f;box-shadow:0 2px 0 #0f8a5f;color:#fff}
+#heat-btn[aria-pressed=true]{background:var(--coral);border-color:#c93e33;box-shadow:0 2px 0 #c93e33;color:#fff}
+#toast{background:var(--ink);border-radius:12px;font-weight:600}
+/* 카드 */
+#card{background:rgba(24,35,61,.5)}
+#card-box{border-radius:20px;border:1.5px solid var(--line);box-shadow:0 18px 40px rgba(24,35,61,.25)}
+#card-tag{color:var(--cobalt);font-weight:700}
+#card-name{font-weight:700;letter-spacing:-.02em}
+#card-formula{font-family:"Space Grotesk",system-ui,sans-serif;color:var(--muted)}
+#card-why:before{color:var(--mint);font-weight:700}
+#card-ok{background:var(--cobalt);border-color:#1f45b8;box-shadow:0 2px 0 #1f45b8;color:#fff}
+/* 패널 (도감·지도·저장) */
+#panel{background:var(--bg)}
+#panel-head h2{font-weight:700;letter-spacing:-.02em}
+.dex-item{border:1.5px solid var(--line);border-radius:14px;box-shadow:0 2px 0 var(--line);font-weight:600}
+.dex-item.locked{background:transparent;border-style:dashed;box-shadow:none}
+#map-info{font-weight:700}
 </style>
 </head>
 <body>
@@ -170,13 +225,13 @@ button:disabled{opacity:.4}
 'use strict';
 /* ================= DATA ================= */
 const ATOMS = {
-  H:  { hands: 1, name: '수소',   color: '#7cc6ff', trait: '가장 작고 가벼워' },
-  O:  { hands: 2, name: '산소',   color: '#ff6b6b', trait: '전자를 꽤 욕심내' },
-  N:  { hands: 3, name: '질소',   color: '#7b8cff', trait: '공기의 대부분이 나야' },
-  C:  { hands: 4, name: '탄소',   color: '#5b5b66', trait: '손이 4개라 뭐든 만들어' },
-  Cl: { hands: 1, name: '염소',   color: '#7ddc6a', trait: '전자 욕심쟁이' },
-  Na: { hands: 1, name: '나트륨', color: '#c79bff', trait: '전자를 잘 줘 버려' },
-  Si: { hands: 4, name: '규소',   color: '#d9a85b', trait: '모래와 돌 속에 있어' },
+  H:  { hands: 1, name: '수소',   color: '#cfe0ff', z: 1, trait: '가장 작고 가벼워' },
+  O:  { hands: 2, name: '산소',   color: '#e5484d', z: 8, trait: '전자를 꽤 욕심내' },
+  N:  { hands: 3, name: '질소',   color: '#3e63dd', z: 7, trait: '공기의 대부분이 나야' },
+  C:  { hands: 4, name: '탄소',   color: '#3a4256', z: 6, trait: '손이 4개라 뭐든 만들어' },
+  Cl: { hands: 1, name: '염소',   color: '#30a46c', z: 17, trait: '전자 욕심쟁이' },
+  Na: { hands: 1, name: '나트륨', color: '#8e4ec6', z: 11, trait: '전자를 잘 줘 버려' },
+  Si: { hands: 4, name: '규소',   color: '#c08532', z: 14, trait: '모래와 돌 속에 있어' },
 };
 
 const MOLECULES = {
@@ -578,11 +633,10 @@ function renderDrawer() {
   box.textContent = '';
   for (const sym of Object.keys(ATOMS)) {
     const a = ATOMS[sym];
-    const b = el('button', { class: 'atom-btn', 'data-atom': sym, 'aria-label': a.name });
-    const ball = el('span', { class: 'ball' }, sym);
-    ball.style.background = a.color;
-    ball.style.color = darkText(a.color) ? '#1d1b22' : '#fff';
-    b.append(ball, el('span', { class: 'lbl' }, `${a.name} ✋${a.hands}`));
+    const b = el('button', { class: 'atom-btn', 'data-atom': sym, 'aria-label': `${a.name}, 손 ${a.hands}개` });
+    b.style.setProperty('--el', a.color);
+    b.append(el('span', { class: 'z' }, String(a.z)), el('span', { class: 'sym' }, sym),
+      el('span', { class: 'nm' }, a.name), el('span', { class: 'hands', 'aria-hidden': 'true' }, '●'.repeat(a.hands)));
     b.addEventListener('click', () => spawnAtom(sym));
     box.append(b);
   }
@@ -622,7 +676,7 @@ function blockedRects() {
   return ['#bench-tools', '#tray', '#mix', '#mission-bar'].map(sel => document.querySelector(sel))
     .filter(e => e && e.offsetParent !== null)
     .map(e => { const r = e.getBoundingClientRect();
-      const m = R + 24; return { l: r.left - br.left - m, t: r.top - br.top - m, r: r.right - br.left + m, b: r.bottom - br.top + m, bottom: r.top - br.top > br.height / 2 }; });
+      const m = R + 30; return { l: r.left - br.left - m, t: r.top - br.top - m, r: r.right - br.left + m, b: r.bottom - br.top + m, bottom: r.top - br.top > br.height / 2 }; });
 }
 function inBlocked(x, y) { return blockedRects().find(b => x > b.l && x < b.r && y > b.t && y < b.b) || null; }
 function escapeBlocked(p) {
@@ -693,7 +747,7 @@ function renderBench() {
     for (let i = 0; i < b.order; i++) {
       const o = (i - (b.order - 1) / 2) * 9;
       bondLayer.append(sv('line', { class: 'bond', x1: p.x + nx * o, y1: p.y + ny * o, x2: q.x + nx * o, y2: q.y + ny * o,
-        stroke: '#4a3f35', 'stroke-width': 6, 'stroke-linecap': 'round' }));
+        stroke: '#18233D', 'stroke-width': 5, 'stroke-linecap': 'round' }));
     }
   }
   for (const a of bench.atoms) {
@@ -720,14 +774,15 @@ function renderBench() {
     for (const s of slots) {
       const c = Math.cos(s), si = Math.sin(s);
       body.append(sv('line', { x1: c * R * .8, y1: si * R * .8, x2: c * (R + 11), y2: si * (R + 11),
-        stroke: '#4a3f35', 'stroke-width': 5, 'stroke-linecap': 'round' }));
-      body.append(sv('circle', { cx: c * (R + 15), cy: si * (R + 15), r: 7, fill: '#ffd9b3', stroke: '#4a3f35', 'stroke-width': 3 }));
+        stroke: '#18233D', 'stroke-width': 4, 'stroke-linecap': 'round' }));
+      body.append(sv('circle', { cx: c * (R + 15), cy: si * (R + 15), r: 7, fill: '#fff', stroke: '#18233D', 'stroke-width': 3 }));
     }
-    body.append(sv('circle', { r: R, fill: info.color, stroke: '#333', 'stroke-width': 3 }));
+    body.append(sv('circle', { r: R, fill: info.color, stroke: '#18233D', 'stroke-width': 2.5 }));
+    body.append(sv('circle', { cx: -R * .35, cy: -R * .38, r: R * .32, fill: '#fff', opacity: .22 }));
     const ink = darkText(info.color) ? '#1d1b22' : '#fff';
     body.append(sv('circle', { cx: -10, cy: -15, r: 4, fill: ink }));
     body.append(sv('circle', { cx: 10, cy: -15, r: 4, fill: ink }));
-    const t = sv('text', { y: 13, 'text-anchor': 'middle', 'font-size': 24, 'font-weight': 800, fill: ink });
+    const t = sv('text', { y: 13, 'text-anchor': 'middle', 'font-size': 24, 'font-weight': 700, fill: ink, 'font-family': 'Space Grotesk, system-ui, sans-serif' });
     t.textContent = a.sym;
     body.append(t);
     const ionic = bonded.find(isIonic);
@@ -1028,7 +1083,7 @@ function renderMap(body) {
   const { owned, visible } = territory(state.found);
   const idx = eraIndex(state.found), era = ERAS[idx];
   const left = era.goal.filter(g => !state.found.includes(g)).length;
-  body.append(el('div', { id: 'map-info' }, `${era.emoji} ${era.name} · 우리 땅 ${owned.size}칸`));
+  body.append(el('div', { id: 'map-info' }, `${era.emoji} ${era.name}, 우리 땅 ${owned.size}칸`));
   body.append(el('div', { id: 'map-next' }, left ? `다음 시대까지 발명 ${left}개 남았어` : '이 시대의 발명을 다 했어! 🎉'));
   const S = 28, W = Math.sqrt(3) * S;
   const px = (q, r) => [W * (q + r / 2), 1.5 * S * r];
@@ -1046,7 +1101,7 @@ function renderMap(body) {
     const g = sv('g', { class: `hex ${terr}${isOwned ? ' owned' : ''}${isFog ? ' fog' : ''}`, 'data-q': q, 'data-r': r });
     const pts = cs.map(c => c.join(',')).join(' ');
     g.append(sv('polygon', { points: pts, fill: TERRAIN_COLOR[terr], stroke: 'rgba(0,0,0,.12)', 'stroke-width': 1 }));
-    if (isOwned) g.append(sv('polygon', { points: pts, fill: 'rgba(255,140,66,.28)' }));
+    if (isOwned) g.append(sv('polygon', { points: pts, fill: 'rgba(45,91,227,.16)' }));
     const isSite = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r);
     if (!isFog && TERRAIN_DECO[terr] && !isSite && !(q === 0 && r === 0)) {
       const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .75 });
@@ -1065,11 +1120,11 @@ function renderMap(body) {
       if (owned.has((q + dq) + ',' + (r + dr))) return;
       const n = cs[(i + 1) % 6];
       borders.append(sv('line', { class: 'border-edge', x1: c[0], y1: c[1], x2: n[0], y2: n[1],
-        stroke: '#e0662a', 'stroke-width': 4, 'stroke-linecap': 'round' }));
+        stroke: '#2d5be3', 'stroke-width': 4, 'stroke-linecap': 'round' }));
     });
   }
   const [ccx, ccy] = px(0, 0);
-  marks.append(sv('circle', { cx: ccx, cy: ccy, r: 17, fill: '#fff8e6', stroke: '#e0662a', 'stroke-width': 3 }));
+  marks.append(sv('circle', { cx: ccx, cy: ccy, r: 17, fill: '#fff', stroke: '#2d5be3', 'stroke-width': 3 }));
   const cap = sv('text', { x: ccx, y: ccy + 8, 'text-anchor': 'middle', 'font-size': 22 }); cap.textContent = '🏛️'; marks.append(cap);
   for (const id in MAP_TILES) {
     const [q, r] = MAP_TILES[id], [cx, cy] = px(q, r), key = q + ',' + r;
