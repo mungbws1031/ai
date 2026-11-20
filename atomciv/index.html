@@ -96,7 +96,6 @@ button:disabled{opacity:.4}
 #tray-items{display:flex;gap:6px;flex-wrap:wrap}
 #tray.bounce{animation:bounce .4s}
 @keyframes bounce{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
-#heat-btn[aria-pressed=true]{background:#ff5a36;color:#fff}
 #mission-bar{position:absolute;top:10px;left:12px;right:12px;margin:0 auto;width:fit-content;display:flex;align-items:center;gap:10px;
   background:#fff;border-radius:18px;padding:6px 6px 6px 16px;box-shadow:var(--shadow);font-weight:800;font-size:18px;
   max-width:calc(100% - 24px);z-index:2}
@@ -153,7 +152,6 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
 #tray.drop-ready{background:#eef3ff;border-color:var(--cobalt);border-style:solid}
 #tray-empty{color:var(--muted)}
 #combine-btn:not(:disabled){background:var(--mint);border-color:#0f8a5f;box-shadow:0 2px 0 #0f8a5f;color:#fff}
-#heat-btn[aria-pressed=true]{background:var(--coral);border-color:#c93e33;box-shadow:0 2px 0 #c93e33;color:#fff}
 #toast{background:var(--ink);border-radius:12px;font-weight:600;white-space:normal;max-width:calc(100% - 32px);text-align:center;word-break:keep-all}
 /* 카드 */
 #card{background:rgba(24,35,61,.5)}
@@ -196,7 +194,6 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
       <div id="mixer">
         <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><span id="tray-empty">재료를 여기로 끌어와!</span><div id="tray-items"></div></div>
         <div id="mix">
-          <button id="heat-btn" aria-pressed="false" disabled>🔥 불</button>
           <button id="combine-btn" disabled>✨ 합치기</button>
         </div>
       </div>
@@ -492,6 +489,12 @@ function sameBag(a, b) {
   const x = [...a].sort(), y = [...b].sort();
   return x.every((v, i) => v === y[i]);
 }
+// 그릇에 🔥 불(발명품)이 들어 있으면 '열을 가한다'로 본다
+function combineTray(items) {
+  const rest = items.filter(x => x !== 'fire');
+  if (!rest.length) return null;
+  return matchRecipe(rest, items.includes('fire'));
+}
 function matchRecipe(inputs, heat) {
   const r = RECIPES.find(r => r.heat === !!heat && sameBag(r.inputs, inputs));
   return r ? r.output : null;
@@ -512,7 +515,7 @@ const MISSIONS = [
   { target: 'O2Si',      text: '모래를 만들어 봐! 🏖️',                      hint: ['Si', 'O'] },
   { target: 'fire',      text: '불을 피워 봐! 그릇에 재료를 넣고 합치기', hint: ['wood', 'flint'] },
   { target: 'stone_axe', text: '부싯돌 두 개와 나무로 돌도끼를 만들어 봐! 🪓',                    hint: ['flint', 'wood'] },
-  { target: 'charcoal',  text: '숯을 만들어 봐! 🔥 불 버튼을 써 봐',        hint: ['wood', 'heat'] },
+  { target: 'charcoal',  text: '나무와 🔥 불을 그릇에 넣어 숯을 만들어 봐!',        hint: ['wood', 'heat'] },
   { target: 'pottery',   text: '물을 담을 토기를 구워 봐! 🏺',              hint: ['clay', 'H2O', 'heat'] },
   { target: 'copper',    text: '구리광석에서 구리를 꺼내 봐!',              hint: ['copper_ore', 'charcoal', 'heat'] },
   { target: 'tin',       text: '주석광석에서 주석을 꺼내 봐!',              hint: ['tin_ore', 'charcoal', 'heat'] },
@@ -616,7 +619,7 @@ function terrainAt(q, r) {
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -998,7 +1001,6 @@ function dropIntoTray(key) {
   toast(`${MOLECULES[key].emoji} ${MOLECULES[key].name} 그릇으로 쏙!`);
 }
 let tray = [];
-let heatOn = false;
 const TRAY_MAX = 6;
 function addToTray(id) {
   if (tray.length >= TRAY_MAX) { toast('그릇에는 6개까지만 넣을 수 있어!'); return; }
@@ -1020,27 +1022,23 @@ function renderTray() {
   renderTools();
 }
 function renderTools() {
-  const hb = $('#heat-btn');
-  hb.disabled = !state.found.includes('fire');
-  if (hb.disabled) heatOn = false;
-  hb.setAttribute('aria-pressed', String(heatOn));
   $('#combine-btn').disabled = !tray.length;
 }
-$('#heat-btn').addEventListener('click', () => { heatOn = !heatOn; beep(heatOn ? 700 : 350, 0.06); renderTools(); });
 $('#combine-btn').addEventListener('click', () => {
-  const out = matchRecipe(tray, heatOn);
+  const out = combineTray(tray);
   if (!out) {
     const tray_ = $('#tray');
     tray_.classList.remove('bounce'); void tray_.offsetWidth; tray_.classList.add('bounce');
     beep(220, 0.12);
-    if (matchRecipe(tray, !heatOn) && !$('#heat-btn').disabled) toast(heatOn ? '불 없이 해 볼까?' : '🔥 불을 써 볼까?');
-    else if (matchRecipe(tray, !heatOn)) toast('불이 있어야 할 것 같아!');
+    const hasFire = tray.includes('fire'), rest = tray.filter(x => x !== 'fire');
+    if (hasFire && matchRecipe(rest, false)) toast('불 없이 해 볼까?');
+    else if (!hasFire && matchRecipe(rest, true)) toast(state.found.includes('fire') ? '🔥 불도 그릇에 넣어 볼까?' : '불이 있어야 할 것 같아!');
     else toast('이 조합으로는 아무것도 안 생겨. 다른 걸 섞어 봐!');
     return;
   }
   const it = ITEMS[out];
   const isNew = discover(out);
-  tray = []; heatOn = false; renderTray();
+  tray = []; renderTray();
   if (isNew) fanfare(); else beep(880, 0.1);
   queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 발명!' : '또 만들었어!', name: it.name, why: it.why,
     onClose: () => afterMake(out) });
@@ -1210,7 +1208,7 @@ $('#hint-btn').addEventListener('click', () => {
   const m = currentMission(state.found);
   if (!m) return;
   const els = m.hint.map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
-    : h === 'heat' ? $('#heat-btn') : document.querySelector(`#drawer [data-item="${h}"]`)).filter(Boolean);
+    : h === 'heat' ? document.querySelector('#drawer [data-item="fire"]') : document.querySelector(`#drawer [data-item="${h}"]`)).filter(Boolean);
   els.forEach(e => e.classList.add('glow'));
   toast(hintText(m), 4500);
   if (els[0]) els[0].scrollIntoView({ block: 'nearest' });
@@ -1317,7 +1315,7 @@ function loadSaveFile(file) {
     const loaded = importSave(text);
     if (!loaded) { toast('이 파일은 불러올 수 없어 😢'); beep(220, 0.12); return; }
     state = loaded; saveState(state);
-    tray = []; heatOn = false; shownEra = null;
+    tray = []; shownEra = null;
     removeAtoms(bench.atoms.map(a => a.id));
     renderDrawer(); renderTray(); checkEra(); renderMute();
     setTab(START_TAB());

@@ -351,3 +351,15 @@ test('molecules with the new atoms', async () => {
   ];
   for (const [spec, key] of cases) assert.deepEqual(await judgeOf(spec), [{ status: 'known', key }], key);
 });
+
+test('combineTray treats fire in the bowl as heat', async () => {
+  const r = await run(A => ({
+    charcoal: A.combineTray(['wood', 'fire']),
+    noFire: A.combineTray(['wood']),
+    glass: A.combineTray(['fire', 'O2Si']),
+    fireOnly: A.combineTray(['fire']),
+    makeFire: A.combineTray(['wood', 'flint']),
+  }));
+  assert.equal(r.charcoal, 'charcoal'); assert.equal(r.noFire, null); assert.equal(r.glass, 'glass');
+  assert.equal(r.fireOnly, null); assert.equal(r.makeFire, 'fire');
+});
