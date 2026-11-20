@@ -89,7 +89,8 @@ test('blocked localStorage still renders the game without errors', async () => {
 test('wood + flint on the tray combine into fire', async () => {
   const { ctx, page, errors } = await fresh();
   assert.equal(await page.locator('#drawer [data-item=iron_ore]').count(), 0);
-  assert.ok(await page.locator('#heat-btn').isDisabled());
+  assert.equal(await page.locator('#heat-btn').count(), 0, 'no separate fire button');
+  assert.equal(await page.locator('#drawer [data-item=fire]').count(), 0);
   await page.click('#drawer [data-item=wood]');
   await page.click('#drawer [data-item=flint]');
   assert.equal(await page.locator('#tray [data-item]').count(), 2);
@@ -97,7 +98,6 @@ test('wood + flint on the tray combine into fire', async () => {
   await page.waitForSelector('#card:not([hidden])');
   assert.match(await page.textContent('#card'), /불/);
   await page.click('#card-ok');
-  assert.ok(await page.locator('#heat-btn').isEnabled());
   assert.equal(await page.locator('#drawer [data-item=fire]').count(), 1);
   assert.equal(await page.locator('#tray [data-item]').count(), 0);
   assert.deepEqual(errors, []);
@@ -162,7 +162,7 @@ test('finishing an era shows the new-era card without the science prefix', async
   const { ctx, page } = await fresh(undefined, nearlyStone);
   await page.click('#drawer [data-item=clay]');
   await page.click('#drawer [data-item=H2O]');
-  await page.click('#heat-btn');
+  await page.click('#drawer [data-item=fire]');
   await page.click('#combine-btn');
   await page.waitForSelector('#card:not([hidden])');
   await page.click('#card-ok');
@@ -501,5 +501,43 @@ test('hint button spells out the ingredients', async () => {
   const { ctx, page } = await fresh(undefined, undefined, true);
   await page.click('#hint-btn');
   assert.match(await page.textContent('#toast'), /H/);
+  await ctx.close();
+});
+
+test('putting helium on the bench discovers it right away', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=He]');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /헬륨/);
+  await ctx.close();
+});
+
+test('calcium oxide shows 2+ and 2- charges', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Ca]'); await page.click('[data-atom=O]');
+  const [ca] = await benchIds(page, 'Ca'); const [o] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${ca}"]`, `.atom[data-id="${o}"]`);
+  await drag(page, `.atom[data-id="${ca}"]`, `.atom[data-id="${o}"]`);
+  assert.equal(await page.textContent(`.atom[data-id="${ca}"] .charge`), '2+');
+  await ctx.close();
+});
+
+test('fire from the drawer acts as heat: wood + fire makes charcoal', async () => {
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:['fire'],missionIdx:0,muted:true,trayIntro:true}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  await page.click('#drawer [data-item=wood]');
+  await page.click('#drawer [data-item=fire]');
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /숯/);
+  await ctx.close();
+});
+
+test('wood alone hints that fire is needed', async () => {
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:['fire'],missionIdx:0,muted:true,trayIntro:true}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  await page.click('#drawer [data-item=wood]');
+  await page.click('#combine-btn');
+  assert.match(await page.textContent('#toast'), /불/);
   await ctx.close();
 });

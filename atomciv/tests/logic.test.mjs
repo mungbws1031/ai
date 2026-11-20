@@ -327,3 +327,39 @@ test('hintText lists every ingredient of the mission', async () => {
   assert.match(r.iron, /철광석/); assert.match(r.iron, /숯/); assert.match(r.iron, /불/);
   assert.match(r.water, /H/); assert.match(r.water, /O/); assert.match(r.water, /2/);
 });
+
+test('more atoms: K, Ca, P, I, He, Ne', async () => {
+  const a = await run(A => ['K', 'Ca', 'P', 'I', 'He', 'Ne'].map(s => [s, A.ATOMS[s] && A.ATOMS[s].hands, A.ATOMS[s] && A.ATOMS[s].z]));
+  assert.deepEqual(a, [['K', 1, 19], ['Ca', 2, 20], ['P', 3, 15], ['I', 1, 53], ['He', 0, 2], ['Ne', 0, 10]]);
+});
+
+test('noble gases are complete on their own; other lone atoms are not', async () => {
+  assert.deepEqual(await judgeOf({ atoms: ['He'], bonds: [] }), [{ status: 'known', key: 'He' }]);
+  assert.deepEqual(await judgeOf({ atoms: ['Ne'], bonds: [] }), [{ status: 'known', key: 'Ne' }]);
+  assert.equal((await judgeOf({ atoms: ['H'], bonds: [] }))[0].status, 'incomplete');
+});
+
+test('molecules with the new atoms', async () => {
+  const cases = [
+    [{ atoms: ['K', 'Cl'], bonds: [[0, 1]] }, 'ClK'],
+    [{ atoms: ['K', 'I'], bonds: [[0, 1]] }, 'IK'],
+    [{ atoms: ['Ca', 'O'], bonds: [[0, 1], [0, 1]] }, 'CaO'],
+    [{ atoms: ['Cl', 'Ca', 'Cl'], bonds: [[0, 1], [1, 2]] }, 'CaCl2'],
+    [{ atoms: ['F', 'Ca', 'F'], bonds: [[0, 1], [1, 2]] }, 'CaF2'],
+    [{ atoms: ['I', 'I'], bonds: [[0, 1]] }, 'I2'],
+    [{ atoms: ['P', 'P', 'P', 'P'], bonds: [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]] }, 'P4'],
+  ];
+  for (const [spec, key] of cases) assert.deepEqual(await judgeOf(spec), [{ status: 'known', key }], key);
+});
+
+test('combineTray treats fire in the bowl as heat', async () => {
+  const r = await run(A => ({
+    charcoal: A.combineTray(['wood', 'fire']),
+    noFire: A.combineTray(['wood']),
+    glass: A.combineTray(['fire', 'O2Si']),
+    fireOnly: A.combineTray(['fire']),
+    makeFire: A.combineTray(['wood', 'flint']),
+  }));
+  assert.equal(r.charcoal, 'charcoal'); assert.equal(r.noFire, null); assert.equal(r.glass, 'glass');
+  assert.equal(r.fireOnly, null); assert.equal(r.makeFire, 'fire');
+});
