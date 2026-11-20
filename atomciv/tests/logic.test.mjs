@@ -68,9 +68,9 @@ test('two separate H-H groups judged separately', async () => {
     [{ status: 'known', key: 'H2' }, { status: 'known', key: 'H2' }]);
 });
 
-test('H-O-O-H follows the rules but is unknown', async () => {
-  assert.deepEqual(await judgeOf({ atoms: ['H', 'O', 'O', 'H'], bonds: [[0, 1], [1, 2], [2, 3]] }),
-    [{ status: 'unknown', key: 'H2O2' }]);
+test('H-O-O-O-H follows the rules but is unknown', async () => {
+  assert.deepEqual(await judgeOf({ atoms: ['H', 'O', 'O', 'O', 'H'], bonds: [[0, 1], [1, 2], [2, 3], [3, 4]] }),
+    [{ status: 'unknown', key: 'H2O3' }]);
 });
 
 test('full atom cannot bond', async () => {
@@ -144,7 +144,7 @@ test('industry era: recipes, era index, missions', async () => {
     steam: A.matchRecipe(['H2O'], true),
     steel: A.matchRecipe(['coal', 'iron'], true),
     engine: A.matchRecipe(['steam', 'steel'], false),
-    train: A.matchRecipe(['steel', 'steam_engine'], false),
+    train: A.matchRecipe(['steel', 'wheel', 'steam_engine'], false),
     lime: A.matchRecipe(['limestone'], true),
     cement: A.matchRecipe(['clay', 'quicklime'], true),
     concrete: A.matchRecipe(['H2O', 'O2Si', 'cement'], false),
@@ -272,4 +272,58 @@ test('modern era: recipes, eras, bigger island', async () => {
   assert.deepEqual(r.last.raws, ['aluminum_ore']);
   assert.equal(r.radius, 6);
   assert.equal(r.h2Ingredient, false, 'first-mission molecules should not fall into the bowl');
+});
+
+test('new atoms F, S, Mg with the right hands and atomic numbers', async () => {
+  const a = await run(A => ({ F: A.ATOMS.F, S: A.ATOMS.S, Mg: A.ATOMS.Mg }));
+  assert.equal(a.F.hands, 1); assert.equal(a.F.z, 9);
+  assert.equal(a.S.hands, 2); assert.equal(a.S.z, 16);
+  assert.equal(a.Mg.hands, 2); assert.equal(a.Mg.z, 12);
+});
+
+test('new molecules are recognised', async () => {
+  const cases = [
+    [{ atoms: ['S', 'H', 'H'], bonds: [[0, 1], [0, 2]] }, 'H2S'],
+    [{ atoms: ['H', 'F'], bonds: [[0, 1]] }, 'FH'],
+    [{ atoms: ['F', 'F'], bonds: [[0, 1]] }, 'F2'],
+    [{ atoms: ['Na', 'F'], bonds: [[0, 1]] }, 'FNa'],
+    [{ atoms: ['Mg', 'O'], bonds: [[0, 1], [0, 1]] }, 'MgO'],
+    [{ atoms: ['Cl', 'Mg', 'Cl'], bonds: [[0, 1], [1, 2]] }, 'Cl2Mg'],
+    [{ atoms: ['H', 'O', 'O', 'H'], bonds: [[0, 1], [1, 2], [2, 3]] }, 'H2O2'],
+    [{ atoms: ['C', 'C', 'H', 'H', 'H', 'H'], bonds: [[0, 1], [0, 1], [0, 2], [0, 3], [1, 4], [1, 5]] }, 'C2H4'],
+    [{ atoms: ['C', 'C', 'H', 'H'], bonds: [[0, 1], [0, 1], [0, 1], [0, 2], [1, 3]] }, 'C2H2'],
+    [{ atoms: ['N', 'N', 'H', 'H', 'H', 'H'], bonds: [[0, 1], [0, 2], [0, 3], [1, 4], [1, 5]] }, 'H4N2'],
+    [{ atoms: ['C', 'C', 'O', 'H', 'H', 'H', 'H', 'H', 'H'], bonds: [[0, 1], [1, 2], [2, 3], [0, 4], [0, 5], [0, 6], [1, 7], [1, 8]] }, 'C2H6O'],
+    [{ atoms: ['C', 'C', 'C', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H'], bonds: [[0, 1], [1, 2], [0, 3], [0, 4], [0, 5], [1, 6], [1, 7], [2, 8], [2, 9], [2, 10]] }, 'C3H8'],
+  ];
+  for (const [spec, key] of cases) assert.deepEqual(await judgeOf(spec), [{ status: 'known', key }], key);
+});
+
+test('every known molecule has a display formula, emoji and why', async () => {
+  const bad = await run(A => Object.entries(A.MOLECULES).filter(([, m]) => !m.formula || !m.emoji || !m.why || !m.name).map(([k]) => k));
+  assert.deepEqual(bad, []);
+});
+
+test('train needs a steam engine, wheels and steel rails', async () => {
+  const r = await run(A => ({
+    wheel: A.matchRecipe(['steel'], true),
+    train: A.matchRecipe(['wheel', 'steel', 'steam_engine'], false),
+    oldTrain: A.matchRecipe(['steam_engine', 'steel'], false),
+    missions: A.MISSIONS.map(m => m.target),
+  }));
+  assert.equal(r.wheel, 'wheel');
+  assert.equal(r.train, 'train');
+  assert.equal(r.oldTrain, null);
+  assert.ok(r.missions.indexOf('wheel') < r.missions.indexOf('train'));
+});
+
+test('hintText lists every ingredient of the mission', async () => {
+  const r = await run(A => ({
+    train: A.hintText(A.MISSIONS.find(m => m.target === 'train')),
+    iron: A.hintText(A.MISSIONS.find(m => m.target === 'iron')),
+    water: A.hintText(A.MISSIONS.find(m => m.target === 'H2O')),
+  }));
+  for (const w of ['증기기관', '바퀴', '강철']) assert.match(r.train, new RegExp(w));
+  assert.match(r.iron, /철광석/); assert.match(r.iron, /숯/); assert.match(r.iron, /불/);
+  assert.match(r.water, /H/); assert.match(r.water, /O/); assert.match(r.water, /2/);
 });

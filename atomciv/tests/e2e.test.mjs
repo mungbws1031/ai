@@ -317,11 +317,10 @@ test('industry era opens with coal and limestone and a new village', async () =>
 });
 
 test('finishing the industry era opens the electric era', async () => {
-  const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'quicklime', 'cement', 'concrete'];
+  const found = [...ironDone, 'steam', 'steel', 'steam_engine', 'wheel', 'quicklime', 'cement', 'concrete'];
   const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,allDone:true}))`;
   const { ctx, page } = await fresh(undefined, init);
-  await page.click('#drawer [data-item=steam_engine]');
-  await page.click('#drawer [data-item=steel]');
+  for (const id of ['steam_engine', 'wheel', 'steel']) await page.click(`#drawer [data-item=${id}]`);
   await page.click('#combine-btn');
   await page.waitForSelector('#card:not([hidden])');
   await page.click('#card-ok');
@@ -481,5 +480,26 @@ test('phone: empty bowl is compact and the hint button is small', async () => {
   assert.ok(tray.height <= 80, `bowl height ${tray.height}`);
   const hint = await page.locator('#hint-btn').boundingBox();
   assert.ok(hint.width <= 64, `hint width ${hint.width}`);
+  await ctx.close();
+});
+
+test('magnesium oxide is drawn as ionic with 2+ and 2- charges', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Mg]'); await page.click('[data-atom=O]');
+  const [mg] = await benchIds(page, 'Mg'); const [o] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${mg}"]`, `.atom[data-id="${o}"]`);
+  await drag(page, `.atom[data-id="${mg}"]`, `.atom[data-id="${o}"]`);
+  assert.equal(await page.locator('#bench .bond.ionic').count(), 1);
+  assert.equal(await page.textContent(`.atom[data-id="${mg}"] .charge`), '2+');
+  assert.equal(await page.textContent(`.atom[data-id="${o}"] .charge`), '2−');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /산화마그네슘/);
+  await ctx.close();
+});
+
+test('hint button spells out the ingredients', async () => {
+  const { ctx, page } = await fresh(undefined, undefined, true);
+  await page.click('#hint-btn');
+  assert.match(await page.textContent('#toast'), /H/);
   await ctx.close();
 });

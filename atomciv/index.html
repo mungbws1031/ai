@@ -154,7 +154,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
 #tray-empty{color:var(--muted)}
 #combine-btn:not(:disabled){background:var(--mint);border-color:#0f8a5f;box-shadow:0 2px 0 #0f8a5f;color:#fff}
 #heat-btn[aria-pressed=true]{background:var(--coral);border-color:#c93e33;box-shadow:0 2px 0 #c93e33;color:#fff}
-#toast{background:var(--ink);border-radius:12px;font-weight:600}
+#toast{background:var(--ink);border-radius:12px;font-weight:600;white-space:normal;max-width:calc(100% - 32px);text-align:center;word-break:keep-all}
 /* 카드 */
 #card{background:rgba(24,35,61,.5)}
 #card-box{border-radius:20px;border:1.5px solid var(--line);box-shadow:0 18px 40px rgba(24,35,61,.25)}
@@ -232,6 +232,9 @@ const ATOMS = {
   Cl: { hands: 1, name: '염소',   color: '#30a46c', z: 17, trait: '전자 욕심쟁이' },
   Na: { hands: 1, name: '나트륨', color: '#8e4ec6', z: 11, trait: '전자를 잘 줘 버려' },
   Si: { hands: 4, name: '규소',   color: '#c08532', z: 14, trait: '모래와 돌 속에 있어' },
+  F:  { hands: 1, name: '플루오린', color: '#a6e3b0', z: 9, trait: '전자를 세상에서 제일 욕심내' },
+  S:  { hands: 2, name: '황',     color: '#f5d742', z: 16, trait: '노랗고 화산 근처에 많아' },
+  Mg: { hands: 2, name: '마그네슘', color: '#9aa7b8', z: 12, trait: '불에 타면 눈부시게 하얀 빛을 내' },
 };
 
 const MOLECULES = {
@@ -244,6 +247,18 @@ const MOLECULES = {
   H3N:  { id: 'H3N', formula: 'NH₃',  name: '암모니아',    emoji: '🧪', why: '질소가 세 손으로 수소 셋을 잡았어. 식물 비료를 만드는 재료야!' },
   ClH:  { id: 'ClH', formula: 'HCl',  name: '염화수소',    emoji: '🫧', why: '물에 녹으면 염산이 돼. 위장에서 음식을 녹이는 위산이 바로 이거야!' },
   ClNa: { id: 'ClNa', formula: 'NaCl', name: '소금',        emoji: '🧂', why: 'Na가 전자를 Cl에게 줘 버려서, 서로 끌어당겨 붙었어!', ionic: true },
+  H2S:  { id: 'H2S',  formula: 'H₂S',  name: '황화수소',   emoji: '🥚', why: '황이 수소 둘과 손잡았어. 썩은 달걀 냄새의 정체야!' },
+  FH:   { id: 'FH',   formula: 'HF',   name: '플루오린화수소', emoji: '🧪', why: '아주 강해서 유리도 녹여! 그래서 유리 대신 플라스틱 병에 담아.' },
+  F2:   { id: 'F2',   formula: 'F₂',   name: '플루오린 기체', emoji: '💨', why: '플루오린 둘이 손잡았어. 전자를 가장 욕심내는 원자라서 아주 사나운 기체야!' },
+  FNa:  { id: 'FNa',  formula: 'NaF',  name: '플루오린화나트륨', emoji: '🪥', why: 'Na가 전자를 F에게 줘서 붙었어. 치약에 조금 들어 있어서 이를 튼튼하게 해!', ionic: true },
+  MgO:  { id: 'MgO',  formula: 'MgO',  name: '산화마그네슘', emoji: '🎆', why: '마그네슘이 타면 눈부신 하얀 빛과 함께 이게 생겨! Mg가 전자 둘을 O에게 줬어.', ionic: true },
+  Cl2Mg: { id: 'Cl2Mg', formula: 'MgCl₂', name: '염화마그네슘(간수)', emoji: '🧈', why: '두부를 만들 때 콩물을 굳히는 간수야! Mg가 Cl 둘에게 전자를 하나씩 줬어.', ionic: true },
+  H2O2: { id: 'H2O2', formula: 'H₂O₂', name: '과산화수소', emoji: '🫧', why: '물보다 산소가 하나 더 많아. 상처에 바르면 보글보글 거품이 나는 소독약이야!' },
+  C2H4: { id: 'C2H4', formula: 'C₂H₄', name: '에틸렌',   emoji: '🍌', why: '탄소 둘이 두 손으로 잡았어. 과일이 익을 때 나와서 바나나를 노랗게 익혀!' },
+  C2H2: { id: 'C2H2', formula: 'C₂H₂', name: '아세틸렌', emoji: '🔥', why: '탄소 둘이 세 손으로 꽉 잡았어. 쇠를 자를 만큼 뜨거운 불꽃을 내!' },
+  H4N2: { id: 'H4N2', formula: 'N₂H₄', name: '하이드라진', emoji: '🛰️', why: '질소 둘이 손잡고 수소 넷을 잡았어. 인공위성의 작은 로켓 연료로 써!' },
+  C2H6O: { id: 'C2H6O', formula: 'C₂H₅OH', name: '에탄올',  emoji: '🧴', why: '손 소독제에 들어 있는 알코올이야. 같은 원자로 모양만 다른 분자도 있단다!' },
+  C3H8: { id: 'C3H8', formula: 'C₃H₈', name: '프로페인(프로판)', emoji: '🏕️', why: '탄소 셋이 줄지어 수소 여덟을 잡았어. 캠핑 가스버너의 연료야!' },
   O2Si: { id: 'O2Si', formula: 'SiO₂', name: '모래(이산화규소)', emoji: '🏖️', why: '규소가 산소 둘과 두 손씩 잡았어. 모래알과 수정이 이거야!' },
 };
 
@@ -372,6 +387,7 @@ const ITEMS = {
   limestone:  { name: '석회석',   emoji: '🪨', raw: true, why: '옛날 조개껍데기 같은 것이 쌓여 생긴 돌이야. 칼슘, 탄소, 산소가 들어 있어!' },
   steam:      { name: '수증기',   emoji: '♨️', why: '물이 끓어 수증기가 되면 부피가 엄청 커져서 밀어내는 힘이 생겨!' },
   steel:      { name: '강철',     emoji: '🔩', why: '철에 탄소를 아주 조금 섞으면 더 단단하고 질겨져!' },
+  wheel:      { name: '바퀴',     emoji: '🛞', why: '강철을 녹여 둥근 틀에 부으면 단단한 바퀴가 돼! 철로 위를 미끄러지듯 굴러가.' },
   steam_engine: { name: '증기기관', emoji: '🏭', why: '수증기가 피스톤을 밀어서 바퀴를 돌려! 사람 대신 기계가 일하기 시작했어.' },
   train:      { name: '기차',     emoji: '🚂', why: '증기기관을 강철 바퀴에 달았더니, 사람과 물건을 멀리 빠르게 나를 수 있게 됐어!' },
   quicklime:  { name: '생석회',   emoji: '⚪', why: '석회석을 아주 뜨겁게 구우면 이산화탄소가 빠져나가!' },
@@ -417,7 +433,8 @@ const RECIPES = [
   { inputs: ['H2O'], heat: true, output: 'steam' },
   { inputs: ['iron', 'coal'], heat: true, output: 'steel' },
   { inputs: ['steel', 'steam'], heat: false, output: 'steam_engine' },
-  { inputs: ['steam_engine', 'steel'], heat: false, output: 'train' },
+  { inputs: ['steel'], heat: true, output: 'wheel' },
+  { inputs: ['steam_engine', 'wheel', 'steel'], heat: false, output: 'train' },
   { inputs: ['limestone'], heat: true, output: 'quicklime' },
   { inputs: ['quicklime', 'clay'], heat: true, output: 'cement' },
   { inputs: ['cement', 'O2Si', 'H2O'], heat: false, output: 'concrete' },
@@ -489,7 +506,8 @@ const MISSIONS = [
   { target: 'steam',     text: '물을 끓여서 수증기를 만들어 봐! ♨️',        hint: ['H2O', 'heat'] },
   { target: 'steel',     text: '철에 석탄을 섞어 강철을 만들어 봐! 🔩',     hint: ['iron', 'coal', 'heat'] },
   { target: 'steam_engine', text: '강철과 수증기로 증기기관을 만들어 봐!',  hint: ['steel', 'steam'] },
-  { target: 'train',     text: '증기기관으로 기차를 만들어 봐! 🚂',         hint: ['steam_engine', 'steel'] },
+  { target: 'wheel',     text: '강철을 녹여 바퀴를 만들어 봐! 🛞',          hint: ['steel', 'heat'] },
+  { target: 'train',     text: '증기기관, 바퀴, 강철로 기차를! 🚂',         hint: ['steam_engine', 'wheel', 'steel'] },
   { target: 'quicklime', text: '석회석을 구워서 생석회를 만들어 봐!',       hint: ['limestone', 'heat'] },
   { target: 'cement',    text: '생석회와 점토로 시멘트를 만들어 봐!',       hint: ['quicklime', 'clay', 'heat'] },
   { target: 'concrete',  text: '시멘트, 모래, 물로 콘크리트를 만들어 봐! 🧱', hint: ['cement', 'O2Si', 'H2O'] },
@@ -515,6 +533,17 @@ const MISSIONS = [
   { target: 'rocket',    text: '알루미늄, 연료, 컴퓨터로 로켓을! 🚀',        hint: ['aluminum', 'rocket_fuel', 'computer'] },
   { target: 'satellite', text: '로켓에 태양전지와 라디오를 실어 위성을! 🛰️',  hint: ['rocket', 'solar_cell', 'radio'] },
 ];
+// 힌트 문장: 미션에 필요한 재료를 글로 알려 준다
+function hintText(m) {
+  if (MOLECULES[m.target]) {
+    const parts = [...m.target.matchAll(/([A-Z][a-z]?)(\d*)/g)].map(([, sym, n]) => `${sym} ${n || 1}개`);
+    return `원자를 끌어 붙여 봐: ${parts.join(' + ')}`;
+  }
+  const r = RECIPES.find(x => x.output === m.target);
+  if (!r) return '';
+  const names = r.inputs.map(id => { const it = ITEMS[id] || MOLECULES[id]; return `${it.emoji} ${it.name}`; });
+  return `그릇에 넣어 봐: ${names.join(' + ')}${r.heat ? ' + 🔥 불' : ''}`;
+}
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
 /* ---- 영토 지도 (육각 타일, axial 좌표 q,r) ---- */
@@ -524,7 +553,7 @@ const MAP_TILES = {
   fire: [2, -1], stone_axe: [-2, 1], charcoal: [-1, -1], pottery: [1, 1],
   copper: [3, 0], tin: [2, 1], bronze: [3, -1], iron: [-3, 1], glass: [0, 3],
   steam: [1, -3], steel: [-2, -2], steam_engine: [0, -4], train: [2, -4],
-  quicklime: [-3, 0], cement: [-4, 2], concrete: [-3, -1],
+  quicklime: [-3, 0], cement: [-4, 2], concrete: [-3, -1], wheel: [2, -5],
   salt_water: [4, -2], zinc: [4, -1], battery: [4, 0], wire: [3, 1], bulb: [2, 2], motor: [1, 3], generator: [-1, 4],
   silicon: [0, 4], chip: [-2, 4], computer: [-3, 4], radio: [-4, 4], plastic: [4, -4], phone: [-4, 3], internet: [-4, 1],
   solar_cell: [5, -3], aluminum: [5, -1], rocket_fuel: [3, 2], rocket: [0, 5], satellite: [-5, 1], electric_car: [-2, 5], wind_turbine: [5, -5],
@@ -532,7 +561,7 @@ const MAP_TILES = {
 const TILE_TERRAIN = {
   fire: 'grass', stone_axe: 'forest', charcoal: 'forest', pottery: 'river', copper: 'river', tin: 'hills',
   bronze: 'river', iron: 'hills', glass: 'sand', steam: 'grass', steel: 'hills', steam_engine: 'plains',
-  train: 'plains', quicklime: 'hills', cement: 'plains', concrete: 'plains',
+  train: 'plains', wheel: 'plains', quicklime: 'hills', cement: 'plains', concrete: 'plains',
   salt_water: 'sand', zinc: 'hills', battery: 'plains', wire: 'plains', bulb: 'plains', motor: 'plains', generator: 'river',
   silicon: 'sand', chip: 'plains', computer: 'plains', radio: 'hills', plastic: 'plains', phone: 'plains', internet: 'plains',
   solar_cell: 'plains', aluminum: 'hills', rocket_fuel: 'river', rocket: 'sand', satellite: 'plains', electric_car: 'plains', wind_turbine: 'grass',
@@ -571,7 +600,7 @@ function terrainAt(q, r) {
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
+window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -621,10 +650,10 @@ function fanfare() { [523, 659, 784].forEach((f, i) => setTimeout(() => beep(f, 
 
 /* ---- toast ---- */
 let toastTimer = 0;
-function toast(msg) {
+function toast(msg, ms = 1800) {
   const t = $('#toast');
   t.textContent = msg; t.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), ms);
 }
 
 /* ---- drawer ---- */
@@ -727,9 +756,14 @@ function removeAtoms(ids) {
 }
 
 const symOf = id => bench.atoms.find(a => a.id === id).sym;
+const METALS = { Na: 1, Mg: 2 }, NONMETALS = { Cl: 1, F: 1, O: 2 };
 function isIonic(b) {
-  const pair = [symOf(b.a), symOf(b.b)].sort().join('-');
-  return pair === 'Cl-Na';
+  const x = symOf(b.a), y = symOf(b.b);
+  return (METALS[x] && NONMETALS[y]) || (METALS[y] && NONMETALS[x]);
+}
+function chargeOf(sym) {
+  if (METALS[sym]) return (METALS[sym] > 1 ? METALS[sym] : '') + '+';
+  return (NONMETALS[sym] > 1 ? NONMETALS[sym] : '') + '−';
 }
 function renderBench() {
   benchSvg.textContent = '';
@@ -787,13 +821,13 @@ function renderBench() {
     body.append(t);
     const ionic = bonded.find(isIonic);
     if (ionic) { // Na는 전자를 줘서 +, Cl은 전자를 받아서 −
-      const sign = a.sym === 'Na' ? '+' : '−';
+      const sign = chargeOf(a.sym);
       // 짝 원자와 반대쪽(조금 위)에 전하 표시를 붙여 겹치지 않게
       const mate = pos[ionic.a === a.id ? ionic.b : ionic.a];
       const away = Math.atan2(p.y - mate.y, p.x - mate.x) - Math.PI / 4;
       const bx = Math.cos(away) * R, by = Math.sin(away) * R;
-      body.append(sv('circle', { cx: bx, cy: by, r: 12, fill: sign === '+' ? '#ff6b6b' : '#4d8dff', stroke: '#fff', 'stroke-width': 2 }));
-      const ct = sv('text', { class: 'charge', x: bx, y: by + 6, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 900, fill: '#fff' });
+      body.append(sv('circle', { cx: bx, cy: by, r: 12, fill: sign.endsWith('+') ? '#e5484d' : '#3e63dd', stroke: '#fff', 'stroke-width': 2 }));
+      const ct = sv('text', { class: 'charge', x: bx, y: by + (sign.length > 1 ? 5 : 6), 'text-anchor': 'middle', 'font-size': sign.length > 1 ? 13 : 18, 'font-weight': 900, fill: '#fff' });
       ct.textContent = sign;
       body.append(ct);
     }
@@ -1161,7 +1195,7 @@ $('#hint-btn').addEventListener('click', () => {
   const els = m.hint.map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
     : h === 'heat' ? $('#heat-btn') : document.querySelector(`#drawer [data-item="${h}"]`)).filter(Boolean);
   els.forEach(e => e.classList.add('glow'));
-  toast(MOLECULES[m.target] ? '원자를 실험대에 올리고, 끌어서 다른 원자에 붙여 봐! 👆' : '재료를 가운데 그릇에 넣고 ✨합치기를 눌러 봐!');
+  toast(hintText(m), 4500);
   if (els[0]) els[0].scrollIntoView({ block: 'nearest' });
   setTimeout(() => els.forEach(e => e.classList.remove('glow')), 4000);
 });
