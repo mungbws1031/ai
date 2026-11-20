@@ -503,3 +503,21 @@ test('hint button spells out the ingredients', async () => {
   assert.match(await page.textContent('#toast'), /H/);
   await ctx.close();
 });
+
+test('putting helium on the bench discovers it right away', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=He]');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /헬륨/);
+  await ctx.close();
+});
+
+test('calcium oxide shows 2+ and 2- charges', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Ca]'); await page.click('[data-atom=O]');
+  const [ca] = await benchIds(page, 'Ca'); const [o] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${ca}"]`, `.atom[data-id="${o}"]`);
+  await drag(page, `.atom[data-id="${ca}"]`, `.atom[data-id="${o}"]`);
+  assert.equal(await page.textContent(`.atom[data-id="${ca}"] .charge`), '2+');
+  await ctx.close();
+});
