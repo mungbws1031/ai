@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>개인정보처리방침 · 전자혀</title>
+<meta name="theme-color" content="#F2722B" />
+<style>
+  :root{
+    --bg-base:#F4EEE3; --bg-frame:#FFFCF6; --surface:#FBF5EC; --surface2:#F1E9DB; --border:#E6DCCB;
+    --text:#2B2620; --muted:#7C7060; --faint:#A39684;
+    --gold:#D99A00; --chef-brown:#B06A22; --accent:#F2722B; --accent-soft:rgba(242,114,43,.12);
+    --shadow:rgba(90,70,35,.18);
+    --display:Georgia,'Times New Roman',serif; --body:'Noto Sans KR',system-ui,-apple-system,'Malgun Gothic',sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg-base:#1E1A15; --bg-frame:#27221B; --surface:#2F2820; --surface2:#372F25; --border:#4A3F31;
+      --text:#F3EBDD; --muted:#B8A88F; --faint:#8C7F69; --accent-soft:rgba(242,114,43,.18);
+      --shadow:rgba(0,0,0,.45);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg-base:#1E1A15; --bg-frame:#27221B; --surface:#2F2820; --surface2:#372F25; --border:#4A3F31;
+    --text:#F3EBDD; --muted:#B8A88F; --faint:#8C7F69; --accent-soft:rgba(242,114,43,.18);
+    --shadow:rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg-base);color:var(--text);font-family:var(--body);line-height:1.7;overflow-x:hidden;min-height:100dvh}
+  main{max-width:720px;margin:0 auto;padding:20px 16px 40px;background:var(--bg-frame);min-height:100dvh}
+  @media (min-width:480px){
+    main{margin:24px auto;border-radius:24px;border:1px solid var(--border);box-shadow:0 24px 60px -24px var(--shadow);min-height:0;padding:28px 28px 40px}
+  }
+  .back{display:inline-block;color:var(--chef-brown);font-weight:700;text-decoration:none;padding:8px 0;font-size:15px}
+  .back:hover,.back:focus-visible{text-decoration:underline}
+  .kicker{font-family:var(--mono,ui-monospace,monospace);font-size:12px;color:var(--muted);letter-spacing:.04em}
+  h1{font-family:var(--display);font-size:28px;line-height:1.25;margin:6px 0 4px}
+  .meta{color:var(--muted);font-size:14px;margin:0 0 20px}
+  h2{font-size:17px;margin:28px 0 8px;padding-left:10px;border-left:4px solid var(--accent)}
+  p,li{font-size:15px;overflow-wrap:anywhere}
+  ul{padding-left:20px;margin:6px 0}
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin:10px 0}
+  .tag{display:inline-block;background:var(--accent-soft);color:var(--chef-brown);font-weight:700;border-radius:999px;padding:2px 10px;font-size:13px;margin-right:4px}
+  code{font-family:var(--mono,ui-monospace,monospace);font-size:13px;background:var(--surface2);padding:1px 6px;border-radius:6px;overflow-wrap:anywhere}
+  footer{margin-top:32px;color:var(--faint);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="./index.html" id="backLink">← 앱으로 돌아가기</a>
+  <script>document.getElementById("backLink").addEventListener("click",function(e){
+    var ref=(document.referrer||"").split(/[?#]/)[0], flag=false;
+    try{ flag=sessionStorage.getItem("et_from_app")==="1"; sessionStorage.removeItem("et_from_app"); }catch(x){}
+    if((/index\.html$/.test(ref)||flag)&&history.length>1){ e.preventDefault(); history.back(); }
+  });</script>
+  <div class="kicker">전자혀 · 개인정보처리방침</div>
+  <h1>개인정보처리방침</h1>
+  <p class="meta">시행일: 2026-11-18</p>
+
+  <div class="box">
+    <p><strong>전자혀</strong>(이하 "앱")의 운영자는 앱을 통해 개인정보를 <strong>수집하지 않습니다.</strong> 앱은 회원가입, 로그인, 위치, 연락처, 카메라·마이크 등 어떤 개인정보도 요구하지 않습니다. 다만 아래 "3. 외부 연결"에 적힌 외부 서비스 접속은 예외입니다.</p>
+  </div>
+
+  <h2>1. 운영자 및 문의</h2>
+  <p>운영자: 전자혀 개발자<br />문의 이메일: {{CONTACT_EMAIL}}</p>
+
+  <h2>2. 저장되는 데이터는 기기 안에만 있습니다</h2>
+  <p>앱이 저장하는 정보는 모두 사용 중인 기기의 브라우저 저장소(localStorage)에만 보관됩니다.</p>
+  <ul>
+    <li>저장한 레시피·배합</li>
+    <li>소스·요리 즐겨찾기</li>
+    <li>식단 계획</li>
+    <li>냉장고 재료 목록</li>
+    <li>장바구니 및 "집에 있음" 체크 상태</li>
+  </ul>
+  <p>앱이 저장한 이 데이터는 운영자나 제3자의 서버로 <strong>전송되지 않습니다.</strong> 앱에는 계정 기능, 서버 동기화, 분석 도구(애널리틱스), 광고 SDK가 없습니다.</p>
+
+  <h2>3. 외부 연결</h2>
+  <ul>
+    <li><strong>글꼴(Google Fonts)</strong>: 앱은 화면 글꼴을 불러오기 위해 Google 서버에 접속하며, 이때 접속 IP 주소와 브라우저 정보(User-Agent) 등이 Google에 전달될 수 있습니다. 운영자는 이 정보를 수집·저장하지 않으며 앱 데이터와 연결하지 않습니다. 글꼴 제공과 그 정보의 처리는 Google의 개인정보처리방침을 따릅니다.</li>
+    <li><strong>외부 쇼핑몰</strong>: 장바구니의 "구매" 버튼을 누르면 외부 쇼핑몰의 상품 검색 페이지가 기기의 기본 브라우저에서 열립니다. 이 이동 이후의 정보 처리는 해당 쇼핑몰의 개인정보처리방침과 약관을 따릅니다.</li>
+  </ul>
+
+  <h2>4. 제휴 링크 안내</h2>
+  <p>앞으로 구매 링크가 쿠팡 파트너스 등 제휴(어필리에이트) 링크로 바뀔 수 있습니다. 이 경우 링크를 통해 구매가 이루어지면 운영자가 쇼핑몰로부터 수수료를 받을 수 있습니다. 앱이 이 과정에서 개인정보를 직접 전송하지는 않습니다.</p>
+
+  <h2>5. 데이터 삭제 방법</h2>
+  <p>저장된 모든 데이터는 기기에서만 존재하므로, 앱을 삭제하거나 브라우저·앱의 "사이트 데이터 지우기(앱 데이터 삭제)"를 실행하면 모두 함께 삭제됩니다. 운영자는 삭제를 대신 해 줄 수 없으며 보관 중인 데이터도 없습니다.</p>
+
+  <h2>6. 방침의 변경</h2>
+  <p>방침이 바뀌면 이 페이지에서 시행일과 함께 알립니다.</p>
+
+  <footer>© 전자혀 · 시행일 2026-11-18</footer>
+</main>
+</body>
+</html>
