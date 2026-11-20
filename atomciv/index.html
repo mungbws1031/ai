@@ -338,6 +338,14 @@ const ITEMS = {
   plastic:    { name: '플라스틱', emoji: '🧴', why: '석유 속 탄소와 수소를 기다란 사슬처럼 이으면 가볍고 튼튼한 플라스틱이 돼!' },
   phone:      { name: '휴대폰',   emoji: '📱', why: '컴퓨터와 라디오를 아주 작게 만들어 플라스틱 상자에 넣었더니 손바닥에 쏙!' },
   internet:   { name: '인터넷',   emoji: '🌐', why: '전 세계 컴퓨터가 전선과 전파로 손잡으면, 서로 순식간에 이야기할 수 있어!' },
+  aluminum_ore: { name: '보크사이트', emoji: '🟫', raw: true, why: '알루미늄이 산소와 꽉 붙어 있는 붉은 흙돌이야!' },
+  solar_cell: { name: '태양전지', emoji: '🔆', why: '햇빛이 규소에 닿으면 전자가 튀어나와서 전기가 흘러!' },
+  aluminum:   { name: '알루미늄', emoji: '🥫', why: '보크사이트를 녹여 전기를 아주 많이 흘려야 알루미늄이 나와! 가볍고 튼튼해.' },
+  rocket_fuel: { name: '로켓 연료', emoji: '🧪', why: '물에 전기를 흘리면 수소와 산소로 나뉘어! 둘이 다시 만나 타면 엄청난 힘이 나와.' },
+  rocket:     { name: '로켓',     emoji: '🚀', why: '연료가 뒤로 힘차게 뿜어지면, 그 반대 방향으로 로켓이 날아가! (작용과 반작용)' },
+  satellite:  { name: '인공위성', emoji: '🛰️', why: '로켓이 실어 올린 위성은 지구 둘레를 빙글빙글 돌면서 전파를 보내 줘!' },
+  electric_car: { name: '전기차', emoji: '🚗', why: '기름 대신 전지에 모은 전기로 모터를 돌려서 달려!' },
+  wind_turbine: { name: '풍력발전기', emoji: '🌬️', why: '바람이 커다란 날개를 돌리면, 안쪽 발전기가 전기를 만들어!' },
   concrete:   { name: '콘크리트', emoji: '🧱', why: '시멘트가 물과 반응해서 모래를 꽉 붙잡고 돌처럼 굳어!' },
 };
 
@@ -372,6 +380,13 @@ const RECIPES = [
   { inputs: ['oil'], heat: true, output: 'plastic' },
   { inputs: ['computer', 'radio', 'plastic'], heat: false, output: 'phone' },
   { inputs: ['computer', 'radio', 'wire'], heat: false, output: 'internet' },
+  { inputs: ['silicon', 'glass', 'wire'], heat: false, output: 'solar_cell' },
+  { inputs: ['aluminum_ore', 'generator'], heat: true, output: 'aluminum' },
+  { inputs: ['H2O', 'generator'], heat: false, output: 'rocket_fuel' },
+  { inputs: ['aluminum', 'rocket_fuel', 'computer'], heat: false, output: 'rocket' },
+  { inputs: ['rocket', 'solar_cell', 'radio'], heat: false, output: 'satellite' },
+  { inputs: ['motor', 'battery', 'plastic'], heat: false, output: 'electric_car' },
+  { inputs: ['generator', 'aluminum', 'plastic'], heat: false, output: 'wind_turbine' },
 ];
 
 const ERAS = [
@@ -381,6 +396,7 @@ const ERAS = [
   { id: 'industry', name: '산업시대', emoji: '🏭', raws: ['coal', 'limestone'],         goal: ['steel', 'steam_engine', 'train', 'concrete'] },
   { id: 'electric', name: '전기시대', emoji: '⚡', raws: ['zinc_ore', 'lodestone'],     goal: ['battery', 'bulb', 'motor', 'generator'] },
   { id: 'info',     name: '정보시대', emoji: '💻', raws: ['oil'],                       goal: ['chip', 'computer', 'phone', 'internet'] },
+  { id: 'modern',   name: '현대',     emoji: '🚀', raws: ['aluminum_ore'],               goal: ['solar_cell', 'electric_car', 'rocket', 'satellite'] },
 ];
 
 function sameBag(a, b) {
@@ -436,11 +452,18 @@ const MISSIONS = [
   { target: 'plastic',   text: '석유를 데워 플라스틱을 만들어 봐! 🧴',       hint: ['oil', 'heat'] },
   { target: 'phone',     text: '컴퓨터, 라디오, 플라스틱으로 휴대폰을! 📱',   hint: ['computer', 'radio', 'plastic'] },
   { target: 'internet',  text: '컴퓨터, 라디오, 전선으로 인터넷을! 🌐',       hint: ['computer', 'radio', 'wire'] },
+  { target: 'solar_cell', text: '규소, 유리, 전선으로 태양전지를! 🔆',       hint: ['silicon', 'glass', 'wire'] },
+  { target: 'electric_car', text: '모터, 전지, 플라스틱으로 전기차를! 🚗',   hint: ['motor', 'battery', 'plastic'] },
+  { target: 'aluminum',  text: '보크사이트에 전기를 흘려 알루미늄을! 🥫',    hint: ['aluminum_ore', 'generator', 'heat'] },
+  { target: 'wind_turbine', text: '발전기, 알루미늄, 플라스틱으로 풍력발전기를!', hint: ['generator', 'aluminum', 'plastic'] },
+  { target: 'rocket_fuel', text: '물에 전기를 흘려 로켓 연료를 만들어 봐!',  hint: ['H2O', 'generator'] },
+  { target: 'rocket',    text: '알루미늄, 연료, 컴퓨터로 로켓을! 🚀',        hint: ['aluminum', 'rocket_fuel', 'computer'] },
+  { target: 'satellite', text: '로켓에 태양전지와 라디오를 실어 위성을! 🛰️',  hint: ['rocket', 'solar_cell', 'radio'] },
 ];
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
 /* ---- 영토 지도 (육각 타일, axial 좌표 q,r) ---- */
-const MAP_RADIUS = 5; // 5번째 고리는 바다
+const MAP_RADIUS = 6; // 6번째 고리는 바다
 // 발명품이 세워질 타일과 그 땅의 지형
 const MAP_TILES = {
   fire: [2, -1], stone_axe: [-2, 1], charcoal: [-1, -1], pottery: [1, 1],
@@ -449,6 +472,7 @@ const MAP_TILES = {
   quicklime: [-3, 0], cement: [-4, 2], concrete: [-3, -1],
   salt_water: [4, -2], zinc: [4, -1], battery: [4, 0], wire: [3, 1], bulb: [2, 2], motor: [1, 3], generator: [-1, 4],
   silicon: [0, 4], chip: [-2, 4], computer: [-3, 4], radio: [-4, 4], plastic: [4, -4], phone: [-4, 3], internet: [-4, 1],
+  solar_cell: [5, -3], aluminum: [5, -1], rocket_fuel: [3, 2], rocket: [0, 5], satellite: [-5, 1], electric_car: [-2, 5], wind_turbine: [5, -5],
 };
 const TILE_TERRAIN = {
   fire: 'grass', stone_axe: 'forest', charcoal: 'forest', pottery: 'river', copper: 'river', tin: 'hills',
@@ -456,6 +480,7 @@ const TILE_TERRAIN = {
   train: 'plains', quicklime: 'hills', cement: 'plains', concrete: 'plains',
   salt_water: 'sand', zinc: 'hills', battery: 'plains', wire: 'plains', bulb: 'plains', motor: 'plains', generator: 'river',
   silicon: 'sand', chip: 'plains', computer: 'plains', radio: 'hills', plastic: 'plains', phone: 'plains', internet: 'plains',
+  solar_cell: 'plains', aluminum: 'hills', rocket_fuel: 'river', rocket: 'sand', satellite: 'plains', electric_car: 'plains', wind_turbine: 'grass',
 };
 const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]]; // 모서리 0~5 순서와 맞춘 이웃 방향
 function hexDist(a, b) {
@@ -1137,6 +1162,15 @@ const VILLAGE = {
     <circle cx="800" cy="195" r="9" fill="#ff5a5a"/><path d="M820 180 q20 15 0 30 M840 165 q35 30 0 60" stroke="#4d8dff" stroke-width="5" fill="none"/>
     <rect x="520" y="390" width="120" height="80" rx="8" fill="#2c3e50"/><rect x="532" y="400" width="96" height="56" fill="#7fd6ff"/>
     <rect x="565" y="470" width="30" height="12" fill="#2c3e50"/></g>`,
+  modern: `<g opacity=".55">
+    <rect x="70" y="330" width="200" height="140" fill="#e8e2d8"/><path d="M60 335 L170 270 L280 335Z" fill="#5d7a9a"/>
+    <g fill="#2c4a7a" stroke="#9fc4ff" stroke-width="2"><rect x="95" y="285" width="40" height="22" transform="rotate(-30 115 296)"/><rect x="175" y="285" width="40" height="22" transform="rotate(30 195 296)"/></g>
+    <path d="M400 470 V250" stroke="#ddd" stroke-width="8"/><g stroke="#ddd" stroke-width="7" stroke-linecap="round"><path d="M400 250 l0 -70"/><path d="M400 250 l60 35"/><path d="M400 250 l-60 35"/></g>
+    <circle cx="400" cy="250" r="9" fill="#bbb"/>
+    <path d="M820 470 V330 l25 -60 l25 60 V470Z" fill="#f2f2f2" stroke="#999" stroke-width="3"/><circle cx="845" cy="340" r="9" fill="#7fd6ff"/>
+    <path d="M820 470 l-18 0 l18 -40Z M870 470 l18 0 l-18 -40Z" fill="#ff6b6b"/>
+    <path d="M560 452 h110 l-12 -24 h-74Z" fill="#4dd28a"/><circle cx="585" cy="456" r="12" fill="#333"/><circle cx="650" cy="456" r="12" fill="#333"/>
+    <circle cx="930" cy="120" r="7" fill="#ccc"/><path d="M910 120 h40" stroke="#4d8dff" stroke-width="6"/></g>`,
 };
 function renderVillage(eraId) {
   const v = $('#village');
