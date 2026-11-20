@@ -20,7 +20,7 @@ for (const lv of LEVELS) {
   }
 }
 // 위험 계산 sanity
-const lv = LEVELS.find(l => l.id === 5);
+const lv = LEVELS.find(l => l.key === 'cafe');
 const hyd = J.judgePose(lv, { x: 37, y: 17.3, heading: Math.PI }, 'park', { minutes: 60 });
 const risk = J.assessRisk(lv, { x: 37, y: 17.3 }, hyd, { minutes: 60, driverPresent: false });
 console.log('소화전 60분 주차 위험:', JSON.stringify(risk));

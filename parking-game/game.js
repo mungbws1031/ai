@@ -53,7 +53,18 @@
     });
     // 건물(옥상)
     lv.buildings.forEach(b => {
-      if (b.dest) {
+      if (b.water) {
+        rect(b, '#2c5f86');
+        ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 0.12; ctx.beginPath();
+        for (let y = b.y + 1.5; y < b.y + b.h; y += 2.5) { ctx.moveTo(b.x, y); ctx.lineTo(b.x + b.w, y); }
+        ctx.stroke();
+      } else if (b.barrier) {
+        rect(b, '#f08a24');
+        ctx.save(); ctx.beginPath(); ctx.rect(b.x, b.y, b.w, b.h); ctx.clip();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.5; ctx.beginPath();
+        for (let d = -b.h; d < b.w; d += 1.6) { ctx.moveTo(b.x + d, b.y + b.h); ctx.lineTo(b.x + d + b.h, b.y); }
+        ctx.stroke(); ctx.restore();
+      } else if (b.dest) {
         rect(b, '#0b5aa8');
         ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.35; ctx.strokeRect(b.x + 0.7, b.y + 0.7, b.w - 1.4, b.h - 1.4);
       } else {
@@ -123,11 +134,13 @@
     lv.zones.forEach(z => {
       if (z.type === 'fire_lane') { ctx.fillStyle = 'rgba(245,184,0,.18)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#f5b800', 1.2); }
       if (z.type === 'ambulance') { ctx.fillStyle = 'rgba(224,38,43,.22)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#e0262b', 1.2); }
+      if (z.type === 'fire_exit') { ctx.fillStyle = 'rgba(40,170,90,.2)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#2fbf6a', 1.2); }
+      if (z.type === 'ramp' || z.type === 'driveway') { ctx.fillStyle = 'rgba(236,238,232,.12)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, 'rgba(236,238,232,.6)', 1.4); }
       if (z.type === 'entrance') { ctx.fillStyle = 'rgba(236,238,232,.16)'; ctx.fillRect(z.x, z.y, z.w, z.h); }
       if (z.type === 'double_park') { ctx.strokeStyle = 'rgba(236,238,232,.7)'; ctx.lineWidth = 0.1; ctx.setLineDash([0.8, 0.6]); ctx.strokeRect(z.x, z.y, z.w, z.h); ctx.setLineDash([]); }
     });
     // 주차구획
-    const SLOT_FILL = { disabled: 'rgba(31,95,173,.75)', ev: 'rgba(36,140,88,.75)', pregnant: 'rgba(214,106,154,.6)', compact: 'rgba(80,130,200,.35)' };
+    const SLOT_FILL = { disabled: 'rgba(31,95,173,.75)', ev: 'rgba(36,140,88,.75)', pregnant: 'rgba(214,106,154,.6)', compact: 'rgba(80,130,200,.35)', women: 'rgba(232,140,60,.5)', resident: 'rgba(236,238,232,.12)' };
     (lv.slots || []).forEach(s => {
       const ty = s.disabled ? 'disabled' : s.type;
       if (SLOT_FILL[ty]) { ctx.fillStyle = SLOT_FILL[ty]; ctx.fillRect(s.x, s.y, s.w, s.h); }
@@ -143,7 +156,7 @@
         }
       });
       lv.zones.filter(z => z.type === 'bus_stop').forEach(z => text(z.x + z.w / 2, z.y + z.h / 2, '버스', 1.2 * ppm, '#f5b800'));
-      const SLOT_TXT = { disabled: ['♿', 1.8], ev: ['⚡', 1.6], pregnant: ['임산부', 0.7], compact: ['경차', 0.8] };
+      const SLOT_TXT = { disabled: ['♿', 1.8], ev: ['⚡', 1.6], pregnant: ['임산부', 0.7], compact: ['경차', 0.8], women: ['여성', 0.7], resident: ['거주자', 0.8] };
       (lv.slots || []).forEach(s => {
         const t = SLOT_TXT[s.disabled ? 'disabled' : s.type];
         if (t && !(o.parked || []).some(c => c.slot === s.id)) text(s.x + s.w / 2, s.y + s.h * 0.72, t[0], t[1] * ppm, '#fff', 'Noto Sans KR');
@@ -303,7 +316,7 @@
     const item = (lv, i) => `
       <button class="lvl" role="tab" aria-selected="${i === selected}" data-i="${i}">
         <small>${lv.bonus ? '보너스' : '레벨 ' + lv.id}</small><b>${lv.title}</b><small>${lv.place}</small>
-        <div class="stars">${'★'.repeat(best[lv.id] || 0)}${'☆'.repeat(3 - (best[lv.id] || 0))}</div>
+        <div class="stars">${'★'.repeat(best[lv.key] || 0)}${'☆'.repeat(3 - (best[lv.key] || 0))}</div>
       </button>`;
     $('#levelList').innerHTML = LEVELS.map((lv, i) => (lv.bonus && !LEVELS[i - 1].bonus ? '<div class="lvl-sep">보너스 · 직접 운전 전용</div>' : '') + item(lv, i)).join('');
     $('#levelList').querySelectorAll('.lvl').forEach(b => b.onclick = () => { selected = +b.dataset.i; renderPreview(); });
@@ -326,7 +339,7 @@
     const allRows = [...candRows, ...results];
     const passN = allRows.filter(r => r.includes('class="pass"')).length;
     const timed = store.get('pg-timed', false);
-    const locked = !!lv.candidates && !store.get('pg-done', {})[lv.id];
+    const locked = !!lv.candidates && !store.get('pg-done', {})[lv.key];
     const lockedNote = `<section class="locked"><h3>가능·금지 구역과 판정 근거</h3>
       <p>판단 연습을 한 번 끝내면 열립니다. 먼저 스스로 판단해 보세요.</p></section>`;
     const who = lv.situation ? `<dt>상황</dt><dd>${lv.situation.text}</dd>` : `<dt>약속 상대</dt><dd>${lv.story.friend} · 머무는 시간 ${lv.story.meetingMinutes}분</dd>`;
@@ -400,6 +413,8 @@
   function startLevel(i, sample, mode = 'drive') {
     const lv = LEVELS[i];
     hideBubble(); $('#overlay').classList.add('hidden');
+    toastBox.innerHTML = ''; callEl.classList.add('hidden');
+    if (G) clearTimeout(G.callTimer);
     G = {
       i, lv, t: 0,
       car: { x: lv.start.x, y: lv.start.y, heading: lv.start.heading, v: 0, gear: 'D', brakeOn: false },
@@ -763,7 +778,7 @@
     score = Math.max(0, Math.round(score));
     const stars = !success ? 0 : score >= 1500 ? 3 : score >= 1200 ? 2 : 1;
     const best = store.get('pg-stars', {});
-    if (stars > (best[lv.id] || 0)) { best[lv.id] = stars; store.set('pg-stars', best); }
+    if (stars > (best[lv.key] || 0)) { best[lv.key] = stars; store.set('pg-stars', best); }
     const head = reason === 'timeout' ? ['red', '약속 시간 초과', '제한시간 안에 정식 주차하지 못했습니다.']
       : success ? ['green', '주차 완료', '법을 지키면서 약속에 도착했습니다.']
       : ['red', '불법 주차로 마무리', '차를 두고 떠난 자리가 주차 금지 구역입니다.'];
@@ -1029,8 +1044,8 @@
     let score = right * 100 + (j.legal ? (j.answer === 'park' ? 300 : 150) : 0);
     const stars = !j.legal ? 0 : right === picks.length && j.answer === 'park' ? 3 : right >= Math.ceil(picks.length / 2) ? 2 : 1;
     const best = store.get('pg-stars', {});
-    if (stars > (best[lv.id] || 0)) { best[lv.id] = stars; store.set('pg-stars', best); }
-    const done = store.get('pg-done', {}); done[lv.id] = true; store.set('pg-done', done);
+    if (stars > (best[lv.key] || 0)) { best[lv.key] = stars; store.set('pg-stars', best); }
+    const done = store.get('pg-done', {}); done[lv.key] = true; store.set('pg-done', done);
     const wrong = picks.filter(p => !p.correct);
     const tips = wrong.length ? wrong.map(p => `<div class="ev bad"><div class="kind">${p.i + 1}번 자리 · 고른 답 ${ANS[p.a].label}</div>
         <h5>정답: ${ANS[p.j.answer].label} — ${p.j.rule.name}</h5><p>${p.j.rule.easy}</p></div>`).join('')
