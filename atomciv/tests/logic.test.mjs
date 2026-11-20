@@ -363,3 +363,34 @@ test('combineTray treats fire in the bowl as heat', async () => {
   assert.equal(r.charcoal, 'charcoal'); assert.equal(r.noFire, null); assert.equal(r.glass, 'glass');
   assert.equal(r.fireOnly, null); assert.equal(r.makeFire, 'fire');
 });
+
+test('more everyday molecules are recognised', async () => {
+  // [원자 목록, 결합 목록(같은 쌍 반복 = 이중결합), 기대하는 이름 일부]
+  const cases = [
+    [['C', 'H', 'H', 'H', 'O', 'H'], [[0, 1], [0, 2], [0, 3], [0, 4], [4, 5]], '메탄올'],
+    [['C', 'H', 'O', 'O', 'H'], [[0, 1], [0, 2], [0, 2], [0, 3], [3, 4]], '폼산'],
+    [['C', 'C', 'H', 'H', 'H', 'O', 'O', 'H'], [[0, 1], [0, 2], [0, 3], [0, 4], [1, 5], [1, 5], [1, 6], [6, 7]], '아세트산'],
+    [['C', 'O', 'N', 'N', 'H', 'H', 'H', 'H'], [[0, 1], [0, 1], [0, 2], [0, 3], [2, 4], [2, 5], [3, 6], [3, 7]], '요소'],
+    [['C', 'C', 'C', 'C', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H', 'H'],
+      [[0, 1], [1, 2], [2, 3], [0, 4], [0, 5], [0, 6], [1, 7], [1, 8], [2, 9], [2, 10], [3, 11], [3, 12], [3, 13]], '부테인'],
+    [['Na', 'O', 'H'], [[0, 1], [1, 2]], '수산화나트륨'],
+    [['Ca', 'O', 'H', 'O', 'H'], [[0, 1], [1, 2], [0, 3], [3, 4]], '수산화칼슘'],
+    [['Mg', 'O', 'H', 'O', 'H'], [[0, 1], [1, 2], [0, 3], [3, 4]], '수산화마그네슘'],
+    [['H', 'O', 'Cl'], [[0, 1], [1, 2]], '차아염소산'],
+    [['Na', 'O', 'Cl'], [[0, 1], [1, 2]], '락스'],
+    [['N', 'H', 'H', 'C', 'H', 'H', 'C', 'O', 'O', 'H'], [[0, 1], [0, 2], [0, 3], [3, 4], [3, 5], [3, 6], [6, 7], [6, 7], [6, 8], [8, 9]], '글리신'],
+    [['Ca', 'O', 'O', 'C', 'O'], [[0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [3, 4]], '탄산칼슘'],
+    [['Na', 'O', 'C', 'O', 'O', 'H'], [[0, 1], [1, 2], [2, 3], [2, 3], [2, 4], [4, 5]], '탄산수소나트륨'],
+    [['H', 'O', 'C', 'O', 'O', 'H'], [[0, 1], [1, 2], [2, 3], [2, 3], [2, 4], [4, 5]], '탄산'],
+  ];
+  for (const [atoms, bonds, name] of cases) {
+    const r = await run((A, s) => {
+      let g = { atoms: s.atoms.map((sym, i) => ({ id: 'a' + i, sym })), bonds: [] };
+      for (const [x, y] of s.bonds) g = A.addBond(g, 'a' + x, 'a' + y);
+      return A.judge(g).map(j => ({ status: j.status, name: j.molecule && j.molecule.name }));
+    }, { atoms, bonds });
+    assert.equal(r.length, 1, name);
+    assert.equal(r[0].status, 'known', name);
+    assert.match(r[0].name, new RegExp(name), name);
+  }
+});

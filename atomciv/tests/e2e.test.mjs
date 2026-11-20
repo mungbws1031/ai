@@ -541,3 +541,13 @@ test('wood alone hints that fire is needed', async () => {
   assert.match(await page.textContent('#toast'), /불/);
   await ctx.close();
 });
+
+test('sodium hydroxide shows O with a 1- charge (it got one electron)', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=Na]'); await page.click('[data-atom=O]');
+  const [na] = await benchIds(page, 'Na'); const [o] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${o}"]`);
+  assert.equal(await page.textContent(`.atom[data-id="${o}"] .charge`), '−');
+  assert.equal(await page.textContent(`.atom[data-id="${na}"] .charge`), '+');
+  await ctx.close();
+});
