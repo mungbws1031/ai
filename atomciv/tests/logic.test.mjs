@@ -154,7 +154,7 @@ test('industry era: recipes, era index, missions', async () => {
   }));
   assert.equal(r.steam, 'steam'); assert.equal(r.steel, 'steel'); assert.equal(r.engine, 'steam_engine');
   assert.equal(r.train, 'train'); assert.equal(r.lime, 'quicklime'); assert.equal(r.cement, 'cement');
-  assert.equal(r.concrete, 'concrete'); assert.equal(r.eras, 6); assert.equal(r.idx, 3);
+  assert.equal(r.concrete, 'concrete'); assert.equal(r.eras, 7); assert.equal(r.idx, 3);
   for (const t of ['steam', 'steel', 'steam_engine', 'train', 'quicklime', 'cement', 'concrete']) assert.ok(r.missionTargets.includes(t), t);
 });
 
@@ -169,7 +169,7 @@ test('save file round-trips and rejects junk', async () => {
     const back = A.importSave(text);
     const junk = A.importSave('hello');
     const other = A.importSave(JSON.stringify({ app: 'other', found: ['H2O'] }));
-    const unknown = A.importSave(JSON.stringify({ app: 'atomciv', version: 1, state: { found: ['H2O', 'rocket'] } }));
+    const unknown = A.importSave(JSON.stringify({ app: 'atomciv', version: 1, state: { found: ['H2O', 'time_machine'] } }));
     return { hasApp: JSON.parse(text).app, back, junk, other, unknown };
   });
   assert.equal(r.hasApp, 'atomciv');
@@ -233,11 +233,11 @@ test('information era: recipes and eras', async () => {
     phone: A.matchRecipe(['plastic', 'radio', 'computer'], false),
     internet: A.matchRecipe(['radio', 'computer', 'wire'], false),
     eras: A.ERAS.map(e => e.id),
-    last: A.ERAS[A.ERAS.length - 1],
+    last: A.ERAS.find(e => e.id === 'info'),
   }));
   assert.equal(r.silicon, 'silicon'); assert.equal(r.chip, 'chip'); assert.equal(r.computer, 'computer');
   assert.equal(r.radio, 'radio'); assert.equal(r.plastic, 'plastic'); assert.equal(r.phone, 'phone'); assert.equal(r.internet, 'internet');
-  assert.deepEqual(r.eras, ['stone', 'bronze', 'iron', 'industry', 'electric', 'info']);
+  assert.deepEqual(r.eras.slice(0, 6), ['stone', 'bronze', 'iron', 'industry', 'electric', 'info']);
   assert.deepEqual(r.last.goal, ['chip', 'computer', 'phone', 'internet']);
   assert.deepEqual(r.last.raws, ['oil']);
 });
@@ -249,4 +249,27 @@ test('no two recipes share the same ingredients and heat', async () => {
     return out;
   });
   assert.deepEqual(dup, []);
+});
+
+test('modern era: recipes, eras, bigger island', async () => {
+  const r = await run(A => ({
+    solar: A.matchRecipe(['glass', 'wire', 'silicon'], false),
+    al: A.matchRecipe(['generator', 'aluminum_ore'], true),
+    fuel: A.matchRecipe(['generator', 'H2O'], false),
+    rocket: A.matchRecipe(['computer', 'rocket_fuel', 'aluminum'], false),
+    sat: A.matchRecipe(['radio', 'solar_cell', 'rocket'], false),
+    car: A.matchRecipe(['plastic', 'battery', 'motor'], false),
+    wind: A.matchRecipe(['plastic', 'aluminum', 'generator'], false),
+    eras: A.ERAS.map(e => e.id),
+    last: A.ERAS[A.ERAS.length - 1],
+    radius: A.MAP_RADIUS,
+    h2Ingredient: A.RECIPES.some(x => x.inputs.includes('H2') || x.inputs.includes('O2')),
+  }));
+  assert.equal(r.solar, 'solar_cell'); assert.equal(r.al, 'aluminum'); assert.equal(r.fuel, 'rocket_fuel');
+  assert.equal(r.rocket, 'rocket'); assert.equal(r.sat, 'satellite'); assert.equal(r.car, 'electric_car'); assert.equal(r.wind, 'wind_turbine');
+  assert.deepEqual(r.eras, ['stone', 'bronze', 'iron', 'industry', 'electric', 'info', 'modern']);
+  assert.deepEqual(r.last.goal, ['solar_cell', 'electric_car', 'rocket', 'satellite']);
+  assert.deepEqual(r.last.raws, ['aluminum_ore']);
+  assert.equal(r.radius, 6);
+  assert.equal(r.h2Ingredient, false, 'first-mission molecules should not fall into the bowl');
 });

@@ -347,16 +347,31 @@ test('finishing the electric era opens the information era', async () => {
   await ctx.close();
 });
 
-test('finishing the information era shows the ending card', async () => {
-  const found = [...electricAlmost, 'generator', 'silicon', 'chip', 'computer', 'radio', 'plastic', 'phone'];
-  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,endingEras:5}))`;
+const infoAlmost = [...electricAlmost, 'generator', 'silicon', 'chip', 'computer', 'radio', 'plastic', 'phone'];
+
+test('finishing the information era opens the modern era', async () => {
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(infoAlmost)},missionIdx:0,muted:true,trayIntro:true,endingEras:5}))`;
   const { ctx, page } = await fresh(undefined, init);
   for (const id of ['computer', 'wire', 'radio']) await page.click(`#drawer [data-item=${id}]`);
   await page.click('#combine-btn');
   await page.waitForSelector('#card:not([hidden])');
   await page.click('#card-ok');
   assert.ok(await page.locator('#card').isVisible());
-  assert.match(await page.textContent('#card-name'), /정보시대까지 완성/);
+  assert.match(await page.textContent('#card-name'), /현대가 열렸어/);
+  assert.equal(await page.locator('#drawer [data-item=aluminum_ore]').count(), 1);
+  await ctx.close();
+});
+
+test('finishing the modern era shows the ending card', async () => {
+  const found = [...infoAlmost, 'internet', 'solar_cell', 'aluminum', 'rocket_fuel', 'rocket', 'electric_car', 'wind_turbine'];
+  const init = `if(!localStorage.getItem('atomciv.v1'))localStorage.setItem('atomciv.v1',JSON.stringify({found:${JSON.stringify(found)},missionIdx:0,muted:true,trayIntro:true,endingEras:6}))`;
+  const { ctx, page } = await fresh(undefined, init);
+  for (const id of ['rocket', 'solar_cell', 'radio']) await page.click(`#drawer [data-item=${id}]`);
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.ok(await page.locator('#card').isVisible());
+  assert.match(await page.textContent('#card-name'), /현대까지 완성/);
   await ctx.close();
 });
 
