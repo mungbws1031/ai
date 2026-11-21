@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>주차 한 판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* 시험판(spike): 하루 버티기 + 직접 주차. 버려도 되는 코드입니다. */
+:root { color-scheme: dark; --ink: #17202a; --cash: #ffd23a; --bad: #ff5a5a; --good: #3ccf7d; --sign: #0b5aa8;
+  --display: 'Do Hyeon', 'Noto Sans KR', sans-serif; --body: 'Noto Sans KR', system-ui, sans-serif; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #2b3036; color: #f4f5f0; font-family: var(--body); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+.hidden { display: none !important; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+.hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
+.wallet { background: rgba(23,32,42,.88); border-radius: 12px; padding: 6px 12px; font-family: var(--display); font-size: 30px; line-height: 1; color: var(--cash); min-width: 150px; }
+.wallet small { display: block; font-family: var(--body); font-size: 11px; color: #9aa3ad; margin-bottom: 2px; }
+.wallet.hit { animation: hit .5s; } @keyframes hit { 30% { transform: scale(1.12); color: var(--bad); } }
+.mission { flex: 1; text-align: center; background: rgba(23,32,42,.88); border-radius: 12px; padding: 6px 12px; font-size: 14px; max-width: 460px; margin: 0 auto; }
+.mission b { font-family: var(--display); font-weight: 400; font-size: 20px; }
+.timer { font-family: var(--display); font-size: 30px; line-height: 1; background: rgba(23,32,42,.88); border-radius: 12px; padding: 6px 12px; min-width: 70px; text-align: center; }
+.timer.late { color: var(--bad); }
+.quit { pointer-events: auto; position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); font-size: 12px; opacity: .6; background: none; }
+
+.pad { position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); display: flex; gap: 12px; touch-action: none; }
+.pad.left { left: max(14px, env(safe-area-inset-left)); }
+.pad.right { right: max(14px, env(safe-area-inset-right)); bottom: max(34px, env(safe-area-inset-bottom)); }
+.pad button { width: min(19vh, 92px); height: min(19vh, 92px); border-radius: 50%; background: rgba(23,32,42,.82); border: 3px solid rgba(255,255,255,.25); font-size: 34px; font-family: var(--display); }
+.pad button.on { background: rgba(255,255,255,.28); }
+.pad .gas { background: rgba(31,138,82,.85); } .pad .rev { background: rgba(163,25,31,.8); font-size: 22px; }
+.parkbtn { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(14px, env(safe-area-inset-bottom)); background: var(--sign); border: 3px solid #fff; border-radius: 999px; padding: 10px 26px; font-family: var(--display); font-size: 22px; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.parkbtn:disabled { opacity: .35; }
+
+.flash { position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); font-family: var(--display); font-size: 34px; text-shadow: 0 3px 10px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
+
+.card-wrap { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(12,15,19,.72); padding: 14px; z-index: 5; }
+.card { width: min(520px, 96vw); max-height: 94vh; overflow: auto; background: #f1f2ee; color: var(--ink); border-radius: 16px; padding: 16px 18px; touch-action: pan-y; }
+.card h2 { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0 0 6px; line-height: 1.15; }
+.card p { margin: 6px 0; line-height: 1.5; }
+.card .big { font-family: var(--display); font-size: 40px; color: #b8860b; }
+.lines { margin: 10px 0; border-top: 2px dashed #c9ccc4; }
+.lines div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #dcdfd8; }
+.lines .minus { color: #c0262d; font-weight: 700; } .lines .plus { color: #1f7a48; font-weight: 700; }
+.why { font-size: 13px; color: #4a5563; }
+.go { width: 100%; margin-top: 10px; min-height: 52px; border-radius: 12px; background: var(--ink); color: #fff; font-family: var(--display); font-size: 22px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; background: #ffd23a; color: #3a2c00; border-radius: 999px; padding: 1px 9px; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="hud">
+  <div class="wallet" id="wallet"><small>지갑</small><span id="money">30,000원</span></div>
+  <div class="mission" id="mission"></div>
+  <div class="timer" id="timer">0:45</div>
+</div>
+<div class="pad left" id="padL"><button data-k="left" aria-label="왼쪽으로 꺾기">◀</button><button data-k="right" aria-label="오른쪽으로 꺾기">▶</button></div>
+<div class="pad right" id="padR"><button class="rev" data-k="back" aria-label="후진">후진</button><button class="gas" data-k="gas" aria-label="앞으로">▲</button></div>
+<button class="parkbtn" id="parkBtn" disabled>여기 세우기 P</button>
+<button class="quit" id="quit">처음으로</button>
+<div class="flash hidden" id="flash"></div>
+<div class="card-wrap" id="cardWrap"><div class="card" id="card"></div></div>
+
+<script src="../rules.js"></script>
+<script src="../levels.js"></script>
+<script src="../judge.js"></script>
+<script src="render.js"></script>
+<script>
+(() => {
+  const J = window.Judge, R = window.PGRender, PI = Math.PI, CAR = J.CAR;
+  const $ = s => document.querySelector(s);
+  const won = n => (n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString('ko-KR') + '원';
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const byKey = k => LEVELS.find(l => l.key === k);
+
+  // 하루 일정: 장소마다 제한시간(초)·머무는 시간(분)·한마디
+  const DAY = [
+    { lv: byKey('mart'), limit: 45, stay: 60, who: '마트', task: '장보기 1시간', hint: '입구 앞은 가깝고, 빈 칸은 저 아래…' },
+    { lv: byKey('hospital'), limit: 50, stay: 60, who: '병원', task: '엄마 진료 1시간', hint: '병원 앞은 다 노란 선. 뒤쪽 빈 가장자리는 좁아요.' },
+  ];
+  const START_MONEY = 30000, ON_TIME = 10000, LATE = 5000, CRASH = 10000, STICKER = 5000, NOTICE = 15000, TOW = 40000;
+
+  const cv = $('#cv'), ctx = cv.getContext('2d');
+  let S = null; // 게임 상태
+
+  function parkedOf(lv) {
+    const list = (lv.parked || []).map(c => ({ ...c }));
+    (lv.slots || []).forEach(s => { if (J.slotOccupied(s, {})) list.push({ x: s.x + s.w / 2, y: s.y + s.h / 2, heading: s.h > s.w ? (s.id.charCodeAt(1) % 2 ? PI / 2 : -PI / 2) : (s.dir ?? 0), color: s.color, slot: s.id }); });
+    return list;
+  }
+  function hhmm(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
+  function fmt(min) { min = Math.round(min) % 1440; return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`; }
+
+  // ─── 화면 카드 ───
+  function card(html, btn, onGo) {
+    $('#card').innerHTML = html + `<button class="go" id="go">${btn}</button>`;
+    $('#cardWrap').classList.remove('hidden');
+    $('#go').onclick = () => { $('#cardWrap').classList.add('hidden'); onGo(); };
+  }
+  function title() {
+    S = null;
+    card(`<h2>주차 한 판</h2>
+      <p>지갑에 <b>30,000원</b>. 오늘 마트 들렀다가 병원까지 가야 해요.</p>
+      <p>가까운 데 대충 세울까, 멀어도 제대로 넣을까? <b>걸리면 지갑이 털립니다.</b></p>
+      <p class="why">◀ ▶ 로 꺾고, ▲ 앞으로 · 후진. 손을 떼면 멈춰요. 다 세웠으면 <b>여기 세우기 P</b>.</p>
+      <p class="why"><span class="tag">시험판</span> 장소 2곳만 들어 있어요.</p>`, '출발', () => startDay());
+  }
+  function startDay() { S = { money: START_MONEY, i: 0, log: [] }; setMoney(0); place(0); }
+
+  function place(i) {
+    const d = DAY[i], lv = d.lv;
+    S.i = i; S.d = d; S.lv = lv;
+    S.car = { x: lv.start.x, y: lv.start.y, heading: lv.start.heading, v: 0, steer: 0 };
+    S.parked = parkedOf(lv); S.left = d.limit; S.crash = 0; S.cool = 0; S.ff = null; S.done = false;
+    S.clock = hhmm(lv.clock);
+    $('#mission').innerHTML = `<b>${i + 1}/${DAY.length} · ${d.who}</b> — ${d.task}<br><span style="color:#9aa3ad">${d.hint}</span>`;
+    card(`<h2>${i + 1}. ${lv.title}</h2><p>${d.task}. <b>${d.limit}초 안에</b> 세우면 약속 보너스 <b>+${won(ON_TIME)}</b>.</p>
+      <p class="why">${d.hint}</p>`, '운전 시작', () => { S.running = true; });
+  }
+
+  // ─── 입력 ───
+  const keys = {};
+  document.querySelectorAll('.pad button').forEach(b => {
+    const k = b.dataset.k;
+    const on = e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); keys[k] = true; b.classList.add('on'); };
+    const off = () => { keys[k] = false; b.classList.remove('on'); };
+    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+    b.addEventListener('contextmenu', e => e.preventDefault());
+  });
+  const KM = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'gas', ArrowDown: 'back' };
+  addEventListener('keydown', e => { if (KM[e.key]) { keys[KM[e.key]] = true; e.preventDefault(); } if (e.key === ' ' || e.key === 'p') tryPark(); });
+  addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = false; });
+  addEventListener('blur', () => Object.keys(keys).forEach(k => keys[k] = false));
+  $('#parkBtn').onclick = () => tryPark();
+  $('#quit').onclick = () => title();
+
+  // ─── 물리 ───
+  function overlap(a, b) {
+    for (const poly of [a, b]) for (let i = 0; i < poly.length; i++) {
+      const p = poly[i], q = poly[(i + 1) % poly.length], nx = q.y - p.y, ny = p.x - q.x;
+      let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+      for (const v of a) { const d = v.x * nx + v.y * ny; a0 = Math.min(a0, d); a1 = Math.max(a1, d); }
+      for (const v of b) { const d = v.x * nx + v.y * ny; b0 = Math.min(b0, d); b1 = Math.max(b1, d); }
+      if (a1 < b0 || b1 < a0) return false;
+    }
+    return true;
+  }
+  const rp = r => [{ x: r.x, y: r.y }, { x: r.x + r.w, y: r.y }, { x: r.x + r.w, y: r.y + r.h }, { x: r.x, y: r.y + r.h }];
+  function hit(pose) {
+    const poly = J.carCorners(pose), lv = S.lv;
+    if (poly.some(p => p.x < 0 || p.y < 0 || p.x > lv.world.w || p.y > lv.world.h)) return 'edge';
+    for (const b of lv.buildings) if (overlap(poly, rp(b))) return 'wall';
+    for (const c of S.parked) if (overlap(poly, J.carCorners(c))) return 'car';
+    return null;
+  }
+  function step(dt) {
+    const c = S.car;
+    const target = keys.left ? -1 : keys.right ? 1 : 0;
+    c.steer += clamp(target - c.steer, -dt * 3, dt * 3);
+    if (keys.gas) c.v += 3.2 * dt; else if (keys.back) c.v -= 2.4 * dt;
+    else { const s = Math.sign(c.v); c.v -= s * 6 * dt; if (Math.sign(c.v) !== s) c.v = 0; }
+    c.v = clamp(c.v, -3, 7.5);
+    if (!c.v) return;
+    const st = c.steer * 35 * PI / 180;
+    const nx = { heading: c.heading + c.v / CAR.wheelbase * Math.tan(st) * dt, x: c.x + Math.cos(c.heading) * c.v * dt, y: c.y + Math.sin(c.heading) * c.v * dt };
+    const h = hit(nx);
+    if (h) {
+      if (h === 'car' && Math.abs(c.v) > 0.8 && S.cool <= 0) { S.crash++; S.cool = 1.5; pay(-CRASH); flash('쿵! 수리비 −' + won(CRASH).replace('−', ''), '#ff5a5a'); }
+      c.v = 0; return;
+    }
+    Object.assign(c, nx);
+  }
+  function pay(n) { S.money += n; setMoney(n); }
+  function setMoney(n) {
+    $('#money').textContent = won(S ? S.money : START_MONEY);
+    if (n < 0) { const w = $('#wallet'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); }
+  }
+  let flashT = 0;
+  function flash(text, color = '#fff') { const f = $('#flash'); f.textContent = text; f.style.color = color; f.classList.remove('hidden'); flashT = 1.6; }
+
+  // ─── 세우기 → 시간 빨리 감기 → 정산 ───
+  function tryPark() {
+    if (!S || !S.running || S.ff || Math.abs(S.car.v) > 0.3) return;
+    S.running = false;
+    const d = S.d, lv = S.lv, pose = { x: S.car.x, y: S.car.y, heading: S.car.heading };
+    const late = S.left < 0;
+    const j = J.judgePose(lv, pose, 'park', { minutes: d.stay, clockMin: S.clock });
+    const risk = J.assessRisk(lv, pose, j, { minutes: d.stay, driverPresent: false });
+    const out = J.rollOutcome(risk);
+    S.ff = { t: 0, dur: 4.2, pose, j, risk, out, late, from: S.clock };
+  }
+  function settle() {
+    const { j, risk, out, late } = S.ff, d = S.d, r = j.rule;
+    const lines = [];
+    lines.push(late ? ['약속에 늦음 (커피 사기)', -LATE] : ['약속 시간 지킴 보너스', ON_TIME]);
+
+    if (!j.legal) {
+      if (out.fined && risk.fine) lines.push([`과태료 — ${out.reported ? '주민신고' : out.cctv ? 'CCTV' : '단속'}`, -risk.fine]);
+      else if (!risk.fine) lines.push(['관리실 경고 스티커 + 이동 호출', -NOTICE]);
+      if (out.towed) lines.push(['견인료 + 보관료', -TOW]);
+      if (risk.fine && !out.fined && !out.towed) lines.push(['운 좋게 안 걸림', 0]);
+    } else if (j.answer === 'manner') lines.push(['앞유리에 항의 쪽지 (세차)', -STICKER]);
+    lines.filter(l => l[1]).forEach(l => S.money += l[1]);
+    setMoney(lines.reduce((a, l) => a + l[1], 0) < 0 ? -1 : 1);
+    const verdict = !j.legal ? `<span style="color:#c0262d">${r.name}</span>` : j.answer === 'manner' ? `<span style="color:#6b3fb8">${r.name} (비매너)</span>` : `<span style="color:#1f7a48">${r.name}</span>`;
+    S.log.push({ where: r.short, legal: j.legal, manner: j.answer === 'manner', sum: lines.reduce((a, l) => a + l[1], 0) - S.crash * CRASH });
+    const last = S.i === DAY.length - 1, broke = S.money < 0;
+    card(`<h2>${d.who} 정산</h2><p>세운 곳: <b>${verdict}</b></p>
+      <div class="lines">${S.crash ? `<div><span>운전 중 접촉 사고 ${S.crash}번 (이미 냄)</span><span class="minus">${won(-S.crash * CRASH)}</span></div>` : ''}${lines.map(([t, n]) => `<div><span>${t}</span><span class="${n < 0 ? 'minus' : n > 0 ? 'plus' : ''}">${n ? (n > 0 ? '+' : '') + won(n) : '—'}</span></div>`).join('')}</div>
+      <p class="why">${r.easy || r.desc}</p>
+      <p>지갑: <b class="big">${won(S.money)}</b></p>`,
+      broke ? '파산… 결과 보기' : last ? '하루 마감' : '다음 장소로', () => (broke || last ? endDay(broke) : place(S.i + 1)));
+  }
+  function endDay(broke) {
+    const m = S.money;
+    const rank = broke ? '파산' : m >= 45000 ? '주차 고수' : m >= 30000 ? '무난한 하루' : m >= 10000 ? '지갑이 얇아짐' : '거의 털림';
+    card(`<h2>${rank}</h2><p>남은 돈 <b class="big">${won(m)}</b> <span class="why">(시작 ${won(START_MONEY)})</span></p>
+      <div class="lines">${S.log.map((l, i) => `<div><span>${DAY[i].who} — ${l.where}${l.legal ? (l.manner ? ' · 비매너' : ' · 합법') : ' · 위반'}</span><span class="${l.sum < 0 ? 'minus' : 'plus'}">${(l.sum > 0 ? '+' : '') + won(l.sum)}</span></div>`).join('')}</div>
+      <p class="why">시험판입니다. 손맛·긴장감이 어땠는지 알려 주세요.</p>`, '한 번 더', () => startDay());
+  }
+
+  // ─── 그리기 ───
+  function camera(w, h) {
+    const ppm = Math.max(w / 40, h / 22), c = S.car, lv = S.lv;
+    let cx = c.x + Math.cos(c.heading) * c.v * 0.6, cy = c.y + Math.sin(c.heading) * c.v * 0.6;
+    const hw = w / 2 / ppm, hh = h / 2 / ppm;
+    cx = lv.world.w < 2 * hw ? lv.world.w / 2 : clamp(cx, hw, lv.world.w - hw);
+    cy = lv.world.h < 2 * hh ? lv.world.h / 2 : clamp(cy, hh, lv.world.h - hh);
+    return { cx, cy, ppm, w, h };
+  }
+  function drawFF(cam, dpr, ff) {
+    const k = ff.t / ff.dur, lv = S.lv, out = ff.out;
+    const W2S = (x, y) => [(x - cam.cx) * cam.ppm + cam.w / 2, (y - cam.cy) * cam.ppm + cam.h / 2];
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = `rgba(10,14,30,${0.15 + 0.25 * Math.sin(k * PI)})`; ctx.fillRect(0, 0, cam.w, cam.h);
+    ctx.font = '22px "Do Hyeon", sans-serif'; ctx.textAlign = 'center';
+    // 주민 사진 (1분 간격 두 장)
+    if (out.reported) (lv.props || []).filter(p => p.type === 'reporter' && Math.hypot(p.x - ff.pose.x, p.y - ff.pose.y) <= 30).forEach(p => {
+      if ((k > 0.2 && k < 0.3) || (k > 0.42 && k < 0.52)) { const [x, y] = W2S(p.x, p.y); ctx.fillStyle = '#fff'; ctx.fillText('📸 찰칵', x, y - 18); }
+    });
+    if (out.cctv && k > 0.3 && k < 0.7) (lv.props || []).filter(p => p.type === 'cctv').forEach(p => { const [x, y] = W2S(p.x, p.y); ctx.fillStyle = '#ff5a5a'; ctx.fillText('● REC', x, y - 16); });
+    if (out.patrol && k > 0.55 && k < 0.8) { const [x, y] = W2S(ff.pose.x, ff.pose.y); ctx.fillStyle = '#ffd23a'; ctx.fillText('단속 딱지!', x, y - 30); }
+    // 견인차
+    if (out.towed && k > 0.6) {
+      const kk = (k - 0.6) / 0.4, p = ff.pose;
+      const tx = kk < 0.5 ? p.x + 30 * (1 - kk * 2) : p.x - (kk - 0.5) * 2 * 40;
+      if (kk >= 0.5) { S.car.x = p.x - (kk - 0.5) * 2 * 40 + 5.5; }
+      ctx.setTransform(dpr * cam.ppm, 0, 0, dpr * cam.ppm, dpr * (cam.w / 2 - cam.cx * cam.ppm), dpr * (cam.h / 2 - cam.cy * cam.ppm));
+      R.drawCar(ctx, { x: tx - 3, y: p.y, heading: PI }, '#f0b400', {});
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const [x, y] = W2S(tx - 3, p.y); ctx.fillStyle = '#ffd23a'; ctx.fillText('견인 🚚', x, y - 22);
+    }
+    // 시계
+    ctx.font = '44px "Do Hyeon", sans-serif'; ctx.fillStyle = '#fff';
+    ctx.fillText(`${fmt(ff.from + S.d.stay * k)}  볼일 보는 중…`, cam.w / 2, cam.h * 0.62);
+  }
+
+  let last = performance.now();
+  function loop(now) {
+    requestAnimationFrame(loop);
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (flashT > 0) { flashT -= dt; if (flashT <= 0) $('#flash').classList.add('hidden'); }
+    const { w, h, dpr } = R.sizeCanvas(cv);
+    if (!S || !S.lv) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#2b3036'; ctx.fillRect(0, 0, w, h); return; }
+    if (S.running) {
+      for (let i = 0; i < 3; i++) step(dt / 3);
+      S.cool -= dt; S.left -= dt; S.clock += dt / 60 * 4;
+    }
+    if (S.ff && !S.done) { S.ff.t += dt; if (S.ff.t >= S.ff.dur) { S.done = true; settle(); } }
+    const cam = camera(w, h);
+    R.drawWorld(ctx, S.lv, cam, { dpr, learn: false, state: {}, parked: S.parked, player: { ...S.car, gear: keys.back ? 'R' : 'D', brakeOn: !keys.gas && !keys.back && Math.abs(S.car.v) > 0.1 }, showDest: S.running, t: now / 1000 });
+    if (S.ff) drawFF(cam, dpr, S.ff);
+    const t = Math.ceil(Math.abs(S.left));
+    $('#timer').textContent = (S.left < 0 ? '+' : '') + `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+    $('#timer').classList.toggle('late', S.left < 0);
+    $('#parkBtn').disabled = !S.running || Math.abs(S.car.v) > 0.3;
+  }
+  requestAnimationFrame(loop);
+  title();
+  window.__spike = { get S() { return S; }, tryPark, keys };
+})();
+</script>
+</body>
+</html>
