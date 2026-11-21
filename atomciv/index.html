@@ -102,6 +102,9 @@ button:disabled{opacity:.4}
 #card-why{font-size:18px;line-height:1.5;margin:12px 0 18px;word-break:keep-all}
 #card-why:before{content:"왜 그럴까? ";font-weight:800;color:var(--ok)}
 #card-box.plain #card-why:before{content:none}
+#card-btns,.card-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#card-cancel{background:#fff;border:2px solid #d6dfea;min-width:120px}
+#reset-btn{background:#fff;border:2px solid var(--coral);color:var(--coral);margin-top:8px}
 #card-ok{background:var(--ok);color:#fff;min-width:140px}
 .item-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:64px;font-size:13px}
 .item-chip .em{font-size:28px;line-height:1.1}
@@ -231,7 +234,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <div id="card-name"></div>
     <div id="card-formula"></div>
     <div id="card-why"></div>
-    <button id="card-ok">좋아!</button>
+    <div class="card-btns"><button id="card-cancel" hidden>아니, 그만둘래</button><button id="card-ok">좋아!</button></div>
   </div>
 </div>
 <div id="guide" hidden aria-hidden="true">👆</div>
@@ -1240,6 +1243,8 @@ function nextCard() {
   $('#card-formula').textContent = cardOpen.formula || '';
   $('#card-why').textContent = cardOpen.why;
   $('#card-box').classList.toggle('plain', !!cardOpen.plain);
+  $('#card-ok').textContent = cardOpen.okText || '좋아!';
+  $('#card-cancel').hidden = !cardOpen.cancel;
   $('#card').hidden = false;
 }
 $('#card-ok').addEventListener('click', () => {
@@ -1247,6 +1252,8 @@ $('#card-ok').addEventListener('click', () => {
   if (c && c.onClose) c.onClose();
   if (!cardOpen) nextCard(); // onClose가 새 카드를 이미 열었으면 그대로 둔다
 });
+
+$('#card-cancel').addEventListener('click', () => { cardOpen = null; nextCard(); });
 
 /* ---- tabs & panel ---- */
 function setTab(t) {
@@ -1490,6 +1497,24 @@ function renderSave(body) {
   input.addEventListener('change', () => { const f = input.files && input.files[0]; if (f) loadSaveFile(f); input.value = ''; });
   row.append(saveBtn, loadLbl, input);
   body.append(row);
+  body.append(el('h3', {}, '🔄 처음부터 다시하기'));
+  body.append(el('p', { class: 'save-note' }, '만든 것을 모두 지우고 난이도 고르기부터 다시 시작해.'));
+  const reset = el('button', { id: 'reset-btn' }, '🔄 처음부터 다시하기');
+  reset.addEventListener('click', () => queueCard({ plain: true, emoji: '🔄', tag: '처음부터 다시하기', name: '정말 처음부터 할까?',
+    why: `지금까지 만든 ${state.found.length}개가 모두 사라져! 남기고 싶으면 먼저 💾 파일로 저장해 둬.`,
+    okText: '응, 지울래', cancel: true, onClose: resetGame }));
+  body.append(reset);
+}
+// 이 게임의 저장만 지우고 첫 화면으로 (같은 주소의 다른 앱 저장은 건드리지 않는다)
+function resetGame() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장 막힘 */ }
+  state = defaultState();
+  tray = []; shownEra = null;
+  removeAtoms(bench.atoms.map(a => a.id));
+  $('#panel').hidden = true;
+  renderDrawer(); renderTray(); checkEra(); renderMute();
+  setTab(START_TAB());
+  showModePick();
 }
 function downloadSave() {
   const blob = new Blob([exportSave(state)], { type: 'application/json' });

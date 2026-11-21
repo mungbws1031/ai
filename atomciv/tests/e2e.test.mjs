@@ -691,3 +691,26 @@ test('settings button: difficulty comes first and easy/normal can switch to hard
     await ctx.close();
   }
 });
+
+test('settings: start over asks first, keeps other sites data, then shows the difficulty picker', async () => {
+  const init = () => { if (!localStorage.getItem('atomciv.v1')) { localStorage.setItem('atomciv.v1', JSON.stringify({ found: ['H2', 'H2O', 'fire'], mode: 'hard', muted: true })); localStorage.setItem('other.app', 'keep'); } };
+  const { ctx, page } = await fresh(PHONE, init, false, true);
+  await page.click('#save-menu');
+  await page.click('#reset-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /3개/);
+  // 취소하면 그대로
+  await page.click('#card-cancel');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found.length), 3);
+  await page.click('#reset-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  await page.waitForSelector('#mode-pick:not([hidden])');
+  const st = await page.evaluate(() => ({ save: localStorage.getItem('atomciv.v1'), other: localStorage.getItem('other.app') }));
+  assert.equal(st.other, 'keep');
+  assert.ok(!st.save || JSON.parse(st.save).found.length === 0);
+  assert.equal(await page.locator('#drawer [data-item=fire]').count(), 0, 'inventions gone');
+  await page.click('#mode-pick [data-mode=easy]');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'easy');
+  await ctx.close();
+});
