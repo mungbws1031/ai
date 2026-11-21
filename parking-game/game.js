@@ -99,6 +99,9 @@
           else { ctx.moveTo(l.x1 + off, l.y1); ctx.lineTo(l.x2 + off, l.y2); }
           ctx.stroke();
         }
+      } else if (l.type === 'whiteSolid' || l.type === 'blueSolid') {
+        ctx.strokeStyle = l.type === 'blueSolid' ? '#2f6fe0' : '#eceee8'; ctx.lineWidth = l.type === 'blueSolid' ? 0.3 : 0.15; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke();
       } else {
         ctx.strokeStyle = '#eceee8'; ctx.lineWidth = 0.15; ctx.setLineDash([3, 5]);
         ctx.beginPath(); ctx.moveTo(l.x1, l.y1); ctx.lineTo(l.x2, l.y2); ctx.stroke(); ctx.setLineDash([]);
@@ -134,6 +137,10 @@
     lv.zones.forEach(z => {
       if (z.type === 'fire_lane') { ctx.fillStyle = 'rgba(245,184,0,.18)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#f5b800', 1.2); }
       if (z.type === 'ambulance') { ctx.fillStyle = 'rgba(224,38,43,.22)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#e0262b', 1.2); }
+      if (z.type === 'bus_lane') { ctx.fillStyle = 'rgba(47,111,224,.28)'; ctx.fillRect(z.x, z.y, z.w, z.h); }
+      if (z.type === 'taxi_stand' || z.type === 'loading_zone') { hatch(z, z.type === 'taxi_stand' ? '#f5b800' : '#eceee8', 1.6); }
+      if (z.type === 'dropoff') { ctx.strokeStyle = '#f5b800'; ctx.lineWidth = 0.15; ctx.setLineDash([0.6, 0.4]); ctx.strokeRect(z.x + 0.1, z.y + 0.1, z.w - 0.2, z.h - 0.2); ctx.setLineDash([]); }
+      if (z.type === 'emergency_bay') { hatch({ x: z.x, y: z.y + 3.5, w: z.w, h: z.h - 3.5 }, 'rgba(236,238,232,.6)', 1.4); }
       if (z.type === 'fire_exit') { ctx.fillStyle = 'rgba(40,170,90,.2)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, '#2fbf6a', 1.2); }
       if (z.type === 'ramp' || z.type === 'driveway') { ctx.fillStyle = 'rgba(236,238,232,.12)'; ctx.fillRect(z.x, z.y, z.w, z.h); hatch(z, 'rgba(236,238,232,.6)', 1.4); }
       if (z.type === 'entrance') { ctx.fillStyle = 'rgba(236,238,232,.16)'; ctx.fillRect(z.x, z.y, z.w, z.h); }
@@ -156,7 +163,7 @@
         }
       });
       lv.zones.filter(z => z.type === 'bus_stop').forEach(z => text(z.x + z.w / 2, z.y + z.h / 2, '버스', 1.2 * ppm, '#f5b800'));
-      const SLOT_TXT = { disabled: ['♿', 1.8], ev: ['⚡', 1.6], pregnant: ['임산부', 0.7], compact: ['경차', 0.8], women: ['여성', 0.7], resident: ['거주자', 0.8] };
+      const SLOT_TXT = { disabled: ['♿', 1.8], ev: ['⚡', 1.6], pregnant: ['임산부', 0.7], compact: ['경차', 0.8], women: ['여성', 0.7], resident: ['거주자', 0.8], paid: ['유료', 0.8] };
       (lv.slots || []).forEach(s => {
         const t = SLOT_TXT[s.disabled ? 'disabled' : s.type];
         if (t && !(o.parked || []).some(c => c.slot === s.id)) text(s.x + s.w / 2, s.y + s.h * 0.72, t[0], t[1] * ppm, '#fff', 'Noto Sans KR');
@@ -279,6 +286,10 @@
     bubble.querySelector('.x').onclick = () => { hideBubble(); opts.onClose && opts.onClose(); };
     bubble.dataset.modal = opts.modal ? '1' : '';
     return bubble;
+  }
+  function fitBubble() {
+    const bh = bubble.offsetHeight, top = parseFloat(bubble.style.top) || 0;
+    if (top + bh > innerHeight - 6) { bubble.style.top = Math.max(6, innerHeight - bh - 6) + 'px'; bubble.classList.remove('above', 'below'); }
   }
   function hideBubble() { bubble.classList.add('hidden'); bubble.dataset.modal = ''; }
 
@@ -673,7 +684,7 @@
       $('#bGo').onclick = () => { hideBubble(); G.pendingStop = { pose, j, risk, minutes }; ring(false); };
     } else if (G.phase === 'park') {
       const minutes = lv.story.meetingMinutes;
-      const j = J.judgePose(lv, pose, 'park', { minutes, state: G.state });
+      const j = J.judgePose(lv, pose, 'park', { minutes, state: G.state, clockMin: G.clock / 60 });
       const risk = J.assessRisk(lv, pose, j, { minutes, driverPresent: false });
       showBubble(s.x, s.y, verdictHtml('주차 판정', j, risk) +
         `<div class="row"><button class="btn dark" id="bAgain">다시 이동</button><button class="btn primary" id="bGo">여기 두고 약속 가기</button></div>`, { modal: true, onClose: () => setGear('D', true) });
@@ -992,12 +1003,13 @@
   }
   function consequenceHtml(c) {
     const lv = G.lv, mins = lv.situation.extra;
-    const j = J.judgePose(lv, c, 'park', { minutes: mins, state: G.state });
+    const j = J.judgePose(lv, c, 'park', { minutes: mins, state: G.state, clockMin: hhmm(lv.clock) / 60 });
     const r = j.rule;
     if (j.answer === 'manner') return `<p><b>그대로 ${mins}분 두면?</b> ${r.consequence}</p>`;
     if (j.legal) return `<p><b>그대로 ${mins}분 두면?</b> 문제없어요.</p>`;
     const risk = J.assessRisk(lv, c, j, { minutes: mins, driverPresent: false });
-    const head = j.answer === 'stop' && j.key !== 'lot_aisle' ? `<p><b>그대로 ${mins}분 두면?</b> 5분이 넘으면 '주차'가 되어 위반이에요.</p>` : `<p><b>그대로 ${mins}분 두면?</b></p>`;
+    const why = j.reasons.filter(x => !x.startsWith('차체가')).map(x => `<p>· ${x}</p>`).join('');
+    const head = why ? `<p><b>그대로 ${mins}분 두면?</b></p>${why}` : j.answer === 'stop' && j.key !== 'lot_aisle' ? `<p><b>그대로 ${mins}분 두면?</b> 5분이 넘으면 '주차'가 되어 위반이에요.</p>` : `<p><b>그대로 ${mins}분 두면?</b></p>`;
     if (!r.fine) return head + `<p>${r.consequence || '과태료는 없지만 관리실 경고 스티커, 이동 요청, 견인 요청을 받을 수 있어요.'}</p>`;
     return head + riskBlock(risk);
   }
@@ -1010,8 +1022,8 @@
       ${pk.j.reasons.filter(x => !x.startsWith('차체가')).map(x => `<p>· ${x}</p>`).join('')}
       <div id="conseq"></div>
       <details><summary>근거 보기 · ${r.basis}</summary>${ruleCard(pk.j.key).replace(/<h4>.*?<\/h4>/s, '').replace(/<p class="easy">.*?<\/p>/s, '')}</details>
-      <div class="row">${pk.j.answer === 'park' ? '' : '<button class="btn dark" id="rWhat">그대로 두면?</button>'}<button class="btn primary" id="rNext">다음</button></div>`, { modal: true });
-    if ($('#rWhat')) $('#rWhat').onclick = () => { $('#conseq').innerHTML = consequenceHtml(c); $('#rWhat').remove(); };
+      <div class="row">${pk.j.answer === 'park' && pk.j.key !== 'flex_zone' ? '' : '<button class="btn dark" id="rWhat">그대로 두면?</button>'}<button class="btn primary" id="rNext">다음</button></div>`, { modal: true });
+    if ($('#rWhat')) $('#rWhat').onclick = () => { $('#conseq').innerHTML = consequenceHtml(c); $('#rWhat').remove(); fitBubble(); };
     $('#rNext').onclick = () => {
       hideBubble();
       if (Object.keys(G.q.picks).length === lv.candidates.length && G.q.stage === 'pick') startEvent();
@@ -1036,7 +1048,7 @@
   function finishQuiz(idx) {
     const lv = G.lv, c = lv.candidates[idx], mins = lv.situation.extra;
     G.q.stage = 'done'; G.phase = 'done'; updateGoal();
-    const j = J.judgePose(lv, c, 'park', { minutes: mins, state: G.state });
+    const j = J.judgePose(lv, c, 'park', { minutes: mins, state: G.state, clockMin: hhmm(lv.clock) / 60 });
     const risk = J.assessRisk(lv, c, j, { minutes: mins, driverPresent: false });
     const out = J.rollOutcome(risk);
     const picks = lv.candidates.map((cc, i) => ({ i, ...G.q.picks[i] }));

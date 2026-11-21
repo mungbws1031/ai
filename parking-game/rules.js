@@ -229,6 +229,48 @@
       law: '소방시설법 제16조 — 피난시설 주변에 장애물을 두면 안 됨(위반 시 과태료 대상이 될 수 있음) · 주차장 관리규정',
       desc: '불이 나면 사람들이 빠져나가는 문입니다. 잠깐이라도 막으면 안 됩니다.',
     },
+    flex_zone: {
+      name: '시간제 주정차 허용 구간', short: '시간제 허용',
+      stop: true, park: true, severity: 1, fine: 40000, report: false, tow: 0.5, cctvGrace: 5,
+      law: '탄력적 주정차 허용 — 시·도경찰청장·지자체가 보조표지로 정한 시간에만 정차·주차 가능. 그 밖의 시간은 황색 실선과 같아 단속(승용 과태료 4만원)',
+      desc: '노란 실선이지만 표지판에 적힌 시간에만 세울 수 있습니다. 허용 시간이 끝나는 순간부터 단속 대상이에요.',
+    },
+    loading_zone: {
+      name: '화물 하역구역', short: '하역구역',
+      stop: false, park: false, severity: 5, fine: 40000, report: false, tow: 0.6, cctvGrace: 5,
+      law: '지자체 지정 조업 주차 구역 — 화물차 상·하역용. 승용차 정차·주차는 일반 주정차 위반으로 단속(승용 과태료 4만원 대표값)',
+      desc: '시장·상가에 물건을 내리는 화물차 자리입니다. 승용차는 잠깐이라도 안 됩니다.',
+    },
+    taxi_stand: {
+      name: '택시 승차대', short: '택시 승차대',
+      stop: false, park: false, severity: 5, fine: 40000, report: false, tow: 0.6, cctvGrace: 3,
+      law: '지자체·시·도경찰청장이 지정한 택시 정차 구역 — 일반 차 정차·주차 금지(승용 과태료 4만원 대표값)',
+      desc: '택시가 줄 서서 손님을 태우는 곳입니다. 일반 차는 잠깐 사람 태우는 것도 안 돼요.',
+    },
+    dropoff: {
+      name: '승하차 구역', short: '승하차 구역',
+      stop: true, park: false, severity: 3, fine: 40000, report: false, tow: 0.4, cctvGrace: 5,
+      law: '지자체 지정 승하차 구역 — 사람을 태우고 내리는 짧은 정차만 허용(허용 시간은 구역마다 다름, 보통 5분 안팎)',
+      desc: '역·학교 앞의 "잠깐 태우고 내리는" 자리입니다. 차를 두고 떠나면 안 됩니다.',
+    },
+    bus_lane: {
+      name: '버스전용차로', short: '버스전용차로',
+      stop: false, park: false, severity: 6, fine: 50000, report: true, tow: 0.8, cctvGrace: 1,
+      law: '도로교통법 제15조 — 전용차로 운영 시간에는 버스 외 차량 통행·정차 금지 (승용 일반도로 과태료 5만원 대표값). 파란 선이 표시',
+      desc: '파란 선으로 그은 버스 차로입니다. 운영 시간에는 잠깐 서는 것도 안 되고 단속 카메라가 많습니다.',
+    },
+    shoulder: {
+      name: '고속도로 갓길', short: '갓길',
+      stop: false, park: false, severity: 8, fine: 40000, report: true, tow: 1.0, cctvGrace: 1,
+      law: '도로교통법 제64조 — 고속도로에서는 고장 등 부득이한 경우 외에 정차·주차 금지 (범칙금 승용 4만원 대표값)',
+      desc: '졸리거나 전화 받으려고 갓길에 서면 안 됩니다. 뒤에서 달려오는 차에 받힐 수 있어요. 졸음쉼터나 휴게소로 가세요.',
+    },
+    emergency_bay: {
+      name: '비상주차대', short: '비상주차대',
+      stop: false, park: false, severity: 7, fine: 40000, report: false, tow: 0.8, cctvGrace: 3,
+      law: '도로교통법 제64조 — 고속도로 비상주차대는 고장·사고 같은 비상시에만 사용(쉬려고 세우면 주정차 위반)',
+      desc: '갓길보다 넓게 파인 칸이지만 고장 났을 때만 씁니다. 쉬는 곳이 아니에요.',
+    },
   });
 
   // 네 가지 답: park = 주차 OK, stop = 정차만, no = 안 돼요, manner = 법은 OK·비매너
@@ -273,6 +315,13 @@
     resident_slot: ['no', '지자체 조례', '거주자우선 칸은 비어 있어도 배정받은 차만 돼요.'],
     ramp: ['no', '관리규정', '경사로에는 멈추면 안 돼요. 뒤차가 비탈에서 서야 해요.'],
     fire_exit: ['no', '소방시설법·관리규정', '비상구 앞은 잠깐도 막으면 안 돼요. 불 나면 여기로 나가요.'],
+    flex_zone: ['park', '도로교통법·지자체', '표지판 시간(예: 11~14시)에만 세울 수 있어요. 시간이 지나면 바로 위반이에요.'],
+    loading_zone: ['no', '지자체 지정', '하역구역은 화물차 자리예요. 승용차는 잠깐도 안 돼요.'],
+    taxi_stand: ['no', '지자체 지정', '택시 승차대에 서면 안 돼요. 사람 태우는 것도 여기선 안 돼요.'],
+    dropoff: ['stop', '지자체 지정', '승하차 구역은 태우고 내리는 동안만! 차를 두고 가면 안 돼요.'],
+    bus_lane: ['no', '도로교통법', '파란 선 버스전용차로는 잠깐도 안 돼요. 카메라에 바로 찍혀요.'],
+    shoulder: ['no', '도로교통법', '고속도로 갓길은 고장 났을 때만! 졸리면 졸음쉼터로 가세요.'],
+    emergency_bay: ['no', '도로교통법', '비상주차대는 쉬는 곳이 아니라 고장 났을 때 쓰는 곳이에요.'],
   };
   for (const [k, [answer, basis, easy]] of Object.entries(META)) Object.assign(RULES[k], { answer, basis, easy });
   RULES.lot_aisle.consequence = '세워 둔 채 자리를 비우면 뒤차들이 경적을 울리고, 관리 직원이 방송으로 차주를 찾습니다.';

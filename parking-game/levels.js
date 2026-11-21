@@ -595,15 +595,183 @@
     samples: [],
   };
 
+  // ── 전통시장 앞 ── (시간제 주정차 허용 구간, 하역구역)
+  const marketSit = {
+    title: '점심 장보기', text: '낮 12시 10분, 엄마와 전통시장에 왔어요. 시장 앞 노란 실선에 "11:00~14:00 주정차 허용" 표지판이 있어요. 30분이면 될 것 같아요.',
+    who: '엄마', stay: 30, extra: 150,
+    event: ['어머, 저기 떡집도 들르자.', '구경하다 보면 두 시간 반은 걸리겠다.'],
+  };
+  const M8 = {
+    id: 6, key: 'market', title: '전통시장 앞', place: '왕복 2차로 · 시간제 주정차 허용 구간',
+    goal: '같은 자리라도 시간이 지나면 위반이 됩니다. 머무는 시간까지 생각해서 고르세요.',
+    timeLimit: 220, clock: '12:10', situation: marketSit, story: storyFrom(marketSit),
+    world: { w: 110, h: 40 },
+    start: { x: 106, y: 18.25, heading: PI },
+    destination: { x: 55, y: 12, label: '시장 정문', radius: 24 },
+    buildings: [
+      { x: 0, y: 0, w: 40, h: 12, label: '상가' },
+      { x: 40, y: 0, w: 30, h: 12, label: '○○전통시장 정문', dest: true },
+      { x: 70, y: 0, w: 40, h: 12, label: '상가' },
+      { x: 0, y: 28, w: 20, h: 12, label: '주택' },
+      { x: 60, y: 28, w: 50, h: 12, label: '주택' },
+      { x: 20, y: 38, w: 40, h: 2, label: '' },
+    ],
+    roads: [{ x: 0, y: 14, w: 110, h: 12 }, { x: 55, y: 26, w: 5, h: 2 }],
+    lots: [{ x: 20, y: 28, w: 40, h: 10, label: '시장 공영주차장(유료)' }],
+    sidewalks: [{ x: 0, y: 12, w: 110, h: 2 }, { x: 0, y: 26, w: 55, h: 2 }, { x: 60, y: 26, w: 50, h: 2 }],
+    lines: [
+      { x1: 0, y1: 20, x2: 88, y2: 20, type: 'yellowDouble' },
+      { x1: 94, y1: 20, x2: 110, y2: 20, type: 'yellowDouble' },
+    ],
+    crosswalks: [{ x: 88, y: 14, w: 6, h: 12 }],
+    zones: [
+      { type: 'yellow_solid', x: 0, y: 14, w: 20, h: 2.5, curb: 'top', dir: PI },
+      { type: 'flex_zone', x: 20, y: 14, w: 45, h: 2.5, curb: 'top', dir: PI, hours: [660, 840], label: '11:00~14:00 주정차 허용' },
+      { type: 'loading_zone', x: 65, y: 14, w: 13, h: 2.5, curb: 'top', dir: PI, label: '화물차 하역구역', paint: '하역' },
+      { type: 'yellow_solid', x: 78, y: 14, w: 10, h: 2.5, curb: 'top', dir: PI },
+      { type: 'hydrant', cx: 80, cy: 12.8, r: 5 },
+      { type: 'crosswalk_near', x: 78, y: 14, w: 10, h: 2.5 },
+      { type: 'crosswalk', x: 88, y: 14, w: 6, h: 12 },
+      { type: 'crosswalk_near', x: 94, y: 14, w: 10, h: 2.5 },
+      { type: 'yellow_solid', x: 104, y: 14, w: 6, h: 2.5, curb: 'top', dir: PI },
+      { type: 'yellow_solid', x: 0, y: 23.5, w: 110, h: 2.5, curb: 'bottom', dir: 0 },
+      { type: 'crosswalk_near', x: 78, y: 23.5, w: 10, h: 2.5 },
+      { type: 'crosswalk_near', x: 94, y: 23.5, w: 10, h: 2.5 },
+    ],
+    slots: slotRow('P', 21, 32.8, 15, 2.5, 5, 'lot', { seed: 4, empty: [7] }),
+    parked: [24, 29.5, 52, 57.5].map((x, i) => car(x, 15.25, PI, i + 2)),
+    props: [
+      { type: 'sign', x: 42, y: 12.9, label: '보조표지: 11:00~14:00 주정차 허용' },
+      { type: 'hydrant', x: 80, y: 12.8, label: '지상식 소화전' },
+      { type: 'reporter', x: 71, y: 12.9, label: '하역 기다리는 화물차 기사님', phone: true },
+      { type: 'cctv', x: 60, y: 12.9, r: 28, label: '시장 앞 단속 CCTV' },
+    ],
+    candidates: [
+      { x: 41, y: 15.25, heading: PI, expect: 'flex_zone', answer: 'park' },
+      { x: 71.5, y: 15.25, heading: PI, expect: 'loading_zone', answer: 'no' },
+      { x: 81, y: 15.25, heading: PI, expect: 'hydrant', answer: 'no' },
+      { x: 99, y: 15.25, heading: PI, expect: 'crosswalk_near', answer: 'no' },
+      { x: 39.75, y: 35.3, heading: PI / 2, expect: 'slot', answer: 'park' },
+    ],
+    samples: [
+      { name: '허용 구간에 12:10부터 30분', x: 41, y: 15.25, heading: PI, mode: 'park', minutes: 30, clockMin: 730, expect: 'flex_zone', legal: true },
+      { name: '허용 구간에 12:10부터 150분(14:40까지)', x: 41, y: 15.25, heading: PI, mode: 'park', minutes: 150, clockMin: 730, expect: 'flex_zone', legal: false },
+    ],
+  };
+
+  // ── 지하철역 앞 ── (버스전용차로·택시 승차대·승하차 구역)
+  const stationSit = {
+    title: '퇴근길 마중', text: '저녁 6시 30분, 지하철역 2번 출구에서 가족을 태우기로 했어요. 10분 일찍 도착했어요.',
+    who: '가족', stay: 10, extra: 40,
+    event: ['지하철이 고장으로 멈췄대.', '30분은 더 걸릴 것 같아. 어디 세워 두고 기다려.'],
+  };
+  const M9 = {
+    id: 7, key: 'station', title: '지하철역 앞', place: '도심 왕복 4차로 · 버스전용차로',
+    goal: '사람을 태우는 곳이 많아 보여도 다 같은 자리가 아니에요. 승하차 구역과 나머지를 구분하세요.',
+    timeLimit: 220, clock: '18:30', situation: stationSit, story: storyFrom(stationSit),
+    world: { w: 120, h: 44 },
+    start: { x: 116, y: 18.9, heading: PI },
+    destination: { x: 60, y: 12, label: '역 2번 출구', radius: 26 },
+    buildings: [
+      { x: 0, y: 0, w: 48, h: 12, label: '오피스' },
+      { x: 48, y: 0, w: 24, h: 12, label: '○○역 2번 출구', dest: true },
+      { x: 72, y: 0, w: 48, h: 12, label: '상가' },
+      { x: 0, y: 32, w: 120, h: 12, label: '빌딩' },
+    ],
+    roads: [{ x: 0, y: 14, w: 120, h: 16 }],
+    lots: [],
+    sidewalks: [{ x: 0, y: 12, w: 120, h: 2 }, { x: 0, y: 30, w: 120, h: 2 }],
+    lines: [
+      { x1: 0, y1: 21.25, x2: 120, y2: 21.25, type: 'yellowDouble' },
+      { x1: 0, y1: 26, x2: 120, y2: 26, type: 'blueSolid' },
+    ],
+    crosswalks: [],
+    zones: [
+      { type: 'yellow_solid', x: 0, y: 14, w: 30, h: 2.5, curb: 'top', dir: PI },
+      { type: 'taxi_stand', x: 30, y: 14, w: 18, h: 2.5, curb: 'top', dir: PI, label: '택시 승차대', paint: '택시' },
+      { type: 'dropoff', x: 48, y: 14, w: 16, h: 2.5, curb: 'top', dir: PI, label: '역 앞 승하차 구역', paint: '승하차' },
+      { type: 'bus_stop', x: 64, y: 14, w: 20, h: 2.5, curb: 'top', dir: PI },
+      { type: 'yellow_solid', x: 84, y: 14, w: 6, h: 2.5, curb: 'top', dir: PI },
+      { type: 'bus_lane', x: 0, y: 26, w: 120, h: 4, dir: 0, label: '가로변 버스전용차로', paint: '버스전용' },
+    ],
+    slots: slotRow('S', 90, 14.1, 5, 6, 2.0, 'street', { seed: 6, empty: [2], dir: PI }).map(s => ({ ...s, type: 'paid' })),
+    parked: [],
+    props: [
+      { type: 'busstop', x: 74, y: 13.1, label: '역 앞 정류장' },
+      { type: 'reporter', x: 39, y: 13, label: '줄 서 있는 택시 기사님', phone: true },
+      { type: 'cctv', x: 60, y: 31, r: 30, label: '버스전용차로 단속 카메라' },
+      { type: 'sign', x: 105, y: 12.9, label: '노상 공영주차장(유료)' },
+    ],
+    candidates: [
+      { x: 39, y: 15.25, heading: PI, expect: 'taxi_stand', answer: 'no' },
+      { x: 56, y: 15.25, heading: PI, expect: 'dropoff', answer: 'stop' },
+      { x: 74, y: 15.25, heading: PI, expect: 'bus_stop', answer: 'no' },
+      { x: 60, y: 28, heading: 0, expect: 'bus_lane', answer: 'no' },
+      { x: 105, y: 15.1, heading: PI, expect: 'street_slot', answer: 'park' },
+    ],
+    samples: [],
+  };
+
+  // ── 고속도로 졸음쉼터 ── (갓길·비상주차대)
+  const hwySit = {
+    title: '고속도로에서 졸릴 때', text: '고속도로를 달리는데 너무 졸려요. 20분만 눈을 붙이고 싶어요. 바로 앞에 갓길, 비상주차대, 졸음쉼터가 있어요.',
+    who: '가족', stay: 20, extra: 60,
+    event: ['졸리면 무리하지 마.', '한 시간은 푹 쉬고 출발해.'],
+  };
+  const M10 = {
+    id: 9, key: 'highway', title: '고속도로 졸음쉼터', place: '편도 2차로 고속도로 · 갓길 · 졸음쉼터',
+    goal: '고속도로에서는 정해진 곳 말고는 서면 안 됩니다. 쉬어도 되는 곳을 찾으세요.',
+    timeLimit: 200, clock: '15:05', situation: hwySit, story: storyFrom(hwySit),
+    world: { w: 130, h: 38 },
+    start: { x: 4, y: 15.6, heading: 0 },
+    destination: { x: 78, y: 33, label: '졸음쉼터', radius: 32 },
+    buildings: [
+      { x: 0, y: 0, w: 130, h: 10, label: '중앙분리대 너머 반대 방향 차로' },
+      { x: 0, y: 24, w: 20, h: 14, label: '산' },
+      { x: 20, y: 24, w: 15, h: 14, label: '' },
+      { x: 35, y: 21, w: 15, h: 17, label: '산' },
+      { x: 105, y: 21, w: 25, h: 17, label: '산' },
+      { x: 50, y: 33, w: 55, h: 5, label: '졸음쉼터 화장실 · 그늘막', dest: true },
+    ],
+    roads: [{ x: 0, y: 10, w: 130, h: 11 }, { x: 20, y: 21, w: 15, h: 3 }],
+    lots: [{ x: 50, y: 21, w: 55, h: 12, label: '' }],
+    sidewalks: [],
+    lines: [
+      { x1: 0, y1: 13.75, x2: 130, y2: 13.75, type: 'whiteDashed' },
+      { x1: 0, y1: 17.5, x2: 50, y2: 17.5, type: 'whiteSolid' },
+      { x1: 105, y1: 17.5, x2: 130, y2: 17.5, type: 'whiteSolid' },
+    ],
+    crosswalks: [],
+    zones: [
+      { type: 'shoulder', x: 0, y: 17.5, w: 20, h: 3.5, label: '갓길' },
+      { type: 'emergency_bay', x: 20, y: 17.5, w: 15, h: 6.5, label: '비상주차대', paint: '비상주차대' },
+      { type: 'shoulder', x: 35, y: 17.5, w: 15, h: 3.5, label: '갓길' },
+      { type: 'shoulder', x: 105, y: 17.5, w: 25, h: 3.5, label: '갓길' },
+    ],
+    slots: slotRow('Z', 52, 27.5, 20, 2.5, 5, 'lot', { seed: 5, empty: [3, 12] }),
+    parked: [],
+    props: [
+      { type: 'sign', x: 42, y: 22.5, label: '졸음쉼터 →' },
+      { type: 'cctv', x: 12, y: 22.5, r: 25, label: '고속도로 갓길 단속 카메라' },
+    ],
+    candidates: [
+      { x: 10, y: 19.25, heading: 0, expect: 'shoulder', answer: 'no' },
+      { x: 27.5, y: 22, heading: 0, expect: 'emergency_bay', answer: 'no' },
+      { x: 75, y: 24, heading: 0, expect: 'lot_aisle', answer: 'stop' },
+      { x: 60.75, y: 30, heading: PI / 2, expect: 'slot', answer: 'park' },
+    ],
+    samples: [],
+  };
+
   // 레벨 번호: 쉬운 곳 → 어려운 곳
-  M3.id = 5; M4.id = 7;
+  M3.id = 5; M7.id = 8; M4.id = 10;
 
   // 1단계 레벨은 보너스(직접 운전 전용)로 유지
-  Object.assign(L1, { id: 8, key: 'cafe', bonus: true });
-  Object.assign(L2, { id: 9, key: 'academy', bonus: true });
-  Object.assign(L3, { id: 10, key: 'alley', bonus: true });
+  Object.assign(L1, { id: 11, key: 'cafe', bonus: true });
+  Object.assign(L2, { id: 12, key: 'academy', bonus: true });
+  Object.assign(L3, { id: 13, key: 'alley', bonus: true });
 
-  const LEVELS = [M1, M2, M5, M6, M3, M7, M4, L1, L2, L3];
+  const LEVELS = [M1, M2, M5, M6, M3, M8, M9, M7, M10, M4, L1, L2, L3];
   if (typeof module !== 'undefined' && module.exports) module.exports = { LEVELS };
   else root.LEVELS = LEVELS;
 })(typeof window !== 'undefined' ? window : globalThis);

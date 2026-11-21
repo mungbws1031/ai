@@ -77,7 +77,7 @@
    * @param level   레벨 데이터
    * @param pose    {x, y, heading(rad)}
    * @param mode    'stop'(정차 의도) | 'park'(주차 의도: 운전자가 차를 떠남)
-   * @param opts    {minutes: 정지 시간(게임 분), state: {afterCall}}
+   * @param opts    {minutes: 정지 시간(게임 분), state: {afterCall}, clockMin: 시작 시각(자정부터 분, 시간제 구간용)}
    */
   function judgePose(level, pose, mode, opts = {}) {
     const minutes = opts.minutes ?? (mode === 'stop' ? 3 : 60);
@@ -122,8 +122,18 @@
       effective = '주차';
       reasons.push(`${STOP_LIMIT_MIN}분을 넘겨 법적으로는 '주차'가 됩니다(제2조 제24·25호).`);
     }
-    const legal = effective === '정차' ? (rule.stop || rule.park) : rule.park;
-    if (!legal && effective === '주차' && rule.stop) reasons.push(`${rule.short}: 정차는 되지만 주차는 안 됩니다.`);
+    let legal = effective === '정차' ? (rule.stop || rule.park) : rule.park;
+    // 시간제 허용 구간: 머무는 동안 내내 허용 시간 안이어야 합니다.
+    const timed = perPoint[8].map(h => h.zone).find(z => z && z.hours);
+    if (key === 'flex_zone' && timed && opts.clockMin != null) {
+      const [h0, h1] = timed.hours, end = opts.clockMin + minutes;
+      const f = m => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(Math.round(m % 60)).padStart(2, '0')}`;
+      if (opts.clockMin < h0 || end > h1) {
+        legal = false;
+        reasons.push(`허용 시간(${f(h0)}~${f(h1)})을 벗어납니다. ${f(opts.clockMin)}부터 ${minutes}분이면 ${f(end)}까지예요.`);
+      }
+    }
+    if (!legal && effective === '주차' && rule.stop && !rule.park) reasons.push(`${rule.short}: 정차는 되지만 주차는 안 됩니다.`);
     if (hitKeys.length > 1 && RULES[hitKeys[0]].severity > 0) {
       reasons.push(`차체가 걸친 구역: ${hitKeys.map(k => RULES[k].short).join(', ')} → 가장 엄격한 '${RULES[key].short}' 기준 적용`);
     }
