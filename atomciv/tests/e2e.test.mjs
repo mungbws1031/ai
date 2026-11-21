@@ -70,9 +70,14 @@ test('making water shows a card, lands in dex and survives reload', async () => 
   await page.click('#card-ok');
   await page.click('[data-tab=dex]');
   assert.equal(await page.locator('.dex-item[data-key=H2O]').count(), 1);
-  await page.reload();
-  await page.click('[data-tab=dex]');
-  assert.equal(await page.locator('.dex-item[data-key=H2O]').count(), 1);
+  // 새로고침 대신: 저장된 값을 그대로 가진 새 페이지에서 도감이 복원되는지 본다
+  // (크로미움은 localStorage 커밋을 묶어서 늦게 하므로 바로 새로고침하면 가끔 빈 저장을 읽는다)
+  const saved = await page.evaluate(() => localStorage.getItem('atomciv.v1'));
+  assert.match(saved, /H2O/);
+  const again = await fresh(undefined, new Function(`localStorage.setItem('atomciv.v1', ${JSON.stringify(saved)});`));
+  await again.page.click('[data-tab=dex]');
+  assert.equal(await again.page.locator('.dex-item[data-key=H2O]').count(), 1);
+  await again.ctx.close();
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -655,5 +660,20 @@ test('easy mode: hint puts the needed atoms on the bench and shows a finger guid
   await page.click('#hint-btn');
   assert.equal(await page.locator('#bench .atom[data-sym=H]').count(), 2);
   assert.ok(await page.locator('#guide').isVisible());
+  await ctx.close();
+});
+
+test('phone: atoms already on the bench move out when the bowl fills up', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'CO2', 'H2O'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  for (let i = 0; i < 8; i++) await page.click('[data-atom=H]');
+  for (const id of ['wood', 'flint', 'clay', 'CO2', 'H2O', 'charcoal']) {
+    await page.locator(`#drawer [data-item=${id}]`).scrollIntoViewIfNeeded();
+    await page.click(`#drawer [data-item=${id}]`);
+  }
+  await page.waitForTimeout(300);
+  const box = await page.locator('#mixer').boundingBox();
+  const centers = await page.$$eval('#bench .atom', els => els.map(e => { const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }));
+  for (const [x, y] of centers) assert.ok(!(x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height), `atom at ${x},${y} under bowl`);
   await ctx.close();
 });
