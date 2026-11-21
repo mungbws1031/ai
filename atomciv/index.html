@@ -612,6 +612,18 @@ const MISSIONS = [
   { target: 'satellite', text: '로켓에 태양전지와 라디오를 실어 위성을! 🛰️',  hint: ['rocket', 'solar_cell', 'radio'] },
 ];
 // 힌트 문장: 미션에 필요한 재료를 글로 알려 준다
+// 반응식 (부산물 포함) — 카드에 보여 준다
+const REACTION_NOTE = {
+  CaH2O2: 'CaO + H₂O → Ca(OH)₂',
+  CCaO3: 'Ca(OH)₂ + CO₂ → CaCO₃ + H₂O',
+  CH2O3: 'CO₂ + H₂O → H₂CO₃',
+  CHNaO3: 'NaOH + CO₂ → NaHCO₃',
+  ClHO: 'Cl₂ + H₂O → HOCl + HCl',
+  ClNaO: '2NaOH + Cl₂ → NaOCl + NaCl + H₂O',
+  CH4N2O: '2NH₃ + CO₂ → CO(NH₂)₂ + H₂O (뜨겁게)',
+  H2MgO2: 'MgO + H₂O → Mg(OH)₂',
+};
+function modeOf(s) { return ['easy', 'normal', 'hard'].includes(s && s.mode) ? s.mode : 'normal'; }
 // 분자를 그릇의 반응으로 만드는 레시피 (쉬움 모드는 무시하고 원자로 안내)
 function reactionFor(key) { return MOLECULES[key] ? RECIPES.find(r => r.output === key) || null : null; }
 function missionHint(m, mode = 'normal') {
@@ -1063,8 +1075,11 @@ function chipDrag(chip, emoji, onDrop) {
   chip.addEventListener('pointercancel', e => end(e, true));
 }
 // 레시피 재료로 쓰이는 분자(물, 모래)는 만들자마자 그릇으로 쏙 넣어 준다
+const ALWAYS_TO_TRAY = ['H2O', 'O2Si', 'ClNa'];
 function dropIntoTray(key) {
   if (!RECIPES.some(r => r.inputs.includes(key))) return;
+  const m = currentMission(state.found);
+  if (!ALWAYS_TO_TRAY.includes(key) && !(m && missionHint(m, modeOf(state)).includes(key))) return;
   if (tray.includes(key) || tray.length >= TRAY_MAX) return;
   tray.push(key); renderTray();
   const chips = document.querySelectorAll('#tray-items .item-chip');
@@ -1107,10 +1122,16 @@ $('#combine-btn').addEventListener('click', () => {
     else toast('이 조합으로는 아무것도 안 생겨. 다른 걸 섞어 봐!');
     return;
   }
-  const it = ITEMS[out];
   const isNew = discover(out);
   tray = []; renderTray();
   if (isNew) fanfare(); else beep(880, 0.1);
+  const mol = MOLECULES[out];
+  if (mol) { // 분자 + 분자 반응
+    queueCard({ emoji: mol.emoji, tag: isNew ? '✨ 반응 성공!' : '또 만들었어!', name: mol.name, formula: mol.formula,
+      why: (REACTION_NOTE[out] ? REACTION_NOTE[out] + ' ' : '') + mol.why, onClose: () => { afterMake(out); dropIntoTray(out); } });
+    return;
+  }
+  const it = ITEMS[out];
   queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 발명!' : '또 만들었어!', name: it.name, why: it.why,
     onClose: () => afterMake(out) });
 });

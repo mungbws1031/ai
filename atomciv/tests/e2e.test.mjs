@@ -558,3 +558,30 @@ test('sodium hydroxide shows O with a 1- charge (it got one electron)', async ()
   assert.equal(await page.textContent(`.atom[data-id="${na}"] .charge`), '+');
   await ctx.close();
 });
+
+test('bowl reaction: CO2 + water makes carbonic acid with a molecule card', async () => {
+  const init = () => { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify({ found: ['CO2', 'H2O', 'fire', 'stone_axe', 'charcoal', 'pottery'], muted: true, trayIntro: true, mode: 'normal' })); };
+  const { ctx, page, errors } = await fresh(undefined, init);
+  await page.click('#drawer [data-item=CO2]'); await page.click('#drawer [data-item=H2O]');
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /탄산/);
+  assert.match(await page.textContent('#card-formula'), /H₂CO₃/);
+  await page.click('#card-ok');
+  const found = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found);
+  assert.ok(found.includes('CH2O3'));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('CO2 made during its own mission does not jump into the bowl', async () => {
+  const init = () => { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify({ found: ['H2', 'H2O', 'O2'], muted: true, mode: 'normal' })); };
+  const { ctx, page } = await fresh(undefined, init);
+  for (const s of ['O', 'C', 'O']) await page.click(`[data-atom=${s}]`);
+  const [o1, o2] = await benchIds(page, 'O'); const [c] = await benchIds(page, 'C');
+  for (const [x, y] of [[o1, c], [o1, c], [o2, c], [o2, c]]) await drag(page, `.atom[data-id="${x}"]`, `.atom[data-id="${y}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.equal(await page.locator('#tray [data-item]').count(), 0);
+  await ctx.close();
+});
