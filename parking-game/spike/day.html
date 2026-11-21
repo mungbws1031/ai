@@ -33,7 +33,11 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .pad button { width: min(19vh, 92px); height: min(19vh, 92px); border-radius: 50%; background: rgba(23,32,42,.82); border: 3px solid rgba(255,255,255,.25); font-size: 34px; font-family: var(--display); }
 .pad button.on { background: rgba(255,255,255,.28); }
 .pad .gas { background: rgba(31,138,82,.85); } .pad .rev { background: rgba(163,25,31,.8); font-size: 22px; }
-.parkbtn { position: fixed; left: 50%; transform: translateX(-50%); bottom: max(14px, env(safe-area-inset-bottom)); background: var(--sign); border: 3px solid #fff; border-radius: 999px; padding: 10px 26px; font-family: var(--display); font-size: 22px; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.stick { position: fixed; left: max(18px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); width: min(42vh, 170px); height: min(42vh, 170px); border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.10) 0 40%, rgba(23,32,42,.82) 41%); border: 3px solid rgba(255,255,255,.28); touch-action: none; }
+.stick .knob { position: absolute; left: 50%; top: 50%; width: 42%; height: 42%; margin: -21% 0 0 -21%; border-radius: 50%; background: #f1f2ee; box-shadow: 0 4px 12px rgba(0,0,0,.5); pointer-events: none; }
+.stick span { position: absolute; left: 0; right: 0; top: -20px; text-align: center; font-size: 11px; color: #9aa3ad; white-space: nowrap; }
+.parkbtn { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(34px, env(safe-area-inset-bottom)); width: min(30vh, 118px); height: min(30vh, 118px); background: var(--sign); border: 3px solid #fff; border-radius: 50%; font-family: var(--display); font-size: 20px; line-height: 1.15; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
 .parkbtn:disabled { opacity: .35; }
 
 .flash { position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); font-family: var(--display); font-size: 34px; text-shadow: 0 3px 10px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
@@ -58,9 +62,8 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   <div class="mission" id="mission"></div>
   <div class="timer" id="timer">0:45</div>
 </div>
-<div class="pad left" id="padL"><button data-k="left" aria-label="왼쪽으로 꺾기">◀</button><button data-k="right" aria-label="오른쪽으로 꺾기">▶</button></div>
-<div class="pad right" id="padR"><button class="rev" data-k="back" aria-label="후진">후진</button><button class="gas" data-k="gas" aria-label="앞으로">▲</button></div>
-<button class="parkbtn" id="parkBtn" disabled>여기 세우기 P</button>
+<div class="stick" id="stick" aria-label="조이스틱: 가고 싶은 방향으로 밀기"><div class="knob" id="knob"></div><span>가고 싶은 쪽으로 밀기</span></div>
+<button class="parkbtn" id="parkBtn" disabled>여기<br>세우기 P</button>
 <button class="quit" id="quit">처음으로</button>
 <div class="flash hidden" id="flash"></div>
 <div class="card-wrap" id="cardWrap"><div class="card" id="card"></div></div>
@@ -106,7 +109,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     card(`<h2>주차 한 판</h2>
       <p>지갑에 <b>30,000원</b>. 오늘 마트 들렀다가 병원까지 가야 해요.</p>
       <p>가까운 데 대충 세울까, 멀어도 제대로 넣을까? <b>걸리면 지갑이 털립니다.</b></p>
-      <p class="why">◀ ▶ 로 꺾고, ▲ 앞으로 · 후진. 손을 떼면 멈춰요. 다 세웠으면 <b>여기 세우기 P</b>.</p>
+      <p class="why">왼쪽 동그라미를 <b>가고 싶은 쪽</b>으로 밀어요. 차 뒤쪽으로 당기면 후진, 손을 떼면 멈춰요. 다 세웠으면 <b>여기 세우기 P</b>.</p>
       <p class="why"><span class="tag">시험판</span> 장소 2곳만 들어 있어요.</p>`, '출발', () => startDay());
   }
   function startDay() { S = { money: START_MONEY, i: 0, log: [] }; setMoney(0); place(0); }
@@ -122,15 +125,22 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
       <p class="why">${d.hint}</p>`, '운전 시작', () => { S.running = true; });
   }
 
-  // ─── 입력 ───
+  // ─── 입력: 조이스틱 하나 (화면 기준 방향) + 키보드 ───
   const keys = {};
-  document.querySelectorAll('.pad button').forEach(b => {
-    const k = b.dataset.k;
-    const on = e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); keys[k] = true; b.classList.add('on'); };
-    const off = () => { keys[k] = false; b.classList.remove('on'); };
-    b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
-    b.addEventListener('contextmenu', e => e.preventDefault());
-  });
+  const stick = { on: false, x: 0, y: 0, mag: 0, ang: 0, rev: false };
+  const stEl = $('#stick'), knob = $('#knob');
+  function stickMove(e) {
+    const r = stEl.getBoundingClientRect(), R0 = r.width / 2;
+    let dx = e.clientX - (r.left + R0), dy = e.clientY - (r.top + R0);
+    const d = Math.hypot(dx, dy), lim = R0 * 0.62;
+    if (d > lim) { dx *= lim / d; dy *= lim / d; }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    stick.mag = Math.min(1, d / lim); stick.ang = Math.atan2(dy, dx);
+  }
+  stEl.addEventListener('pointerdown', e => { e.preventDefault(); stEl.setPointerCapture(e.pointerId); stick.on = true; stickMove(e); });
+  stEl.addEventListener('pointermove', e => { if (stick.on) stickMove(e); });
+  const stickOff = () => { stick.on = false; stick.mag = 0; knob.style.transform = ''; };
+  stEl.addEventListener('pointerup', stickOff); stEl.addEventListener('pointercancel', stickOff); stEl.addEventListener('lostpointercapture', stickOff);
   const KM = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'gas', ArrowDown: 'back' };
   addEventListener('keydown', e => { if (KM[e.key]) { keys[KM[e.key]] = true; e.preventDefault(); } if (e.key === ' ' || e.key === 'p') tryPark(); });
   addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = false; });
@@ -159,11 +169,22 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   }
   function step(dt) {
     const c = S.car;
-    const target = keys.left ? -1 : keys.right ? 1 : 0;
-    c.steer += clamp(target - c.steer, -dt * 3, dt * 3);
-    if (keys.gas) c.v += 3.2 * dt; else if (keys.back) c.v -= 2.4 * dt;
-    else { const s = Math.sign(c.v); c.v -= s * 6 * dt; if (Math.sign(c.v) !== s) c.v = 0; }
-    c.v = clamp(c.v, -3, 7.5);
+    let target = 0, vt = 0;
+    if (stick.on && stick.mag > 0.15) {
+      // 앞쪽이면 전진, 차 뒤쪽이면 후진(경계에서 덜컹거리지 않게 여유를 둠)
+      const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+      const df = wrap(stick.ang - c.heading), off = Math.abs(df);
+      if (stick.rev ? off < 1.2 : off > 1.95) stick.rev = !stick.rev;
+      if (!stick.rev) { target = clamp(df / 0.55, -1, 1); vt = stick.mag * 4.5; }
+      else { const db = wrap(stick.ang - c.heading - PI); target = -clamp(db / 0.55, -1, 1); vt = -stick.mag * 2.8; }
+    } else {
+      target = keys.left ? -1 : keys.right ? 1 : 0;
+      vt = keys.gas ? 7 : keys.back ? -2.8 : 0;
+    }
+    c.steer += clamp(target - c.steer, -dt * 4, dt * 4);
+    const dv = vt - c.v, a = Math.sign(dv) === Math.sign(c.v) || !c.v ? 3.5 : 7;
+    c.v += clamp(dv, -a * dt, a * dt);
+    if (Math.abs(c.v) < 0.02 && !vt) c.v = 0;
     if (!c.v) return;
     const st = c.steer * 35 * PI / 180;
     const nx = { heading: c.heading + c.v / CAR.wheelbase * Math.tan(st) * dt, x: c.x + Math.cos(c.heading) * c.v * dt, y: c.y + Math.sin(c.heading) * c.v * dt };
@@ -272,7 +293,13 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     }
     if (S.ff && !S.done) { S.ff.t += dt; if (S.ff.t >= S.ff.dur) { S.done = true; settle(); } }
     const cam = camera(w, h);
-    R.drawWorld(ctx, S.lv, cam, { dpr, learn: false, state: {}, parked: S.parked, player: { ...S.car, gear: keys.back ? 'R' : 'D', brakeOn: !keys.gas && !keys.back && Math.abs(S.car.v) > 0.1 }, showDest: S.running, t: now / 1000 });
+    R.drawWorld(ctx, S.lv, cam, { dpr, learn: false, state: {}, parked: S.parked, player: { ...S.car, gear: S.car.v < -0.05 ? 'R' : 'D', brakeOn: Math.abs(S.car.v) > 0.1 && !(stick.on && stick.mag > 0.15) && !keys.gas && !keys.back }, showDest: S.running, t: now / 1000 });
+    if (S.running && stick.on && stick.mag > 0.15) {
+      const sx = (S.car.x - cam.cx) * cam.ppm + cam.w / 2, sy = (S.car.y - cam.cy) * cam.ppm + cam.h / 2, L = 40 + 60 * stick.mag;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.strokeStyle = stick.rev ? 'rgba(255,90,90,.85)' : 'rgba(255,255,255,.8)'; ctx.lineWidth = 4; ctx.setLineDash([8, 6]);
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(stick.ang) * L, sy + Math.sin(stick.ang) * L); ctx.stroke(); ctx.setLineDash([]);
+      if (stick.rev) { ctx.font = '18px "Do Hyeon", sans-serif'; ctx.fillStyle = '#ff8080'; ctx.textAlign = 'center'; ctx.fillText('후진', sx, sy - 26); }
+    }
     if (S.ff) drawFF(cam, dpr, S.ff);
     const t = Math.ceil(Math.abs(S.left));
     $('#timer').textContent = (S.left < 0 ? '+' : '') + `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
@@ -281,7 +308,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   }
   requestAnimationFrame(loop);
   title();
-  window.__spike = { get S() { return S; }, tryPark, keys };
+  window.__spike = { get S() { return S; }, tryPark, keys, stick };
 })();
 </script>
 </body>
