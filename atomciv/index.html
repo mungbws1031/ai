@@ -124,7 +124,14 @@ button:disabled{opacity:.4}
 #app[data-mode=lab] #mission-bar{display:none}
 #map-info{font-size:18px;font-weight:800;margin:4px 0 2px}
 #map-next{color:var(--muted);font-weight:700;margin-bottom:8px}
-#map-svg{display:block;width:100%;max-width:820px;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);margin:0 auto;touch-action:manipulation}
+#map-scroll{overflow:auto;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);-webkit-overflow-scrolling:touch;border-radius:16px}
+#map-svg{display:block;margin:0 auto;touch-action:pan-x pan-y}
+#map-svg .hex.site{cursor:pointer}
+#map-svg .site-glow{animation:siteglow .9s ease-in-out infinite alternate}
+@keyframes siteglow{from{opacity:.6}to{opacity:.95}}
+#place-cancel{white-space:nowrap;flex:none}
+#place-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff6d6;border:2px solid #ff8c42;border-radius:14px;padding:8px 12px;margin:8px 0;font-weight:700}
+#build-wait{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0;font-weight:700}
 #map-svg .map-node{cursor:pointer}
 #map-svg .map-node[data-lit=true] circle{filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 .save-note{font-size:18px;margin:6px 0;word-break:keep-all}
@@ -395,13 +402,13 @@ function judge(group) {
 
 /* ================= SAVE ================= */
 const SAVE_KEY = 'atomciv.v1';
-function defaultState() { return { found: [], missionIdx: 0, muted: false }; }
+function defaultState() { return { found: [], missionIdx: 0, muted: false, placed: {} }; }
 function loadState() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return defaultState();
     const s = JSON.parse(raw);
-    return { ...defaultState(), ...s, found: Array.isArray(s.found) ? s.found : [] };
+    return { ...defaultState(), ...s, found: Array.isArray(s.found) ? s.found : [], placed: cleanPlaced(s.placed) };
   } catch (e) { return defaultState(); }
 }
 // 파일로 저장/불러오기: 다른 기기로 옮기거나 따로 보관할 때
@@ -1452,6 +1459,12 @@ $('#combine-btn').addEventListener('click', () => {
     return;
   }
   const it = ITEMS[out];
+  if (it.build) { // 건물: 지도에서 세울 곳을 고른다
+    queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 건물!' : '또 지었어!', name: it.name, why: it.why,
+      okText: '🗺️ 지도에 세우러 가기', cancel: true, cancelText: '나중에',
+      onClose: () => { afterMake(out); startPlacing(out); }, onCancel: () => afterMake(out) });
+    return;
+  }
   queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 발명!' : '또 만들었어!', name: it.name, why: it.why,
     onClose: () => afterMake(out) });
 });
@@ -1497,6 +1510,7 @@ function nextCard() {
   $('#card-box').classList.toggle('plain', !!cardOpen.plain);
   $('#card-ok').textContent = cardOpen.okText || '좋아!';
   $('#card-cancel').hidden = !cardOpen.cancel;
+  $('#card-cancel').textContent = cardOpen.cancelText || '아니, 그만둘래';
   $('#card').hidden = false;
 }
 $('#card-ok').addEventListener('click', () => {
@@ -1505,7 +1519,7 @@ $('#card-ok').addEventListener('click', () => {
   if (!cardOpen) nextCard(); // onClose가 새 카드를 이미 열었으면 그대로 둔다
 });
 
-$('#card-cancel').addEventListener('click', () => { cardOpen = null; nextCard(); });
+$('#card-cancel').addEventListener('click', () => { const c = cardOpen; cardOpen = null; if (c && c.onCancel) c.onCancel(); if (!cardOpen) nextCard(); });
 
 /* ---- tabs & panel ---- */
 function setTab(t) {
@@ -1542,14 +1556,35 @@ function renderDex(body) {
   dexSection(body, '발명', Object.entries(ITEMS).filter(([, it]) => !it.raw));
   /*DEX_MORE*/
 }
-const TERRAIN_COLOR = { grass: '#a8d977', forest: '#74b45e', hills: '#cdb27c', river: '#86c9ea', sand: '#f0dca0', water: '#5aa9e6', plains: '#d6e39a' };
-const TERRAIN_DECO = { forest: '🌲', hills: '⛰️', water: '', river: '〰️' };
+const TERRAIN_COLOR = { farm: '#e9d46b', grass: '#a8d977', forest: '#74b45e', hills: '#cdb27c', river: '#86c9ea', sand: '#f0dca0', water: '#5aa9e6', plains: '#d6e39a' };
+const TERRAIN_DECO = { farm: '🌾', forest: '🌲', hills: '⛰️', water: '', river: '〰️' };
+let placing = null; // 지금 세우려는 건물 id
+function startPlacing(id) { placing = id; openPanel('map'); }
 function renderMap(body) {
-  const { owned, visible } = territory(state.found);
+  const placed = state.placed || {};
+  const { owned, visible } = territory(state.found, placed);
   const idx = eraIndex(state.found), era = ERAS[idx];
   const left = era.goal.filter(g => !state.found.includes(g)).length;
   body.append(el('div', { id: 'map-info' }, `${era.emoji} ${era.name}, 우리 땅 ${owned.size}칸`));
   body.append(el('div', { id: 'map-next' }, left ? `다음 시대까지 발명 ${left}개 남았어` : '이 시대의 발명을 다 했어! 🎉'));
+  const sites = new Set(placing ? validSites(placing, state.found, placed).map(t => t.join(',')) : []);
+  if (placing) {
+    const bar = el('div', { id: 'place-bar' }, `${ITEMS[placing].emoji} ${ITEMS[placing].name}${topic(ITEMS[placing].name).endsWith('은') ? '을' : '를'} 세울 곳을 눌러 봐! (반짝이는 칸)`);
+    const cancel = el('button', { id: 'place-cancel' }, '나중에');
+    cancel.addEventListener('click', () => { placing = null; openPanel('map'); });
+    bar.append(cancel); body.append(bar);
+  } else {
+    const waiting = Object.keys(ITEMS).filter(k => ITEMS[k].build && state.found.includes(k) && !placed[k]);
+    if (waiting.length) {
+      const box = el('div', { id: 'build-wait' }, '🏗️ 세울 건물: ');
+      for (const id of waiting) {
+        const b = el('button', { class: 'item-chip', 'data-build': id }); b.append(el('span', { class: 'em' }, ITEMS[id].emoji), el('span', { class: 'lbl' }, ITEMS[id].name));
+        b.addEventListener('click', () => startPlacing(id));
+        box.append(b);
+      }
+      body.append(box);
+    }
+  }
   const S = 28, W = Math.sqrt(3) * S;
   const px = (q, r) => [W * (q + r / 2), 1.5 * S * r];
   const corners = (cx, cy) => [0, 1, 2, 3, 4, 5].map(i => {
@@ -1562,12 +1597,12 @@ function renderMap(body) {
   for (let q = -R; q <= R; q++) for (let r = -R; r <= R; r++) {
     if (hexDist([q, r], [0, 0]) > R) continue;
     const key = q + ',' + r, [cx, cy] = px(q, r), cs = corners(cx, cy);
-    const terr = terrainAt(q, r), isOwned = owned.has(key), isFog = !visible.has(key);
-    const g = sv('g', { class: `hex ${terr}${isOwned ? ' owned' : ''}${isFog ? ' fog' : ''}`, 'data-q': q, 'data-r': r });
+    const terr = terrainAt(q, r, placed), isOwned = owned.has(key), isFog = !visible.has(key), isSiteOk = sites.has(key);
+    const g = sv('g', { class: `hex ${terr}${isOwned ? ' owned' : ''}${isFog ? ' fog' : ''}${isSiteOk ? ' site' : ''}`, 'data-q': q, 'data-r': r });
     const pts = cs.map(c => c.join(',')).join(' ');
     g.append(sv('polygon', { points: pts, fill: TERRAIN_COLOR[terr], stroke: 'rgba(0,0,0,.12)', 'stroke-width': 1 }));
     if (isOwned) g.append(sv('polygon', { points: pts, fill: 'rgba(45,91,227,.16)' }));
-    const isSite = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r);
+    const isSite = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r) || Object.values(placed).some(t => t[0] === q && t[1] === r);
     if (!isFog && TERRAIN_DECO[terr] && !isSite && !(q === 0 && r === 0)) {
       const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .75 });
       t.textContent = TERRAIN_DECO[terr]; g.append(t);
@@ -1578,6 +1613,15 @@ function renderMap(body) {
         const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .6 });
         t.textContent = '☁️'; g.append(t);
       }
+    }
+    if (isSiteOk) {
+      g.append(sv('polygon', { class: 'site-glow', points: pts, fill: '#ffd23f', stroke: '#ff8c42', 'stroke-width': 4 }));
+      const pin = sv('text', { x: cx, y: cy + 7, 'text-anchor': 'middle', 'font-size': 20 }); pin.textContent = '👇'; g.append(pin);
+      g.addEventListener('click', () => {
+        state.placed = { ...placed, [placing]: [q, r] }; saveState(state);
+        toast(`${ITEMS[placing].emoji} ${ITEMS[placing].name} 완성! 우리 땅이 넓어졌어`); fanfare();
+        placing = null; openPanel('map');
+      });
     }
     tiles.append(g);
     if (isOwned) cs.forEach((c, i) => { // 영토 경계선: 이웃이 우리 땅이 아니면 그 모서리를 그린다
@@ -1604,8 +1648,23 @@ function renderMap(body) {
     }
     marks.append(g);
   }
+  for (const id in placed) { // 아이가 세운 건물
+    const [q, r] = placed[id], [cx, cy] = px(q, r);
+    const g = sv('g', { class: 'map-node building', 'data-id': id, 'data-lit': 'true' });
+    g.append(sv('rect', { x: cx - 16, y: cy - 16, width: 32, height: 32, rx: 8, fill: '#fff', stroke: '#2d5be3', 'stroke-width': 3 }));
+    const t = sv('text', { x: cx, y: cy + 7, 'text-anchor': 'middle', 'font-size': 20 }); t.textContent = ITEMS[id].emoji; g.append(t);
+    g.addEventListener('click', () => queueCard({ emoji: ITEMS[id].emoji, name: ITEMS[id].name, why: ITEMS[id].why }));
+    marks.append(g);
+  }
+  svg.setAttribute('width', Math.round(vw)); svg.setAttribute('height', Math.round(vh));
   svg.append(tiles, borders, marks);
-  body.append(svg);
+  const scroller = el('div', { id: 'map-scroll' });
+  scroller.append(svg);
+  body.append(scroller);
+  requestAnimationFrame(() => { // 수도가 가운데 오게
+    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+    scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
+  });
 }
 
 /* ---- missions ---- */
@@ -1725,7 +1784,7 @@ function renderVillage(eraId) {
   v.innerHTML = `<rect x="0" y="470" width="1000" height="60" fill="#cfe8a9" opacity=".6"/>
     <path d="M0 470 Q250 400 500 450 T1000 440 V470 H0Z" fill="#b7dc8f" opacity=".5"/>` + VILLAGE[eraId];
 }
-$('#panel-close').addEventListener('click', () => setTab(tab));
+$('#panel-close').addEventListener('click', () => { placing = null; setTab(tab); });
 document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
 $('#clear-btn').addEventListener('click', () => removeAtoms(bench.atoms.map(a => a.id).filter(i => !busy.has(i))));

@@ -714,3 +714,44 @@ test('settings: start over asks first, keeps other sites data, then shows the di
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'easy');
   await ctx.close();
 });
+
+test('build a hut, place it on a glowing map tile, and see it on the map', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'H2O', 'cave_painting'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page, errors } = await fresh(PHONE, init);
+  for (const id of ['wood', 'clay']) { await page.locator(`#drawer [data-item=${id}]`).scrollIntoViewIfNeeded(); await page.click(`#drawer [data-item=${id}]`); }
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /움집/);
+  assert.match(await page.textContent('#card-ok'), /지도/);
+  await page.click('#card-ok');
+  await page.waitForSelector('#panel:not([hidden]) .hex.site');
+  assert.match(await page.textContent('#panel'), /세울 곳/);
+  await page.locator('.hex.site').first().click();
+  const placed = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).placed);
+  assert.ok(Array.isArray(placed.hut), 'hut placed');
+  assert.equal(await page.locator('.map-node[data-id=hut]').count(), 1);
+  assert.equal(await page.locator('.hex.site').count(), 0, 'placing mode ends');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('a building made but not placed waits as a chip on the map', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'H2O', 'farm'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  await page.click('[data-tab=map]');
+  await page.click('#panel [data-build=farm]');
+  assert.ok(await page.locator('.hex.site').count() > 0);
+  await page.locator('.hex.site').first().click();
+  assert.equal(await page.locator('#panel [data-build=farm]').count(), 0);
+  assert.equal(await page.locator('.hex.farm').count(), 1, 'the tile became a farm');
+  await ctx.close();
+});
+
+test('phone: the bigger map scrolls and opens centred on the capital', async () => {
+  const { ctx, page } = await fresh(PHONE);
+  await page.click('[data-tab=map]');
+  const r = await page.evaluate(() => { const s = document.querySelector('#map-scroll'); return { sw: s.scrollWidth, cw: s.clientWidth, sl: s.scrollLeft }; });
+  assert.ok(r.sw > r.cw, 'map is wider than the screen');
+  assert.ok(Math.abs(r.sl - (r.sw - r.cw) / 2) < 30, 'centred');
+  await ctx.close();
+});
