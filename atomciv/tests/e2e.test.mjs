@@ -602,3 +602,58 @@ test('first launch asks for a difficulty; choosing hard is saved', async () => {
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'easy');
   await ctx.close();
 });
+
+const withState = (st) => new Function(`if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', ${JSON.stringify(JSON.stringify(st))});`);
+async function buildCaOH2(page) {
+  for (const s of ['Ca', 'O', 'O', 'H', 'H']) await page.click(`[data-atom=${s}]`);
+  const [ca] = await benchIds(page, 'Ca'); const [o1, o2] = await benchIds(page, 'O'); const [h1, h2] = await benchIds(page, 'H');
+  for (const [x, y] of [[o1, ca], [o2, ca], [h1, o1], [h2, o2]]) await drag(page, `.atom[data-id="${x}"]`, `.atom[data-id="${y}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+}
+
+test('hard mode: reaction molecules built from atoms are not accepted', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true, mode: 'hard' }));
+  await buildCaOH2(page);
+  assert.match(await page.textContent('#card'), /반응/);
+  await page.click('#card-ok');
+  const found = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found);
+  assert.ok(!found.includes('CaH2O2'));
+  assert.equal(await page.locator('#bench .atom').count(), 0, 'atoms cleared');
+  await ctx.close();
+});
+
+test('normal mode: atom-built reaction molecule counts and shows the real reaction', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true, mode: 'normal' }));
+  await buildCaOH2(page);
+  assert.match(await page.textContent('#card-why'), /실제로는/);
+  assert.match(await page.textContent('#card-why'), /CaO \+ H₂O/);
+  await page.click('#card-ok');
+  assert.ok((await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found)).includes('CaH2O2'));
+  await ctx.close();
+});
+
+test('hard mode: no hand dots in the drawer, three hints per mission', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode: 'hard' }), true);
+  assert.ok(await page.locator('[data-atom=H] .hands').isHidden());
+  for (let i = 0; i < 3; i++) await page.click('#hint-btn');
+  assert.ok(await page.locator('#hint-btn').isDisabled());
+  assert.equal(await page.locator('#tip').count() && await page.locator('#tip').isVisible(), false);
+  await ctx.close();
+});
+
+test('easy and normal: the first molecule missions show step-by-step tips', async () => {
+  for (const mode of ['easy', 'normal']) {
+    const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode }), true);
+    assert.ok(await page.locator('#tip').isVisible(), mode);
+    assert.match(await page.textContent('#tip'), /H.*2번/);
+    await ctx.close();
+  }
+});
+
+test('easy mode: hint puts the needed atoms on the bench and shows a finger guide', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode: 'easy' }), true);
+  await page.click('#hint-btn');
+  assert.equal(await page.locator('#bench .atom[data-sym=H]').count(), 2);
+  assert.ok(await page.locator('#guide').isVisible());
+  await ctx.close();
+});

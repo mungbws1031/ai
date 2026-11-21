@@ -74,6 +74,13 @@ button:disabled{opacity:.4}
   border-radius:16px;background:#fff;box-shadow:var(--shadow);font-size:15px;padding:8px;text-align:center}
 .dex-item .em{font-size:36px}
 .dex-item.locked{background:#eee6d6;color:var(--muted);box-shadow:none}
+#tip{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff8dc;border:1.5px solid #f1d27a;border-radius:12px;padding:6px 10px;font-size:14px;font-weight:600;line-height:1.4;word-break:keep-all;pointer-events:none}
+#tip[hidden]{display:none}
+#hint-left{font-size:13px;margin-left:2px}
+#hint-btn:disabled{opacity:.45}
+#guide{position:fixed;z-index:6;font-size:40px;pointer-events:none;transform:translate(-30%,-10%);animation:guide 1.6s ease-in-out infinite}
+#guide[hidden]{display:none}
+@keyframes guide{0%{translate:0 0;opacity:0}15%{opacity:1}70%{translate:var(--dx) var(--dy);opacity:1}100%{translate:var(--dx) var(--dy);opacity:0}}
 #mode-pick{position:fixed;inset:0;z-index:12;display:grid;place-items:center;background:rgba(24,35,61,.55);padding:16px}
 #mode-pick[hidden]{display:none}
 #mode-box{background:#fff;border-radius:24px;padding:22px;max-width:440px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.25)}
@@ -199,7 +206,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <section id="bench-wrap">
       <svg id="village" aria-hidden="true"></svg>
       <svg id="bench" aria-label="실험대"></svg>
-      <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn" aria-label="힌트">💡<span class="t"> 힌트</span></button></div>
+      <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn" aria-label="힌트">💡<span class="t"> 힌트</span><span id="hint-left"></span></button><div id="tip" hidden></div></div>
       <div id="mixer">
         <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><div id="tray-items"></div></div>
         <div id="mix">
@@ -227,6 +234,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <button id="card-ok">좋아!</button>
   </div>
 </div>
+<div id="guide" hidden aria-hidden="true">👆</div>
 <div id="mode-pick" hidden>
   <div id="mode-box" role="dialog" aria-modal="true" aria-labelledby="mode-title">
     <div class="mode-emoji">⚛️</div>
@@ -783,7 +791,7 @@ function renderDrawer() {
     const b = el('button', { class: 'atom-btn', 'data-atom': sym, 'aria-label': `${a.name}, 손 ${a.hands}개` });
     b.style.setProperty('--el', a.color);
     b.append(el('span', { class: 'z' }, String(a.z)), el('span', { class: 'sym' }, sym),
-      el('span', { class: 'nm' }, a.name), el('span', { class: 'hands', 'aria-hidden': 'true' }, a.hands ? '●'.repeat(a.hands) : '○'));
+      el('span', { class: 'nm' }, a.name), el('span', { class: 'hands', 'aria-hidden': 'true', hidden: modeOf(state) === 'hard' ? '' : null }, a.hands ? '●'.repeat(a.hands) : '○'));
     b.addEventListener('click', () => spawnAtom(sym));
     box.append(b);
   }
@@ -820,7 +828,7 @@ function overlaps(x, y, skip) {
 // 실험대 위에 겹쳐 있는 버튼들(그릇·도구·미션) 영역: 원자가 그 밑에 숨지 않게
 function blockedRects() {
   const br = benchSvg.getBoundingClientRect();
-  return ['#bench-tools', '#tray', '#mix', '#mission-bar'].map(sel => document.querySelector(sel))
+  return ['#bench-tools', '#tray', '#mix', '#mission-bar', '#tip'].map(sel => document.querySelector(sel))
     .filter(e => e && e.offsetParent !== null)
     .map(e => { const r = e.getBoundingClientRect();
       const m = R + 30; return { l: r.left - br.left - m, t: r.top - br.top - m, r: r.right - br.left + m, b: r.bottom - br.top + m, bottom: r.top - br.top > br.height / 2 }; });
@@ -884,6 +892,23 @@ function isIonic(b) {
 function chargeOf(sym, bonded) {
   const n = bonded.filter(isIonic).reduce((s, b) => s + b.order, 0);
   return (n > 1 ? n : '') + (METALS[sym] ? '+' : '−');
+}
+// 쉬움: 다음에 붙일 원자를 손가락으로 보여 준다 (손이 적게 남은 원자 → 손이 많이 남은 원자)
+function renderGuide() {
+  const g = $('#guide'), m = currentMission(state.found);
+  const show = modeOf(state) === 'easy' && m && MOLECULES[m.target] && bench.atoms.length > 1;
+  if (!show) { g.hidden = true; return; }
+  const f = freeHands(bench);
+  const free = bench.atoms.filter(a => f[a.id] > 0 && !busy.has(a.id));
+  let pair = null;
+  for (const a of [...free].sort((x, y) => f[x.id] - f[y.id]))
+    for (const b of [...free].sort((x, y) => f[y.id] - f[x.id]))
+      if (!pair && a.id !== b.id && canBond(bench, a.id, b.id)) pair = [a.id, b.id];
+  if (!pair) { g.hidden = true; return; }
+  const r = benchSvg.getBoundingClientRect(), p = pos[pair[0]], q = pos[pair[1]];
+  g.style.left = (r.left + p.x) + 'px'; g.style.top = (r.top + p.y) + 'px';
+  g.style.setProperty('--dx', (q.x - p.x) + 'px'); g.style.setProperty('--dy', (q.y - p.y) + 'px');
+  g.hidden = false;
 }
 function renderBench() {
   benchSvg.textContent = '';
@@ -955,6 +980,7 @@ function renderBench() {
     atomLayer.append(g);
   }
   benchSvg.append(bondLayer, atomLayer);
+  if (typeof state !== 'undefined') renderGuide();
 }
 
 /* ---- drag ---- */
@@ -1038,10 +1064,19 @@ function checkComplete() {
     r.ids.forEach(i => busy.add(i));
     renderBench();
     setTimeout(() => {
+      const mode = modeOf(state), reaction = r.status === 'known' && reactionFor(r.key);
+      if (reaction && mode === 'hard') { // 어려움: 실제 반응 순서를 지켜야 인정
+        beep(220, 0.12);
+        const names = reaction.inputs.map(id => (ITEMS[id] || MOLECULES[id]).name).join(' + ') + (reaction.heat ? ' + 🔥 불' : '');
+        queueCard({ emoji: '🧪', tag: '반응으로 만들어야 해!', name: r.molecule.name, formula: r.molecule.formula,
+          why: `실제로는 원자를 하나씩 붙여서 만들지 않아. 먼저 만든 분자끼리 반응시켜야 해: ${names}. 그릇에 넣고 합쳐 봐!`,
+          onClose: () => removeAtoms(r.ids) });
+        return;
+      }
       const isNew = r.status === 'known' && discover(r.key);
       queueCard(r.status === 'known'
         ? { emoji: r.molecule.emoji, tag: isNew ? '✨ 새 발견!' : '또 만들었어!', name: r.molecule.name,
-            formula: r.molecule.formula, why: r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); dropIntoTray(r.key); } }
+            formula: r.molecule.formula, why: (reaction && mode === 'normal' ? `실제로는 ${REACTION_NOTE[r.key]} 반응으로 만들어! ` : '') + r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); dropIntoTray(r.key); } }
         : { emoji: '🤔', tag: '규칙은 맞지만', name: '아직 이름 모르는 분자!', formula: pretty(r.key),
             why: '모든 손을 다 잡았어! 과학자들은 더 많은 분자를 알고 있단다.', onClose: () => removeAtoms(r.ids) });
       if (isNew) fanfare();
@@ -1303,10 +1338,24 @@ function renderMap(body) {
 }
 
 /* ---- missions ---- */
+const HINT_LIMIT = 3, FIRST_TIPS = ['H2', 'H2O', 'O2'];
+function atomCounts(key) { return [...key.matchAll(/([A-Z][a-z]?)(\d*)/g)].map(([, sym, n]) => [sym, +(n || 1)]); }
+function tipText(key) {
+  const press = atomCounts(key).map(([sym, n]) => `${sym}를 ${n}번`).join(', ');
+  const join = key === 'O2' ? '② O 하나를 끌어서 다른 O에 대고, 한 번 더 대면 손을 두 개 잡아' : '② 원자를 끌어서 다른 원자에 대면 손을 잡아';
+  return `① 서랍에서 ${press} 눌러 ${join} ③ 동그라미 손이 모두 잡히면 완성!`;
+}
 function renderMission() {
-  const m = currentMission(state.found);
+  const m = currentMission(state.found), mode = modeOf(state);
   $('#mission-text').textContent = m ? '🎯 ' + m.text : '🏅 미션을 모두 깼어! 실험실에서 마음껏 실험해 봐';
   $('#hint-btn').hidden = !m;
+  const left = m && mode === 'hard' ? HINT_LIMIT - ((state.hintUsed || {})[m.target] || 0) : null;
+  $('#hint-left').textContent = left === null ? '' : String(left);
+  $('#hint-btn').disabled = left !== null && left <= 0;
+  const tip = $('#tip');
+  tip.hidden = !(m && mode !== 'hard' && FIRST_TIPS.includes(m.target));
+  if (!tip.hidden) tip.textContent = '💡 ' + tipText(m.target);
+  renderGuide();
   const madeAnyInvention = Object.keys(ITEMS).some(k => !ITEMS[k].raw && state.found.includes(k));
   if (m && ITEMS[m.target] && !state.trayIntro && !madeAnyInvention) {
     state.trayIntro = true; saveState(state);
@@ -1315,12 +1364,23 @@ function renderMission() {
   }
 }
 $('#hint-btn').addEventListener('click', () => {
-  const m = currentMission(state.found);
+  const m = currentMission(state.found), mode = modeOf(state);
   if (!m) return;
-  const els = m.hint.map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
+  if (mode === 'hard') {
+    if (((state.hintUsed || {})[m.target] || 0) >= HINT_LIMIT) return;
+    state.hintUsed = { ...(state.hintUsed || {}), [m.target]: ((state.hintUsed || {})[m.target] || 0) + 1 }; saveState(state); renderMission();
+  }
+  if (mode === 'easy' && MOLECULES[m.target]) { // 쉬움: 필요한 원자를 실험대에 올려 준다
+    for (const [sym, n] of atomCounts(m.target)) {
+      const have = bench.atoms.filter(a => a.sym === sym && !busy.has(a.id)).length;
+      for (let i = have; i < n; i++) spawnAtom(sym);
+    }
+    renderGuide();
+  }
+  const els = missionHint(m, mode).map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
     : h === 'heat' ? document.querySelector('#drawer [data-item="fire"]') : document.querySelector(`#drawer [data-item="${h}"]`)).filter(Boolean);
   els.forEach(e => e.classList.add('glow'));
-  toast(hintText(m), 4500);
+  toast(hintText(m, mode), 4500);
   if (els[0]) els[0].scrollIntoView({ block: 'nearest' });
   setTimeout(() => els.forEach(e => e.classList.remove('glow')), 4000);
 });
