@@ -182,7 +182,7 @@ test('save file round-trips and rejects junk', async () => {
 
 test('hex map: every invention has its own tile and territory grows with discoveries', async () => {
   const r = await run(A => {
-    const inv = Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw);
+    const inv = Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw && !A.ITEMS[k].build);
     const keys = inv.map(k => A.MAP_TILES[k] && A.MAP_TILES[k].join(','));
     const t0 = A.territory([]), t1 = A.territory(['fire']);
     const fireKey = A.MAP_TILES.fire.join(',');
@@ -270,7 +270,7 @@ test('modern era: recipes, eras, bigger island', async () => {
   assert.deepEqual(r.eras, ['stone', 'bronze', 'iron', 'industry', 'electric', 'info', 'modern']);
   assert.deepEqual(r.last.goal, ['solar_cell', 'electric_car', 'rocket', 'satellite']);
   assert.deepEqual(r.last.raws, ['aluminum_ore']);
-  assert.equal(r.radius, 6);
+  assert.equal(r.radius, 8);
   assert.equal(r.h2Ingredient, false, 'first-mission molecules should not fall into the bowl');
 });
 
@@ -450,3 +450,74 @@ test('difficulty mode: old saves are normal, files keep the mode', async () => {
   assert.equal(r.old, 'normal'); assert.equal(r.back, 'hard'); assert.equal(A_ok(r.junk), true);
 });
 function A_ok(m) { return m === undefined || m === 'normal'; }
+
+test('every mission can be done in order: ingredients come from earlier missions or unlocked raws', async () => {
+  const bad = await run(A => {
+    const found = [], out = [];
+    for (const m of A.MISSIONS) {
+      const r = A.ITEMS[m.target] ? A.RECIPES.find(x => x.output === m.target) : null;
+      if (r) {
+        const raws = A.ERAS.slice(0, A.eraIndex(found) + 1).flatMap(e => e.raws);
+        for (const id of r.inputs) if (!found.includes(id) && !raws.includes(id)) out.push(`${m.target} needs ${id}`);
+        if (r.heat && !found.includes('fire')) out.push(`${m.target} needs fire`);
+      }
+      found.push(m.target);
+    }
+    return out;
+  });
+  assert.deepEqual(bad, []);
+});
+
+test('content pack: 40 more inventions, each with a mission', async () => {
+  const r = await run(A => ({
+    inventions: Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw).length,
+    missions: A.MISSIONS.length,
+    infoAndLater: A.MISSIONS.map(m => m.target).slice(A.MISSIONS.findIndex(m => m.target === 'silicon')).length,
+    noMission: Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw && !A.MISSIONS.some(m => m.target === k)),
+  }));
+  assert.ok(r.inventions >= 86, `inventions ${r.inventions}`);
+  assert.deepEqual(r.noMission.filter(k => k !== 'steam'), []);
+  assert.ok(r.infoAndLater >= 40, `info+modern missions ${r.infoAndLater}`);
+});
+
+test('buildings: 21 of them, and played in mission order every one has a place to stand', async () => {
+  const r = await run(A => {
+    const builds = Object.keys(A.ITEMS).filter(k => A.ITEMS[k].build);
+    const found = [], placed = {}, stuck = [];
+    for (const m of A.MISSIONS) {
+      found.push(m.target);
+      if (A.ITEMS[m.target] && A.ITEMS[m.target].build) {
+        const sites = A.validSites(m.target, found, placed);
+        if (!sites.length) stuck.push(m.target); else placed[m.target] = sites[0];
+      }
+    }
+    return { n: builds.length, missing: builds.filter(b => !A.MISSIONS.some(m => m.target === b)), stuck,
+      noTile: builds.filter(b => A.MAP_TILES[b]) };
+  });
+  assert.equal(r.n, 21);
+  assert.deepEqual(r.missing, []);
+  assert.deepEqual(r.stuck, []);
+  assert.deepEqual(r.noTile, [], 'buildings have no fixed tile');
+});
+
+test('buildings: a bridge on water extends the border, a farm changes the terrain', async () => {
+  const r = await run(A => {
+    const all = A.MISSIONS.map(m => m.target);
+    const found = all.slice(0, all.indexOf('bridge') + 1); // 다리를 처음 만들었을 때
+    const bridgeSite = A.validSites('bridge', found, {})[0];
+    const before = A.territory(found, {}).owned.size;
+    const after = A.territory(found, { bridge: bridgeSite }).owned.size;
+    const farmSite = A.validSites('farm', found, {})[0];
+    return { bridgeTerrain: A.terrainAt(bridgeSite[0], bridgeSite[1], {}), grew: after > before,
+      farmBefore: A.terrainAt(farmSite[0], farmSite[1], {}), farmAfter: A.terrainAt(farmSite[0], farmSite[1], { farm: farmSite }) };
+  });
+  assert.equal(r.bridgeTerrain, 'water');
+  assert.ok(r.grew, 'territory grows across the water');
+  assert.ok(['grass', 'plains'].includes(r.farmBefore));
+  assert.equal(r.farmAfter, 'farm');
+});
+
+test('buildings: placements survive the save file', async () => {
+  const r = await run(A => A.importSave(A.exportSave({ found: ['hut'], placed: { hut: [2, 2], bogus: [0, 0] } })).placed);
+  assert.deepEqual(r, { hut: [2, 2] });
+});

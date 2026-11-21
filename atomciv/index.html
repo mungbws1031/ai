@@ -102,6 +102,9 @@ button:disabled{opacity:.4}
 #card-why{font-size:18px;line-height:1.5;margin:12px 0 18px;word-break:keep-all}
 #card-why:before{content:"왜 그럴까? ";font-weight:800;color:var(--ok)}
 #card-box.plain #card-why:before{content:none}
+#card-btns,.card-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+#card-cancel{background:#fff;border:2px solid #d6dfea;min-width:120px}
+#reset-btn{background:#fff;border:2px solid var(--coral);color:var(--coral);margin-top:8px}
 #card-ok{background:var(--ok);color:#fff;min-width:140px}
 .item-chip{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:64px;font-size:13px}
 .item-chip .em{font-size:28px;line-height:1.1}
@@ -121,7 +124,14 @@ button:disabled{opacity:.4}
 #app[data-mode=lab] #mission-bar{display:none}
 #map-info{font-size:18px;font-weight:800;margin:4px 0 2px}
 #map-next{color:var(--muted);font-weight:700;margin-bottom:8px}
-#map-svg{display:block;width:100%;max-width:820px;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);margin:0 auto;touch-action:manipulation}
+#map-scroll{overflow:auto;max-height:calc(100vh - 230px);max-height:calc(100dvh - 230px);-webkit-overflow-scrolling:touch;border-radius:16px}
+#map-svg{display:block;margin:0 auto;touch-action:pan-x pan-y}
+#map-svg .hex.site{cursor:pointer}
+#map-svg .site-glow{animation:siteglow .9s ease-in-out infinite alternate}
+@keyframes siteglow{from{opacity:.6}to{opacity:.95}}
+#place-cancel{white-space:nowrap;flex:none}
+#place-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#fff6d6;border:2px solid #ff8c42;border-radius:14px;padding:8px 12px;margin:8px 0;font-weight:700}
+#build-wait{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0;font-weight:700}
 #map-svg .map-node{cursor:pointer}
 #map-svg .map-node[data-lit=true] circle{filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 .save-note{font-size:18px;margin:6px 0;word-break:keep-all}
@@ -231,7 +241,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <div id="card-name"></div>
     <div id="card-formula"></div>
     <div id="card-why"></div>
-    <button id="card-ok">좋아!</button>
+    <div class="card-btns"><button id="card-cancel" hidden>아니, 그만둘래</button><button id="card-ok">좋아!</button></div>
   </div>
 </div>
 <div id="guide" hidden aria-hidden="true">👆</div>
@@ -392,19 +402,19 @@ function judge(group) {
 
 /* ================= SAVE ================= */
 const SAVE_KEY = 'atomciv.v1';
-function defaultState() { return { found: [], missionIdx: 0, muted: false }; }
+function defaultState() { return { found: [], missionIdx: 0, muted: false, placed: {} }; }
 function loadState() {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return defaultState();
     const s = JSON.parse(raw);
-    return { ...defaultState(), ...s, found: Array.isArray(s.found) ? s.found : [] };
+    return { ...defaultState(), ...s, found: Array.isArray(s.found) ? s.found : [], placed: cleanPlaced(s.placed) };
   } catch (e) { return defaultState(); }
 }
 // 파일로 저장/불러오기: 다른 기기로 옮기거나 따로 보관할 때
 function exportSave(s) {
   return JSON.stringify({ app: 'atomciv', version: 1, savedAt: new Date().toISOString(),
-    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0, mode: modeOf(s) } }, null, 1);
+    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0, mode: modeOf(s), placed: s.placed || {} } }, null, 1);
 }
 function importSave(text) {
   let obj;
@@ -413,7 +423,13 @@ function importSave(text) {
   const st = obj.state;
   const found = [...new Set(st.found.filter(k => typeof k === 'string' && (MOLECULES[k] || ITEMS[k])))];
   return { ...defaultState(), found, muted: !!st.muted, trayIntro: !!st.trayIntro,
-    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0, mode: modeOf(st) };
+    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0, mode: modeOf(st), placed: cleanPlaced(st.placed) };
+}
+function cleanPlaced(p) {
+  const out = {};
+  if (p && typeof p === 'object') for (const id in p)
+    if (ITEMS[id] && ITEMS[id].build && Array.isArray(p[id]) && p[id].length === 2 && p[id].every(Number.isInteger)) out[id] = p[id];
+  return out;
 }
 function saveState(s) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { /* 저장 불가: 계속 진행 */ }
@@ -471,6 +487,68 @@ const ITEMS = {
   electric_car: { name: '전기차', emoji: '🚗', why: '기름 대신 전지에 모은 전기로 모터를 돌려서 달려!' },
   wind_turbine: { name: '풍력발전기', emoji: '🌬️', why: '바람이 커다란 날개를 돌리면, 안쪽 발전기가 전기를 만들어!' },
   concrete:   { name: '콘크리트', emoji: '🧱', why: '시멘트가 물과 반응해서 모래를 꽉 붙잡고 돌처럼 굳어!' },
+  // 건물·지형: 아이가 지도에서 칸을 골라 세운다 (site = 세울 수 있는 땅, change = 바뀌는 지형)
+  hut: { name: '움집', emoji: '🛖', build: { site: 'grass' }, why: '나무 기둥을 세우고 점토를 발라 비바람을 막는 첫 집을 지었어!' },
+  farm: { name: '논밭', emoji: '🌾', build: { site: 'grass', change: 'farm' }, why: '풀밭을 갈고 물을 대면 곡식을 길러서 한곳에 모여 살 수 있어!' },
+  dolmen: { name: '고인돌', emoji: '🗿', build: { site: 'hills' }, why: '커다란 돌을 여럿이 힘을 모아 옮겨서 세운 옛 무덤이야!' },
+  city_wall: { name: '성벽', emoji: '🧱', build: { site: 'land' }, why: '점토를 구워 만든 벽돌을 쌓아 마을을 지키는 벽을 세웠어!' },
+  temple: { name: '신전', emoji: '⛩️', build: { site: 'hills' }, why: '청동과 토기로 꾸민 큰 건물에 마을 사람들이 모였어!' },
+  lighthouse: { name: '등대', emoji: '🗼', build: { site: 'coast' }, why: '유리 안에서 불을 밝히면 밤바다의 배들이 길을 찾아!' },
+  bridge: { name: '다리', emoji: '🌉', build: { site: 'water' }, why: '물 위에 다리를 놓으면 건너편 땅까지 갈 수 있어!' },
+  castle: { name: '성', emoji: '🏰', build: { site: 'hills' }, why: '회반죽으로 돌을 붙이고 철문을 달아 튼튼한 성을 지었어!' },
+  dam: { name: '댐', emoji: '🏞️', build: { site: 'river', change: 'lake' }, why: '강을 콘크리트 벽으로 막으면 물이 고여 호수가 돼! 물을 아껴 쓸 수 있어.' },
+  factory: { name: '공장', emoji: '🏗️', build: { site: 'land' }, why: '증기기관이 기계를 돌려서 물건을 한꺼번에 많이 만들어!' },
+  station: { name: '철도역', emoji: '🚉', build: { site: 'land' }, why: '기차가 서는 곳이야. 사람과 물건이 모여서 마을이 커져!' },
+  tunnel: { name: '터널', emoji: '⛰️', build: { site: 'hills' }, why: '산을 뚫어 길을 내면 빙 돌아가지 않아도 돼!' },
+  power_plant: { name: '발전소', emoji: '🏢', build: { site: 'land' }, why: '석탄을 태운 열로 커다란 발전기를 돌려 온 마을에 전기를 보내!' },
+  school: { name: '학교', emoji: '🏫', build: { site: 'land' }, why: '전깃불 아래서 모두 함께 과학을 배우는 곳이야!' },
+  hospital: { name: '병원', emoji: '🏥', build: { site: 'land' }, why: '컴퓨터와 약으로 아픈 사람을 낫게 해 주는 곳이야!' },
+  data_center: { name: '데이터센터', emoji: '🖥️', build: { site: 'land' }, why: '컴퓨터 수천 대가 모여 인터넷의 사진과 글을 보관해!' },
+  apartment: { name: '아파트', emoji: '🏙️', build: { site: 'land' }, why: '엘리베이터가 있어서 높이 쌓아 많은 사람이 함께 살 수 있어!' },
+  airport: { name: '공항', emoji: '🛫', build: { site: 'grass' }, why: '넓고 평평한 땅에 활주로를 깔면 비행기가 뜨고 내려!' },
+  reclaimed: { name: '간척지', emoji: '🏝️', build: { site: 'water', change: 'land' }, why: '바다를 둑으로 막고 모래로 메우면 새 땅이 생겨!' },
+  spaceport: { name: '우주기지', emoji: '🌌', build: { site: 'land' }, why: '로켓을 하늘 높이 쏘아 올리는 발사대야!' },
+  solar_farm: { name: '태양광 발전소', emoji: '🌞', build: { site: 'grass' }, why: '넓은 풀밭에 태양전지를 잔뜩 펼쳐 햇빛으로 전기를 만들어!' },
+  bronze_mirror: { name: '청동거울', emoji: '🪞', why: '청동을 모래로 반짝반짝 문지르면 얼굴이 비치는 거울이 돼!' },
+  match: { name: '성냥', emoji: '🎇', why: '성냥 머리에는 인이 들어 있어서, 긁으면 마찰열로 불이 확 붙어!' },
+  gas_stove: { name: '가스레인지', emoji: '🍳', why: '메테인(도시가스)이 산소와 만나 타면서 파란 불꽃으로 요리를 해!' },
+  welder: { name: '용접기', emoji: '👨‍🏭', why: '아세틸렌은 아주 뜨거운 불꽃을 내서 강철끼리 녹여 붙일 수 있어!' },
+  camping_stove: { name: '캠핑 버너', emoji: '⛺', why: '작은 통에 프로페인 가스를 담아 어디서든 불을 피울 수 있어!' },
+  fireworks: { name: '불꽃놀이', emoji: '🎆', why: '칼륨은 보라색, 칼슘은 주황색 불꽃을 내! 숯이 타면서 색깔 불꽃이 터져.' },
+  deicer: { name: '제설차', emoji: '🚛', why: '염화칼슘을 눈에 뿌리면 물이 잘 얼지 않아서 눈이 녹아!' },
+  tincture: { name: '요오드 소독약', emoji: '🩹', why: '아이오딘을 알코올에 녹이면 상처의 세균을 없애는 갈색 소독약이 돼!' },
+  neon_sign: { name: '네온사인', emoji: '🌃', why: '유리관 속 네온에 전기를 흘리면 빨간 주황빛으로 반짝여!' },
+  fridge: { name: '냉장고', emoji: '🧊', why: '옛날 냉장고는 암모니아가 증발하면서 열을 빼앗아 안을 차갑게 했어!' },
+  telephone: { name: '전화기', emoji: '☎️', why: '목소리 떨림을 자석과 전선이 전기 신호로 바꿔서 멀리 보내!' },
+  electric_fan: { name: '선풍기', emoji: '🌬️', why: '모터가 날개를 빙글빙글 돌려서 시원한 바람을 만들어!' },
+  washing_machine: { name: '세탁기', emoji: '🧺', why: '모터가 통을 돌려서 물과 빨래를 빙글빙글 섞어 줘!' },
+  galvanized: { name: '녹 안 스는 철', emoji: '🛡️', why: '철에 아연 옷을 입히면 아연이 대신 녹슬어서 철을 지켜 줘!' },
+  electric_train: { name: '전철', emoji: '🚇', why: '석탄 대신 전선에서 전기를 받아 모터로 달려! 연기가 안 나.' },
+  elevator: { name: '엘리베이터', emoji: '🛗', why: '모터가 튼튼한 강철 줄을 감아서 사람을 위층으로 올려 줘!' },
+  balloon: { name: '풍선', emoji: '🎈', why: '헬륨은 공기보다 훨씬 가벼워서 풍선이 둥둥 떠올라!' },
+  snack_bag: { name: '과자봉지', emoji: '🍿', why: '봉지에 산소 대신 질소를 넣으면 과자가 눅눅해지거나 부서지지 않아!' },
+  plastic_bag: { name: '비닐봉지', emoji: '🛍️', why: '에틸렌이 줄줄이 손을 잡으면 폴리에틸렌, 비닐봉지가 돼!' },
+  hand_sanitizer: { name: '손소독제', emoji: '🫧', why: '에탄올은 세균의 껍질을 망가뜨려. 그래서 손을 깨끗하게 해 줘!' },
+  toothpaste: { name: '치약', emoji: '🪥', why: '탄산칼슘 가루가 이를 닦고, 플루오린이 이를 튼튼하게 지켜 줘!' },
+  camera: { name: '카메라', emoji: '📷', why: '유리 렌즈가 빛을 모으고 칩이 빛을 숫자로 바꿔서 사진을 저장해!' },
+  tv: { name: '텔레비전', emoji: '📺', why: '전파로 받은 그림 신호를 칩이 풀어서 화면에 보여 줘!' },
+  game_console: { name: '게임기', emoji: '🎮', why: '작은 컴퓨터를 손에 쥘 수 있게 만든 거야. 계산이 엄청 빨라!' },
+  robot: { name: '로봇', emoji: '🤖', why: '컴퓨터가 생각하고 모터가 팔다리를 움직여!' },
+  printer3d: { name: '3D 프린터', emoji: '🖨️', why: '녹인 플라스틱을 한 층씩 쌓아서 무엇이든 만들어!' },
+  first_aid: { name: '구급상자', emoji: '⛑️', why: '과산화수소를 상처에 바르면 거품이 뽀글뽀글 나면서 세균을 없애!' },
+  nylon: { name: '나일론 옷', emoji: '👕', why: '석유와 암모니아로 만든 실이 나일론이야. 질기고 가벼운 옷이 돼!' },
+  antacid: { name: '위장약', emoji: '💊', why: '수산화마그네슘이 배 속 위산을 중화해서 속쓰림을 달래 줘!' },
+  smartwatch: { name: '스마트워치', emoji: '⌚', why: '칩과 작은 전지를 손목에 차면 시계 겸 작은 컴퓨터가 돼!' },
+  protein: { name: '단백질', emoji: '🍗', why: '아미노산이 줄줄이 손을 잡으면 단백질! 우리 근육과 머리카락이 이거야.' },
+  drone: { name: '드론', emoji: '🛸', why: '프로펠러 여러 개를 모터로 돌리고 전파로 조종해!' },
+  airplane: { name: '비행기', emoji: '✈️', why: '가벼운 알루미늄 날개가 공기를 아래로 밀어서 하늘로 떠!' },
+  hydrogen_car: { name: '수소차', emoji: '🚙', why: '수소와 산소가 만나 전기를 만들고, 나오는 건 물뿐이야!' },
+  ai: { name: '인공지능', emoji: '🧠', why: '컴퓨터가 인터넷의 엄청 많은 예시를 보고 스스로 배우는 거야!' },
+  space_station: { name: '우주정거장', emoji: '🧑‍🚀', why: '우주에 떠 있는 집이야. 태양전지로 전기를 만들어!' },
+  gps: { name: '내비게이션', emoji: '🧭', why: '여러 인공위성의 신호가 도착한 시간 차이로 내 위치를 알아내!' },
+  mars_rover: { name: '화성 탐사 로버', emoji: '🪐', why: '로켓이 로봇을 화성까지 데려가면 태양전지로 움직이며 탐험해!' },
+  vr: { name: 'VR 안경', emoji: '🥽', why: '두 눈에 조금 다른 그림을 보여 주면 진짜 같은 3D 세상이 보여!' },
+  smart_home: { name: '스마트홈', emoji: '🏠', why: '휴대폰으로 인터넷을 통해 집 안의 전등을 켜고 끌 수 있어!' },
   cave_painting: { name: '동굴벽화', emoji: '🎨', why: '검은 숯과 하얀 탄산칼슘 가루로 동굴 벽에 그림을 그렸어. 아주 옛날 사람들의 그림이 지금도 남아 있어!' },
   mortar:     { name: '회반죽',   emoji: '🏯', why: '석회수 반죽이 공기 속 이산화탄소를 먹고 다시 탄산칼슘(돌)이 돼서 벽돌을 꽉 붙여!' },
   soda_drink: { name: '탄산음료', emoji: '🍾', why: '유리병에 탄산을 꽉 가두면, 뚜껑을 열 때 이산화탄소 거품이 뽀글뽀글 올라와!' },
@@ -520,6 +598,67 @@ const RECIPES = [
   { inputs: ['rocket', 'solar_cell', 'radio'], heat: false, output: 'satellite' },
   { inputs: ['motor', 'battery', 'plastic'], heat: false, output: 'electric_car' },
   { inputs: ['generator', 'aluminum', 'plastic'], heat: false, output: 'wind_turbine' },
+  { inputs: ['wood', 'clay'], heat: false, output: 'hut' },
+  { inputs: ['stone_axe', 'H2O'], heat: false, output: 'farm' },
+  { inputs: ['flint', 'flint', 'flint'], heat: false, output: 'dolmen' },
+  { inputs: ['clay', 'clay'], heat: true, output: 'city_wall' },
+  { inputs: ['bronze', 'pottery', 'wood'], heat: false, output: 'temple' },
+  { inputs: ['glass', 'iron', 'charcoal'], heat: false, output: 'lighthouse' },
+  { inputs: ['iron', 'wood'], heat: false, output: 'bridge' },
+  { inputs: ['iron', 'mortar'], heat: false, output: 'castle' },
+  { inputs: ['concrete', 'steel'], heat: false, output: 'dam' },
+  { inputs: ['steam_engine', 'steel', 'concrete'], heat: false, output: 'factory' },
+  { inputs: ['train', 'concrete'], heat: false, output: 'station' },
+  { inputs: ['concrete', 'steel', 'coal'], heat: false, output: 'tunnel' },
+  { inputs: ['generator', 'coal', 'concrete'], heat: false, output: 'power_plant' },
+  { inputs: ['concrete', 'glass', 'bulb'], heat: false, output: 'school' },
+  { inputs: ['concrete', 'computer', 'first_aid'], heat: false, output: 'hospital' },
+  { inputs: ['computer', 'internet', 'concrete'], heat: false, output: 'data_center' },
+  { inputs: ['concrete', 'steel', 'elevator'], heat: false, output: 'apartment' },
+  { inputs: ['airplane', 'concrete'], heat: false, output: 'airport' },
+  { inputs: ['O2Si', 'O2Si', 'concrete'], heat: false, output: 'reclaimed' },
+  { inputs: ['rocket', 'concrete', 'computer'], heat: false, output: 'spaceport' },
+  { inputs: ['solar_cell', 'solar_cell', 'aluminum'], heat: false, output: 'solar_farm' },
+  { inputs: ['bronze', 'O2Si'], heat: false, output: 'bronze_mirror' },
+  { inputs: ['P4', 'wood'], heat: false, output: 'match' },
+  { inputs: ['CH4', 'steel'], heat: false, output: 'gas_stove' },
+  { inputs: ['C2H2', 'steel'], heat: false, output: 'welder' },
+  { inputs: ['C3H8', 'steel'], heat: false, output: 'camping_stove' },
+  { inputs: ['ClK', 'CaCl2', 'charcoal'], heat: false, output: 'fireworks' },
+  { inputs: ['CaCl2', 'steel', 'wheel'], heat: false, output: 'deicer' },
+  { inputs: ['I2', 'C2H6O'], heat: false, output: 'tincture' },
+  { inputs: ['Ne', 'glass', 'wire'], heat: false, output: 'neon_sign' },
+  { inputs: ['H3N', 'motor', 'steel'], heat: false, output: 'fridge' },
+  { inputs: ['wire', 'wire', 'lodestone'], heat: false, output: 'telephone' },
+  { inputs: ['motor', 'steel'], heat: false, output: 'electric_fan' },
+  { inputs: ['motor', 'steel', 'H2O'], heat: false, output: 'washing_machine' },
+  { inputs: ['zinc', 'iron'], heat: true, output: 'galvanized' },
+  { inputs: ['motor', 'train', 'wire'], heat: false, output: 'electric_train' },
+  { inputs: ['motor', 'steel', 'wire'], heat: false, output: 'elevator' },
+  { inputs: ['He', 'plastic'], heat: false, output: 'balloon' },
+  { inputs: ['N2', 'plastic'], heat: false, output: 'snack_bag' },
+  { inputs: ['C2H4'], heat: true, output: 'plastic_bag' },
+  { inputs: ['C2H6O', 'plastic'], heat: false, output: 'hand_sanitizer' },
+  { inputs: ['FNa', 'CCaO3', 'plastic'], heat: false, output: 'toothpaste' },
+  { inputs: ['chip', 'glass', 'plastic'], heat: false, output: 'camera' },
+  { inputs: ['radio', 'chip', 'glass'], heat: false, output: 'tv' },
+  { inputs: ['computer', 'plastic', 'battery'], heat: false, output: 'game_console' },
+  { inputs: ['computer', 'motor', 'steel'], heat: false, output: 'robot' },
+  { inputs: ['computer', 'plastic', 'motor'], heat: false, output: 'printer3d' },
+  { inputs: ['H2O2', 'plastic'], heat: false, output: 'first_aid' },
+  { inputs: ['oil', 'H3N'], heat: true, output: 'nylon' },
+  { inputs: ['H2MgO2', 'plastic'], heat: false, output: 'antacid' },
+  { inputs: ['chip', 'battery', 'plastic'], heat: false, output: 'smartwatch' },
+  { inputs: ['C2H5NO2', 'C2H5NO2', 'C2H5NO2'], heat: false, output: 'protein' },
+  { inputs: ['motor', 'radio', 'plastic'], heat: false, output: 'drone' },
+  { inputs: ['aluminum', 'motor', 'computer'], heat: false, output: 'airplane' },
+  { inputs: ['rocket_fuel', 'motor', 'plastic'], heat: false, output: 'hydrogen_car' },
+  { inputs: ['computer', 'internet', 'chip'], heat: false, output: 'ai' },
+  { inputs: ['rocket', 'solar_cell', 'aluminum'], heat: false, output: 'space_station' },
+  { inputs: ['satellite', 'phone'], heat: false, output: 'gps' },
+  { inputs: ['robot', 'rocket', 'solar_cell'], heat: false, output: 'mars_rover' },
+  { inputs: ['computer', 'glass', 'plastic'], heat: false, output: 'vr' },
+  { inputs: ['internet', 'phone', 'bulb'], heat: false, output: 'smart_home' },
   { inputs: ['CCaO3', 'charcoal'], heat: false, output: 'cave_painting' },
   { inputs: ['CaH2O2', 'O2Si', 'H2O'], heat: false, output: 'mortar' },
   { inputs: ['CH2O3', 'glass'], heat: false, output: 'soda_drink' },
@@ -586,9 +725,15 @@ const MISSIONS = [
   { target: 'CaH2O2',    text: '석회수(수산화칼슘)를 만들어 봐! 🥛',     hint: ['Ca', 'O', 'H'] },
   { target: 'CCaO3',     text: '달걀껍데기 성분, 탄산칼슘을 만들어 봐! 🥚', hint: ['Ca', 'C', 'O'] },
   { target: 'cave_painting', text: '탄산칼슘과 숯으로 동굴벽화를 그려 봐! 🎨', hint: ['CCaO3', 'charcoal'] },
+  { target: 'hut', text: '나무와 점토로 움집을 지어 봐! 🛖', hint: ['wood', 'clay'] },
+  { target: 'farm', text: '돌도끼와 물로 논밭을 일궈 봐! 🌾', hint: ['stone_axe', 'H2O'] },
+  { target: 'dolmen', text: '부싯돌 셋으로 고인돌을 세워 봐! 🗿', hint: ['flint'] },
   { target: 'copper',    text: '구리광석에서 구리를 꺼내 봐!',              hint: ['copper_ore', 'charcoal', 'heat'] },
   { target: 'tin',       text: '주석광석에서 주석을 꺼내 봐!',              hint: ['tin_ore', 'charcoal', 'heat'] },
   { target: 'bronze',    text: '단단한 청동을 만들어 봐! 🔔',               hint: ['copper', 'tin', 'heat'] },
+  { target: 'bronze_mirror', text: '청동을 모래로 닦아 거울을 만들어 봐! 🪞', hint: ['bronze', 'O2Si'] },
+  { target: 'city_wall', text: '점토 둘을 구워 성벽을 쌓아 봐! 🧱', hint: ['clay', 'heat'] },
+  { target: 'temple', text: '청동, 토기, 나무로 신전을 지어 봐!', hint: ['bronze', 'pottery', 'wood'] },
   { target: 'iron',      text: '철광석에서 철을 꺼내 봐! ⚙️',               hint: ['iron_ore', 'charcoal', 'heat'] },
   { target: 'glass',     text: '모래로 투명한 유리를 만들어 봐! 🪟',        hint: ['O2Si', 'heat'] },
   { target: 'mortar',    text: '석회수, 모래, 물로 회반죽을 만들어 봐! 🏯', hint: ['CaH2O2', 'O2Si', 'H2O'] },
@@ -596,6 +741,9 @@ const MISSIONS = [
   { target: 'soda_drink', text: '탄산을 유리병에 담아 탄산음료를! 🍾',     hint: ['CH2O3', 'glass'] },
   { target: 'CH4O',      text: '알코올램프 연료, 메탄올을 만들어 봐!',     hint: ['C', 'H', 'O'] },
   { target: 'alcohol_lamp', text: '메탄올을 유리병에 담아 알코올램프를! 🕯️', hint: ['CH4O', 'glass'] },
+  { target: 'lighthouse', text: '바닷가에 등대를 세워 봐! 🗼', hint: ['glass', 'iron', 'charcoal'] },
+  { target: 'bridge', text: '철과 나무로 물 위에 다리를! 🌉', hint: ['iron', 'wood'] },
+  { target: 'castle', text: '철과 회반죽으로 언덕에 성을! 🏰', hint: ['iron', 'mortar'] },
   { target: 'steam',     text: '물을 끓여서 수증기를 만들어 봐! ♨️',        hint: ['H2O', 'heat'] },
   { target: 'steel',     text: '철에 석탄을 섞어 강철을 만들어 봐! 🔩',     hint: ['iron', 'coal', 'heat'] },
   { target: 'steam_engine', text: '강철과 수증기로 증기기관을 만들어 봐!',  hint: ['steel', 'steam'] },
@@ -610,6 +758,24 @@ const MISSIONS = [
   { target: 'CHNaO3',    text: '베이킹소다(탄산수소나트륨)를 만들어 봐!',  hint: ['Na', 'H', 'C', 'O'] },
   { target: 'C2H4O2',    text: '식초의 신맛, 아세트산을 만들어 봐! 🫙',    hint: ['C', 'H', 'O'] },
   { target: 'extinguisher', text: '베이킹소다, 식초, 강철로 소화기를! 🧯',  hint: ['CHNaO3', 'C2H4O2', 'steel'] },
+  { target: 'P4', text: '인 넷이 손을 잡게 해 봐! (인 P₄)', hint: ["P"] },
+  { target: 'match', text: '인과 나무로 성냥을 만들어 봐! 🎇', hint: ['P4', 'wood'] },
+  { target: 'gas_stove', text: '메테인과 강철로 가스레인지를! 🍳', hint: ['CH4', 'steel'] },
+  { target: 'C2H2', text: '아세틸렌(C₂H₂)을 만들어 봐!', hint: ["C", "H"] },
+  { target: 'welder', text: '아세틸렌과 강철로 용접기를! 👨‍🏭', hint: ['C2H2', 'steel'] },
+  { target: 'C3H8', text: '캠핑 가스, 프로페인을 만들어 봐!', hint: ["C", "H"] },
+  { target: 'camping_stove', text: '프로페인과 강철로 캠핑 버너를! ⛺', hint: ['C3H8', 'steel'] },
+  { target: 'ClK', text: '염화칼륨을 만들어 봐! 🧂', hint: ["K", "Cl"] },
+  { target: 'CaCl2', text: '염화칼슘을 만들어 봐! ❄️', hint: ["Ca", "Cl"] },
+  { target: 'fireworks', text: '칼륨·칼슘 소금과 숯으로 불꽃놀이! 🎆', hint: ['ClK', 'CaCl2', 'charcoal'] },
+  { target: 'deicer', text: '염화칼슘을 뿌리는 제설차를! 🚛', hint: ['CaCl2', 'steel', 'wheel'] },
+  { target: 'I2', text: '아이오딘 둘이 손을 잡게 해 봐!', hint: ["I"] },
+  { target: 'C2H6O', text: '에탄올(알코올)을 만들어 봐!', hint: ["C", "H", "O"] },
+  { target: 'tincture', text: '아이오딘을 에탄올에 녹여 소독약을! 🩹', hint: ['I2', 'C2H6O'] },
+  { target: 'dam', text: '콘크리트와 강철로 강에 댐을! 🏞️', hint: ['concrete', 'steel'] },
+  { target: 'factory', text: '증기기관, 강철, 콘크리트로 공장을!', hint: ['steam_engine', 'steel', 'concrete'] },
+  { target: 'station', text: '기차와 콘크리트로 철도역을! 🚉', hint: ['train', 'concrete'] },
+  { target: 'tunnel', text: '콘크리트, 강철, 석탄으로 터널을!', hint: ['concrete', 'steel', 'coal'] },
   { target: 'salt_water', text: '소금과 물로 소금물을 만들어 봐! 🫗',     hint: ['ClNa', 'H2O'] },
   { target: 'zinc',      text: '아연광석에서 아연을 꺼내 봐!',              hint: ['zinc_ore', 'charcoal', 'heat'] },
   { target: 'wire',      text: '구리로 전선을 만들어 봐! 🔌',               hint: ['copper'] },
@@ -622,6 +788,17 @@ const MISSIONS = [
   { target: 'clean_water', text: '차아염소산과 물로 깨끗한 수돗물을! 🚰',  hint: ['ClHO', 'H2O'] },
   { target: 'CH4N2O',    text: '비료 성분, 요소를 만들어 봐! 🌱',          hint: ['C', 'O', 'N', 'H'] },
   { target: 'fertilizer', text: '요소를 물에 녹여 비료를 만들어 봐! 🌾',   hint: ['CH4N2O', 'H2O'] },
+  { target: 'Ne', text: '네온 원자를 꺼내 봐! 🌃', hint: ["Ne"] },
+  { target: 'neon_sign', text: '네온, 유리, 전선으로 네온사인을! 🌃', hint: ['Ne', 'glass', 'wire'] },
+  { target: 'fridge', text: '암모니아, 모터, 강철로 냉장고를! 🧊', hint: ['H3N', 'motor', 'steel'] },
+  { target: 'telephone', text: '전선 둘과 자석으로 전화기를! ☎️', hint: ['wire', 'lodestone'] },
+  { target: 'electric_fan', text: '모터와 강철로 선풍기를! 🌬️', hint: ['motor', 'steel'] },
+  { target: 'washing_machine', text: '모터, 강철, 물로 세탁기를! 🧺', hint: ['motor', 'steel', 'H2O'] },
+  { target: 'galvanized', text: '철에 아연을 입혀 녹을 막아 봐! 🛡️', hint: ['zinc', 'iron', 'heat'] },
+  { target: 'electric_train', text: '모터, 기차, 전선으로 전철을! 🚇', hint: ['motor', 'train', 'wire'] },
+  { target: 'elevator', text: '모터, 강철, 전선으로 엘리베이터를! 🛗', hint: ['motor', 'steel', 'wire'] },
+  { target: 'power_plant', text: '발전기, 석탄, 콘크리트로 발전소를!', hint: ['generator', 'coal', 'concrete'] },
+  { target: 'school', text: '콘크리트, 유리, 전구로 학교를! 🏫', hint: ['concrete', 'glass', 'bulb'] },
   { target: 'silicon',   text: '모래와 석탄을 구워 규소 결정을 만들어 봐! 💠', hint: ['O2Si', 'coal', 'heat'] },
   { target: 'chip',      text: '규소에 전선을 새겨 반도체 칩을! 🔲',         hint: ['silicon', 'wire', 'heat'] },
   { target: 'computer',  text: '칩, 유리, 전지로 컴퓨터를 만들어 봐! 💻',     hint: ['chip', 'glass', 'battery'] },
@@ -629,6 +806,32 @@ const MISSIONS = [
   { target: 'plastic',   text: '석유를 데워 플라스틱을 만들어 봐! 🧴',       hint: ['oil', 'heat'] },
   { target: 'phone',     text: '컴퓨터, 라디오, 플라스틱으로 휴대폰을! 📱',   hint: ['computer', 'radio', 'plastic'] },
   { target: 'internet',  text: '컴퓨터, 라디오, 전선으로 인터넷을! 🌐',       hint: ['computer', 'radio', 'wire'] },
+  { target: 'He', text: '풍선 기체, 헬륨을 꺼내 봐! 🎈', hint: ["He"] },
+  { target: 'balloon', text: '헬륨과 플라스틱으로 풍선을! 🎈', hint: ['He', 'plastic'] },
+  { target: 'N2', text: '질소 둘을 세 손으로 붙여 봐!', hint: ["N"] },
+  { target: 'snack_bag', text: '질소와 플라스틱으로 과자봉지를! 🍿', hint: ['N2', 'plastic'] },
+  { target: 'C2H4', text: '에틸렌(C₂H₄)을 만들어 봐!', hint: ["C", "H"] },
+  { target: 'plastic_bag', text: '에틸렌을 데워 비닐봉지를! 🛍️', hint: ['C2H4', 'heat'] },
+  { target: 'hand_sanitizer', text: '에탄올과 플라스틱으로 손소독제를! 🫧', hint: ['C2H6O', 'plastic'] },
+  { target: 'FNa', text: '플루오린화나트륨을 만들어 봐!', hint: ["Na", "F"] },
+  { target: 'toothpaste', text: '플루오린화나트륨, 탄산칼슘으로 치약! 🪥', hint: ['FNa', 'CCaO3', 'plastic'] },
+  { target: 'camera', text: '칩, 유리, 플라스틱으로 카메라를! 📷', hint: ['chip', 'glass', 'plastic'] },
+  { target: 'tv', text: '라디오, 칩, 유리로 텔레비전을! 📺', hint: ['radio', 'chip', 'glass'] },
+  { target: 'game_console', text: '컴퓨터, 플라스틱, 전지로 게임기를! 🎮', hint: ['computer', 'plastic', 'battery'] },
+  { target: 'robot', text: '컴퓨터, 모터, 강철로 로봇을! 🤖', hint: ['computer', 'motor', 'steel'] },
+  { target: 'printer3d', text: '컴퓨터, 플라스틱, 모터로 3D 프린터! 🖨️', hint: ['computer', 'plastic', 'motor'] },
+  { target: 'H2O2', text: '과산화수소를 만들어 봐! 🫧', hint: ["H", "O"] },
+  { target: 'first_aid', text: '과산화수소와 플라스틱으로 구급상자! ⛑️', hint: ['H2O2', 'plastic'] },
+  { target: 'nylon', text: '석유와 암모니아로 나일론 옷을! 👕', hint: ['oil', 'H3N', 'heat'] },
+  { target: 'MgO', text: '산화마그네슘을 만들어 봐! 🎆', hint: ["Mg", "O"] },
+  { target: 'H2MgO2', text: '수산화마그네슘을 만들어 봐!', hint: ["Mg", "O", "H"] },
+  { target: 'antacid', text: '수산화마그네슘으로 위장약을! 💊', hint: ['H2MgO2', 'plastic'] },
+  { target: 'smartwatch', text: '칩, 전지, 플라스틱으로 스마트워치! ⌚', hint: ['chip', 'battery', 'plastic'] },
+  { target: 'C2H5NO2', text: '아미노산, 글리신을 만들어 봐! 🧬', hint: ["N", "C", "H", "O"] },
+  { target: 'protein', text: '글리신 셋을 이어 단백질을! 🍗', hint: ['C2H5NO2'] },
+  { target: 'hospital', text: '콘크리트, 컴퓨터, 구급상자로 병원을!', hint: ['concrete', 'computer', 'first_aid'] },
+  { target: 'data_center', text: '컴퓨터, 인터넷, 콘크리트로 데이터센터!', hint: ['computer', 'internet', 'concrete'] },
+  { target: 'apartment', text: '콘크리트, 강철, 엘리베이터로 아파트를!', hint: ['concrete', 'steel', 'elevator'] },
   { target: 'solar_cell', text: '규소, 유리, 전선으로 태양전지를! 🔆',       hint: ['silicon', 'glass', 'wire'] },
   { target: 'electric_car', text: '모터, 전지, 플라스틱으로 전기차를! 🚗',   hint: ['motor', 'battery', 'plastic'] },
   { target: 'aluminum',  text: '보크사이트에 전기를 흘려 알루미늄을! 🥫',    hint: ['aluminum_ore', 'generator', 'heat'] },
@@ -636,6 +839,19 @@ const MISSIONS = [
   { target: 'rocket_fuel', text: '물에 전기를 흘려 로켓 연료를 만들어 봐!',  hint: ['H2O', 'generator'] },
   { target: 'rocket',    text: '알루미늄, 연료, 컴퓨터로 로켓을! 🚀',        hint: ['aluminum', 'rocket_fuel', 'computer'] },
   { target: 'satellite', text: '로켓에 태양전지와 라디오를 실어 위성을! 🛰️',  hint: ['rocket', 'solar_cell', 'radio'] },
+  { target: 'drone', text: '모터, 라디오, 플라스틱으로 드론을! 🛸', hint: ['motor', 'radio', 'plastic'] },
+  { target: 'airplane', text: '알루미늄, 모터, 컴퓨터로 비행기를! ✈️', hint: ['aluminum', 'motor', 'computer'] },
+  { target: 'hydrogen_car', text: '로켓 연료, 모터, 플라스틱으로 수소차! 🚙', hint: ['rocket_fuel', 'motor', 'plastic'] },
+  { target: 'ai', text: '컴퓨터, 인터넷, 칩으로 인공지능을! 🧠', hint: ['computer', 'internet', 'chip'] },
+  { target: 'space_station', text: '로켓, 태양전지, 알루미늄으로 우주정거장!', hint: ['rocket', 'solar_cell', 'aluminum'] },
+  { target: 'gps', text: '인공위성과 휴대폰으로 내비게이션을! 🧭', hint: ['satellite', 'phone'] },
+  { target: 'mars_rover', text: '로봇, 로켓, 태양전지로 화성 탐사! 🪐', hint: ['robot', 'rocket', 'solar_cell'] },
+  { target: 'vr', text: '컴퓨터, 유리, 플라스틱으로 VR 안경! 🥽', hint: ['computer', 'glass', 'plastic'] },
+  { target: 'smart_home', text: '인터넷, 휴대폰, 전구로 스마트홈을! 🏠', hint: ['internet', 'phone', 'bulb'] },
+  { target: 'airport', text: '비행기와 콘크리트로 공항을! 🛫', hint: ['airplane', 'concrete'] },
+  { target: 'reclaimed', text: '모래 둘과 콘크리트로 바다를 땅으로!', hint: ['O2Si', 'concrete'] },
+  { target: 'spaceport', text: '로켓, 콘크리트, 컴퓨터로 우주기지를!', hint: ['rocket', 'concrete', 'computer'] },
+  { target: 'solar_farm', text: '태양전지 둘과 알루미늄으로 태양광 발전소!', hint: ['solar_cell', 'aluminum'] },
 ];
 // 힌트 문장: 미션에 필요한 재료를 글로 알려 준다
 // 반응식 (부산물 포함) — 카드에 보여 준다
@@ -669,7 +885,7 @@ function hintText(m, mode = 'normal') {
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
 /* ---- 영토 지도 (육각 타일, axial 좌표 q,r) ---- */
-const MAP_RADIUS = 6; // 6번째 고리는 바다
+const MAP_RADIUS = 8; // 8번째 고리는 바다
 // 발명품이 세워질 타일과 그 땅의 지형
 const MAP_TILES = {
   fire: [2, -1], stone_axe: [-2, 1], charcoal: [-1, -1], pottery: [1, 1],
@@ -681,6 +897,7 @@ const MAP_TILES = {
   solar_cell: [5, -3], aluminum: [5, -1], rocket_fuel: [3, 2], rocket: [0, 5], satellite: [-5, 1], electric_car: [-2, 5], wind_turbine: [5, -5],
   cave_painting: [-2, 2], mortar: [-2, 0], soda_drink: [1, 2], alcohol_lamp: [-1, 2],
   lighter: [0, -3], extinguisher: [-1, -2], clean_water: [2, 0], fertilizer: [4, 1],
+  bronze_mirror: [-6, 6], match: [-4, 6], gas_stove: [-2, 6], welder: [0, 6], camping_stove: [2, 4], fireworks: [4, 2], deicer: [6, 0], tincture: [6, -2], neon_sign: [6, -4], fridge: [6, -6], telephone: [4, -6], electric_fan: [2, -6], washing_machine: [0, -6], galvanized: [-2, -4], electric_train: [-4, -2], elevator: [-6, 0], balloon: [-6, 2], snack_bag: [-6, 4], plastic_bag: [-7, 7], hand_sanitizer: [-5, 7], toothpaste: [-3, 7], camera: [-1, 7], tv: [1, 6], game_console: [3, 4], robot: [5, 2], printer3d: [7, 0], first_aid: [7, -2], nylon: [7, -4], antacid: [7, -6], smartwatch: [6, -7], protein: [4, -7], drone: [2, -7], airplane: [0, -7], hydrogen_car: [-2, -5], ai: [-4, -3], space_station: [-6, -1], gps: [-7, 1], mars_rover: [-7, 3], vr: [-7, 5], smart_home: [-6, 7],
 };
 const TILE_TERRAIN = {
   fire: 'grass', stone_axe: 'forest', charcoal: 'forest', pottery: 'river', copper: 'river', tin: 'hills',
@@ -691,6 +908,7 @@ const TILE_TERRAIN = {
   solar_cell: 'plains', aluminum: 'hills', rocket_fuel: 'river', rocket: 'sand', satellite: 'plains', electric_car: 'plains', wind_turbine: 'grass',
   cave_painting: 'hills', mortar: 'plains', soda_drink: 'plains', alcohol_lamp: 'plains',
   lighter: 'plains', extinguisher: 'plains', clean_water: 'river', fertilizer: 'grass',
+  bronze_mirror: 'plains', match: 'hills', gas_stove: 'grass', welder: 'plains', camping_stove: 'river', fireworks: 'sand', deicer: 'plains', tincture: 'forest', neon_sign: 'plains', fridge: 'hills', telephone: 'grass', electric_fan: 'plains', washing_machine: 'river', galvanized: 'sand', electric_train: 'plains', elevator: 'forest', balloon: 'plains', snack_bag: 'hills', plastic_bag: 'grass', hand_sanitizer: 'plains', toothpaste: 'river', camera: 'sand', tv: 'plains', game_console: 'forest', robot: 'plains', printer3d: 'hills', first_aid: 'grass', nylon: 'plains', antacid: 'river', smartwatch: 'sand', protein: 'plains', drone: 'forest', airplane: 'plains', hydrogen_car: 'hills', ai: 'grass', space_station: 'plains', gps: 'river', mars_rover: 'sand', vr: 'plains', smart_home: 'forest',
 };
 const HEX_DIRS = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]]; // 모서리 0~5 순서와 맞춘 이웃 방향
 function hexDist(a, b) {
@@ -698,11 +916,12 @@ function hexDist(a, b) {
   return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(dq + dr));
 }
 function hexNeighbors([q, r]) { return HEX_DIRS.map(([dq, dr]) => [q + dq, r + dr]); }
-function territory(found) {
+function territory(found, placed = {}) {
   const owned = new Set(), visible = new Set();
   const claim = c => [c, ...hexNeighbors(c)].forEach(t => { if (hexDist(t, [0, 0]) <= MAP_RADIUS) owned.add(t.join(',')); });
   claim([0, 0]); // 수도
   for (const id of found) if (MAP_TILES[id]) claim(MAP_TILES[id]);
+  for (const id in placed) claim(placed[id]); // 아이가 세운 건물도 영토를 넓힌다
   for (const k of owned) {
     const c = k.split(',').map(Number);
     visible.add(k);
@@ -710,9 +929,24 @@ function territory(found) {
   }
   return { owned, visible };
 }
-function terrainAt(q, r) {
+function terrainAt(q, r, placed = {}) {
+  const at = (id) => placed[id] && placed[id][0] === q && placed[id][1] === r;
+  for (const id in placed) {
+    const ch = ITEMS[id] && ITEMS[id].build && ITEMS[id].build.change;
+    if (at(id) && ch === 'farm') return 'farm';
+    if (at(id) && ch === 'land') return 'plains';
+  }
+  const base = baseTerrain(q, r);
+  if ((base === 'grass' || base === 'plains') && Object.keys(placed).some(id => ITEMS[id] && ITEMS[id].build && ITEMS[id].build.change === 'lake'
+    && hexDist(placed[id], [q, r]) === 1)) return 'water'; // 댐 옆은 호수
+  return base;
+}
+// 수도 가까이에 꼭 있는 호수와 강 (다리·등대·댐을 세울 자리)
+const FIXED_TERRAIN = { '2,-3': 'hills', '-3,3': 'hills', '3,-3': 'water', '4,-3': 'water', '3,-4': 'water', '1,-2': 'river', '-1,-3': 'river', '-4,0': 'river' };
+function baseTerrain(q, r) {
   const d = hexDist([q, r], [0, 0]);
   if (d >= MAP_RADIUS) return 'water';
+  if (FIXED_TERRAIN[q + ',' + r]) return FIXED_TERRAIN[q + ',' + r];
   for (const id in MAP_TILES) if (MAP_TILES[id][0] === q && MAP_TILES[id][1] === r) return TILE_TERRAIN[id];
   if (d <= 1) return 'grass';
   const h = (((q + 11) * 73856093) ^ ((r + 7) * 19349663)) >>> 0;
@@ -720,13 +954,41 @@ function terrainAt(q, r) {
   if (v < 22) return 'forest';
   if (v < 34) return 'hills';
   if (v < 40 && d >= 3) return 'water';
+  if (v < 47 && d >= 2) return 'river';
   return 'grass';
 }
 
+// 건물을 세울 수 있는 칸 (가까운 곳부터). 맞는 지형이 없으면 빈 우리 땅 아무 데나 허용해서 막히지 않게 한다
+function validSites(id, found, placed = {}) {
+  const site = ITEMS[id] && ITEMS[id].build && ITEMS[id].build.site;
+  if (!site) return [];
+  const others = { ...placed }; delete others[id];
+  const { owned } = territory(found, others);
+  const taken = new Set(['0,0', ...Object.values(MAP_TILES).map(t => t.join(',')), ...Object.values(others).map(t => t.join(','))]);
+  const ok = [], anyLand = [];
+  for (let q = -MAP_RADIUS; q <= MAP_RADIUS; q++) for (let r = -MAP_RADIUS; r <= MAP_RADIUS; r++) {
+    const k = q + ',' + r;
+    if (hexDist([q, r], [0, 0]) > MAP_RADIUS || taken.has(k)) continue;
+    const terr = terrainAt(q, r, others), land = terr !== 'water', mine = owned.has(k);
+    const nb = hexNeighbors([q, r]);
+    const touchesMine = mine || nb.some(t => owned.has(t.join(',')));
+    if (land && mine) anyLand.push([q, r]);
+    const fits = site === 'land' ? land && mine
+      : site === 'grass' ? (terr === 'grass' || terr === 'plains') && mine
+      : site === 'hills' ? terr === 'hills' && mine
+      : site === 'river' ? terr === 'river' && mine
+      : site === 'water' ? !land && touchesMine && hexDist([q, r], [0, 0]) < MAP_RADIUS
+      : site === 'coast' ? land && mine && nb.some(t => terrainAt(t[0], t[1], others) === 'water')
+      : false;
+    if (fits) ok.push([q, r]);
+  }
+  const byDist = (a, b) => hexDist(a, [0, 0]) - hexDist(b, [0, 0]) || a[0] - b[0] || a[1] - b[1];
+  return (ok.length ? ok : anyLand).sort(byDist);
+}
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { modeOf, missionHint, REACTION_NOTE,  ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
+window.AtomCiv = { validSites, terrainAt, modeOf, missionHint, REACTION_NOTE,  ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -1197,6 +1459,12 @@ $('#combine-btn').addEventListener('click', () => {
     return;
   }
   const it = ITEMS[out];
+  if (it.build) { // 건물: 지도에서 세울 곳을 고른다
+    queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 건물!' : '또 지었어!', name: it.name, why: it.why,
+      okText: '🗺️ 지도에 세우러 가기', cancel: true, cancelText: '나중에',
+      onClose: () => { afterMake(out); startPlacing(out); }, onCancel: () => afterMake(out) });
+    return;
+  }
   queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 발명!' : '또 만들었어!', name: it.name, why: it.why,
     onClose: () => afterMake(out) });
 });
@@ -1240,6 +1508,9 @@ function nextCard() {
   $('#card-formula').textContent = cardOpen.formula || '';
   $('#card-why').textContent = cardOpen.why;
   $('#card-box').classList.toggle('plain', !!cardOpen.plain);
+  $('#card-ok').textContent = cardOpen.okText || '좋아!';
+  $('#card-cancel').hidden = !cardOpen.cancel;
+  $('#card-cancel').textContent = cardOpen.cancelText || '아니, 그만둘래';
   $('#card').hidden = false;
 }
 $('#card-ok').addEventListener('click', () => {
@@ -1247,6 +1518,8 @@ $('#card-ok').addEventListener('click', () => {
   if (c && c.onClose) c.onClose();
   if (!cardOpen) nextCard(); // onClose가 새 카드를 이미 열었으면 그대로 둔다
 });
+
+$('#card-cancel').addEventListener('click', () => { const c = cardOpen; cardOpen = null; if (c && c.onCancel) c.onCancel(); if (!cardOpen) nextCard(); });
 
 /* ---- tabs & panel ---- */
 function setTab(t) {
@@ -1283,14 +1556,35 @@ function renderDex(body) {
   dexSection(body, '발명', Object.entries(ITEMS).filter(([, it]) => !it.raw));
   /*DEX_MORE*/
 }
-const TERRAIN_COLOR = { grass: '#a8d977', forest: '#74b45e', hills: '#cdb27c', river: '#86c9ea', sand: '#f0dca0', water: '#5aa9e6', plains: '#d6e39a' };
-const TERRAIN_DECO = { forest: '🌲', hills: '⛰️', water: '', river: '〰️' };
+const TERRAIN_COLOR = { farm: '#e9d46b', grass: '#a8d977', forest: '#74b45e', hills: '#cdb27c', river: '#86c9ea', sand: '#f0dca0', water: '#5aa9e6', plains: '#d6e39a' };
+const TERRAIN_DECO = { farm: '🌾', forest: '🌲', hills: '⛰️', water: '', river: '〰️' };
+let placing = null; // 지금 세우려는 건물 id
+function startPlacing(id) { placing = id; openPanel('map'); }
 function renderMap(body) {
-  const { owned, visible } = territory(state.found);
+  const placed = state.placed || {};
+  const { owned, visible } = territory(state.found, placed);
   const idx = eraIndex(state.found), era = ERAS[idx];
   const left = era.goal.filter(g => !state.found.includes(g)).length;
   body.append(el('div', { id: 'map-info' }, `${era.emoji} ${era.name}, 우리 땅 ${owned.size}칸`));
   body.append(el('div', { id: 'map-next' }, left ? `다음 시대까지 발명 ${left}개 남았어` : '이 시대의 발명을 다 했어! 🎉'));
+  const sites = new Set(placing ? validSites(placing, state.found, placed).map(t => t.join(',')) : []);
+  if (placing) {
+    const bar = el('div', { id: 'place-bar' }, `${ITEMS[placing].emoji} ${ITEMS[placing].name}${topic(ITEMS[placing].name).endsWith('은') ? '을' : '를'} 세울 곳을 눌러 봐! (반짝이는 칸)`);
+    const cancel = el('button', { id: 'place-cancel' }, '나중에');
+    cancel.addEventListener('click', () => { placing = null; openPanel('map'); });
+    bar.append(cancel); body.append(bar);
+  } else {
+    const waiting = Object.keys(ITEMS).filter(k => ITEMS[k].build && state.found.includes(k) && !placed[k]);
+    if (waiting.length) {
+      const box = el('div', { id: 'build-wait' }, '🏗️ 세울 건물: ');
+      for (const id of waiting) {
+        const b = el('button', { class: 'item-chip', 'data-build': id }); b.append(el('span', { class: 'em' }, ITEMS[id].emoji), el('span', { class: 'lbl' }, ITEMS[id].name));
+        b.addEventListener('click', () => startPlacing(id));
+        box.append(b);
+      }
+      body.append(box);
+    }
+  }
   const S = 28, W = Math.sqrt(3) * S;
   const px = (q, r) => [W * (q + r / 2), 1.5 * S * r];
   const corners = (cx, cy) => [0, 1, 2, 3, 4, 5].map(i => {
@@ -1303,12 +1597,12 @@ function renderMap(body) {
   for (let q = -R; q <= R; q++) for (let r = -R; r <= R; r++) {
     if (hexDist([q, r], [0, 0]) > R) continue;
     const key = q + ',' + r, [cx, cy] = px(q, r), cs = corners(cx, cy);
-    const terr = terrainAt(q, r), isOwned = owned.has(key), isFog = !visible.has(key);
-    const g = sv('g', { class: `hex ${terr}${isOwned ? ' owned' : ''}${isFog ? ' fog' : ''}`, 'data-q': q, 'data-r': r });
+    const terr = terrainAt(q, r, placed), isOwned = owned.has(key), isFog = !visible.has(key), isSiteOk = sites.has(key);
+    const g = sv('g', { class: `hex ${terr}${isOwned ? ' owned' : ''}${isFog ? ' fog' : ''}${isSiteOk ? ' site' : ''}`, 'data-q': q, 'data-r': r });
     const pts = cs.map(c => c.join(',')).join(' ');
     g.append(sv('polygon', { points: pts, fill: TERRAIN_COLOR[terr], stroke: 'rgba(0,0,0,.12)', 'stroke-width': 1 }));
     if (isOwned) g.append(sv('polygon', { points: pts, fill: 'rgba(45,91,227,.16)' }));
-    const isSite = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r);
+    const isSite = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r) || Object.values(placed).some(t => t[0] === q && t[1] === r);
     if (!isFog && TERRAIN_DECO[terr] && !isSite && !(q === 0 && r === 0)) {
       const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .75 });
       t.textContent = TERRAIN_DECO[terr]; g.append(t);
@@ -1319,6 +1613,15 @@ function renderMap(body) {
         const t = sv('text', { x: cx, y: cy + 6, 'text-anchor': 'middle', 'font-size': 16, opacity: .6 });
         t.textContent = '☁️'; g.append(t);
       }
+    }
+    if (isSiteOk) {
+      g.append(sv('polygon', { class: 'site-glow', points: pts, fill: '#ffd23f', stroke: '#ff8c42', 'stroke-width': 4 }));
+      const pin = sv('text', { x: cx, y: cy + 7, 'text-anchor': 'middle', 'font-size': 20 }); pin.textContent = '👇'; g.append(pin);
+      g.addEventListener('click', () => {
+        state.placed = { ...placed, [placing]: [q, r] }; saveState(state);
+        toast(`${ITEMS[placing].emoji} ${ITEMS[placing].name} 완성! 우리 땅이 넓어졌어`); fanfare();
+        placing = null; openPanel('map');
+      });
     }
     tiles.append(g);
     if (isOwned) cs.forEach((c, i) => { // 영토 경계선: 이웃이 우리 땅이 아니면 그 모서리를 그린다
@@ -1345,8 +1648,23 @@ function renderMap(body) {
     }
     marks.append(g);
   }
+  for (const id in placed) { // 아이가 세운 건물
+    const [q, r] = placed[id], [cx, cy] = px(q, r);
+    const g = sv('g', { class: 'map-node building', 'data-id': id, 'data-lit': 'true' });
+    g.append(sv('rect', { x: cx - 16, y: cy - 16, width: 32, height: 32, rx: 8, fill: '#fff', stroke: '#2d5be3', 'stroke-width': 3 }));
+    const t = sv('text', { x: cx, y: cy + 7, 'text-anchor': 'middle', 'font-size': 20 }); t.textContent = ITEMS[id].emoji; g.append(t);
+    g.addEventListener('click', () => queueCard({ emoji: ITEMS[id].emoji, name: ITEMS[id].name, why: ITEMS[id].why }));
+    marks.append(g);
+  }
+  svg.setAttribute('width', Math.round(vw)); svg.setAttribute('height', Math.round(vh));
   svg.append(tiles, borders, marks);
-  body.append(svg);
+  const scroller = el('div', { id: 'map-scroll' });
+  scroller.append(svg);
+  body.append(scroller);
+  requestAnimationFrame(() => { // 수도가 가운데 오게
+    scroller.scrollLeft = (scroller.scrollWidth - scroller.clientWidth) / 2;
+    scroller.scrollTop = (scroller.scrollHeight - scroller.clientHeight) / 2;
+  });
 }
 
 /* ---- missions ---- */
@@ -1466,7 +1784,7 @@ function renderVillage(eraId) {
   v.innerHTML = `<rect x="0" y="470" width="1000" height="60" fill="#cfe8a9" opacity=".6"/>
     <path d="M0 470 Q250 400 500 450 T1000 440 V470 H0Z" fill="#b7dc8f" opacity=".5"/>` + VILLAGE[eraId];
 }
-$('#panel-close').addEventListener('click', () => setTab(tab));
+$('#panel-close').addEventListener('click', () => { placing = null; setTab(tab); });
 document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
 $('#clear-btn').addEventListener('click', () => removeAtoms(bench.atoms.map(a => a.id).filter(i => !busy.has(i))));
@@ -1490,6 +1808,24 @@ function renderSave(body) {
   input.addEventListener('change', () => { const f = input.files && input.files[0]; if (f) loadSaveFile(f); input.value = ''; });
   row.append(saveBtn, loadLbl, input);
   body.append(row);
+  body.append(el('h3', {}, '🔄 처음부터 다시하기'));
+  body.append(el('p', { class: 'save-note' }, '만든 것을 모두 지우고 난이도 고르기부터 다시 시작해.'));
+  const reset = el('button', { id: 'reset-btn' }, '🔄 처음부터 다시하기');
+  reset.addEventListener('click', () => queueCard({ plain: true, emoji: '🔄', tag: '처음부터 다시하기', name: '정말 처음부터 할까?',
+    why: `지금까지 만든 ${state.found.length}개가 모두 사라져! 남기고 싶으면 먼저 💾 파일로 저장해 둬.`,
+    okText: '응, 지울래', cancel: true, onClose: resetGame }));
+  body.append(reset);
+}
+// 이 게임의 저장만 지우고 첫 화면으로 (같은 주소의 다른 앱 저장은 건드리지 않는다)
+function resetGame() {
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장 막힘 */ }
+  state = defaultState();
+  tray = []; shownEra = null;
+  removeAtoms(bench.atoms.map(a => a.id));
+  $('#panel').hidden = true;
+  renderDrawer(); renderTray(); checkEra(); renderMute();
+  setTab(START_TAB());
+  showModePick();
 }
 function downloadSave() {
   const blob = new Blob([exportSave(state)], { type: 'application/json' });
