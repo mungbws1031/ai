@@ -17,7 +17,7 @@ async function goMore(page, viewId) {
 async function addOilTteokbokki(page) {
   await page.click('.nav button[data-view="sense"]');
   await page.click(".scard:has-text('기름떡볶이맛')");
-  await page.click("text=살 재료 담기");
+  await page.click("text=살 재료 · 만드는 법");
   await page.click("#dishSheet .dish-opt >> nth=0");
   await page.click('#dishSheet [data-serv="2"]');
   await page.click("#dishSheet .dish-add");

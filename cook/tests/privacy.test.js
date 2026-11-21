@@ -52,7 +52,7 @@ test("저장 탭 하단에 개인정보처리방침 링크가 있다", async () 
 test("서비스워커 캐시에 privacy.html이 들어가고 버전이 올라갔다", () => {
   const sw = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
   assert.ok(sw.includes('"./privacy.html"'));
-  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v11"'));
+  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v12"'));
 });
 
 test("개인정보처리방침의 돌아가기는 저장한 배합 화면으로 복귀", async () => {

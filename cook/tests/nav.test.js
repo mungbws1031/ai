@@ -61,7 +61,7 @@ test("goSauce 뒤 더보기 탭 강조", () => withApp({}, async page => {
 test("빈 장바구니 배지 숨김 / 담으면 숫자", () => withApp({}, async page => {
   assert.strictEqual(await page.locator("#cartCount").isVisible(), false);
   await page.click(".scard:has-text('기름떡볶이맛')");
-  await page.click("text=살 재료 담기");
+  await page.click("text=살 재료 · 만드는 법");
   await page.click("#dishSheet .dish-opt >> nth=0");
   await page.click("#dishSheet .dish-add");
   assert.ok(await page.locator("#cartCount").isVisible());
