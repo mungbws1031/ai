@@ -450,3 +450,32 @@ test('difficulty mode: old saves are normal, files keep the mode', async () => {
   assert.equal(r.old, 'normal'); assert.equal(r.back, 'hard'); assert.equal(A_ok(r.junk), true);
 });
 function A_ok(m) { return m === undefined || m === 'normal'; }
+
+test('every mission can be done in order: ingredients come from earlier missions or unlocked raws', async () => {
+  const bad = await run(A => {
+    const found = [], out = [];
+    for (const m of A.MISSIONS) {
+      const r = A.ITEMS[m.target] ? A.RECIPES.find(x => x.output === m.target) : null;
+      if (r) {
+        const raws = A.ERAS.slice(0, A.eraIndex(found) + 1).flatMap(e => e.raws);
+        for (const id of r.inputs) if (!found.includes(id) && !raws.includes(id)) out.push(`${m.target} needs ${id}`);
+        if (r.heat && !found.includes('fire')) out.push(`${m.target} needs fire`);
+      }
+      found.push(m.target);
+    }
+    return out;
+  });
+  assert.deepEqual(bad, []);
+});
+
+test('content pack: 40 more inventions, each with a mission', async () => {
+  const r = await run(A => ({
+    inventions: Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw).length,
+    missions: A.MISSIONS.length,
+    infoAndLater: A.MISSIONS.map(m => m.target).slice(A.MISSIONS.findIndex(m => m.target === 'silicon')).length,
+    noMission: Object.keys(A.ITEMS).filter(k => !A.ITEMS[k].raw && !A.MISSIONS.some(m => m.target === k)),
+  }));
+  assert.ok(r.inventions >= 86, `inventions ${r.inventions}`);
+  assert.deepEqual(r.noMission.filter(k => k !== 'steam'), []);
+  assert.ok(r.infoAndLater >= 40, `info+modern missions ${r.infoAndLater}`);
+});
