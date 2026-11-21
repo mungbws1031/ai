@@ -394,3 +394,26 @@ test('more everyday molecules are recognised', async () => {
     assert.match(r[0].name, new RegExp(name), name);
   }
 });
+
+test('new molecules feed real inventions, each taught right before', async () => {
+  const r = await run(A => ({
+    cave: A.matchRecipe(['CCaO3', 'charcoal'], false),
+    mortar: A.matchRecipe(['CaH2O2', 'O2Si', 'H2O'], false),
+    soda: A.matchRecipe(['CH2O3', 'glass'], false),
+    lamp: A.matchRecipe(['CH4O', 'glass'], false),
+    lighter: A.matchRecipe(['C4H10', 'steel', 'flint'], false),
+    ext: A.matchRecipe(['CHNaO3', 'C2H4O2', 'steel'], false),
+    water: A.matchRecipe(['ClHO', 'H2O'], false),
+    fert: A.matchRecipe(['CH4N2O', 'H2O'], false),
+    missions: A.MISSIONS.map(m => m.target),
+  }));
+  const pairs = { cave_painting: ['CCaO3'], mortar: ['CaH2O2'], soda_drink: ['CH2O3'], alcohol_lamp: ['CH4O'],
+    lighter: ['C4H10'], extinguisher: ['CHNaO3', 'C2H4O2'], clean_water: ['ClHO'], fertilizer: ['CH4N2O'] };
+  assert.deepEqual([r.cave, r.mortar, r.soda, r.lamp, r.lighter, r.ext, r.water, r.fert],
+    ['cave_painting', 'mortar', 'soda_drink', 'alcohol_lamp', 'lighter', 'extinguisher', 'clean_water', 'fertilizer']);
+  for (const [item, mols] of Object.entries(pairs)) {
+    const i = r.missions.indexOf(item);
+    assert.ok(i > 0, item);
+    for (const m of mols) { const j = r.missions.indexOf(m); assert.ok(j >= 0 && j < i, `${m} before ${item}`); }
+  }
+});
