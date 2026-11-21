@@ -195,7 +195,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
       <button data-tab="dex">📖<span class="t"> 도감</span></button>
       <button data-tab="map">🗺️<span class="t"> 지도</span></button>
     </nav>
-    <button id="save-menu" aria-label="저장 / 불러오기">💾</button>
+    <button id="save-menu" aria-label="설정: 난이도, 저장, 불러오기">⚙️</button>
     <button id="mute" aria-label="소리 켜기/끄기">🔊</button>
   </header>
   <main id="stage">
@@ -239,7 +239,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
   <div id="mode-box" role="dialog" aria-modal="true" aria-labelledby="mode-title">
     <div class="mode-emoji">⚛️</div>
     <h2 id="mode-title">난이도를 골라 봐!</h2>
-    <p class="mode-sub">나중에 💾 메뉴에서 바꿀 수 있어.</p>
+    <p class="mode-sub">나중에 ⚙️ 설정에서 바꿀 수 있어.</p>
     <div class="mode-list"></div>
   </div>
 </div>
@@ -1257,7 +1257,7 @@ function setTab(t) {
 function openPanel(kind) {
   const body = $('#panel-body');
   body.textContent = '';
-  $('#panel-title').textContent = kind === 'dex' ? '📖 도감' : kind === 'save' ? '💾 저장 / 불러오기' : '🗺️ 영토 지도';
+  $('#panel-title').textContent = kind === 'dex' ? '📖 도감' : kind === 'save' ? '⚙️ 설정' : '🗺️ 영토 지도';
   if (kind === 'dex') renderDex(body); else if (kind === 'save') renderSave(body); else renderMap(body);
   $('#panel').hidden = false;
 }
@@ -1472,6 +1472,13 @@ document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click
 $('#clear-btn').addEventListener('click', () => removeAtoms(bench.atoms.map(a => a.id).filter(i => !busy.has(i))));
 /* ---- save / load ---- */
 function renderSave(body) {
+  body.append(el('h3', {}, '난이도'));
+  body.append(el('p', { class: 'save-note' }, '언제든 바꿀 수 있어. 만든 것은 그대로 남아!'));
+  const mrow = el('div', { class: 'mode-row' });
+  const fill = () => { mrow.textContent = ''; modeButtons(mrow, id => { setMode(id); fill(); toast(`${MODES.find(m => m.id === id).em} ${MODES.find(m => m.id === id).name} 모드로 바꿨어!`); }); };
+  fill();
+  body.append(mrow);
+  body.append(el('h3', {}, '💾 저장 / 불러오기'));
   const n = state.found.length;
   body.append(el('p', { class: 'save-note' }, `지금까지 ${n}개를 만들었어. 이 기기에는 자동으로 저장돼!`));
   body.append(el('p', { class: 'save-note' }, '다른 기기로 옮기거나 따로 보관하려면 파일로 저장해 둬.'));
@@ -1483,11 +1490,6 @@ function renderSave(body) {
   input.addEventListener('change', () => { const f = input.files && input.files[0]; if (f) loadSaveFile(f); input.value = ''; });
   row.append(saveBtn, loadLbl, input);
   body.append(row);
-  body.append(el('h3', {}, '난이도'));
-  const mrow = el('div', { class: 'mode-row' });
-  const fill = () => { mrow.textContent = ''; modeButtons(mrow, id => { setMode(id); fill(); toast(`${MODES.find(m => m.id === id).name} 모드!`); }); };
-  fill();
-  body.append(mrow);
 }
 function downloadSave() {
   const blob = new Blob([exportSave(state)], { type: 'application/json' });

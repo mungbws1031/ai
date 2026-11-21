@@ -677,3 +677,17 @@ test('phone: atoms already on the bench move out when the bowl fills up', async 
   for (const [x, y] of centers) assert.ok(!(x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height), `atom at ${x},${y} under bowl`);
   await ctx.close();
 });
+
+test('settings button: difficulty comes first and easy/normal can switch to hard', async () => {
+  for (const from of ['easy', 'normal']) {
+    const { ctx, page } = await fresh(PHONE, withState({ found: ['H2'], muted: true, mode: from }));
+    assert.equal((await page.textContent('#save-menu')).trim(), '⚙️');
+    await page.click('#save-menu');
+    assert.match(await page.textContent('#panel-title'), /설정/);
+    assert.equal(await page.textContent('#panel-body h3:first-of-type'), '난이도');
+    await page.click('#panel [data-mode=hard]');
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'hard');
+    assert.ok(await page.locator('[data-atom=H] .hands').isHidden(), 'hard rules apply right away');
+    await ctx.close();
+  }
+});
