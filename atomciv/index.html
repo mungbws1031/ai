@@ -842,6 +842,17 @@ function escapeBlocked(p) {
   }
   return p;
 }
+// 그릇이 커지면 그 밑에 깔린 원자를 빈자리로 옮긴다
+function moveAtomsOutOfBowl() {
+  let moved = false;
+  for (const a of bench.atoms) {
+    if (busy.has(a.id) || !pos[a.id] || !inBlocked(pos[a.id].x, pos[a.id].y)) continue;
+    delete pos[a.id];
+    pos[a.id] = freeSpot();
+    moved = true;
+  }
+  if (moved) renderBench();
+}
 // 새 원자 자리: 그릇·버튼 밑은 절대 피하고, 그 안에서 다른 원자와 덜 겹치는 곳을 고른다
 function freeSpot() {
   const { w, h } = benchSize();
@@ -1159,6 +1170,7 @@ function renderTray() {
   $('#tray').classList.toggle('empty', !tray.length);
   $('#mixer').classList.toggle('idle', !tray.length);
   renderTools();
+  moveAtomsOutOfBowl();
 }
 function renderTools() {
   $('#combine-btn').disabled = !tray.length;
