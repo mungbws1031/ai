@@ -417,3 +417,26 @@ test('new molecules feed real inventions, each taught right before', async () =>
     for (const m of mols) { const j = r.missions.indexOf(m); assert.ok(j >= 0 && j < i, `${m} before ${item}`); }
   }
 });
+
+test('reaction order: molecules made from molecules in the bowl', async () => {
+  const r = await run(A => ({
+    caoh: A.matchRecipe(['CaO', 'H2O'], false),
+    caco3: A.matchRecipe(['CaH2O2', 'CO2'], false),
+    h2co3: A.matchRecipe(['CO2', 'H2O'], false),
+    soda: A.matchRecipe(['HNaO', 'CO2'], false),
+    hocl: A.matchRecipe(['Cl2', 'H2O'], false),
+    bleach: A.matchRecipe(['HNaO', 'Cl2'], false),
+    urea: A.matchRecipe(['H3N', 'CO2'], true),
+    mgoh: A.matchRecipe(['MgO', 'H2O'], false),
+    cl2: A.MOLECULES.Cl2 && A.MOLECULES.Cl2.name,
+    m: A.MISSIONS.map(x => x.target),
+    hint: A.hintText(A.MISSIONS.find(x => x.target === 'CCaO3')),
+  }));
+  assert.deepEqual([r.caoh, r.caco3, r.h2co3, r.soda, r.hocl, r.bleach, r.urea, r.mgoh],
+    ['CaH2O2', 'CCaO3', 'CH2O3', 'CHNaO3', 'ClHO', 'ClNaO', 'CH4N2O', 'H2MgO2']);
+  assert.match(r.cl2, /염소/);
+  const before = (a, b) => assert.ok(r.m.indexOf(a) >= 0 && r.m.indexOf(a) < r.m.indexOf(b), `${a} before ${b}`);
+  before('CaO', 'CaH2O2'); before('CaH2O2', 'CCaO3'); before('CCaO3', 'cave_painting');
+  before('HNaO', 'CHNaO3'); before('Cl2', 'ClHO'); before('H3N', 'CH4N2O');
+  assert.match(r.hint, /수산화칼슘/); assert.match(r.hint, /이산화탄소/);
+});
