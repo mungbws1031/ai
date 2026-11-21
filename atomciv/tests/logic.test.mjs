@@ -521,3 +521,20 @@ test('buildings: placements survive the save file', async () => {
   const r = await run(A => A.importSave(A.exportSave({ found: ['hut'], placed: { hut: [2, 2], bogus: [0, 0] } })).placed);
   assert.deepEqual(r, { hut: [2, 2] });
 });
+
+test('review: the dam lake never floods a tile that holds an invention or building', async () => {
+  const r = await run(A => {
+    const found = A.MISSIONS.map(m => m.target);
+    const dam = A.validSites('dam', found, {})[0];
+    const near = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]].map(([dq, dr]) => [dam[0] + dq, dam[1] + dr]);
+    const spot = near.find(t => ['grass', 'plains'].includes(A.terrainAt(t[0], t[1], {})) && !Object.values(A.MAP_TILES).some(x => x[0] === t[0] && x[1] === t[1]));
+    return { spot, terr: spot && A.terrainAt(spot[0], spot[1], { dam, hut: spot }) };
+  });
+  assert.ok(r.spot, 'found a grass tile next to the dam');
+  assert.notEqual(r.terr, 'water');
+});
+
+test('review: hard-mode hint counts survive the save file', async () => {
+  const r = await run(A => A.importSave(A.exportSave({ found: ['H2'], mode: 'hard', hintUsed: { H2O: 3, junk: 'x' } })).hintUsed);
+  assert.deepEqual(r, { H2O: 3 });
+});

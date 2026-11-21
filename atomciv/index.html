@@ -414,7 +414,7 @@ function loadState() {
 // 파일로 저장/불러오기: 다른 기기로 옮기거나 따로 보관할 때
 function exportSave(s) {
   return JSON.stringify({ app: 'atomciv', version: 1, savedAt: new Date().toISOString(),
-    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0, mode: modeOf(s), placed: s.placed || {} } }, null, 1);
+    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0, mode: modeOf(s), placed: s.placed || {}, hintUsed: s.hintUsed || {} } }, null, 1);
 }
 function importSave(text) {
   let obj;
@@ -423,7 +423,12 @@ function importSave(text) {
   const st = obj.state;
   const found = [...new Set(st.found.filter(k => typeof k === 'string' && (MOLECULES[k] || ITEMS[k])))];
   return { ...defaultState(), found, muted: !!st.muted, trayIntro: !!st.trayIntro,
-    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0, mode: modeOf(st), placed: cleanPlaced(st.placed) };
+    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0, mode: modeOf(st), placed: cleanPlaced(st.placed), hintUsed: cleanHints(st.hintUsed) };
+}
+function cleanHints(h) {
+  const out = {};
+  if (h && typeof h === 'object') for (const k in h) if (MISSIONS.some(m => m.target === k) && Number.isInteger(h[k]) && h[k] >= 0) out[k] = Math.min(h[k], 3);
+  return out;
 }
 function cleanPlaced(p) {
   const out = {};
@@ -937,7 +942,8 @@ function terrainAt(q, r, placed = {}) {
     if (at(id) && ch === 'land') return 'plains';
   }
   const base = baseTerrain(q, r);
-  if ((base === 'grass' || base === 'plains') && Object.keys(placed).some(id => ITEMS[id] && ITEMS[id].build && ITEMS[id].build.change === 'lake'
+  const occupied = Object.values(MAP_TILES).some(t => t[0] === q && t[1] === r) || Object.values(placed).some(t => t[0] === q && t[1] === r);
+  if (!occupied && (base === 'grass' || base === 'plains') && Object.keys(placed).some(id => ITEMS[id] && ITEMS[id].build && ITEMS[id].build.change === 'lake'
     && hexDist(placed[id], [q, r]) === 1)) return 'water'; // 댐 옆은 호수
   return base;
 }
@@ -995,12 +1001,12 @@ const $ = s => document.querySelector(s);
 const SVGNS = 'http://www.w3.org/2000/svg';
 function sv(tag, attrs = {}) {
   const e = document.createElementNS(SVGNS, tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  for (const k in attrs) if (attrs[k] != null && attrs[k] !== false) e.setAttribute(k, attrs[k]);
   return e;
 }
 function el(tag, attrs = {}, text) {
   const e = document.createElement(tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  for (const k in attrs) if (attrs[k] != null && attrs[k] !== false) e.setAttribute(k, attrs[k]);
   if (text != null) e.textContent = text;
   return e;
 }
@@ -1090,7 +1096,8 @@ function overlaps(x, y, skip) {
 // 실험대 위에 겹쳐 있는 버튼들(그릇·도구·미션) 영역: 원자가 그 밑에 숨지 않게
 function blockedRects() {
   const br = benchSvg.getBoundingClientRect();
-  return ['#bench-tools', '#tray', '#mix', '#mission-bar', '#tip'].map(sel => document.querySelector(sel))
+  const idle = $('#mixer').classList.contains('idle'); // 숨은 빈 그릇은 자리를 막지 않는다
+  return ['#bench-tools', ...(idle ? [] : ['#tray', '#mix']), '#mission-bar', '#tip'].map(sel => document.querySelector(sel))
     .filter(e => e && e.offsetParent !== null)
     .map(e => { const r = e.getBoundingClientRect();
       const m = R + 30; return { l: r.left - br.left - m, t: r.top - br.top - m, r: r.right - br.left + m, b: r.bottom - br.top + m, bottom: r.top - br.top > br.height / 2 }; });
@@ -1107,10 +1114,14 @@ function escapeBlocked(p) {
 // 그릇이 커지면 그 밑에 깔린 원자를 빈자리로 옮긴다
 function moveAtomsOutOfBowl() {
   let moved = false;
-  for (const a of bench.atoms) {
-    if (busy.has(a.id) || !pos[a.id] || !inBlocked(pos[a.id].x, pos[a.id].y)) continue;
-    delete pos[a.id];
-    pos[a.id] = freeSpot();
+  for (const comp of components(bench)) { // 손잡은 원자들은 한 덩어리로 같이 옮긴다
+    const ids = comp.atoms.map(a => a.id).filter(id => pos[id]);
+    if (!ids.length || ids.some(id => busy.has(id)) || !ids.some(id => inBlocked(pos[id].x, pos[id].y))) continue;
+    const old = ids.map(id => ({ id, x: pos[id].x, y: pos[id].y }));
+    ids.forEach(id => delete pos[id]);
+    const spot = freeSpot(), dx = spot.x - old[0].x, dy = spot.y - old[0].y;
+    const { w, h } = benchSize();
+    for (const o of old) pos[o.id] = { x: Math.min(w - R, Math.max(R, o.x + dx)), y: Math.min(h - R, Math.max(R, o.y + dy)) };
     moved = true;
   }
   if (moved) renderBench();
@@ -1169,10 +1180,12 @@ function chargeOf(sym, bonded) {
 // 쉬움: 다음에 붙일 원자를 손가락으로 보여 준다 (손이 적게 남은 원자 → 손이 많이 남은 원자)
 function renderGuide() {
   const g = $('#guide'), m = currentMission(state.found);
-  const show = modeOf(state) === 'easy' && m && MOLECULES[m.target] && bench.atoms.length > 1;
+  const covered = !$('#panel').hidden || !$('#card').hidden || !$('#mode-pick').hidden;
+  const show = !covered && modeOf(state) === 'easy' && m && MOLECULES[m.target] && bench.atoms.length > 1;
   if (!show) { g.hidden = true; return; }
   const f = freeHands(bench);
-  const free = bench.atoms.filter(a => f[a.id] > 0 && !busy.has(a.id));
+  const want = new Set(atomCounts(m.target).map(([sym]) => sym)); // 목표 분자에 들어가는 원자만
+  const free = bench.atoms.filter(a => f[a.id] > 0 && !busy.has(a.id) && want.has(a.sym));
   let pair = null;
   for (const a of [...free].sort((x, y) => f[x.id] - f[y.id]))
     for (const b of [...free].sort((x, y) => f[y.id] - f[x.id]))
@@ -1181,6 +1194,7 @@ function renderGuide() {
   const r = benchSvg.getBoundingClientRect(), p = pos[pair[0]], q = pos[pair[1]];
   g.style.left = (r.left + p.x) + 'px'; g.style.top = (r.top + p.y) + 'px';
   g.style.setProperty('--dx', (q.x - p.x) + 'px'); g.style.setProperty('--dy', (q.y - p.y) + 'px');
+  g.dataset.from = pair[0]; g.dataset.to = pair[1];
   g.hidden = false;
 }
 function renderBench() {
@@ -1501,7 +1515,7 @@ let cardOpen = null;
 function queueCard(c) { cards.push(c); if (!cardOpen) nextCard(); }
 function nextCard() {
   cardOpen = cards.shift() || null;
-  if (!cardOpen) { $('#card').hidden = true; return; }
+  if (!cardOpen) { $('#card').hidden = true; renderGuide(); return; }
   $('#card-emoji').textContent = cardOpen.emoji;
   $('#card-tag').textContent = cardOpen.tag || '';
   $('#card-name').textContent = cardOpen.name;
@@ -1512,6 +1526,7 @@ function nextCard() {
   $('#card-cancel').hidden = !cardOpen.cancel;
   $('#card-cancel').textContent = cardOpen.cancelText || '아니, 그만둘래';
   $('#card').hidden = false;
+  renderGuide();
 }
 $('#card-ok').addEventListener('click', () => {
   const c = cardOpen; cardOpen = null;
@@ -1531,8 +1546,10 @@ function openPanel(kind) {
   const body = $('#panel-body');
   body.textContent = '';
   $('#panel-title').textContent = kind === 'dex' ? '📖 도감' : kind === 'save' ? '⚙️ 설정' : '🗺️ 영토 지도';
+  if (kind !== 'map') placing = null; // 다른 화면으로 가면 세우기 모드는 끝
   if (kind === 'dex') renderDex(body); else if (kind === 'save') renderSave(body); else renderMap(body);
   $('#panel').hidden = false;
+  renderGuide();
 }
 function dexSection(body, title, entries) {
   body.append(el('h3', {}, title));
@@ -1567,6 +1584,7 @@ function renderMap(body) {
   const left = era.goal.filter(g => !state.found.includes(g)).length;
   body.append(el('div', { id: 'map-info' }, `${era.emoji} ${era.name}, 우리 땅 ${owned.size}칸`));
   body.append(el('div', { id: 'map-next' }, left ? `다음 시대까지 발명 ${left}개 남았어` : '이 시대의 발명을 다 했어! 🎉'));
+  if (placing && !state.found.includes(placing)) placing = null;
   const sites = new Set(placing ? validSites(placing, state.found, placed).map(t => t.join(',')) : []);
   if (placing) {
     const bar = el('div', { id: 'place-bar' }, `${ITEMS[placing].emoji} ${ITEMS[placing].name}${topic(ITEMS[placing].name).endsWith('은') ? '을' : '를'} 세울 곳을 눌러 봐! (반짝이는 칸)`);
@@ -1690,7 +1708,7 @@ function renderMission() {
   if (m && ITEMS[m.target] && !state.trayIntro && !madeAnyInvention) {
     state.trayIntro = true; saveState(state);
     queueCard({ plain: true, emoji: '🍽️', tag: '새로운 방법!', name: '이제 재료를 섞어 볼 차례',
-      why: '서랍의 재료를 가운데 섞는 그릇으로 끌어오거나 눌러서 넣어. 다 넣었으면 ✨합치기를 눌러 봐! 원자로 만든 분자도 재료가 될 수 있어.' });
+      why: '서랍의 재료를 눌러 봐! 실험대 가운데에 🥣 섞는 그릇이 나타나서 쏙 들어가. 끌어서 넣어도 돼. 다 넣었으면 ✨합치기! 원자로 만든 분자도 재료가 될 수 있어.' });
   }
 }
 $('#hint-btn').addEventListener('click', () => {
@@ -1784,7 +1802,7 @@ function renderVillage(eraId) {
   v.innerHTML = `<rect x="0" y="470" width="1000" height="60" fill="#cfe8a9" opacity=".6"/>
     <path d="M0 470 Q250 400 500 450 T1000 440 V470 H0Z" fill="#b7dc8f" opacity=".5"/>` + VILLAGE[eraId];
 }
-$('#panel-close').addEventListener('click', () => { placing = null; setTab(tab); });
+$('#panel-close').addEventListener('click', () => { placing = null; setTab(tab); renderGuide(); });
 document.querySelectorAll('#tabs button').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 
 $('#clear-btn').addEventListener('click', () => removeAtoms(bench.atoms.map(a => a.id).filter(i => !busy.has(i))));
@@ -1818,6 +1836,7 @@ function renderSave(body) {
 }
 // 이 게임의 저장만 지우고 첫 화면으로 (같은 주소의 다른 앱 저장은 건드리지 않는다)
 function resetGame() {
+  placing = null;
   try { localStorage.removeItem(SAVE_KEY); } catch (e) { /* 저장 막힘 */ }
   state = defaultState();
   tray = []; shownEra = null;
@@ -1840,7 +1859,7 @@ function loadSaveFile(file) {
     const loaded = importSave(text);
     if (!loaded) { toast('이 파일은 불러올 수 없어 😢'); beep(220, 0.12); return; }
     state = loaded; saveState(state);
-    tray = []; shownEra = null;
+    tray = []; shownEra = null; placing = null;
     removeAtoms(bench.atoms.map(a => a.id));
     renderDrawer(); renderTray(); checkEra(); renderMute();
     setTab(START_TAB());
@@ -1856,7 +1875,7 @@ const MODES = [
 ];
 function modeButtons(box, onPick) {
   for (const m of MODES) {
-    const b = el('button', { class: 'mode-btn', 'data-mode': m.id, 'aria-pressed': String(modeOf(state) === m.id && !!state.mode) });
+    const b = el('button', { class: 'mode-btn', 'data-mode': m.id, 'aria-pressed': String(modeOf(state) === m.id) });
     const t = el('span', {}); t.append(el('b', {}, m.name), el('small', {}, m.desc));
     b.append(el('span', { class: 'em' }, m.em), t);
     b.addEventListener('click', () => onPick(m.id));
@@ -1878,7 +1897,7 @@ $('#mute').addEventListener('click', () => { state.muted = !state.muted; saveSta
 window.addEventListener('resize', () => {
   const { w, h } = benchSize();
   for (const id in pos) { pos[id].x = Math.min(pos[id].x, w - R); pos[id].y = Math.min(pos[id].y, h - R); }
-  renderBench();
+  renderBench(); // renderBench가 손가락 안내도 다시 그린다
 });
 
 /*INIT_MORE*/
