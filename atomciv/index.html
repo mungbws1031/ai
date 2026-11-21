@@ -57,8 +57,9 @@ button:disabled{opacity:.4}
 #bottom-bar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
 #mixer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;max-width:calc(100% - 24px)}
 #mixer #mix{justify-self:auto}
+#mixer.idle{visibility:hidden}
 #tray.empty{min-height:56px;min-width:0;padding:6px 16px;flex-wrap:nowrap}
-@media (max-width:600px){#hint-btn .t{display:none}#hint-btn{padding:0 10px}#mission-bar{font-size:15px;padding-left:12px}#tray{min-width:0}#tray-empty{font-size:13px}}
+@media (max-width:600px){#hint-btn .t{display:none}#hint-btn{padding:0 10px}#mission-bar{font-size:15px;padding-left:12px}#tray{min-width:0}}
 .item-chip{touch-action:none}
 .drag-ghost{position:fixed;z-index:30;pointer-events:none;font-size:44px;transform:translate(-50%,-50%) scale(1.1);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
 #tray.drop-ready{background:#fff6d6;border-color:#ff8c42}
@@ -90,7 +91,6 @@ button:disabled{opacity:.4}
 #tray{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;padding:10px 14px;min-height:96px;min-width:240px;max-width:min(560px,100%);border-radius:30px 30px 70px 70px !important;
   background:rgba(255,255,255,.75);border:3px dashed #d4b47c;border-radius:20px}
 #tray .tray-label{font-size:26px}
-#tray-empty{color:var(--muted);font-weight:700;font-size:15px;white-space:nowrap}
 #tray-items .item-chip.pop-in{animation:popin .45s ease-out}
 @keyframes popin{0%{transform:translateY(-60px) scale(.4);opacity:0}100%{transform:none;opacity:1}}
 #tray-items{display:flex;gap:6px;flex-wrap:wrap}
@@ -150,7 +150,6 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
 /* 섞는 그릇 */
 #tray{background:#fff;border:2px dashed #b9c6d8}
 #tray.drop-ready{background:#eef3ff;border-color:var(--cobalt);border-style:solid}
-#tray-empty{color:var(--muted)}
 #combine-btn:not(:disabled){background:var(--mint);border-color:#0f8a5f;box-shadow:0 2px 0 #0f8a5f;color:#fff}
 #toast{background:var(--ink);border-radius:12px;font-weight:600;white-space:normal;max-width:calc(100% - 32px);text-align:center;word-break:keep-all}
 /* 카드 */
@@ -192,7 +191,7 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
       <svg id="bench" aria-label="실험대"></svg>
       <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn" aria-label="힌트">💡<span class="t"> 힌트</span></button></div>
       <div id="mixer">
-        <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><span id="tray-empty">재료를 여기로 끌어와!</span><div id="tray-items"></div></div>
+        <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><div id="tray-items"></div></div>
         <div id="mix">
           <button id="combine-btn" disabled>✨ 합치기</button>
         </div>
@@ -1026,7 +1025,7 @@ function chipDrag(chip, emoji, onDrop) {
   chip.addEventListener('pointermove', e => {
     if (!start || e.pointerId !== start.id) return;
     if (!ghost && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 10) return;
-    if (!ghost) { ghost = el('div', { class: 'drag-ghost' }, emoji); document.body.append(ghost); }
+    if (!ghost) { ghost = el('div', { class: 'drag-ghost' }, emoji); document.body.append(ghost); $('#mixer').classList.remove('idle'); }
     ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
     $('#tray').classList.toggle('drop-ready', overTray(e.clientX, e.clientY));
   });
@@ -1036,6 +1035,7 @@ function chipDrag(chip, emoji, onDrop) {
     $('#tray').classList.remove('drop-ready');
     if (!ghost) return;
     ghost.remove(); ghost = null;
+    $('#mixer').classList.toggle('idle', !tray.length);
     chip.dataset.dragged = '1'; // 끌기 뒤에 따라오는 click은 무시
     setTimeout(() => { delete chip.dataset.dragged; }, 400);
     if (!cancelled) onDrop(e.clientX, e.clientY);
@@ -1070,7 +1070,7 @@ function renderTray() {
     box.append(b);
   });
   $('#tray').classList.toggle('empty', !tray.length);
-  $('#tray-empty').hidden = tray.length > 0;
+  $('#mixer').classList.toggle('idle', !tray.length);
   renderTools();
 }
 function renderTools() {

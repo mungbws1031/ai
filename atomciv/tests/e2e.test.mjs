@@ -10,6 +10,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const PAGE = pathToFileURL(path.join(here, '..', 'index.html')).href;
 
 let browser;
+const PHONE = { width: 412, height: 915 };
 before(async () => { browser = await chromium.launch(); });
 after(async () => { await browser.close(); });
 
@@ -282,12 +283,19 @@ test('C: water made on the bench drops into the tray; plain H2 does not', async 
   await ctx.close();
 });
 
-test('A: empty tray shows how to use it', async () => {
-  const { ctx, page } = await fresh();
-  assert.ok(await page.locator('#tray-empty').isVisible());
-  assert.match(await page.textContent('#tray-empty'), /재료/);
+test('empty bowl stays hidden until an ingredient is dragged or added', async () => {
+  const { ctx, page } = await fresh(PHONE);
+  assert.ok(await page.locator('#mixer').isHidden(), 'hidden when empty');
+  assert.equal(await page.locator('#tray-empty').count(), 0, 'no drag-here text');
+  await page.locator('#drawer [data-item=wood]').scrollIntoViewIfNeeded();
+  const a = await center(page, '#drawer [data-item=wood]');
+  await page.mouse.move(a.x, a.y); await page.mouse.down();
+  await page.mouse.move(a.x, a.y - 120, { steps: 5 });
+  assert.ok(await page.locator('#mixer').isVisible(), 'shows while dragging');
+  await page.mouse.up();
+  assert.ok(await page.locator('#mixer').isHidden(), 'hides again when nothing was dropped');
   await page.click('#drawer [data-item=wood]');
-  assert.ok(await page.locator('#tray-empty').isHidden());
+  assert.ok(await page.locator('#mixer').isVisible(), 'shows with an ingredient');
   await ctx.close();
 });
 
@@ -457,7 +465,6 @@ test('territory map: hex island with fog, borders grow, tapping a building opens
   await ctx.close();
 });
 
-const PHONE = { width: 412, height: 915 };
 
 test('phone: atoms never appear under the mixing bowl', async () => {
   const { ctx, page } = await fresh(PHONE);
