@@ -440,3 +440,13 @@ test('reaction order: molecules made from molecules in the bowl', async () => {
   before('HNaO', 'CHNaO3'); before('Cl2', 'ClHO'); before('H3N', 'CH4N2O');
   assert.match(r.hint, /수산화칼슘/); assert.match(r.hint, /이산화탄소/);
 });
+
+test('difficulty mode: old saves are normal, files keep the mode', async () => {
+  const r = await run(A => ({
+    old: A.modeOf({ found: [] }),
+    back: A.importSave(A.exportSave({ found: ['H2O'], mode: 'hard' })).mode,
+    junk: A.importSave(JSON.stringify({ app: 'atomciv', version: 1, state: { found: [], mode: 'god' } })).mode,
+  }));
+  assert.equal(r.old, 'normal'); assert.equal(r.back, 'hard'); assert.equal(A_ok(r.junk), true);
+});
+function A_ok(m) { return m === undefined || m === 'normal'; }

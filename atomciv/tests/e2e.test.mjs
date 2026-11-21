@@ -14,9 +14,11 @@ const PHONE = { width: 412, height: 915 };
 before(async () => { browser = await chromium.launch(); });
 after(async () => { await browser.close(); });
 
-async function fresh(viewport = { width: 1024, height: 768 }, init, stayOnStart = false) {
+async function fresh(viewport = { width: 1024, height: 768 }, init, stayOnStart = false, noDefault = false) {
   const ctx = await browser.newContext({ viewport, hasTouch: false });
   if (init) await ctx.addInitScript(init);
+  // 기존 테스트는 난이도 고르기 카드 없이 보통 모드로 시작한다
+  if (!noDefault) await ctx.addInitScript(() => { try { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify({ found: [], mode: 'normal' })); } catch (e) { /* 저장 막힘 */ } });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -583,5 +585,20 @@ test('CO2 made during its own mission does not jump into the bowl', async () => 
   await page.waitForSelector('#card:not([hidden])');
   await page.click('#card-ok');
   assert.equal(await page.locator('#tray [data-item]').count(), 0);
+  await ctx.close();
+});
+
+test('first launch asks for a difficulty; choosing hard is saved', async () => {
+  const { ctx, page } = await fresh(PHONE, undefined, true, true);
+  assert.ok(await page.locator('#mode-pick').isVisible());
+  await page.click('#mode-pick [data-mode=hard]');
+  assert.ok(await page.locator('#mode-pick').isHidden());
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'hard');
+  await page.reload();
+  assert.ok(await page.locator('#mode-pick').isHidden(), 'asked only once');
+  await page.click('#save-menu');
+  assert.equal(await page.getAttribute('#panel [data-mode=hard]', 'aria-pressed'), 'true');
+  await page.click('#panel [data-mode=easy]');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'easy');
   await ctx.close();
 });

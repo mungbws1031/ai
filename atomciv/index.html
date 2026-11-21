@@ -74,6 +74,16 @@ button:disabled{opacity:.4}
   border-radius:16px;background:#fff;box-shadow:var(--shadow);font-size:15px;padding:8px;text-align:center}
 .dex-item .em{font-size:36px}
 .dex-item.locked{background:#eee6d6;color:var(--muted);box-shadow:none}
+#mode-pick{position:fixed;inset:0;z-index:12;display:grid;place-items:center;background:rgba(24,35,61,.55);padding:16px}
+#mode-pick[hidden]{display:none}
+#mode-box{background:#fff;border-radius:24px;padding:22px;max-width:440px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+#mode-box h2{margin:4px 0;font-size:26px}
+.mode-emoji{font-size:56px}.mode-sub{color:var(--muted);margin:0 0 14px}
+.mode-list{display:grid;gap:10px}
+.mode-btn{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:16px;border:2px solid #d6dfea;background:#fff;font:inherit;cursor:pointer;min-height:64px}
+.mode-btn .em{font-size:32px}.mode-btn b{display:block;font-size:19px}.mode-btn small{color:var(--muted);font-size:14px;line-height:1.35}
+.mode-btn[aria-pressed=true]{border-color:var(--cobalt);background:#eef3ff}
+.mode-row{display:grid;gap:8px;margin-top:16px}
 #card{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:rgba(40,30,20,.45);padding:16px}
 #card-box{background:var(--card);border-radius:24px;padding:24px;max-width:420px;width:100%;text-align:center;
   box-shadow:0 10px 30px rgba(0,0,0,.25);animation:cardin .3s ease-out}
@@ -215,6 +225,14 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <div id="card-formula"></div>
     <div id="card-why"></div>
     <button id="card-ok">좋아!</button>
+  </div>
+</div>
+<div id="mode-pick" hidden>
+  <div id="mode-box" role="dialog" aria-modal="true" aria-labelledby="mode-title">
+    <div class="mode-emoji">⚛️</div>
+    <h2 id="mode-title">난이도를 골라 봐!</h2>
+    <p class="mode-sub">나중에 💾 메뉴에서 바꿀 수 있어.</p>
+    <div class="mode-list"></div>
   </div>
 </div>
 <script>
@@ -378,7 +396,7 @@ function loadState() {
 // 파일로 저장/불러오기: 다른 기기로 옮기거나 따로 보관할 때
 function exportSave(s) {
   return JSON.stringify({ app: 'atomciv', version: 1, savedAt: new Date().toISOString(),
-    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0 } }, null, 1);
+    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0, mode: modeOf(s) } }, null, 1);
 }
 function importSave(text) {
   let obj;
@@ -387,7 +405,7 @@ function importSave(text) {
   const st = obj.state;
   const found = [...new Set(st.found.filter(k => typeof k === 'string' && (MOLECULES[k] || ITEMS[k])))];
   return { ...defaultState(), found, muted: !!st.muted, trayIntro: !!st.trayIntro,
-    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0 };
+    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0, mode: modeOf(st) };
 }
 function saveState(s) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { /* 저장 불가: 계속 진행 */ }
@@ -700,7 +718,7 @@ function terrainAt(q, r) {
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
+window.AtomCiv = { modeOf, missionHint, REACTION_NOTE,  ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -1393,6 +1411,11 @@ function renderSave(body) {
   input.addEventListener('change', () => { const f = input.files && input.files[0]; if (f) loadSaveFile(f); input.value = ''; });
   row.append(saveBtn, loadLbl, input);
   body.append(row);
+  body.append(el('h3', {}, '난이도'));
+  const mrow = el('div', { class: 'mode-row' });
+  const fill = () => { mrow.textContent = ''; modeButtons(mrow, id => { setMode(id); fill(); toast(`${MODES.find(m => m.id === id).name} 모드!`); }); };
+  fill();
+  body.append(mrow);
 }
 function downloadSave() {
   const blob = new Blob([exportSave(state)], { type: 'application/json' });
@@ -1415,6 +1438,30 @@ function loadSaveFile(file) {
       why: '저장해 둔 곳부터 이어서 해 보자!' });
   }).catch(() => toast('이 파일은 불러올 수 없어 😢'));
 }
+/* ---- 난이도 ---- */
+const MODES = [
+  { id: 'easy', em: '😊', name: '쉬움', desc: '원자를 미리 올려 주고 손가락으로 길을 알려 줘' },
+  { id: 'normal', em: '🙂', name: '보통', desc: '팁과 힌트가 있어. 실제 반응 순서도 알려 줘' },
+  { id: 'hard', em: '😤', name: '어려움', desc: '힌트 3번, 손 개수는 기억해야 해. 반응 순서를 꼭 지켜!' },
+];
+function modeButtons(box, onPick) {
+  for (const m of MODES) {
+    const b = el('button', { class: 'mode-btn', 'data-mode': m.id, 'aria-pressed': String(modeOf(state) === m.id && !!state.mode) });
+    const t = el('span', {}); t.append(el('b', {}, m.name), el('small', {}, m.desc));
+    b.append(el('span', { class: 'em' }, m.em), t);
+    b.addEventListener('click', () => onPick(m.id));
+    box.append(b);
+  }
+}
+function setMode(id) {
+  state.mode = id; saveState(state);
+  renderDrawer(); renderMission(); renderBench();
+}
+function showModePick() {
+  const box = $('#mode-pick .mode-list'); box.textContent = '';
+  modeButtons(box, id => { $('#mode-pick').hidden = true; setMode(id); toast(`${MODES.find(m => m.id === id).name} 모드로 시작!`); });
+  $('#mode-pick').hidden = false;
+}
 function renderMute() { $('#mute').textContent = state.muted ? '🔇' : '🔊'; }
 $('#save-menu').addEventListener('click', () => openPanel('save'));
 $('#mute').addEventListener('click', () => { state.muted = !state.muted; saveState(state); renderMute(); });
@@ -1425,12 +1472,14 @@ window.addEventListener('resize', () => {
 });
 
 /*INIT_MORE*/
+const FIRST_RUN = (() => { try { return !localStorage.getItem(SAVE_KEY); } catch (e) { return false; } })();
 renderDrawer();
 renderTray();
 checkEra();
 renderMute();
 setTab(START_TAB());
 renderBench();
+if (FIRST_RUN) showModePick();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
