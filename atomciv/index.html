@@ -57,8 +57,9 @@ button:disabled{opacity:.4}
 #bottom-bar{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}
 #mixer{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:1;max-width:calc(100% - 24px)}
 #mixer #mix{justify-self:auto}
+#mixer.idle{visibility:hidden}
 #tray.empty{min-height:56px;min-width:0;padding:6px 16px;flex-wrap:nowrap}
-@media (max-width:600px){#hint-btn .t{display:none}#hint-btn{padding:0 10px}#mission-bar{font-size:15px;padding-left:12px}#tray{min-width:0}#tray-empty{font-size:13px}}
+@media (max-width:600px){#hint-btn .t{display:none}#hint-btn{padding:0 10px}#mission-bar{font-size:15px;padding-left:12px}#tray{min-width:0}}
 .item-chip{touch-action:none}
 .drag-ghost{position:fixed;z-index:30;pointer-events:none;font-size:44px;transform:translate(-50%,-50%) scale(1.1);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
 #tray.drop-ready{background:#fff6d6;border-color:#ff8c42}
@@ -73,6 +74,23 @@ button:disabled{opacity:.4}
   border-radius:16px;background:#fff;box-shadow:var(--shadow);font-size:15px;padding:8px;text-align:center}
 .dex-item .em{font-size:36px}
 .dex-item.locked{background:#eee6d6;color:var(--muted);box-shadow:none}
+#tip{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff8dc;border:1.5px solid #f1d27a;border-radius:12px;padding:6px 10px;font-size:14px;font-weight:600;line-height:1.4;word-break:keep-all;pointer-events:none}
+#tip[hidden]{display:none}
+#hint-left{font-size:13px;margin-left:2px}
+#hint-btn:disabled{opacity:.45}
+#guide{position:fixed;z-index:6;font-size:40px;pointer-events:none;transform:translate(-30%,-10%);animation:guide 1.6s ease-in-out infinite}
+#guide[hidden]{display:none}
+@keyframes guide{0%{translate:0 0;opacity:0}15%{opacity:1}70%{translate:var(--dx) var(--dy);opacity:1}100%{translate:var(--dx) var(--dy);opacity:0}}
+#mode-pick{position:fixed;inset:0;z-index:12;display:grid;place-items:center;background:rgba(24,35,61,.55);padding:16px}
+#mode-pick[hidden]{display:none}
+#mode-box{background:#fff;border-radius:24px;padding:22px;max-width:440px;width:100%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+#mode-box h2{margin:4px 0;font-size:26px}
+.mode-emoji{font-size:56px}.mode-sub{color:var(--muted);margin:0 0 14px}
+.mode-list{display:grid;gap:10px}
+.mode-btn{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:16px;border:2px solid #d6dfea;background:#fff;font:inherit;cursor:pointer;min-height:64px}
+.mode-btn .em{font-size:32px}.mode-btn b{display:block;font-size:19px}.mode-btn small{color:var(--muted);font-size:14px;line-height:1.35}
+.mode-btn[aria-pressed=true]{border-color:var(--cobalt);background:#eef3ff}
+.mode-row{display:grid;gap:8px;margin-top:16px}
 #card{position:fixed;inset:0;z-index:10;display:grid;place-items:center;background:rgba(40,30,20,.45);padding:16px}
 #card-box{background:var(--card);border-radius:24px;padding:24px;max-width:420px;width:100%;text-align:center;
   box-shadow:0 10px 30px rgba(0,0,0,.25);animation:cardin .3s ease-out}
@@ -90,7 +108,6 @@ button:disabled{opacity:.4}
 #tray{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px;padding:10px 14px;min-height:96px;min-width:240px;max-width:min(560px,100%);border-radius:30px 30px 70px 70px !important;
   background:rgba(255,255,255,.75);border:3px dashed #d4b47c;border-radius:20px}
 #tray .tray-label{font-size:26px}
-#tray-empty{color:var(--muted);font-weight:700;font-size:15px;white-space:nowrap}
 #tray-items .item-chip.pop-in{animation:popin .45s ease-out}
 @keyframes popin{0%{transform:translateY(-60px) scale(.4);opacity:0}100%{transform:none;opacity:1}}
 #tray-items{display:flex;gap:6px;flex-wrap:wrap}
@@ -150,7 +167,6 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
 /* 섞는 그릇 */
 #tray{background:#fff;border:2px dashed #b9c6d8}
 #tray.drop-ready{background:#eef3ff;border-color:var(--cobalt);border-style:solid}
-#tray-empty{color:var(--muted)}
 #combine-btn:not(:disabled){background:var(--mint);border-color:#0f8a5f;box-shadow:0 2px 0 #0f8a5f;color:#fff}
 #toast{background:var(--ink);border-radius:12px;font-weight:600;white-space:normal;max-width:calc(100% - 32px);text-align:center;word-break:keep-all}
 /* 카드 */
@@ -190,9 +206,9 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <section id="bench-wrap">
       <svg id="village" aria-hidden="true"></svg>
       <svg id="bench" aria-label="실험대"></svg>
-      <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn" aria-label="힌트">💡<span class="t"> 힌트</span></button></div>
+      <div id="mission-bar"><span id="mission-text"></span><button id="hint-btn" aria-label="힌트">💡<span class="t"> 힌트</span><span id="hint-left"></span></button><div id="tip" hidden></div></div>
       <div id="mixer">
-        <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><span id="tray-empty">재료를 여기로 끌어와!</span><div id="tray-items"></div></div>
+        <div id="tray" aria-label="섞는 그릇"><span class="tray-label">🥣</span><div id="tray-items"></div></div>
         <div id="mix">
           <button id="combine-btn" disabled>✨ 합치기</button>
         </div>
@@ -216,6 +232,15 @@ button:focus-visible,.load-btn:focus-within{outline:3px solid var(--cobalt);outl
     <div id="card-formula"></div>
     <div id="card-why"></div>
     <button id="card-ok">좋아!</button>
+  </div>
+</div>
+<div id="guide" hidden aria-hidden="true">👆</div>
+<div id="mode-pick" hidden>
+  <div id="mode-box" role="dialog" aria-modal="true" aria-labelledby="mode-title">
+    <div class="mode-emoji">⚛️</div>
+    <h2 id="mode-title">난이도를 골라 봐!</h2>
+    <p class="mode-sub">나중에 💾 메뉴에서 바꿀 수 있어.</p>
+    <div class="mode-list"></div>
   </div>
 </div>
 <script>
@@ -285,6 +310,7 @@ const MOLECULES = {
   CCaO3: { id: 'CCaO3', formula: 'CaCO₃', name: '탄산칼슘', emoji: '🥚', ionic: true, why: '분필, 달걀껍데기, 조개껍데기, 석회석이 모두 이거야!' },
   CHNaO3: { id: 'CHNaO3', formula: 'NaHCO₃', name: '탄산수소나트륨(베이킹소다)', emoji: '🧁', ionic: true, why: '빵을 부풀게 하는 베이킹소다! 열을 받으면 이산화탄소 거품이 나와.' },
   CH2O3: { id: 'CH2O3', formula: 'H₂CO₃', name: '탄산', emoji: '🥤', why: '이산화탄소가 물에 녹으면 생겨. 탄산음료의 톡 쏘는 맛이야!' },
+  Cl2:  { id: 'Cl2',  formula: 'Cl₂',  name: '염소 기체', emoji: '🌫️', why: '염소 둘이 한 손씩 잡았어. 연두색 기체인데 아주 독해서 조심해야 해! 소독약을 만드는 재료야.' },
   O2Si: { id: 'O2Si', formula: 'SiO₂', name: '모래(이산화규소)', emoji: '🏖️', why: '규소가 산소 둘과 두 손씩 잡았어. 모래알과 수정이 이거야!' },
 };
 
@@ -378,7 +404,7 @@ function loadState() {
 // 파일로 저장/불러오기: 다른 기기로 옮기거나 따로 보관할 때
 function exportSave(s) {
   return JSON.stringify({ app: 'atomciv', version: 1, savedAt: new Date().toISOString(),
-    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0 } }, null, 1);
+    state: { found: s.found, muted: !!s.muted, trayIntro: !!s.trayIntro, endingEras: s.endingEras || 0, mode: modeOf(s) } }, null, 1);
 }
 function importSave(text) {
   let obj;
@@ -387,7 +413,7 @@ function importSave(text) {
   const st = obj.state;
   const found = [...new Set(st.found.filter(k => typeof k === 'string' && (MOLECULES[k] || ITEMS[k])))];
   return { ...defaultState(), found, muted: !!st.muted, trayIntro: !!st.trayIntro,
-    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0 };
+    endingEras: Number.isInteger(st.endingEras) ? st.endingEras : 0, mode: modeOf(st) };
 }
 function saveState(s) {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(s)); } catch (e) { /* 저장 불가: 계속 진행 */ }
@@ -502,6 +528,15 @@ const RECIPES = [
   { inputs: ['CHNaO3', 'C2H4O2', 'steel'], heat: false, output: 'extinguisher' },
   { inputs: ['ClHO', 'H2O'], heat: false, output: 'clean_water' },
   { inputs: ['CH4N2O', 'H2O'], heat: false, output: 'fertilizer' },
+  // 분자 + 분자 → 분자 (실제 반응 순서, 부산물은 REACTION_NOTE에)
+  { inputs: ['CaO', 'H2O'], heat: false, output: 'CaH2O2' },
+  { inputs: ['CaH2O2', 'CO2'], heat: false, output: 'CCaO3' },
+  { inputs: ['CO2', 'H2O'], heat: false, output: 'CH2O3' },
+  { inputs: ['HNaO', 'CO2'], heat: false, output: 'CHNaO3' },
+  { inputs: ['Cl2', 'H2O'], heat: false, output: 'ClHO' },
+  { inputs: ['HNaO', 'Cl2'], heat: false, output: 'ClNaO' },
+  { inputs: ['H3N', 'CO2'], heat: true, output: 'CH4N2O' },
+  { inputs: ['MgO', 'H2O'], heat: false, output: 'H2MgO2' },
 ];
 
 const ERAS = [
@@ -547,6 +582,8 @@ const MISSIONS = [
   { target: 'stone_axe', text: '부싯돌 두 개와 나무로 돌도끼를 만들어 봐! 🪓',                    hint: ['flint', 'wood'] },
   { target: 'charcoal',  text: '나무와 🔥 불을 그릇에 넣어 숯을 만들어 봐!',        hint: ['wood', 'heat'] },
   { target: 'pottery',   text: '물을 담을 토기를 구워 봐! 🏺',              hint: ['clay', 'H2O', 'heat'] },
+  { target: 'CaO',       text: '생석회(산화칼슘)를 만들어 봐! ⚪',       hint: ['Ca', 'O'] },
+  { target: 'CaH2O2',    text: '석회수(수산화칼슘)를 만들어 봐! 🥛',     hint: ['Ca', 'O', 'H'] },
   { target: 'CCaO3',     text: '달걀껍데기 성분, 탄산칼슘을 만들어 봐! 🥚', hint: ['Ca', 'C', 'O'] },
   { target: 'cave_painting', text: '탄산칼슘과 숯으로 동굴벽화를 그려 봐! 🎨', hint: ['CCaO3', 'charcoal'] },
   { target: 'copper',    text: '구리광석에서 구리를 꺼내 봐!',              hint: ['copper_ore', 'charcoal', 'heat'] },
@@ -554,7 +591,6 @@ const MISSIONS = [
   { target: 'bronze',    text: '단단한 청동을 만들어 봐! 🔔',               hint: ['copper', 'tin', 'heat'] },
   { target: 'iron',      text: '철광석에서 철을 꺼내 봐! ⚙️',               hint: ['iron_ore', 'charcoal', 'heat'] },
   { target: 'glass',     text: '모래로 투명한 유리를 만들어 봐! 🪟',        hint: ['O2Si', 'heat'] },
-  { target: 'CaH2O2',    text: '석회수(수산화칼슘)를 만들어 봐! 🥛',     hint: ['Ca', 'O', 'H'] },
   { target: 'mortar',    text: '석회수, 모래, 물로 회반죽을 만들어 봐! 🏯', hint: ['CaH2O2', 'O2Si', 'H2O'] },
   { target: 'CH2O3',     text: '톡 쏘는 탄산을 만들어 봐! 🥤',            hint: ['H', 'C', 'O'] },
   { target: 'soda_drink', text: '탄산을 유리병에 담아 탄산음료를! 🍾',     hint: ['CH2O3', 'glass'] },
@@ -570,6 +606,7 @@ const MISSIONS = [
   { target: 'concrete',  text: '시멘트, 모래, 물로 콘크리트를 만들어 봐! 🧱', hint: ['cement', 'O2Si', 'H2O'] },
   { target: 'C4H10',     text: '탄소 넷이 줄줄이, 부테인을 만들어 봐!',   hint: ['C', 'H'] },
   { target: 'lighter',   text: '부테인, 강철, 부싯돌로 라이터를! ✨',      hint: ['C4H10', 'steel', 'flint'] },
+  { target: 'HNaO',      text: '비누 재료, 수산화나트륨을 만들어 봐! 🧼', hint: ['Na', 'O', 'H'] },
   { target: 'CHNaO3',    text: '베이킹소다(탄산수소나트륨)를 만들어 봐!',  hint: ['Na', 'H', 'C', 'O'] },
   { target: 'C2H4O2',    text: '식초의 신맛, 아세트산을 만들어 봐! 🫙',    hint: ['C', 'H', 'O'] },
   { target: 'extinguisher', text: '베이킹소다, 식초, 강철로 소화기를! 🧯',  hint: ['CHNaO3', 'C2H4O2', 'steel'] },
@@ -580,6 +617,7 @@ const MISSIONS = [
   { target: 'bulb',      text: '유리, 전선, 전지로 전구를 켜 봐! 💡',        hint: ['glass', 'wire', 'battery'] },
   { target: 'motor',     text: '자석, 전선, 전지로 모터를 돌려 봐! 🌀',      hint: ['lodestone', 'wire', 'battery'] },
   { target: 'generator', text: '자석, 전선, 증기기관으로 발전기를! ⚡',      hint: ['lodestone', 'wire', 'steam_engine'] },
+  { target: 'Cl2',       text: '염소 둘이 손을 잡게 해 봐! (염소 기체)', hint: ['Cl'] },
   { target: 'ClHO',      text: '수영장 소독약, 차아염소산을 만들어 봐!',  hint: ['H', 'O', 'Cl'] },
   { target: 'clean_water', text: '차아염소산과 물로 깨끗한 수돗물을! 🚰',  hint: ['ClHO', 'H2O'] },
   { target: 'CH4N2O',    text: '비료 성분, 요소를 만들어 봐! 🌱',          hint: ['C', 'O', 'N', 'H'] },
@@ -600,15 +638,33 @@ const MISSIONS = [
   { target: 'satellite', text: '로켓에 태양전지와 라디오를 실어 위성을! 🛰️',  hint: ['rocket', 'solar_cell', 'radio'] },
 ];
 // 힌트 문장: 미션에 필요한 재료를 글로 알려 준다
-function hintText(m) {
-  if (MOLECULES[m.target]) {
+// 반응식 (부산물 포함) — 카드에 보여 준다
+const REACTION_NOTE = {
+  CaH2O2: 'CaO + H₂O → Ca(OH)₂',
+  CCaO3: 'Ca(OH)₂ + CO₂ → CaCO₃ + H₂O',
+  CH2O3: 'CO₂ + H₂O → H₂CO₃',
+  CHNaO3: 'NaOH + CO₂ → NaHCO₃',
+  ClHO: 'Cl₂ + H₂O → HOCl + HCl',
+  ClNaO: '2NaOH + Cl₂ → NaOCl + NaCl + H₂O',
+  CH4N2O: '2NH₃ + CO₂ → CO(NH₂)₂ + H₂O (뜨겁게)',
+  H2MgO2: 'MgO + H₂O → Mg(OH)₂',
+};
+function modeOf(s) { return ['easy', 'normal', 'hard'].includes(s && s.mode) ? s.mode : 'normal'; }
+// 분자를 그릇의 반응으로 만드는 레시피 (쉬움 모드는 무시하고 원자로 안내)
+function reactionFor(key) { return MOLECULES[key] ? RECIPES.find(r => r.output === key) || null : null; }
+function missionHint(m, mode = 'normal') {
+  const r = mode !== 'easy' && reactionFor(m.target);
+  return r ? [...r.inputs, ...(r.heat ? ['heat'] : [])] : m.hint;
+}
+function hintText(m, mode = 'normal') {
+  const nameOf = id => { const it = ITEMS[id] || MOLECULES[id]; return `${it.emoji} ${it.name}`; };
+  const r = RECIPES.find(x => x.output === m.target);
+  if (MOLECULES[m.target] && !(r && mode !== 'easy')) {
     const parts = [...m.target.matchAll(/([A-Z][a-z]?)(\d*)/g)].map(([, sym, n]) => `${sym} ${n || 1}개`);
     return `원자를 끌어 붙여 봐: ${parts.join(' + ')}`;
   }
-  const r = RECIPES.find(x => x.output === m.target);
   if (!r) return '';
-  const names = r.inputs.map(id => { const it = ITEMS[id] || MOLECULES[id]; return `${it.emoji} ${it.name}`; });
-  return `그릇에 넣어 봐: ${names.join(' + ')}${r.heat ? ' + 🔥 불' : ''}`;
+  return `그릇에 넣어 봐: ${r.inputs.map(nameOf).join(' + ')}${r.heat ? ' + 🔥 불' : ''}`;
 }
 function currentMission(found) { return MISSIONS.find(m => !found.includes(m.target)) || null; }
 
@@ -670,7 +726,7 @@ function terrainAt(q, r) {
 function allErasDone(found) { return ERAS.every(e => e.goal.every(g => found.includes(g))); }
 
 
-window.AtomCiv = { ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
+window.AtomCiv = { modeOf, missionHint, REACTION_NOTE,  ATOMS, MOLECULES, formulaKey, freeHands, canBond, addBond, components, judge, topic, loadState, saveState, exportSave, importSave, ITEMS, RECIPES, ERAS, matchRecipe, combineTray, eraIndex, allErasDone, MISSIONS, currentMission, hintText, MAP_TILES, MAP_RADIUS, territory, hexDist /*EXPORTS*/ };
 
 /* ================= UI ================= */
 const $ = s => document.querySelector(s);
@@ -735,7 +791,7 @@ function renderDrawer() {
     const b = el('button', { class: 'atom-btn', 'data-atom': sym, 'aria-label': `${a.name}, 손 ${a.hands}개` });
     b.style.setProperty('--el', a.color);
     b.append(el('span', { class: 'z' }, String(a.z)), el('span', { class: 'sym' }, sym),
-      el('span', { class: 'nm' }, a.name), el('span', { class: 'hands', 'aria-hidden': 'true' }, a.hands ? '●'.repeat(a.hands) : '○'));
+      el('span', { class: 'nm' }, a.name), el('span', { class: 'hands', 'aria-hidden': 'true', hidden: modeOf(state) === 'hard' ? '' : null }, a.hands ? '●'.repeat(a.hands) : '○'));
     b.addEventListener('click', () => spawnAtom(sym));
     box.append(b);
   }
@@ -772,7 +828,7 @@ function overlaps(x, y, skip) {
 // 실험대 위에 겹쳐 있는 버튼들(그릇·도구·미션) 영역: 원자가 그 밑에 숨지 않게
 function blockedRects() {
   const br = benchSvg.getBoundingClientRect();
-  return ['#bench-tools', '#tray', '#mix', '#mission-bar'].map(sel => document.querySelector(sel))
+  return ['#bench-tools', '#tray', '#mix', '#mission-bar', '#tip'].map(sel => document.querySelector(sel))
     .filter(e => e && e.offsetParent !== null)
     .map(e => { const r = e.getBoundingClientRect();
       const m = R + 30; return { l: r.left - br.left - m, t: r.top - br.top - m, r: r.right - br.left + m, b: r.bottom - br.top + m, bottom: r.top - br.top > br.height / 2 }; });
@@ -836,6 +892,23 @@ function isIonic(b) {
 function chargeOf(sym, bonded) {
   const n = bonded.filter(isIonic).reduce((s, b) => s + b.order, 0);
   return (n > 1 ? n : '') + (METALS[sym] ? '+' : '−');
+}
+// 쉬움: 다음에 붙일 원자를 손가락으로 보여 준다 (손이 적게 남은 원자 → 손이 많이 남은 원자)
+function renderGuide() {
+  const g = $('#guide'), m = currentMission(state.found);
+  const show = modeOf(state) === 'easy' && m && MOLECULES[m.target] && bench.atoms.length > 1;
+  if (!show) { g.hidden = true; return; }
+  const f = freeHands(bench);
+  const free = bench.atoms.filter(a => f[a.id] > 0 && !busy.has(a.id));
+  let pair = null;
+  for (const a of [...free].sort((x, y) => f[x.id] - f[y.id]))
+    for (const b of [...free].sort((x, y) => f[y.id] - f[x.id]))
+      if (!pair && a.id !== b.id && canBond(bench, a.id, b.id)) pair = [a.id, b.id];
+  if (!pair) { g.hidden = true; return; }
+  const r = benchSvg.getBoundingClientRect(), p = pos[pair[0]], q = pos[pair[1]];
+  g.style.left = (r.left + p.x) + 'px'; g.style.top = (r.top + p.y) + 'px';
+  g.style.setProperty('--dx', (q.x - p.x) + 'px'); g.style.setProperty('--dy', (q.y - p.y) + 'px');
+  g.hidden = false;
 }
 function renderBench() {
   benchSvg.textContent = '';
@@ -907,6 +980,7 @@ function renderBench() {
     atomLayer.append(g);
   }
   benchSvg.append(bondLayer, atomLayer);
+  if (typeof state !== 'undefined') renderGuide();
 }
 
 /* ---- drag ---- */
@@ -990,10 +1064,19 @@ function checkComplete() {
     r.ids.forEach(i => busy.add(i));
     renderBench();
     setTimeout(() => {
+      const mode = modeOf(state), reaction = r.status === 'known' && reactionFor(r.key);
+      if (reaction && mode === 'hard') { // 어려움: 실제 반응 순서를 지켜야 인정
+        beep(220, 0.12);
+        const names = reaction.inputs.map(id => (ITEMS[id] || MOLECULES[id]).name).join(' + ') + (reaction.heat ? ' + 🔥 불' : '');
+        queueCard({ emoji: '🧪', tag: '반응으로 만들어야 해!', name: r.molecule.name, formula: r.molecule.formula,
+          why: `실제로는 원자를 하나씩 붙여서 만들지 않아. 먼저 만든 분자끼리 반응시켜야 해: ${names}. 그릇에 넣고 합쳐 봐!`,
+          onClose: () => removeAtoms(r.ids) });
+        return;
+      }
       const isNew = r.status === 'known' && discover(r.key);
       queueCard(r.status === 'known'
         ? { emoji: r.molecule.emoji, tag: isNew ? '✨ 새 발견!' : '또 만들었어!', name: r.molecule.name,
-            formula: r.molecule.formula, why: r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); dropIntoTray(r.key); } }
+            formula: r.molecule.formula, why: (reaction && mode === 'normal' ? `실제로는 ${REACTION_NOTE[r.key]} 반응으로 만들어! ` : '') + r.molecule.why, onClose: () => { removeAtoms(r.ids); afterMake(r.key); dropIntoTray(r.key); } }
         : { emoji: '🤔', tag: '규칙은 맞지만', name: '아직 이름 모르는 분자!', formula: pretty(r.key),
             why: '모든 손을 다 잡았어! 과학자들은 더 많은 분자를 알고 있단다.', onClose: () => removeAtoms(r.ids) });
       if (isNew) fanfare();
@@ -1026,7 +1109,7 @@ function chipDrag(chip, emoji, onDrop) {
   chip.addEventListener('pointermove', e => {
     if (!start || e.pointerId !== start.id) return;
     if (!ghost && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 10) return;
-    if (!ghost) { ghost = el('div', { class: 'drag-ghost' }, emoji); document.body.append(ghost); }
+    if (!ghost) { ghost = el('div', { class: 'drag-ghost' }, emoji); document.body.append(ghost); $('#mixer').classList.remove('idle'); }
     ghost.style.left = e.clientX + 'px'; ghost.style.top = e.clientY + 'px';
     $('#tray').classList.toggle('drop-ready', overTray(e.clientX, e.clientY));
   });
@@ -1036,6 +1119,7 @@ function chipDrag(chip, emoji, onDrop) {
     $('#tray').classList.remove('drop-ready');
     if (!ghost) return;
     ghost.remove(); ghost = null;
+    $('#mixer').classList.toggle('idle', !tray.length);
     chip.dataset.dragged = '1'; // 끌기 뒤에 따라오는 click은 무시
     setTimeout(() => { delete chip.dataset.dragged; }, 400);
     if (!cancelled) onDrop(e.clientX, e.clientY);
@@ -1044,8 +1128,11 @@ function chipDrag(chip, emoji, onDrop) {
   chip.addEventListener('pointercancel', e => end(e, true));
 }
 // 레시피 재료로 쓰이는 분자(물, 모래)는 만들자마자 그릇으로 쏙 넣어 준다
+const ALWAYS_TO_TRAY = ['H2O', 'O2Si', 'ClNa'];
 function dropIntoTray(key) {
   if (!RECIPES.some(r => r.inputs.includes(key))) return;
+  const m = currentMission(state.found);
+  if (!ALWAYS_TO_TRAY.includes(key) && !(m && missionHint(m, modeOf(state)).includes(key))) return;
   if (tray.includes(key) || tray.length >= TRAY_MAX) return;
   tray.push(key); renderTray();
   const chips = document.querySelectorAll('#tray-items .item-chip');
@@ -1070,7 +1157,7 @@ function renderTray() {
     box.append(b);
   });
   $('#tray').classList.toggle('empty', !tray.length);
-  $('#tray-empty').hidden = tray.length > 0;
+  $('#mixer').classList.toggle('idle', !tray.length);
   renderTools();
 }
 function renderTools() {
@@ -1088,10 +1175,16 @@ $('#combine-btn').addEventListener('click', () => {
     else toast('이 조합으로는 아무것도 안 생겨. 다른 걸 섞어 봐!');
     return;
   }
-  const it = ITEMS[out];
   const isNew = discover(out);
   tray = []; renderTray();
   if (isNew) fanfare(); else beep(880, 0.1);
+  const mol = MOLECULES[out];
+  if (mol) { // 분자 + 분자 반응
+    queueCard({ emoji: mol.emoji, tag: isNew ? '✨ 반응 성공!' : '또 만들었어!', name: mol.name, formula: mol.formula,
+      why: (REACTION_NOTE[out] ? REACTION_NOTE[out] + ' ' : '') + mol.why, onClose: () => { afterMake(out); dropIntoTray(out); } });
+    return;
+  }
+  const it = ITEMS[out];
   queueCard({ emoji: it.emoji, tag: isNew ? '✨ 새 발명!' : '또 만들었어!', name: it.name, why: it.why,
     onClose: () => afterMake(out) });
 });
@@ -1245,10 +1338,24 @@ function renderMap(body) {
 }
 
 /* ---- missions ---- */
+const HINT_LIMIT = 3, FIRST_TIPS = ['H2', 'H2O', 'O2'];
+function atomCounts(key) { return [...key.matchAll(/([A-Z][a-z]?)(\d*)/g)].map(([, sym, n]) => [sym, +(n || 1)]); }
+function tipText(key) {
+  const press = atomCounts(key).map(([sym, n]) => `${sym}를 ${n}번`).join(', ');
+  const join = key === 'O2' ? '② O 하나를 끌어서 다른 O에 대고, 한 번 더 대면 손을 두 개 잡아' : '② 원자를 끌어서 다른 원자에 대면 손을 잡아';
+  return `① 서랍에서 ${press} 눌러 ${join} ③ 동그라미 손이 모두 잡히면 완성!`;
+}
 function renderMission() {
-  const m = currentMission(state.found);
+  const m = currentMission(state.found), mode = modeOf(state);
   $('#mission-text').textContent = m ? '🎯 ' + m.text : '🏅 미션을 모두 깼어! 실험실에서 마음껏 실험해 봐';
   $('#hint-btn').hidden = !m;
+  const left = m && mode === 'hard' ? HINT_LIMIT - ((state.hintUsed || {})[m.target] || 0) : null;
+  $('#hint-left').textContent = left === null ? '' : String(left);
+  $('#hint-btn').disabled = left !== null && left <= 0;
+  const tip = $('#tip');
+  tip.hidden = !(m && mode !== 'hard' && FIRST_TIPS.includes(m.target));
+  if (!tip.hidden) tip.textContent = '💡 ' + tipText(m.target);
+  renderGuide();
   const madeAnyInvention = Object.keys(ITEMS).some(k => !ITEMS[k].raw && state.found.includes(k));
   if (m && ITEMS[m.target] && !state.trayIntro && !madeAnyInvention) {
     state.trayIntro = true; saveState(state);
@@ -1257,12 +1364,23 @@ function renderMission() {
   }
 }
 $('#hint-btn').addEventListener('click', () => {
-  const m = currentMission(state.found);
+  const m = currentMission(state.found), mode = modeOf(state);
   if (!m) return;
-  const els = m.hint.map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
+  if (mode === 'hard') {
+    if (((state.hintUsed || {})[m.target] || 0) >= HINT_LIMIT) return;
+    state.hintUsed = { ...(state.hintUsed || {}), [m.target]: ((state.hintUsed || {})[m.target] || 0) + 1 }; saveState(state); renderMission();
+  }
+  if (mode === 'easy' && MOLECULES[m.target]) { // 쉬움: 필요한 원자를 실험대에 올려 준다
+    for (const [sym, n] of atomCounts(m.target)) {
+      const have = bench.atoms.filter(a => a.sym === sym && !busy.has(a.id)).length;
+      for (let i = have; i < n; i++) spawnAtom(sym);
+    }
+    renderGuide();
+  }
+  const els = missionHint(m, mode).map(h => ATOMS[h] ? document.querySelector(`[data-atom="${h}"]`)
     : h === 'heat' ? document.querySelector('#drawer [data-item="fire"]') : document.querySelector(`#drawer [data-item="${h}"]`)).filter(Boolean);
   els.forEach(e => e.classList.add('glow'));
-  toast(hintText(m), 4500);
+  toast(hintText(m, mode), 4500);
   if (els[0]) els[0].scrollIntoView({ block: 'nearest' });
   setTimeout(() => els.forEach(e => e.classList.remove('glow')), 4000);
 });
@@ -1353,6 +1471,11 @@ function renderSave(body) {
   input.addEventListener('change', () => { const f = input.files && input.files[0]; if (f) loadSaveFile(f); input.value = ''; });
   row.append(saveBtn, loadLbl, input);
   body.append(row);
+  body.append(el('h3', {}, '난이도'));
+  const mrow = el('div', { class: 'mode-row' });
+  const fill = () => { mrow.textContent = ''; modeButtons(mrow, id => { setMode(id); fill(); toast(`${MODES.find(m => m.id === id).name} 모드!`); }); };
+  fill();
+  body.append(mrow);
 }
 function downloadSave() {
   const blob = new Blob([exportSave(state)], { type: 'application/json' });
@@ -1375,6 +1498,30 @@ function loadSaveFile(file) {
       why: '저장해 둔 곳부터 이어서 해 보자!' });
   }).catch(() => toast('이 파일은 불러올 수 없어 😢'));
 }
+/* ---- 난이도 ---- */
+const MODES = [
+  { id: 'easy', em: '😊', name: '쉬움', desc: '원자를 미리 올려 주고 손가락으로 길을 알려 줘' },
+  { id: 'normal', em: '🙂', name: '보통', desc: '팁과 힌트가 있어. 실제 반응 순서도 알려 줘' },
+  { id: 'hard', em: '😤', name: '어려움', desc: '힌트 3번, 손 개수는 기억해야 해. 반응 순서를 꼭 지켜!' },
+];
+function modeButtons(box, onPick) {
+  for (const m of MODES) {
+    const b = el('button', { class: 'mode-btn', 'data-mode': m.id, 'aria-pressed': String(modeOf(state) === m.id && !!state.mode) });
+    const t = el('span', {}); t.append(el('b', {}, m.name), el('small', {}, m.desc));
+    b.append(el('span', { class: 'em' }, m.em), t);
+    b.addEventListener('click', () => onPick(m.id));
+    box.append(b);
+  }
+}
+function setMode(id) {
+  state.mode = id; saveState(state);
+  renderDrawer(); renderMission(); renderBench();
+}
+function showModePick() {
+  const box = $('#mode-pick .mode-list'); box.textContent = '';
+  modeButtons(box, id => { $('#mode-pick').hidden = true; setMode(id); toast(`${MODES.find(m => m.id === id).name} 모드로 시작!`); });
+  $('#mode-pick').hidden = false;
+}
 function renderMute() { $('#mute').textContent = state.muted ? '🔇' : '🔊'; }
 $('#save-menu').addEventListener('click', () => openPanel('save'));
 $('#mute').addEventListener('click', () => { state.muted = !state.muted; saveState(state); renderMute(); });
@@ -1385,12 +1532,14 @@ window.addEventListener('resize', () => {
 });
 
 /*INIT_MORE*/
+const FIRST_RUN = (() => { try { return !localStorage.getItem(SAVE_KEY); } catch (e) { return false; } })();
 renderDrawer();
 renderTray();
 checkEra();
 renderMute();
 setTab(START_TAB());
 renderBench();
+if (FIRST_RUN) showModePick();
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 }
