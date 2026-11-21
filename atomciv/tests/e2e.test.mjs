@@ -203,6 +203,7 @@ test('a second pointer does not hijack an atom drag', async () => {
 
 test('an atom dropped on the tray is pushed back into open bench space', async () => {
   const { ctx, page } = await fresh();
+  await page.click('#drawer [data-item=wood]'); // 그릇이 보이게
   await page.click('[data-atom=O]');
   const id = (await benchIds(page, 'O'))[0];
   await drag(page, `.atom[data-id="${id}"]`, '#tray');
@@ -475,6 +476,8 @@ test('territory map: hex island with fog, borders grow, tapping a building opens
 
 test('phone: atoms never appear under the mixing bowl', async () => {
   const { ctx, page } = await fresh(PHONE);
+  await page.locator('#drawer [data-item=wood]').scrollIntoViewIfNeeded();
+  await page.click('#drawer [data-item=wood]'); // 그릇이 보이게
   for (let i = 0; i < 6; i++) await page.click('[data-atom=H]');
   const box = await page.locator('#mixer').boundingBox();
   const bench = await page.locator('#bench').boundingBox();
@@ -753,5 +756,64 @@ test('phone: the bigger map scrolls and opens centred on the capital', async () 
   const r = await page.evaluate(() => { const s = document.querySelector('#map-scroll'); return { sw: s.scrollWidth, cw: s.clientWidth, sl: s.scrollLeft }; });
   assert.ok(r.sw > r.cw, 'map is wider than the screen');
   assert.ok(Math.abs(r.sl - (r.sw - r.cw) / 2) < 30, 'centred');
+  await ctx.close();
+});
+
+// ---- 검토에서 나온 문제들 ----
+test('review: hand dots show in easy and normal, hidden only in hard', async () => {
+  for (const [mode, shown] of [['easy', true], ['normal', true], ['hard', false]]) {
+    const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode }));
+    assert.equal(await page.locator('[data-atom=O] .hands').isVisible(), shown, mode);
+    await ctx.close();
+  }
+});
+
+test('review: easy finger hides when a panel opens and ignores atoms not in the target', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true, mode: 'easy' }), true);
+  await page.click('[data-tab=lab]');
+  await page.click('[data-atom=Na]');
+  await page.click('[data-tab=mission]');
+  await page.click('#hint-btn');
+  await page.waitForSelector('#guide:not([hidden])');
+  const syms = await page.evaluate(() => [document.querySelector('#guide').dataset.from, document.querySelector('#guide').dataset.to]
+    .map(id => document.querySelector(`#bench .atom[data-id="${id}"]`).dataset.sym));
+  assert.ok(!syms.includes('Na'), `guide pair ${syms}`);
+  await page.click('[data-tab=dex]');
+  assert.ok(await page.locator('#guide').isHidden(), 'hidden under the dex');
+  await ctx.close();
+});
+
+test('review: start over while placing a building leaves no placing mode behind', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'H2O', 'hut'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  await page.click('[data-tab=map]');
+  await page.click('#panel [data-build=hut]');
+  await page.click('#save-menu');
+  await page.click('#reset-btn'); await page.click('#card-ok');
+  await page.click('#mode-pick [data-mode=normal]');
+  await page.click('[data-tab=map]');
+  assert.equal(await page.locator('#place-bar').count(), 0);
+  assert.equal(await page.locator('.hex.site').count(), 0);
+  await ctx.close();
+});
+
+test('review: a bonded pair moves together when the bowl grows', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'CO2', 'H2O'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  for (let i = 0; i < 6; i++) await page.click('[data-atom=H]');
+  await page.click('[data-atom=C]'); await page.click('[data-atom=O]');
+  const [c] = await benchIds(page, 'C'); const [o] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${o}"]`, `.atom[data-id="${c}"]`);
+  for (const id of ['wood', 'flint', 'clay', 'CO2', 'H2O', 'charcoal']) { await page.locator(`#drawer [data-item=${id}]`).scrollIntoViewIfNeeded(); await page.click(`#drawer [data-item=${id}]`); }
+  const d = await page.evaluate(([a, b]) => { const r = id => document.querySelector(`#bench .atom[data-id="${id}"]`).getBoundingClientRect();
+    const p = r(a), q = r(b); return Math.hypot(p.x - q.x, p.y - q.y); }, [c, o]);
+  assert.ok(d < 140, `bonded atoms ${Math.round(d)}px apart`);
+  await ctx.close();
+});
+
+test('review: old saves show 보통 as the selected difficulty', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true }));
+  await page.click('#save-menu');
+  assert.equal(await page.getAttribute('#panel [data-mode=normal]', 'aria-pressed'), 'true');
   await ctx.close();
 });
