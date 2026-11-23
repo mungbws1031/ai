@@ -1,0 +1,2362 @@
+{
+ "basic_home|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 20.63
+   },
+   {
+    "id": "sugar",
+    "amountG": 7.5
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 16.5
+   }
+  ],
+  "zon": {
+   "score": 82,
+   "fit": 100
+  }
+ },
+ "basic_home|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 16.88
+   },
+   {
+    "id": "sugar",
+    "amountG": 0.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 9
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 98
+  }
+ },
+ "basic_home|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 18.75
+   },
+   {
+    "id": "sugar",
+    "amountG": 4.5
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 30
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 100
+  }
+ },
+ "kids_sweet_savory|stir_fry": {
+  "ingredients": [
+   {
+    "id": "soy_sauce",
+    "amountG": 15
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 10
+   },
+   {
+    "id": "butter",
+    "amountG": 10
+   },
+   {
+    "id": "garlic",
+    "amountG": 2
+   },
+   {
+    "id": "water",
+    "amountG": 40
+   }
+  ],
+  "zon": {
+   "score": 82,
+   "fit": 98
+  }
+ },
+ "kids_sweet_savory|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 15
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 10
+   },
+   {
+    "id": "butter",
+    "amountG": 10
+   },
+   {
+    "id": "garlic",
+    "amountG": 2
+   },
+   {
+    "id": "water",
+    "amountG": 40
+   }
+  ],
+  "zon": {
+   "score": 82,
+   "fit": 98
+  }
+ },
+ "kids_sweet_savory|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "soy_sauce",
+    "amountG": 15
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 10
+   },
+   {
+    "id": "butter",
+    "amountG": 10
+   },
+   {
+    "id": "garlic",
+    "amountG": 2
+   },
+   {
+    "id": "water",
+    "amountG": 40
+   }
+  ],
+  "zon": {
+   "score": 82,
+   "fit": 98
+  }
+ },
+ "trendy_rose|stir_fry": {
+  "ingredients": [
+   {
+    "id": "cheese",
+    "amountG": 17.25
+   },
+   {
+    "id": "milk_or_cream",
+    "amountG": 25.87
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 10.5
+   },
+   {
+    "id": "ketchup",
+    "amountG": 9.78
+   },
+   {
+    "id": "gochujang",
+    "amountG": 12.5
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 30.19
+   }
+  ],
+  "zon": {
+   "score": 66,
+   "fit": 87
+  }
+ },
+ "trendy_rose|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "cheese",
+    "amountG": 17.25
+   },
+   {
+    "id": "milk_or_cream",
+    "amountG": 25.87
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 10.5
+   },
+   {
+    "id": "ketchup",
+    "amountG": 9.78
+   },
+   {
+    "id": "gochujang",
+    "amountG": 12.5
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 30.19
+   }
+  ],
+  "zon": {
+   "score": 66,
+   "fit": 87
+  }
+ },
+ "trendy_rose|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "cheese",
+    "amountG": 17.25
+   },
+   {
+    "id": "milk_or_cream",
+    "amountG": 25.87
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 10.5
+   },
+   {
+    "id": "ketchup",
+    "amountG": 9.78
+   },
+   {
+    "id": "gochujang",
+    "amountG": 12.5
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 30.19
+   }
+  ],
+  "zon": {
+   "score": 66,
+   "fit": 87
+  }
+ },
+ "hot_honey_chicken|stir_fry": {
+  "ingredients": [
+   {
+    "id": "gochujang",
+    "amountG": 20
+   },
+   {
+    "id": "ketchup",
+    "amountG": 20
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 8
+   },
+   {
+    "id": "honey",
+    "amountG": 25
+   },
+   {
+    "id": "vinegar",
+    "amountG": 5
+   },
+   {
+    "id": "garlic",
+    "amountG": 4
+   }
+  ],
+  "zon": {
+   "score": 55,
+   "fit": 77
+  }
+ },
+ "hot_honey_chicken|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "gochujang",
+    "amountG": 20
+   },
+   {
+    "id": "ketchup",
+    "amountG": 20
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 8
+   },
+   {
+    "id": "honey",
+    "amountG": 25
+   },
+   {
+    "id": "vinegar",
+    "amountG": 5
+   },
+   {
+    "id": "garlic",
+    "amountG": 4
+   }
+  ],
+  "zon": {
+   "score": 55,
+   "fit": 77
+  }
+ },
+ "hot_honey_chicken|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "gochujang",
+    "amountG": 20
+   },
+   {
+    "id": "ketchup",
+    "amountG": 20
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 8
+   },
+   {
+    "id": "honey",
+    "amountG": 25
+   },
+   {
+    "id": "vinegar",
+    "amountG": 5
+   },
+   {
+    "id": "garlic",
+    "amountG": 4
+   }
+  ],
+  "zon": {
+   "score": 55,
+   "fit": 77
+  }
+ },
+ "chili_crisp|stir_fry": {
+  "ingredients": [
+   {
+    "id": "fried_garlic",
+    "amountG": 6
+   },
+   {
+    "id": "fried_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 45
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 2.4
+   },
+   {
+    "id": "sesame",
+    "amountG": 3
+   }
+  ],
+  "zon": {
+   "score": 50,
+   "fit": 79
+  }
+ },
+ "chili_crisp|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "fried_garlic",
+    "amountG": 6
+   },
+   {
+    "id": "fried_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 45
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 2.4
+   },
+   {
+    "id": "sesame",
+    "amountG": 3
+   }
+  ],
+  "zon": {
+   "score": 50,
+   "fit": 79
+  }
+ },
+ "chili_crisp|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "fried_garlic",
+    "amountG": 6
+   },
+   {
+    "id": "fried_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 45
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 2.4
+   },
+   {
+    "id": "sesame",
+    "amountG": 3
+   }
+  ],
+  "zon": {
+   "score": 50,
+   "fit": 79
+  }
+ },
+ "yuzu_lime_spicy|stir_fry": {
+  "ingredients": [
+   {
+    "id": "soy_sauce",
+    "amountG": 19.69
+   },
+   {
+    "id": "yuzu_syrup",
+    "amountG": 21
+   },
+   {
+    "id": "chili_sauce",
+    "amountG": 22.5
+   },
+   {
+    "id": "vinegar",
+    "amountG": 8.92
+   },
+   {
+    "id": "lime_juice",
+    "amountG": 4.78
+   }
+  ],
+  "zon": {
+   "score": 60,
+   "fit": 77
+  }
+ },
+ "yuzu_lime_spicy|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 19.69
+   },
+   {
+    "id": "yuzu_syrup",
+    "amountG": 21
+   },
+   {
+    "id": "chili_sauce",
+    "amountG": 22.5
+   },
+   {
+    "id": "vinegar",
+    "amountG": 8.92
+   },
+   {
+    "id": "lime_juice",
+    "amountG": 4.78
+   }
+  ],
+  "zon": {
+   "score": 60,
+   "fit": 77
+  }
+ },
+ "yuzu_lime_spicy|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "soy_sauce",
+    "amountG": 19.69
+   },
+   {
+    "id": "yuzu_syrup",
+    "amountG": 21
+   },
+   {
+    "id": "chili_sauce",
+    "amountG": 22.5
+   },
+   {
+    "id": "vinegar",
+    "amountG": 8.92
+   },
+   {
+    "id": "lime_juice",
+    "amountG": 4.78
+   }
+  ],
+  "zon": {
+   "score": 60,
+   "fit": 77
+  }
+ },
+ "gochujang_mayo|stir_fry": {
+  "ingredients": [
+   {
+    "id": "mayo",
+    "amountG": 225
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 23.44
+   },
+   {
+    "id": "sugar",
+    "amountG": 8.4
+   },
+   {
+    "id": "gochujang",
+    "amountG": 20
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "vinegar",
+    "amountG": 6
+   }
+  ],
+  "zon": {
+   "score": 64,
+   "fit": 84
+  }
+ },
+ "gochujang_mayo|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "mayo",
+    "amountG": 225
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 23.44
+   },
+   {
+    "id": "sugar",
+    "amountG": 8.4
+   },
+   {
+    "id": "gochujang",
+    "amountG": 20
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "vinegar",
+    "amountG": 6
+   }
+  ],
+  "zon": {
+   "score": 64,
+   "fit": 84
+  }
+ },
+ "gochujang_mayo|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "mayo",
+    "amountG": 225
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 23.44
+   },
+   {
+    "id": "sugar",
+    "amountG": 8.4
+   },
+   {
+    "id": "gochujang",
+    "amountG": 20
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "vinegar",
+    "amountG": 6
+   }
+  ],
+  "zon": {
+   "score": 64,
+   "fit": 84
+  }
+ },
+ "baek_jongwon|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 12.6
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 23.44
+   },
+   {
+    "id": "sugar",
+    "amountG": 12
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 5.4
+   }
+  ],
+  "zon": {
+   "score": 80,
+   "fit": 99
+  }
+ },
+ "baek_jongwon|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 12.6
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 23.44
+   },
+   {
+    "id": "sugar",
+    "amountG": 12
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 5.4
+   }
+  ],
+  "zon": {
+   "score": 80,
+   "fit": 99
+  }
+ },
+ "baek_jongwon|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 12.6
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 23.44
+   },
+   {
+    "id": "sugar",
+    "amountG": 12
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 5.4
+   }
+  ],
+  "zon": {
+   "score": 80,
+   "fit": 99
+  }
+ },
+ "ryu_sooyoung|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "oil",
+    "amountG": 22.5
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 7.35
+   },
+   {
+    "id": "gochujang",
+    "amountG": 8.75
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 13.13
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 93
+  }
+ },
+ "ryu_sooyoung|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "oil",
+    "amountG": 22.5
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 7.35
+   },
+   {
+    "id": "gochujang",
+    "amountG": 8.75
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 13.13
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 93
+  }
+ },
+ "ryu_sooyoung|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "oil",
+    "amountG": 22.5
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 7.35
+   },
+   {
+    "id": "gochujang",
+    "amountG": 8.75
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 13.13
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 93
+  }
+ },
+ "lee_yeonbok|stir_fry": {
+  "ingredients": [
+   {
+    "id": "oyster_sauce",
+    "amountG": 15
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 8
+   },
+   {
+    "id": "sugar",
+    "amountG": 5
+   },
+   {
+    "id": "oil",
+    "amountG": 25
+   },
+   {
+    "id": "garlic",
+    "amountG": 4
+   },
+   {
+    "id": "ginger",
+    "amountG": 1
+   },
+   {
+    "id": "starch_water",
+    "amountG": 20
+   }
+  ],
+  "zon": {
+   "score": 71,
+   "fit": 75
+  }
+ },
+ "lee_yeonbok|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 15
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 8
+   },
+   {
+    "id": "sugar",
+    "amountG": 5
+   },
+   {
+    "id": "oil",
+    "amountG": 25
+   },
+   {
+    "id": "garlic",
+    "amountG": 4
+   },
+   {
+    "id": "ginger",
+    "amountG": 1
+   },
+   {
+    "id": "starch_water",
+    "amountG": 20
+   }
+  ],
+  "zon": {
+   "score": 71,
+   "fit": 75
+  }
+ },
+ "lee_yeonbok|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "oyster_sauce",
+    "amountG": 15
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 8
+   },
+   {
+    "id": "sugar",
+    "amountG": 5
+   },
+   {
+    "id": "oil",
+    "amountG": 25
+   },
+   {
+    "id": "garlic",
+    "amountG": 4
+   },
+   {
+    "id": "ginger",
+    "amountG": 1
+   },
+   {
+    "id": "starch_water",
+    "amountG": 20
+   }
+  ],
+  "zon": {
+   "score": 71,
+   "fit": 75
+  }
+ },
+ "choi_kangrok|stir_fry": {
+  "ingredients": [
+   {
+    "id": "soy_sauce",
+    "amountG": 17.81
+   },
+   {
+    "id": "sugar",
+    "amountG": 4.2
+   },
+   {
+    "id": "mirin",
+    "amountG": 4.5
+   },
+   {
+    "id": "dashi",
+    "amountG": 15
+   },
+   {
+    "id": "yeondu",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 78
+  }
+ },
+ "choi_kangrok|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 17.81
+   },
+   {
+    "id": "sugar",
+    "amountG": 4.2
+   },
+   {
+    "id": "mirin",
+    "amountG": 4.5
+   },
+   {
+    "id": "dashi",
+    "amountG": 15
+   },
+   {
+    "id": "yeondu",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 78
+  }
+ },
+ "choi_kangrok|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "soy_sauce",
+    "amountG": 17.81
+   },
+   {
+    "id": "sugar",
+    "amountG": 4.2
+   },
+   {
+    "id": "mirin",
+    "amountG": 4.5
+   },
+   {
+    "id": "dashi",
+    "amountG": 15
+   },
+   {
+    "id": "yeondu",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 78
+  }
+ },
+ "gordon_ramsay|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "olive_oil",
+    "amountG": 29.4
+   },
+   {
+    "id": "salt",
+    "amountG": 3.15
+   },
+   {
+    "id": "butter",
+    "amountG": 15.75
+   },
+   {
+    "id": "lemon_juice",
+    "amountG": 3.28
+   },
+   {
+    "id": "herbs",
+    "amountG": 1.2
+   },
+   {
+    "id": "pepper",
+    "amountG": 0.3
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 100
+  }
+ },
+ "gordon_ramsay|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "olive_oil",
+    "amountG": 29.4
+   },
+   {
+    "id": "salt",
+    "amountG": 3.15
+   },
+   {
+    "id": "butter",
+    "amountG": 15.75
+   },
+   {
+    "id": "lemon_juice",
+    "amountG": 3.28
+   },
+   {
+    "id": "herbs",
+    "amountG": 1.2
+   },
+   {
+    "id": "pepper",
+    "amountG": 0.3
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 100
+  }
+ },
+ "gordon_ramsay|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "olive_oil",
+    "amountG": 29.4
+   },
+   {
+    "id": "salt",
+    "amountG": 3.15
+   },
+   {
+    "id": "butter",
+    "amountG": 15.75
+   },
+   {
+    "id": "lemon_juice",
+    "amountG": 3.28
+   },
+   {
+    "id": "herbs",
+    "amountG": 1.2
+   },
+   {
+    "id": "pepper",
+    "amountG": 0.3
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 100
+  }
+ },
+ "fine_dining|stir_fry": {
+  "ingredients": [
+   {
+    "id": "olive_oil",
+    "amountG": 21
+   },
+   {
+    "id": "salt",
+    "amountG": 2.85
+   },
+   {
+    "id": "butter",
+    "amountG": 11.25
+   },
+   {
+    "id": "lemon_juice",
+    "amountG": 5.63
+   },
+   {
+    "id": "herbs",
+    "amountG": 1.2
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 100
+  }
+ },
+ "fine_dining|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "olive_oil",
+    "amountG": 21
+   },
+   {
+    "id": "salt",
+    "amountG": 2.85
+   },
+   {
+    "id": "butter",
+    "amountG": 11.25
+   },
+   {
+    "id": "lemon_juice",
+    "amountG": 5.63
+   },
+   {
+    "id": "herbs",
+    "amountG": 1.2
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 100
+  }
+ },
+ "fine_dining|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "olive_oil",
+    "amountG": 21
+   },
+   {
+    "id": "salt",
+    "amountG": 2.85
+   },
+   {
+    "id": "butter",
+    "amountG": 11.25
+   },
+   {
+    "id": "lemon_juice",
+    "amountG": 5.63
+   },
+   {
+    "id": "herbs",
+    "amountG": 1.2
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 100
+  }
+ },
+ "pa_oil|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 24
+   },
+   {
+    "id": "oil",
+    "amountG": 27
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 19.69
+   },
+   {
+    "id": "sugar",
+    "amountG": 3.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 99
+  }
+ },
+ "pa_oil|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 24
+   },
+   {
+    "id": "oil",
+    "amountG": 27
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 19.69
+   },
+   {
+    "id": "sugar",
+    "amountG": 3.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 99
+  }
+ },
+ "pa_oil|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 24
+   },
+   {
+    "id": "oil",
+    "amountG": 27
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 19.69
+   },
+   {
+    "id": "sugar",
+    "amountG": 3.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 99
+  }
+ },
+ "oil_tteokbokki|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 27
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 6
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 9
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 99
+  }
+ },
+ "oil_tteokbokki|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 27
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 6
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 9
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 99
+  }
+ },
+ "oil_tteokbokki|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 27
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 6
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 21.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 9
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 72,
+   "fit": 99
+  }
+ },
+ "maepdan|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "oil",
+    "amountG": 12
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 14.53
+   },
+   {
+    "id": "sugar",
+    "amountG": 15.75
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 4.82
+   },
+   {
+    "id": "gochujang",
+    "amountG": 18.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 2.4
+   }
+  ],
+  "zon": {
+   "score": 62,
+   "fit": 99
+  }
+ },
+ "maepdan|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "oil",
+    "amountG": 12
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 14.53
+   },
+   {
+    "id": "sugar",
+    "amountG": 15.75
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 4.82
+   },
+   {
+    "id": "gochujang",
+    "amountG": 18.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 2.4
+   }
+  ],
+  "zon": {
+   "score": 62,
+   "fit": 99
+  }
+ },
+ "maepdan|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "oil",
+    "amountG": 12
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 14.53
+   },
+   {
+    "id": "sugar",
+    "amountG": 15.75
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 4.82
+   },
+   {
+    "id": "gochujang",
+    "amountG": 18.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 2.4
+   }
+  ],
+  "zon": {
+   "score": 62,
+   "fit": 99
+  }
+ },
+ "dan_jjan|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 22.27
+   },
+   {
+    "id": "sugar",
+    "amountG": 12.6
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 7.71
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 18.75
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 99
+  }
+ },
+ "dan_jjan|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 22.27
+   },
+   {
+    "id": "sugar",
+    "amountG": 12.6
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 7.71
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 18.75
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 99
+  }
+ },
+ "dan_jjan|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 22.27
+   },
+   {
+    "id": "sugar",
+    "amountG": 12.6
+   },
+   {
+    "id": "oligosaccharide",
+    "amountG": 7.71
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 18.75
+   }
+  ],
+  "zon": {
+   "score": 70,
+   "fit": 99
+  }
+ },
+ "chodding|stir_fry": {
+  "ingredients": [
+   {
+    "id": "mayo",
+    "amountG": 10.93
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 12.8
+   },
+   {
+    "id": "sugar",
+    "amountG": 12.6
+   },
+   {
+    "id": "ketchup",
+    "amountG": 23.48
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 22.31
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 99
+  }
+ },
+ "chodding|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "mayo",
+    "amountG": 10.93
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 12.8
+   },
+   {
+    "id": "sugar",
+    "amountG": 12.6
+   },
+   {
+    "id": "ketchup",
+    "amountG": 23.48
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 22.31
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 99
+  }
+ },
+ "chodding|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "mayo",
+    "amountG": 10.93
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 12.8
+   },
+   {
+    "id": "sugar",
+    "amountG": 12.6
+   },
+   {
+    "id": "ketchup",
+    "amountG": 23.48
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   },
+   {
+    "id": "butter",
+    "amountG": 22.31
+   }
+  ],
+  "zon": {
+   "score": 74,
+   "fit": 99
+  }
+ },
+ "honey_butter|stir_fry": {
+  "ingredients": [
+   {
+    "id": "salt",
+    "amountG": 1.84
+   },
+   {
+    "id": "sugar",
+    "amountG": 14.7
+   },
+   {
+    "id": "honey",
+    "amountG": 7.87
+   },
+   {
+    "id": "butter",
+    "amountG": 41.25
+   }
+  ],
+  "zon": {
+   "score": 65,
+   "fit": 100
+  }
+ },
+ "honey_butter|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "salt",
+    "amountG": 1.84
+   },
+   {
+    "id": "sugar",
+    "amountG": 14.7
+   },
+   {
+    "id": "honey",
+    "amountG": 7.87
+   },
+   {
+    "id": "butter",
+    "amountG": 41.25
+   }
+  ],
+  "zon": {
+   "score": 65,
+   "fit": 100
+  }
+ },
+ "honey_butter|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "salt",
+    "amountG": 1.84
+   },
+   {
+    "id": "sugar",
+    "amountG": 14.7
+   },
+   {
+    "id": "honey",
+    "amountG": 7.87
+   },
+   {
+    "id": "butter",
+    "amountG": 41.25
+   }
+  ],
+  "zon": {
+   "score": 65,
+   "fit": 100
+  }
+ },
+ "fire_wok|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 22.5
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 10.78
+   },
+   {
+    "id": "sugar",
+    "amountG": 6.3
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 22.5
+   }
+  ],
+  "zon": {
+   "score": 81,
+   "fit": 100
+  }
+ },
+ "fire_wok|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 22.5
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 10.78
+   },
+   {
+    "id": "sugar",
+    "amountG": 6.3
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 22.5
+   }
+  ],
+  "zon": {
+   "score": 81,
+   "fit": 100
+  }
+ },
+ "fire_wok|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 22.5
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 10.78
+   },
+   {
+    "id": "sugar",
+    "amountG": 6.3
+   },
+   {
+    "id": "oyster_sauce",
+    "amountG": 22.5
+   }
+  ],
+  "zon": {
+   "score": 81,
+   "fit": 100
+  }
+ },
+ "eolkeun|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 7.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 4.2
+   },
+   {
+    "id": "fish_sauce",
+    "amountG": 11.02
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 5.91
+   }
+  ],
+  "zon": {
+   "score": 59,
+   "fit": 100
+  }
+ },
+ "eolkeun|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 7.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 4.2
+   },
+   {
+    "id": "fish_sauce",
+    "amountG": 11.02
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 5.91
+   }
+  ],
+  "zon": {
+   "score": 59,
+   "fit": 100
+  }
+ },
+ "eolkeun|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "green_onion",
+    "amountG": 6
+   },
+   {
+    "id": "oil",
+    "amountG": 7.5
+   },
+   {
+    "id": "chili_powder",
+    "amountG": 4.2
+   },
+   {
+    "id": "fish_sauce",
+    "amountG": 11.02
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 5.91
+   }
+  ],
+  "zon": {
+   "score": 59,
+   "fit": 100
+  }
+ },
+ "mala|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "ginger",
+    "amountG": 1.2
+   },
+   {
+    "id": "sichuan_pepper",
+    "amountG": 0.9
+   },
+   {
+    "id": "oil",
+    "amountG": 24.15
+   },
+   {
+    "id": "mala_sauce",
+    "amountG": 25.87
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 10.5
+   },
+   {
+    "id": "sugar",
+    "amountG": 3.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 61,
+   "fit": 99
+  }
+ },
+ "mala|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "ginger",
+    "amountG": 1.2
+   },
+   {
+    "id": "sichuan_pepper",
+    "amountG": 0.9
+   },
+   {
+    "id": "oil",
+    "amountG": 24.15
+   },
+   {
+    "id": "mala_sauce",
+    "amountG": 25.87
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 10.5
+   },
+   {
+    "id": "sugar",
+    "amountG": 3.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 61,
+   "fit": 99
+  }
+ },
+ "mala|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "ginger",
+    "amountG": 1.2
+   },
+   {
+    "id": "sichuan_pepper",
+    "amountG": 0.9
+   },
+   {
+    "id": "oil",
+    "amountG": 24.15
+   },
+   {
+    "id": "mala_sauce",
+    "amountG": 25.87
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 10.5
+   },
+   {
+    "id": "sugar",
+    "amountG": 3.75
+   },
+   {
+    "id": "dasida",
+    "amountG": 1.5
+   }
+  ],
+  "zon": {
+   "score": 61,
+   "fit": 99
+  }
+ },
+ "chojang|stir_fry": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 6.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 14.7
+   },
+   {
+    "id": "gochujang",
+    "amountG": 35
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 6
+   },
+   {
+    "id": "vinegar",
+    "amountG": 12
+   },
+   {
+    "id": "sesame",
+    "amountG": 3
+   }
+  ],
+  "zon": {
+   "score": 68,
+   "fit": 100
+  }
+ },
+ "chojang|stew": {
+  "ingredients": [
+   {
+    "id": "water",
+    "amountG": 170
+   },
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 6.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 14.7
+   },
+   {
+    "id": "gochujang",
+    "amountG": 35
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 6
+   },
+   {
+    "id": "vinegar",
+    "amountG": 12
+   },
+   {
+    "id": "sesame",
+    "amountG": 3
+   }
+  ],
+  "zon": {
+   "score": 68,
+   "fit": 100
+  }
+ },
+ "chojang|noodle_pasta": {
+  "ingredients": [
+   {
+    "id": "garlic",
+    "amountG": 3.9
+   },
+   {
+    "id": "soy_sauce",
+    "amountG": 6.56
+   },
+   {
+    "id": "sugar",
+    "amountG": 14.7
+   },
+   {
+    "id": "gochujang",
+    "amountG": 35
+   },
+   {
+    "id": "sesame_oil",
+    "amountG": 6
+   },
+   {
+    "id": "vinegar",
+    "amountG": 12
+   },
+   {
+    "id": "sesame",
+    "amountG": 3
+   }
+  ],
+  "zon": {
+   "score": 68,
+   "fit": 100
+  }
+ }
+}

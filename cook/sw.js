@@ -1,8 +1,8 @@
 /* 전자혀 서비스워커 — 오프라인 + 빠른 로딩 */
-const CACHE = "jeonjahyeo-v2";
+const CACHE = "jeonjahyeo-v12";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
-  "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
+  "./privacy.html", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"
 ];
 
 self.addEventListener("install", (e) => {

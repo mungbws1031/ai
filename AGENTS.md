@@ -12,6 +12,7 @@ companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF
 `gulza/` (무료 모션 자막 제작기 — ruruoni1/gulza v0.16.1 사본, MIT, 정적 웹앱 + AE 패널), and
 `atomciv/` (원자에서 문명까지 — 초등학생용 원자→분자→발명→시대 과학 게임, 단일 HTML PWA), and
 `parking-game/` (가로 화면 주차 게임 프로토타입 — 도로교통법 기준 정차·주차 판정, 정적 HTML + 바닐라 JS), and
+`cook/` (전자혀 — 요리 초보용 맛 튜닝 계산기 단일 파일 PWA + Capacitor 안드로이드 셸 `cook/app/`, 기획서 `cook/docs/PRD.md`, 출시 체크리스트 `cook/docs/RELEASE.md`), and
 `pm-map/` (PM 역량 맵 PWA — 16개 역량 맵·업무별 하이라이트·회고 퀴즈, 단일 HTML).
 
 ## Scope of rules

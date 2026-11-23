@@ -185,6 +185,50 @@
       law: '소방기본법 제21조의2 — 공동주택 소방차 전용구역 주차·진입 방해 금지 (과태료 1회 50만원, 2회 이상 100만원)',
       desc: '노란 빗금 칸에 "소방차 전용"이라 쓰인 곳입니다. 사유지라도 과태료가 나오고, 안전신문고로 신고됩니다.',
     },
+    women_slot: {
+      name: '여성우선 주차구역', short: '여성우선칸',
+      stop: true, park: true, severity: 1, fine: 0, report: false, tow: 0, cctvGrace: 999,
+      law: '법적 강제 없음 — 지자체 조례·주차장 운영 지침으로 두는 우선 구역(과태료 규정 없음)',
+      desc: '출입구·CCTV 가까이에 둔 우선 칸입니다. 과태료는 없지만 비워 두는 게 예의예요.',
+      consequence: '과태료는 없지만, 밤늦게 혼자 오는 운전자가 어둡고 먼 자리로 가야 합니다. 주차 요원이 이동을 부탁할 수 있어요.',
+    },
+    driveway: {
+      name: '남의 집 대문·차고 앞', short: '차고 앞',
+      stop: true, park: true, severity: 2, fine: 0, report: false, tow: 0.2, cctvGrace: 999,
+      law: '이면도로 가장자리라 별도 금지 표시가 없으면 과태료 근거는 약함 — 다만 차고 출입을 막으면 민원·이동 요청 대상',
+      desc: '금지 표시가 없으면 과태료는 거의 없지만, 집주인이 차를 못 꺼냅니다.',
+      consequence: '집주인이 앞유리 번호로 전화합니다. 연락이 안 되면 구청에 견인을 요청하기도 해요.',
+    },
+    bridge: {
+      name: '다리 위', short: '다리 위',
+      stop: true, park: false, severity: 3, fine: 40000, report: false, tow: 0.6, cctvGrace: 5,
+      law: '도로교통법 제33조 제1호 — 터널 안 및 다리 위 주차 금지 (정차는 가능, 승용 과태료 4만원)',
+      desc: '다리 위는 잠깐 서는 건 되지만 세워 두면 안 됩니다. 비상시 피할 곳이 없는 곳이에요.',
+    },
+    construction: {
+      name: '공사구역 5m 이내', short: '공사구역 5m',
+      stop: true, park: false, severity: 3, fine: 40000, report: false, tow: 0.6, cctvGrace: 5,
+      law: '도로교통법 제33조 제2호 가목 — 도로공사 구역 양쪽 가장자리로부터 5m 이내 주차 금지 (정차는 가능)',
+      desc: '공사 차량과 장비가 드나드는 곳입니다. 잠깐 정차는 되지만 세워 두면 안 됩니다.',
+    },
+    resident_slot: {
+      name: '거주자우선주차구역', short: '거주자우선',
+      stop: false, park: false, severity: 5, fine: 0, report: true, tow: 0.8, cctvGrace: 999,
+      law: '지자체 거주자우선주차 조례 — 배정받은 차만 주차. 무단 주차는 견인·이동 조치와 부정주차 과태료 대상(금액은 지자체마다 다름)',
+      desc: '흰 구획이지만 동네 주민이 돈을 내고 배정받은 자리입니다. 비어 있어도 다른 차는 안 됩니다.',
+    },
+    ramp: {
+      name: '경사로·차량 진입로', short: '경사로',
+      stop: false, park: false, severity: 5, fine: 0, report: false, tow: 0.3, cctvGrace: 999,
+      law: '주차장 관리규정 — 경사로·진출입로는 차량 통로라 정차·주차 금지(도로교통법 단속 대상 아님)',
+      desc: '층과 층을 잇는 길입니다. 멈추면 뒤차가 경사에서 서야 해 위험해요.',
+    },
+    fire_exit: {
+      name: '비상구·피난통로 앞', short: '비상구 앞',
+      stop: false, park: false, severity: 7, fine: 0, report: true, tow: 0.3, cctvGrace: 999,
+      law: '소방시설법 제16조 — 피난시설 주변에 장애물을 두면 안 됨(위반 시 과태료 대상이 될 수 있음) · 주차장 관리규정',
+      desc: '불이 나면 사람들이 빠져나가는 문입니다. 잠깐이라도 막으면 안 됩니다.',
+    },
   });
 
   // 네 가지 답: park = 주차 OK, stop = 정차만, no = 안 돼요, manner = 법은 OK·비매너
@@ -222,6 +266,13 @@
     fire_lane: ['no', '소방기본법', '소방차 전용구역은 아파트 안이어도 과태료 50만원부터예요.'],
     hydrant: ['no', '도로교통법', '소화전 앞 5m는 잠깐도 안 돼요. 불 나면 소방차가 물을 못 써요.'],
     school_zone: ['no', '도로교통법', '어린이보호구역은 잠깐 정차도 안 돼요. 과태료도 3배예요.'],
+    women_slot: ['manner', '관리규정·매너', '여성우선 칸은 과태료는 없지만 비워 두는 게 예의예요.'],
+    driveway: ['manner', '관리규정·매너', '남의 집 차고 앞은 과태료보다 "차 빼 주세요" 전화가 먼저 와요.'],
+    bridge: ['stop', '도로교통법', '다리 위는 잠깐 서는 것만 돼요. 세워 두면 안 돼요.'],
+    construction: ['stop', '도로교통법', '공사 구간 앞뒤 5m는 잠깐 서는 것만 돼요.'],
+    resident_slot: ['no', '지자체 조례', '거주자우선 칸은 비어 있어도 배정받은 차만 돼요.'],
+    ramp: ['no', '관리규정', '경사로에는 멈추면 안 돼요. 뒤차가 비탈에서 서야 해요.'],
+    fire_exit: ['no', '소방시설법·관리규정', '비상구 앞은 잠깐도 막으면 안 돼요. 불 나면 여기로 나가요.'],
   };
   for (const [k, [answer, basis, easy]] of Object.entries(META)) Object.assign(RULES[k], { answer, basis, easy });
   RULES.lot_aisle.consequence = '세워 둔 채 자리를 비우면 뒤차들이 경적을 울리고, 관리 직원이 방송으로 차주를 찾습니다.';
