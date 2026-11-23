@@ -146,3 +146,19 @@ test("양념 섞는 단계는 식용유를 빼라고 하고, 요리 모드에서
   assert.ok(t.includes("간장") && /큰술|작은술/.test(t), t);
   assert.ok(!t.includes("식용유"), t);
 }));
+
+test("조리 순서에 나오는 기름·버터는 재료 목록에도 있다 (목록에 없는 재료를 쓰라고 하지 않는다)", () => withApp(async page => {
+  const bad = await page.evaluate(() => {
+    const out = [];
+    for (const sid in TASTE_DISHES) for (const d of TASTE_DISHES[sid]) {
+      if (d.recipe) continue;
+      const names = dishLines(sid, d, 2).map(l => l.name).join(" ");
+      const text = dishSteps(d).steps.join(" ");
+      for (const w of ["식용유", "버터", "마요네즈", "소금"]) {
+        if (text.includes(w) && !names.includes(w) && !(w === "소금" && /싱거우면 소금/.test(text))) out.push(d.name + ": " + w);
+      }
+    }
+    return out;
+  });
+  assert.deepStrictEqual(bad, []);
+}));
