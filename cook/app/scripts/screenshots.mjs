@@ -48,7 +48,7 @@ await page.evaluate(() => {
 await shot("1-gamseong.png");
 
 // 2) 요리 고르기 시트
-await page.click("text=살 재료 담기");
+await page.click("text=살 재료 · 만드는 법");
 await page.click("#dishSheet .dish-opt >> nth=0");
 await page.click('#dishSheet [data-serv="2"]');
 await shot("2-dish-sheet.png");
