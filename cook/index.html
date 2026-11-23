@@ -352,6 +352,27 @@
   .cart-cook:empty{display:none}
   .cart-cook span{font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}
   .cart-cook button{font-family:var(--body);font-size:12.5px;font-weight:700;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:6px 11px;cursor:pointer}
+  .dish-cook{display:block;width:100%;font-family:var(--body);font-weight:900;font-size:15px;color:#fff;background:#2B2620;border:none;border-radius:13px;padding:13px;margin-bottom:8px;cursor:pointer}
+  .howto-sec small{font-weight:600;color:var(--faint)}
+  .howto-ing b small{font-weight:600;color:var(--faint);font-size:11px}
+  .rc-cook{margin:12px 0 0}
+  .cookmode{min-height:55dvh}
+  .cook-prog{font-size:13px;color:var(--muted);margin:4px 0 6px}
+  .cook-prog b{color:var(--accent);font-size:15px}
+  .cook-bar{height:6px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:16px}
+  .cook-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .cook-step{font-size:21px;line-height:1.55;font-weight:700;margin:0 0 18px;word-break:keep-all}
+  .cook-timer{display:block;width:100%;font-family:var(--mono);font-size:18px;font-weight:800;color:var(--accent);background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:14px;padding:14px;margin-bottom:14px;cursor:pointer}
+  .cook-timer.on{background:var(--accent);color:#fff}
+  .cook-nav{display:flex;gap:8px}
+  .cook-nav button{flex:1;font-family:var(--body);font-weight:800;font-size:15px;padding:14px;border-radius:13px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+  .cook-nav button.primary{flex:2;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;color:#1a130c}
+  .cook-nav button:disabled{opacity:.4}
+  .cook-seas{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:-6px 0 16px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+  .cook-seas div{width:100%;font-size:12px;font-weight:800;color:var(--muted)}
+  .cook-seas b{color:var(--accent)}
+  .cook-ask{font-size:15px;margin:0 0 10px}
+  .cook-taste{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
   .toastmsg{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px);transform:translateX(-50%);background:#2B2620;color:#fff;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90%}
   .toastmsg.show{opacity:1}
   .style-cart-btn{margin-top:10px}
@@ -1293,9 +1314,12 @@ FIX.forEach(f=>{ const el=document.createElement("button"); el.className="chip";
   fixChips.appendChild(el); });
 function renderFix(fixId){
   const w=parseFloat($("fixWeight").value)||300;
+  $("fixResult").innerHTML=fixHtml(w, fixId);
+}
+function fixHtml(w, fixId){
   const r=fixRecipe(w, fixId);
   const p1g = r.p1.range ? `<b>${fmtG(r.p1.range.lo)}~${fmtG(r.p1.range.hi)}g</b> (${r.p1.range.name}, ≈ ${spoonStr((r.p1.range.lo+r.p1.range.hi)/2, r.p1.range.density)})` : "";
-  $("fixResult").innerHTML=`
+  return `
     <div class="fixcard">
       <div class="ft">“${r.name}” 처방</div>
       <div class="fixstep"><span class="tag">1차</span><div class="tx">${r.p1.t} ${p1g}</div></div>
@@ -1505,11 +1529,15 @@ function recipeCardHTML(r){
       <div class="rsec"><h4>재료</h4><div class="rings">${r.ing.map(x=>`<span>${x}</span>`).join("")}</div></div>
       <div class="rsec"><h4>만드는 법</h4><ol class="rsteps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol></div>
       <div class="rtip">💡 ${r.tip}</div>
+      <button class="dish-cook rc-cook" data-name="${escAttr(r.name)}">▶ 요리 시작 (한 단계씩)</button>
     </div></div>`;
 }
 function wireRecipeCards(container){
   container.querySelectorAll(".rc").forEach(c=>{
     c.querySelector(".rch").addEventListener("click", e=>{ if(e.target.closest(".favbtn")) return; c.classList.toggle("open"); });
+    const ck=c.querySelector(".rc-cook");
+    if(ck) ck.addEventListener("click", e=>{ e.stopPropagation(); const f=findDish(ck.dataset.name); if(!f) return;
+      $("dishSheet").classList.add("show"); startCookMode(null,f.dish,recipeServes(RECIPES.find(x=>x.name===ck.dataset.name)),()=>closeDishSheet()); });
     const fb=c.querySelector(".favbtn");
     if(fb) fb.addEventListener("click", e=>{ e.stopPropagation(); toggleFav(fb.dataset.name); });
   });
@@ -2094,7 +2122,7 @@ function dishLines(styleId,dish,servings){
   const out=dish.main.map(m=>({name:m.name, qty:fmtNum(m.per1*servings)+m.unit}));
   const res=calcRecipe({categoryId:dish.cat, stylePresetId:styleId, foodWeightG:dish.gPerServing*servings, intensity:"normal"});
   const have=dish.main.map(m=>m.name);
-  res.ingredients.forEach(i=>{ if(i.id==="water"||i.id==="starch_water"||have.includes(i.name)) return; out.push({name:i.name, qty:fmtG(i.amountG)+"g"}); });
+  res.ingredients.forEach(i=>{ if(i.id==="water"||i.id==="starch_water"||have.includes(i.name)) return; out.push({name:i.name, qty:fmtG(i.amountG)+"g", spoon:spoonStr(i.amountG,i.density)}); });
   return out;
 }
 
@@ -2212,7 +2240,7 @@ _dishesReady=true; showStyleDesc();
 })();
 
 /* ── 요리 고르기 시트 ── */
-function closeDishSheet(){ $("dishSheet").classList.remove("show"); $("dishSheet").innerHTML=""; }
+function closeDishSheet(){ if(typeof endCookMode==="function") endCookMode(); $("dishSheet").classList.remove("show"); $("dishSheet").innerHTML=""; }
 const COOK_SERV_KEY="cj_cook_serv";
 function loadCookServ(){ try{ const o=JSON.parse(localStorage.getItem(COOK_SERV_KEY)||"{}"); return o&&typeof o==="object"?o:{}; }catch(e){ return {}; } }
 function saveCookServ(name,serv){ try{ const o=loadCookServ(); o[name]=serv; localStorage.setItem(COOK_SERV_KEY, JSON.stringify(o)); }catch(e){} }
@@ -2223,14 +2251,19 @@ function findDish(name){
   return r?{styleId:null,dish:{name:r.name,emoji:r.emoji,recipe:r.name,main:[]}}:null;
 }
 function dishSteps(dish){
-  if(dish.steps) return {steps:dish.steps,tip:""};
+  if(dish.steps){
+    // 식용유를 따로 쓰는 요리면, 양념 재료를 처음 다루는 단계에 "식용유는 빼고"를 붙인다
+    const oilUsed=dish.steps.some(t=>/식용유/.test(t));
+    const first=oilUsed?dish.steps.findIndex(t=>/양념 재료/.test(t)&&!/식용유/.test(t)):-1;
+    return {steps:dish.steps.map((t,i)=>i===first?t.replace("양념 재료","양념 재료(식용유는 빼고)"):t),tip:""};
+  }
   const r=dish.recipe&&RECIPES.find(x=>x.name===dish.recipe);
   return r?{steps:r.steps||[],tip:r.tip||""}:{steps:[],tip:""};
 }
 function howToHtml(styleId,dish,serv){
   const lines=dishLines(styleId,dish,serv), st=dishSteps(dish);
   return `<h3>${esc(dish.emoji||"")} ${esc(dish.name)} · ${serv}인분</h3>`+
-    `<div class="howto-sec">재료</div><ul class="howto-ing">${lines.map(l=>`<li><span>${esc(l.name)}</span><b>${esc(l.qty)}</b></li>`).join("")}</ul>`+
+    `<div class="howto-sec">재료 <small>(저울이 없으면 숟가락 양을 보세요)</small></div><ul class="howto-ing">${lines.map(l=>`<li><span>${esc(l.name)}</span><b>${l.spoon&&l.spoon!=="약간"?`${esc(l.spoon)} <small>${esc(l.qty)}</small>`:l.spoon==="약간"?`약간 <small>${esc(l.qty)}</small>`:esc(l.qty)}</b></li>`).join("")}</ul>`+
     `<div class="howto-sec">만드는 법</div><ol class="howto-steps">${st.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>`+
     `<p class="howto-tip">💡 ${esc(st.tip||"양념은 80%만 먼저 넣고, 맛을 보며 조금씩 더하세요.")}</p>`;
 }
@@ -2238,9 +2271,10 @@ function howToHtml(styleId,dish,serv){
 function openHowTo(name){
   const f=findDish(name); if(!f) return;
   const serv=loadCookServ()[name]||2, sh=$("dishSheet");
-  sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="만드는 법">${howToHtml(f.styleId,f.dish,serv)}<button class="dish-close">닫기</button></div>`;
+  sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="만드는 법">${howToHtml(f.styleId,f.dish,serv)}<button class="dish-cook">▶ 요리 시작 (한 단계씩)</button><button class="dish-close">닫기</button></div>`;
   sh.classList.add("show");
-  sh.onclick=e=>{ if(e.target===sh||e.target.closest(".dish-close")) closeDishSheet(); };
+  sh.onclick=e=>{ if(e.target.closest(".dish-cook")){ startCookMode(f.styleId,f.dish,serv,()=>openHowTo(name)); return; }
+    if(e.target===sh||e.target.closest(".dish-close")) closeDishSheet(); };
 }
 function openDishPicker(styleId){
   const dishes=TASTE_DISHES[styleId]; if(!dishes||!dishes.length) return;
@@ -2249,22 +2283,95 @@ function openDishPicker(styleId){
   const draw=()=>{
     const d=dishes[di];
     sh.innerHTML=how
-      ? `<div class="dishsheet" role="dialog" aria-label="만드는 법"><button class="dish-back">← 요리 목록</button>${howToHtml(styleId,d,serv)}<button class="dish-add">🛒 이 재료 장바구니에 담기</button></div>`
+      ? `<div class="dishsheet" role="dialog" aria-label="만드는 법"><button class="dish-back">← 요리 목록</button>${howToHtml(styleId,d,serv)}<button class="dish-cook">▶ 요리 시작 (한 단계씩)</button><button class="dish-add">🛒 이 재료 장바구니에 담기</button></div>`
       : `<div class="dishsheet" role="dialog" aria-label="요리 고르기"><h3>어떤 요리를 만들까요?</h3><div class="dish-list">${dishes.map((x,i)=>`<button class="dish-opt${i===di?" on":""}" data-i="${i}">${esc(x.emoji||"")} ${esc(x.name)}</button>`).join("")}</div>`+
         `<div class="dish-serv"><span>인분</span>${[1,2,4].map(n=>`<button class="chip${n===serv?" on":""}" data-serv="${n}">${n}</button>`).join("")}</div><button class="dish-how">👩‍🍳 만드는 법 보기</button><button class="dish-add">🛒 장바구니에 담기</button></div>`;
     const box=sh.querySelector(".dishsheet"); if(box) box.scrollTop=0;
   };
   draw(); sh.classList.add("show");
-  sh.onclick=e=>{
+  const pickClick=e=>{
     if(e.target===sh){ closeDishSheet(); return; }
     const o=e.target.closest(".dish-opt"), sv=e.target.closest("[data-serv]"), ad=e.target.closest(".dish-add");
     if(o){ di=+o.dataset.i; draw(); }
     else if(sv){ serv=+sv.dataset.serv; draw(); }
     else if(e.target.closest(".dish-how")){ how=true; draw(); }
+    else if(e.target.closest(".dish-cook")){ startCookMode(styleId,dishes[di],serv,()=>{ how=true; draw(); sh.onclick=pickClick; }); }
     else if(e.target.closest(".dish-back")){ how=false; draw(); }
     else if(ad){ const d=dishes[di]; addToCart(dishLines(styleId,d,serv), d.name); saveCookServ(d.name,serv); closeDishSheet(); updateCartBadge(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); }
   };
+  sh.onclick=pickClick;
 }
+
+/* ── 요리 모드: 한 단계씩 큰 글씨, 단계 속 "N분/N초"로 타이머, 화면 꺼짐 방지, 끝나면 맛보기 ── */
+let _cook=null;
+function stepTimerSec(t){
+  const m=t.match(/(\d+)(?:~\d+)?\s*분/); if(m) return +m[1]*60;
+  const s=t.match(/(\d+)\s*초/); return s?+s[1]:0;
+}
+function fmtClock(sec){ return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+function cookBeep(){
+  try{ navigator.vibrate&&navigator.vibrate([300,150,300,150,300]); }catch(e){}
+  try{ const A=window.AudioContext||window.webkitAudioContext; if(!A) return; const ctx=new A();
+    [0,0.35,0.7].forEach(d=>{ const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.25,ctx.currentTime+d); o.start(ctx.currentTime+d); o.stop(ctx.currentTime+d+0.2); });
+    setTimeout(()=>ctx.close(),1500); }catch(e){}
+}
+function stopCookTimer(){ if(_cook&&_cook.tid){ clearInterval(_cook.tid); _cook.tid=null; } }
+async function cookWake(on){
+  try{
+    if(on&&"wakeLock" in navigator&&!(_cook&&_cook.lock)){ const l=await navigator.wakeLock.request("screen"); if(_cook) _cook.lock=l; else l.release(); }
+    if(!on&&_cook&&_cook.lock){ _cook.lock.release(); _cook.lock=null; }
+  }catch(e){}
+}
+function endCookMode(){ stopCookTimer(); cookWake(false); _cook=null; }
+function startCookMode(styleId,dish,serv,onBack){
+  const steps=dishSteps(dish).steps; if(!steps.length) return;
+  endCookMode();
+  _cook={i:0,left:0,tid:null,lock:null,done:false};
+  const sh=$("dishSheet"), weight=dish.gPerServing?dish.gPerServing*serv:300;
+  const oilApart=(dish.steps||[]).some(t=>/식용유/.test(t));
+  const seas=dish.recipe?[]:dishLines(styleId,dish,serv).filter(l=>l.spoon&&!(oilApart&&/식용유/.test(l.name)));
+  const seasHtml=t=>seas.length&&/양념/.test(t)?`<div class="cook-seas"><div>이 단계에 쓰는 양념</div>${seas.map(l=>`<span>${esc(l.name)} <b>${esc(l.spoon==="약간"?"약간":l.spoon)}</b></span>`).join("")}</div>`:"";
+  const draw=()=>{
+    const c=_cook; if(!c) return;
+    if(c.done){
+      sh.innerHTML=`<div class="dishsheet cookmode" role="dialog" aria-label="맛보기"><button class="dish-back" data-ck="back">← 마지막 단계</button>`+
+        `<h3>🥄 이제 맛을 보세요</h3><p class="cook-ask">한 숟가락 떠서 식혀 맛봐요. 어때요?</p>`+
+        `<div class="cook-taste"><button class="chip" data-ck="good">😋 딱 좋아요</button>${FIX.map(f=>`<button class="chip" data-fix="${f.id}">${esc(f.name)}</button>`).join("")}</div>`+
+        `<div id="cookFix"></div><button class="dish-close" data-ck="close">닫기</button></div>`;
+      return;
+    }
+    const t=steps[c.i], sec=stepTimerSec(t);
+    sh.innerHTML=`<div class="dishsheet cookmode" role="dialog" aria-label="요리 모드"><button class="dish-back" data-ck="exit">← 만드는 법</button>`+
+      `<div class="cook-prog">${esc(dish.emoji||"")} ${esc(dish.name)} · <b>${c.i+1}</b> / ${steps.length} 단계</div>`+
+      `<div class="cook-bar"><i style="width:${Math.round((c.i+1)/steps.length*100)}%"></i></div>`+
+      `<p class="cook-step">${esc(t)}</p>`+seasHtml(t)+
+      (sec?`<button class="cook-timer${c.tid?" on":""}" data-ck="timer">${c.tid?`⏸ ${fmtClock(c.left)} 남음`:c.left>0&&c.left<sec?`▶ 이어서 (${fmtClock(c.left)})`:`⏱ ${fmtClock(sec)} 타이머 시작`}</button>`:"")+
+      `<div class="cook-nav"><button data-ck="prev"${c.i?"":" disabled"}>◀ 이전</button><button class="primary" data-ck="next">${c.i===steps.length-1?"다 했어요! 맛보기 ▶":"다음 ▶"}</button></div></div>`;
+  };
+  const go=i=>{ stopCookTimer(); _cook.i=i; _cook.left=0; draw(); };
+  sh.onclick=e=>{
+    const c=_cook; if(!c) return;
+    const b=e.target.closest("[data-ck]"), fx=e.target.closest("[data-fix]");
+    if(fx){ [...sh.querySelectorAll(".cook-taste .chip")].forEach(x=>x.classList.toggle("on",x===fx)); $("cookFix").innerHTML=fixHtml(weight, fx.dataset.fix); return; }
+    if(!b){ if(e.target===sh){ endCookMode(); closeDishSheet(); } return; }
+    const k=b.dataset.ck;
+    if(k==="next"){ if(c.i<steps.length-1) go(c.i+1); else { stopCookTimer(); c.done=true; draw(); } }
+    else if(k==="prev"&&c.i>0) go(c.i-1);
+    else if(k==="back"){ c.done=false; draw(); }
+    else if(k==="timer"){
+      if(c.tid){ stopCookTimer(); draw(); return; }
+      if(!(c.left>0)) c.left=stepTimerSec(steps[c.i]);
+      c.tid=setInterval(()=>{ if(!_cook) return; _cook.left--; if(_cook.left<=0){ stopCookTimer(); _cook.left=0; cookBeep(); toast("⏰ 시간 됐어요! 상태를 보고 다음 단계로"); } draw(); },1000);
+      draw();
+    }
+    else if(k==="good"){ endCookMode(); closeDishSheet(); toast("잘 만들었어요! 😋"); }
+    else if(k==="close"){ endCookMode(); closeDishSheet(); }
+    else if(k==="exit"){ endCookMode(); onBack&&onBack(); }
+  };
+  cookWake(true); draw();
+}
+document.addEventListener("visibilitychange",()=>{ if(_cook&&document.visibilityState==="visible"){ _cook.lock=null; cookWake(true); } });
 </script>
 <script>if('serviceWorker' in navigator&&!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
 </body>
