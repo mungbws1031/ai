@@ -1,5 +1,5 @@
 // PM 역량 맵 service worker — offline app shell cache
-const CACHE = "pm-map-v1";
+const CACHE = "pm-map-v2";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {

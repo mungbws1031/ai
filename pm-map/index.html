@@ -132,7 +132,59 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--task);outline-o
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:13px;z-index:20}
 textarea.fallback{width:100%;min-height:160px;font:12px var(--font-mono);background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px}
 
+/* Tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{border:0;background:none;padding:10px 14px;font-size:14px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--amber);font-weight:700}
+.view{display:flex;flex-direction:column;gap:20px}
+.banner{background:var(--task-soft);border:1px solid var(--task);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px}
+
+/* Character */
+.charwrap{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.hero{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;grid-template-columns:180px minmax(0,1fr);gap:20px;align-items:center}
+.avatar{width:100%;max-width:180px;aspect-ratio:1;border-radius:20px;background:var(--sunk);display:block}
+.avatar svg{width:100%;height:100%;display:block}
+.cls{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;color:#fff}
+.lvl{font-family:var(--font-mono);font-size:13px;color:var(--muted)}
+.charname{font-size:24px;font-weight:700;margin:6px 0 2px}
+.xpbar{height:8px;border-radius:999px;background:var(--sunk);overflow:hidden;margin-top:8px}
+.xpbar i{display:block;height:100%;background:var(--amber)}
+.stats{display:grid;gap:8px;margin-top:4px}
+.stat{display:grid;grid-template-columns:48px minmax(0,1fr) 34px;gap:8px;align-items:center;font-size:13px}
+.stat .bar{height:10px;border-radius:999px;background:var(--sunk);overflow:hidden}
+.stat .bar i{display:block;height:100%;border-radius:999px}
+.stat b{font-family:var(--font-mono);font-weight:500;text-align:right;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.field input{border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:8px;padding:8px 10px;font:inherit}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.badge{font-size:12px;padding:3px 10px;border-radius:999px;background:var(--sunk);color:var(--fg)}
+.badge.off{opacity:.35}
+
+/* Team */
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.mini{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;grid-template-columns:56px minmax(0,1fr);gap:10px;align-items:center;position:relative}
+.mini .avatar{border-radius:12px}
+.mini .nm{font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.mini .sub{font-size:12px;color:var(--muted)}
+.mini .x{position:absolute;top:4px;right:6px;border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:2px 4px}
+.ex{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--fg);color:var(--bg);margin-left:4px;vertical-align:middle}
+.heatwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table.heat{border-collapse:collapse;font-size:12px;min-width:100%}
+.heat th,.heat td{padding:6px 8px;text-align:center;border-bottom:1px solid var(--line);white-space:nowrap}
+.heat th{font-weight:700;color:var(--muted);background:var(--surface);position:sticky;top:0}
+.heat td:first-child,.heat th:first-child{text-align:left;position:sticky;left:0;background:var(--surface);font-weight:700}
+.heat td.v{font-family:var(--font-mono);color:var(--amber-ink)}
+.heat td.v0{color:var(--muted)}
+.rank{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.rank li{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.rank .avatar{border-radius:8px}
+.rank .why{font-size:12px;color:var(--muted)}
+.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill.fit{background:var(--ok);color:#fff}.pill.grow{background:var(--task);color:#fff}.pill.mentor{background:var(--amber);color:var(--amber-ink)}
+
 @media (max-width:980px){.main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:980px){.charwrap{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.hero{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.hero .stats{text-align:left;width:100%}}
 @media (max-width:760px){
   .map{grid-template-columns:minmax(0,1fr);gap:14px}
   .col{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
@@ -166,6 +218,14 @@ textarea.fallback{width:100%;min-height:160px;font:12px var(--font-mono);backgro
     <div class="row"><button class="btn primary" type="button" id="resetYes">모두 지우기</button><button class="btn" type="button" id="resetNo">취소</button></div>
   </div>
 
+  <nav class="tabs" role="tablist" aria-label="화면">
+    <button class="tab" role="tab" type="button" data-view="map" aria-selected="true">역량 맵</button>
+    <button class="tab" role="tab" type="button" data-view="char" aria-selected="false">내 캐릭터</button>
+    <button class="tab" role="tab" type="button" data-view="team" aria-selected="false">팀 · 퀘스트</button>
+  </nav>
+
+  <div class="view" id="view-map">
+  <div class="banner" id="questBanner" hidden></div>
   <section class="taskbar" aria-label="이번 일">
     <div class="eyebrow">이번 일 선택 또는 입력</div>
     <div class="chips" id="presets"></div>
@@ -227,6 +287,84 @@ textarea.fallback{width:100%;min-height:160px;font:12px var(--font-mono);backgro
   </div>
 
   <section class="quiz" id="quiz" hidden aria-live="polite"></section>
+  </div>
+
+  <div class="view" id="view-char" hidden>
+    <div class="charwrap">
+      <section class="hero" aria-label="내 캐릭터">
+        <div class="avatar" id="cAvatar"></div>
+        <div style="min-width:0">
+          <span class="cls" id="cClass"></span>
+          <div class="charname" id="cName"></div>
+          <div class="lvl" id="cLevel"></div>
+          <div class="xpbar"><i id="cXp"></i></div>
+          <p class="note" id="cXpNote" style="margin-top:6px"></p>
+          <p class="desc" id="cDesc" style="margin-top:10px"></p>
+        </div>
+      </section>
+      <aside class="side">
+        <div class="card">
+          <div class="eyebrow">캐릭터 정보</div>
+          <label class="field" for="pName">이름
+            <input id="pName" type="text" maxlength="20" placeholder="예) 김민지"></label>
+          <label class="field" for="pNick">닉네임 (선택)
+            <input id="pNick" type="text" maxlength="20" placeholder="예) 데이터 덕후"></label>
+          <p class="note">이름은 백업 파일에 같이 저장됩니다. 팀장에게 백업을 보내면 팀 화면에 이 캐릭터로 나타납니다.</p>
+        </div>
+        <div class="card">
+          <div class="eyebrow">분야별 스탯 (평균 수준, 최대 4)</div>
+          <div class="stats" id="cStats"></div>
+        </div>
+        <div class="card">
+          <div class="eyebrow">업적</div>
+          <div class="badges" id="cBadges"></div>
+        </div>
+      </aside>
+    </div>
+    <div class="card">
+      <div class="eyebrow">캐릭터는 이렇게 정해져요</div>
+      <p class="desc">가장 높은 분야가 직업이 됩니다: 고객 → 탐험가, 데이터 → 분석가, 전략 → 전략가, 실행 → 해결사, 소통 → 조율자, 기술 → 설계자. 두 분야가 비슷하게 높으면 "분석가 × 전략가"처럼 혼합형이 됩니다. 경험치는 역량 수준 1점당 5, 퀴즈 정답 1개당 3이고, 20마다 레벨이 오릅니다.</p>
+    </div>
+  </div>
+
+  <div class="view" id="view-team" hidden>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <div class="eyebrow">팀 캐릭터</div>
+          <h2>팀원 백업 파일로 캐릭터 모으기</h2>
+        </div>
+        <div class="row">
+          <button class="btn primary" type="button" id="teamImportBtn">팀원 백업 추가</button>
+          <input type="file" id="teamFile" accept="application/json,.json" multiple hidden>
+          <button class="btn" type="button" id="teamSampleBtn">예시 팀 보기</button>
+          <button class="btn" type="button" id="teamMeBtn">내 캐릭터 넣기</button>
+        </div>
+      </div>
+      <p class="note">팀원이 직접 "백업 저장"으로 만든 파일을 받아서 추가합니다. 본인이 보낸 사람만 팀에 나타나고, 데이터는 이 브라우저에만 저장됩니다.</p>
+      <div class="roster" id="roster"></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">퀘스트 배정</div>
+      <h2>일을 고르면 맡길 사람을 추천해요</h2>
+      <div class="chips" id="qPresets"></div>
+      <form class="free" id="qForm">
+        <input id="qInput" type="text" placeholder="예) 결제 이탈 원인 분석 후 실험 설계" aria-label="퀘스트 설명">
+        <button class="btn blue" type="submit">추천 받기</button>
+      </form>
+      <div id="qNeed" class="kw"></div>
+      <ul class="rank" id="qRank"></ul>
+      <div id="qLinkBox" hidden><textarea class="fallback" id="qLinkText" readonly aria-label="퀘스트 링크" style="min-height:60px"></textarea></div>
+    </div>
+
+    <div class="card">
+      <div class="eyebrow">팀 역량 지도</div>
+      <h2>누가 어디에 강한가</h2>
+      <div class="heatwrap"><table class="heat" id="heat"></table></div>
+      <p class="note" id="heatNote"></p>
+    </div>
+  </div>
 </div>
 <div class="toast" id="toast" hidden></div>
 
@@ -329,9 +467,10 @@ const catName=id=>CATS.find(c=>c.id===id).name;
 
 /* state */
 const KEY='pm-competency-map-v1';
-let S={lv:{},quiz:{},task:null,sel:'c01'};
+let S={lv:{},quiz:{},task:null,sel:'c01',profile:{name:'',nick:''},team:[],view:'map'};
 try{const raw=localStorage.getItem(KEY);if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
 if(!S.task)S.task={name:PRESETS[0].name,need:PRESETS[0].need,preset:'t1'};
+if(!S.profile)S.profile={name:'',nick:''};if(!Array.isArray(S.team))S.team=[];if(!S.view)S.view='map';
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const lv=id=>S.lv[id]||0;
 const isGap=id=>lv(id)<2;
@@ -386,7 +525,7 @@ function renderDetail(){
   const r=S.quiz[c.id];
   $('#dQuiz').textContent=r?`퀴즈 기록: ${r.right}번 정답, ${r.wrong}번 오답${r.last===false?' · 마지막 문제를 틀려 복습 표시 중':''}`:'아직 푼 퀴즈가 없습니다.';
 }
-function renderAll(){renderPresets();renderMap();renderTask();renderDetail();save()}
+function renderAll(){renderPresets();renderMap();renderTask();renderDetail();renderViews();save()}
 
 function matchTask(text){
   const t=text.toLowerCase().replace(/\s+/g,'');
@@ -469,6 +608,170 @@ function answer(k){
 }
 $('#quizBtn').addEventListener('click',startQuiz);
 
+
+/* ===== Characters ===== */
+const CLASS={
+ cus:{name:'탐험가',color:'#1f9a8a',desc:'고객 곁에서 진짜 문제를 찾아내는 PM. 인터뷰와 VOC에서 남들이 놓친 신호를 잡습니다.'},
+ data:{name:'분석가',color:'#3466d6',desc:'숫자로 말하는 PM. 지표를 설계하고 실험으로 가설을 검증합니다.'},
+ str:{name:'전략가',color:'#8250c8',desc:'큰 그림을 그리는 PM. 시장을 읽고 무엇을 하지 않을지 정합니다.'},
+ exe:{name:'해결사',color:'#d9701a',desc:'끝까지 출시시키는 PM. 우선순위를 정하고 일정과 리스크를 다룹니다.'},
+ com:{name:'조율자',color:'#cc4468',desc:'사람을 한 방향으로 모으는 PM. 이해관계자를 정렬하고 회의를 결정으로 이끕니다.'},
+ tech:{name:'설계자',color:'#4f6475',desc:'기술과 경험을 함께 보는 PM. 트레이드오프를 판단하고 디자이너·개발자와 같은 언어로 말합니다.'},
+ seed:{name:'새싹 PM',color:'#5f9e3a',desc:'아직 수준을 기록하지 않았어요. 역량 맵에서 타일을 눌러 지금 수준을 남기면 직업이 정해집니다.'}
+};
+function catAvg(lvMap,cat){const it=COMP.filter(c=>c.cat===cat);return it.reduce((a,c)=>a+(lvMap[c.id]||0),0)/it.length}
+function charOf(st){
+  const lvMap=st.lv||{},qz=st.quiz||{};
+  const avgs=CATS.map(c=>({id:c.id,v:catAvg(lvMap,c.id)})).sort((a,b)=>b.v-a.v);
+  const total=COMP.reduce((a,c)=>a+(lvMap[c.id]||0),0);
+  const right=Object.values(qz).reduce((a,r)=>a+(r.right||0),0);
+  const xp=total*5+right*3, level=1+Math.floor(xp/20), into=xp%20;
+  let main='seed',sub=null;
+  if(avgs[0].v>0){main=avgs[0].id;if(avgs[1].v>0&&avgs[0].v-avgs[1].v<=0.34)sub=avgs[1].id}
+  const title=sub?`${CLASS[main].name} × ${CLASS[sub].name}`:CLASS[main].name;
+  return{main,sub,title,color:CLASS[main].color,level,xp,into,total,right,avgs,
+    name:(st.profile&&st.profile.name)||'',nick:(st.profile&&st.profile.nick)||''};
+}
+/* simple generated avatar: body in class color, accessory by class */
+function avatarSVG(ch){
+  const c=ch.color, acc={
+    cus:'<circle cx="88" cy="30" r="13" fill="#fff" stroke="#222" stroke-width="3"/><path d="M88 20 L92 31 L88 40 L84 31Z" fill="#d33"/>',
+    data:'<circle cx="49" cy="55" r="9" fill="none" stroke="#222" stroke-width="3"/><circle cx="71" cy="55" r="9" fill="none" stroke="#222" stroke-width="3"/><path d="M58 55h4" stroke="#222" stroke-width="3"/>',
+    str:'<path d="M90 18v40" stroke="#222" stroke-width="3"/><path d="M90 18h18l-5 7 5 7H90z" fill="'+c+'" stroke="#222" stroke-width="2"/>',
+    exe:'<rect x="36" y="34" width="48" height="8" rx="3" fill="'+c+'" stroke="#222" stroke-width="2"/><path d="M84 38l10-6M84 38l10 4" stroke="'+c+'" stroke-width="4" stroke-linecap="round"/>',
+    com:'<rect x="78" y="14" width="30" height="20" rx="8" fill="#fff" stroke="#222" stroke-width="2.5"/><path d="M84 34l-2 8 8-8" fill="#fff" stroke="#222" stroke-width="2.5" stroke-linejoin="round"/><circle cx="87" cy="24" r="2" fill="#222"/><circle cx="93" cy="24" r="2" fill="#222"/><circle cx="99" cy="24" r="2" fill="#222"/>',
+    tech:'<path d="M60 26V12" stroke="#222" stroke-width="3"/><circle cx="60" cy="10" r="5" fill="'+c+'" stroke="#222" stroke-width="2"/>',
+    seed:'<path d="M60 30c0-10 4-14 12-16-1 8-5 12-12 16zM60 30c0-8-4-11-10-12 1 6 4 9 10 12z" fill="#5f9e3a" stroke="#2f5d1a" stroke-width="2"/>'
+  }[ch.main];
+  const sub=ch.sub?`<circle cx="94" cy="96" r="12" fill="${CLASS[ch.sub].color}" stroke="#fff" stroke-width="3"/>`:'';
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(ch.title)} 캐릭터"><rect width="120" height="120" rx="20" fill="${c}" fill-opacity=".16"/>
+<path d="M24 120c0-26 16-40 36-40s36 14 36 40z" fill="${c}" stroke="#222" stroke-width="3"/>
+<circle cx="60" cy="56" r="24" fill="#f6d7b8" stroke="#222" stroke-width="3"/>
+<circle cx="51" cy="55" r="3" fill="#222"/><circle cx="69" cy="55" r="3" fill="#222"/>
+<path d="M52 66q8 6 16 0" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round"/>${acc}${sub}
+<text x="60" y="112" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui,sans-serif">Lv.${ch.level}</text></svg>`;
+}
+function badgesOf(st){
+  const lvMap=st.lv||{},qz=st.quiz||{};
+  const right=Object.values(qz).reduce((a,r)=>a+(r.right||0),0);
+  const anyQuiz=Object.keys(qz).length>0;
+  const fullCats=CATS.filter(c=>COMP.filter(x=>x.cat===c.id).every(x=>(lvMap[x.id]||0)>=3)).length;
+  const allRated=COMP.every(c=>lvMap[c.id]!==undefined);
+  return[
+    {n:'첫 기록',ok:Object.keys(lvMap).length>0},
+    {n:'16개 모두 기록',ok:allRated},
+    {n:'첫 회고 퀴즈',ok:anyQuiz},
+    {n:'퀴즈 정답 10개',ok:right>=10},
+    {n:'한 분야 마스터',ok:fullCats>=1},
+    {n:'가르칠 수 있는 역량',ok:Object.values(lvMap).some(v=>v===4)}
+  ];
+}
+function renderChar(){
+  const ch=charOf(S);
+  $('#cAvatar').innerHTML=avatarSVG(ch);
+  const cls=$('#cClass');cls.textContent=ch.title;cls.style.background=ch.color;
+  $('#cName').textContent=(ch.name||'이름을 정해 주세요')+(ch.nick?` · ${ch.nick}`:'');
+  $('#cLevel').textContent=`Lv.${ch.level} · 경험치 ${ch.xp}`;
+  $('#cXp').style.width=(ch.into/20*100)+'%';
+  $('#cXpNote').textContent=`다음 레벨까지 ${20-ch.into} · 역량 수준 합계 ${ch.total}/64 · 퀴즈 정답 ${ch.right}개`;
+  $('#cDesc').textContent=CLASS[ch.main].desc;
+  $('#cStats').innerHTML=CATS.map(c=>{const v=catAvg(S.lv,c.id);return `<div class="stat"><span>${c.name}</span><span class="bar"><i style="width:${v/4*100}%;background:${CLASS[c.id].color}"></i></span><b>${v.toFixed(1)}</b></div>`}).join('');
+  $('#cBadges').innerHTML=badgesOf(S).map(b=>`<span class="badge${b.ok?'':' off'}">${b.ok?'✓ ':''}${b.n}</span>`).join('');
+  const pn=$('#pName'),pk=$('#pNick');
+  if(document.activeElement!==pn)pn.value=S.profile.name||'';
+  if(document.activeElement!==pk)pk.value=S.profile.nick||'';
+}
+
+/* ===== Team ===== */
+let qTask=null;
+function memberLabel(m){return esc(m.name||'이름 없음')+(m.sample?'<span class="ex">예시</span>':'')}
+function renderRoster(){
+  const el=$('#roster');
+  if(!S.team.length){el.innerHTML='<p class="note">아직 팀원이 없습니다. 팀원에게 "내 캐릭터" 탭에서 이름을 정하고 "백업 저장" 파일을 보내 달라고 하세요. 먼저 둘러보려면 "예시 팀 보기"를 누르세요.</p>';return}
+  el.innerHTML=S.team.map((m,i)=>{const ch=charOf(m);return `<div class="mini"><div class="avatar">${avatarSVG(ch)}</div><div style="min-width:0"><div class="nm">${memberLabel(m)}</div><div class="sub">${esc(ch.title)} · Lv.${ch.level}</div><div class="sub">강점: ${CATS.find(c=>c.id===ch.avgs[0].id).name} ${ch.avgs[0].v.toFixed(1)}</div></div><button class="x" type="button" data-del="${i}" aria-label="${esc(m.name||'팀원')} 빼기">×</button></div>`}).join('');
+}
+function renderHeat(){
+  const t=$('#heat');
+  if(!S.team.length){t.innerHTML='';$('#heatNote').textContent='팀원을 추가하면 PM × 16개 역량 표가 나타납니다.';return}
+  const head='<tr><th>PM</th>'+COMP.map(c=>`<th title="${esc(c.name)}">${esc(c.name)}</th>`).join('')+'</tr>';
+  const rows=S.team.map(m=>'<tr><td>'+memberLabel(m)+'</td>'+COMP.map(c=>{const v=(m.lv||{})[c.id]||0;const a=[0,.15,.4,.7,1][v];return `<td class="v${v?'':' v0'}" style="background:color-mix(in srgb,var(--amber) ${a*100}%,transparent)">${v}</td>`}).join('')+'</tr>').join('');
+  t.innerHTML=head+rows;
+  const weak=COMP.filter(c=>S.team.every(m=>((m.lv||{})[c.id]||0)<3)).map(c=>c.name);
+  $('#heatNote').textContent=weak.length?`팀 안에 수준 3 이상인 사람이 없는 역량: ${weak.join(', ')}. 채용·교육·외부 도움이 필요한 영역입니다.`:'모든 역량에 수준 3 이상인 팀원이 있습니다.';
+}
+function renderQuest(){
+  $('#qPresets').innerHTML=PRESETS.map(p=>`<button type="button" class="chip" data-qp="${p.id}" aria-pressed="${!!(qTask&&qTask.preset===p.id)}">${esc(p.name)}</button>`).join('');
+  const need=$('#qNeed'),rank=$('#qRank');
+  if(!qTask){need.innerHTML='';rank.innerHTML='';return}
+  need.innerHTML=qTask.need.length?qTask.need.map(id=>`<span>${esc(byId[id].name)}</span>`).join(''):'<span>맞는 역량을 찾지 못했어요. 다른 표현으로 적어 보세요.</span>';
+  if(!S.team.length||!qTask.need.length){rank.innerHTML=S.team.length?'':'<li><span></span><span class="note">팀원을 추가하면 추천이 나옵니다.</span><span></span></li>';return}
+  const scored=S.team.map((m,i)=>{const lvs=qTask.need.map(id=>(m.lv||{})[id]||0);const fit=lvs.reduce((a,b)=>a+b,0)/lvs.length;const gaps=qTask.need.filter(id=>((m.lv||{})[id]||0)<2).map(id=>byId[id].name);return{m,i,fit,gaps}}).sort((a,b)=>b.fit-a.fit);
+  const best=scored[0], grow=scored.length>1?scored[scored.length-1]:null;
+  rank.innerHTML=scored.map(x=>{
+    let tag='',why=`필요 역량 평균 ${x.fit.toFixed(1)}`;
+    if(x===best){tag='<span class="pill fit">적임자</span>';why+=' · 바로 맡기기 좋아요'}
+    else if(grow&&x===grow){tag='<span class="pill grow">성장 기회</span>';why+=` · 보강: ${x.gaps.slice(0,3).join(', ')||'없음'} · ${esc(best.m.name||'적임자')}에게 멘토링 받기`}
+    else if(x.gaps.length)why+=` · 보강: ${x.gaps.slice(0,3).join(', ')}`;
+    return `<li><div class="avatar">${avatarSVG(charOf(x.m))}</div><div style="min-width:0"><div>${memberLabel(x.m)} ${tag}</div><div class="why">${why}</div></div><button class="btn" type="button" data-qlink="${x.i}">퀘스트 링크</button></li>`;
+  }).join('');
+}
+function renderTeam(){renderRoster();renderHeat();renderQuest()}
+function renderViews(){
+  document.querySelectorAll('.tab').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.view===S.view)));
+  ['map','char','team'].forEach(v=>{$('#view-'+v).hidden=S.view!==v});
+  renderChar();renderTeam();
+}
+function addMember(st,sample){
+  const m={name:(st.profile&&st.profile.name)||'',nick:(st.profile&&st.profile.nick)||'',lv:st.lv||{},quiz:st.quiz||{},sample:!!sample};
+  const k=S.team.findIndex(x=>x.name&&x.name===m.name);
+  if(k>=0)S.team[k]=m;else S.team.push(m);
+}
+const SAMPLE=[
+ {profile:{name:'예시 민지'},lv:{c04:4,c05:3,c06:4,c01:2,c02:3,c10:2,c11:2,c13:1,c15:2},quiz:{c06:{right:3,wrong:1}}},
+ {profile:{name:'예시 도윤'},lv:{c13:4,c14:3,c08:3,c07:2,c10:3,c12:2,c03:2,c04:1},quiz:{c13:{right:2,wrong:0}}},
+ {profile:{name:'예시 서연'},lv:{c01:3,c02:3,c03:3,c16:3,c11:2,c05:1,c06:1,c14:2},quiz:{}}
+];
+
+/* events: tabs, profile, team, quest */
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.tab');if(t){S.view=t.dataset.view;renderAll();return}
+  const d=e.target.closest('[data-del]');if(d){S.team.splice(+d.dataset.del,1);renderAll();toast('팀에서 뺐습니다');return}
+  const qp=e.target.closest('[data-qp]');if(qp){const p=PRESETS.find(x=>x.id===qp.dataset.qp);qTask={name:p.name,need:p.need,preset:p.id};renderQuest();return}
+  const ql=e.target.closest('[data-qlink]');if(ql){questLink(S.team[+ql.dataset.qlink]);return}
+});
+$('#pName').addEventListener('input',e=>{S.profile.name=e.target.value.trim();renderChar();save()});
+$('#pNick').addEventListener('input',e=>{S.profile.nick=e.target.value.trim();renderChar();save()});
+$('#teamImportBtn').addEventListener('click',()=>$('#teamFile').click());
+$('#teamFile').addEventListener('change',async e=>{
+  let ok=0,bad=0;
+  for(const f of e.target.files){try{const j=JSON.parse(await f.text());if(!j||j.app!=='pm-competency-map'||!j.state)throw 0;
+    if(!(j.state.profile&&j.state.profile.name))j.state.profile={name:f.name.replace(/\.json$/i,''),nick:''};addMember(j.state);ok++}catch(err){bad++}}
+  e.target.value='';renderAll();
+  toast(bad?`${ok}명 추가, ${bad}개는 PM 역량 맵 백업 파일이 아니라 건너뛰었습니다`:`${ok}명을 팀에 추가했습니다`);
+});
+$('#teamSampleBtn').addEventListener('click',()=>{SAMPLE.forEach(s=>addMember(s,true));renderAll();toast('예시 팀원 3명을 넣었습니다. ×로 뺄 수 있어요')});
+$('#teamMeBtn').addEventListener('click',()=>{if(!S.profile.name){S.view='char';renderAll();toast('먼저 내 캐릭터 이름을 정해 주세요');$('#pName').focus();return}addMember(S);renderAll();toast('내 캐릭터를 팀에 넣었습니다')});
+$('#qForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#qInput').value.trim();if(!v)return;qTask={name:v,need:matchTask(v),preset:null};renderQuest()});
+function questLink(m){
+  if(!qTask)return;
+  const data={t:qTask.name,n:qTask.need,to:m.name||''};
+  const url=location.origin+location.pathname+'#q='+encodeURIComponent(JSON.stringify(data));
+  const msg=`[PM 퀘스트] ${m.name||''}님, "${qTask.name}"을(를) 맡아 주세요.\n필요 역량: ${qTask.need.map(id=>byId[id].name).join(', ')}\n아래 링크를 열면 역량 맵에 바로 표시됩니다. 끝나면 회고 퀴즈를 풀고 백업을 보내 주세요.\n${url}`;
+  const fb=()=>{$('#qLinkBox').hidden=false;const ta=$('#qLinkText');ta.value=msg;ta.focus();ta.select();toast('자동 복사가 막혀 있어요. 아래 글을 선택해 복사하세요')};
+  try{navigator.clipboard.writeText(msg).then(()=>{$('#qLinkBox').hidden=true;toast(`${m.name||'팀원'}에게 보낼 퀘스트 메시지를 복사했습니다`)},fb)}catch(err){fb()}
+}
+/* quest link arrival */
+(function(){
+  const h=location.hash;if(!h.startsWith('#q='))return;
+  try{const d=JSON.parse(decodeURIComponent(h.slice(3)));const need=(d.n||[]).filter(id=>byId[id]);
+    S.task={name:String(d.t||'퀘스트').slice(0,120),need,preset:null};if(need[0])S.sel=need[0];S.view='map';
+    const b=$('#questBanner');b.hidden=false;
+    b.innerHTML=`<span><strong>퀘스트 도착${d.to?' · '+esc(d.to)+'님':''}</strong> — ${esc(S.task.name)}. 일이 끝나면 "일 끝 · 퀴즈 풀기"를 눌러 주세요.</span><button class="btn" type="button" id="bannerClose">닫기</button>`;
+    $('#bannerClose').onclick=()=>{b.hidden=true};
+  }catch(err){}
+  history.replaceState(null,'',location.pathname+location.search);
+})();
+
 /* backup / restore / reset */
 $('#exportBtn').addEventListener('click',()=>{
   const data=JSON.stringify({app:'pm-competency-map',version:1,savedAt:new Date().toISOString(),state:S},null,2);
@@ -480,14 +783,14 @@ $('#importBtn').addEventListener('click',()=>$('#importFile').click());
 $('#importFile').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const j=JSON.parse(r.result);if(!j||j.app!=='pm-competency-map'||!j.state)throw 0;
-    S=Object.assign({lv:{},quiz:{},task:null,sel:'c01'},j.state);if(!byId[S.sel])S.sel='c01';closeQuiz();renderAll();toast('백업을 불러왔습니다')}
+    const keepTeam=S.team;S=Object.assign({lv:{},quiz:{},task:null,sel:'c01',profile:{name:'',nick:''},team:[],view:'map'},j.state);if(!j.state.team)S.team=keepTeam;if(!byId[S.sel])S.sel='c01';closeQuiz();renderAll();toast('백업을 불러왔습니다')}
     catch(err){toast('PM 역량 맵 백업 파일이 아닙니다. 백업 저장으로 만든 .json 파일을 고르세요')}
     e.target.value=''};
   r.readAsText(f);
 });
 $('#resetBtn').addEventListener('click',()=>{$('#confirmReset').hidden=false});
 $('#resetNo').addEventListener('click',()=>{$('#confirmReset').hidden=true});
-$('#resetYes').addEventListener('click',()=>{S={lv:{},quiz:{},task:{name:PRESETS[0].name,need:PRESETS[0].need,preset:'t1'},sel:'c01'};$('#confirmReset').hidden=true;closeQuiz();renderAll();toast('초기화했습니다')});
+$('#resetYes').addEventListener('click',()=>{S={lv:{},quiz:{},task:{name:PRESETS[0].name,need:PRESETS[0].need,preset:'t1'},sel:'c01',profile:S.profile,team:S.team,view:S.view};$('#confirmReset').hidden=true;closeQuiz();renderAll();toast('초기화했습니다')});
 
 /* PWA: offline + install */
 if('serviceWorker' in navigator&&location.protocol.startsWith('http')){
