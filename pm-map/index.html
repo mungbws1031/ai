@@ -604,7 +604,7 @@ function answer(k){
   document.querySelectorAll('#quiz .opt').forEach(b=>{const kk=+b.dataset.k;if(kk===it.q.a)b.classList.add('right');else if(kk===k)b.classList.add('wrong');b.disabled=true});
   $('#qAfter').innerHTML=`<p class="explain"><strong>${right?'정답':'오답'}.</strong> ${esc(it.q.e)}</p><div class="row" style="margin-top:10px"><button class="btn primary" type="button" id="qNext">${Q.i+1<Q.items.length?'다음 문제':'결과 보기'}</button></div>`;
   $('#qNext').onclick=()=>{Q.i++;Q.answered=false;renderQuiz()};
-  renderMap();renderDetail();save();
+  renderMap();renderDetail();renderViews();save();
 }
 $('#quizBtn').addEventListener('click',startQuiz);
 
