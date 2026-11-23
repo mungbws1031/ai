@@ -1294,6 +1294,10 @@ benchSvg.addEventListener('pointercancel', e => { if (drag && e.pointerId === dr
 
 function finishDrag(e) {
   const { id, start } = drag; drag = null;
+  // 톡 누르기(거의 안 움직임)면 그 원자를 치운다
+  if (Math.hypot(pos[id].x - start.x, pos[id].y - start.y) < 8) {
+    pos[id] = start; removeAtoms([id]); beep(300, 0.08); return;
+  }
   const dr = drawerEl.getBoundingClientRect();
   if (e.clientX >= dr.left && e.clientX <= dr.right && e.clientY >= dr.top && e.clientY <= dr.bottom) {
     removeAtoms([id]); beep(300, 0.08); return;
