@@ -27,6 +27,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .timer.late { color: var(--bad); }
 .quit { pointer-events: auto; position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); font-size: 12px; opacity: .6; background: none; }
 
+.best { font-size: 13px; color: #4a5563; }
 .pad { position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); display: flex; gap: 12px; touch-action: none; }
 .pad.left { left: max(14px, env(safe-area-inset-left)); }
 .pad.right { right: max(14px, env(safe-area-inset-right)); bottom: max(34px, env(safe-area-inset-bottom)); }
@@ -58,7 +59,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 <body>
 <canvas id="cv"></canvas>
 <div class="hud">
-  <div class="wallet" id="wallet"><small>지갑</small><span id="money">30,000원</span></div>
+  <div class="wallet" id="wallet"><small>지갑</small><span id="money">50,000원</span></div>
   <div class="mission" id="mission"></div>
   <div class="timer" id="timer">0:45</div>
 </div>
@@ -73,30 +74,61 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 <script src="../judge.js"></script>
 <script src="render.js"></script>
 <script>
+/* 시험판 v3: 매 판 무작위 · 눈에 보이는 단속원/주민 · 5곳짜리 하루 + 최고 기록. 버려도 되는 코드. */
 (() => {
-  const J = window.Judge, R = window.PGRender, PI = Math.PI, CAR = J.CAR;
+  const J = window.Judge, R = window.PGRender, RULES = window.RULES, PI = Math.PI, CAR = J.CAR;
   const $ = s => document.querySelector(s);
   const won = n => (n < 0 ? '−' : '') + Math.abs(Math.round(n)).toLocaleString('ko-KR') + '원';
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const byKey = k => LEVELS.find(l => l.key === k);
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const shuffle = arr => arr.map(v => [Math.random(), v]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const store = { get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
 
-  // 하루 일정: 장소마다 제한시간(초)·머무는 시간(분)·한마디
+  // 하루 일정 — 장소마다 단속원 순찰길(왕복), 주민이 설 수 있는 자리 [x, y, 바라보는 방향]
   const DAY = [
-    { lv: byKey('mart'), limit: 45, stay: 60, who: '마트', task: '장보기 1시간', hint: '입구 앞은 가깝고, 빈 칸은 저 아래…' },
-    { lv: byKey('hospital'), limit: 50, stay: 60, who: '병원', task: '엄마 진료 1시간', hint: '병원 앞은 다 노란 선. 뒤쪽 빈 가장자리는 좁아요.' },
+    { key: 'mart', who: '마트', task: '장보기', limit: 45, stays: [20, 40, 60], loop: 30, guard: '주차 관리 요원',
+      patrol: [[4, 20.8], [68, 20.8]], watchers: [[30, 10.4, PI / 2], [50, 10.4, PI / 2], [14, 21.5, 0], [60, 22, PI]], n: 2 },
+    { key: 'hospital', who: '병원', task: '엄마 진료', limit: 50, stays: [20, 40, 60], loop: 40, guard: '단속 공무원',
+      patrol: [[4, 13.6], [106, 13.6]], watchers: [[44, 13.6, PI / 2], [70, 13.6, PI / 2], [20, 30.5, -PI / 2], [90, 30.5, -PI / 2]], n: 2,
+      maybeCar: { x: 93.7, y: 16.25, heading: PI } },
+    { key: 'market', who: '전통시장', task: '장보기', limit: 50, stays: [30, 60, 120], loop: 35, guard: '단속 공무원',
+      patrol: [[4, 13], [106, 13]], watchers: [[71, 12.9, PI / 2], [35, 27, -PI / 2], [90, 27, -PI / 2], [50, 13, PI / 2]], n: 2 },
+    { key: 'station', who: '지하철역', task: '가족 마중', limit: 55, stays: [10, 20, 40], loop: 30, guard: '단속 공무원',
+      patrol: [[4, 13], [116, 13]], watchers: [[39, 13, PI / 2], [56, 13, PI / 2], [100, 31, -PI / 2], [30, 31, -PI / 2]], n: 2 },
+    { key: 'school', who: '학교 앞', task: '학원 상담', limit: 60, stays: [20, 40, 60], loop: 25, guard: '단속 공무원',
+      patrol: [[4, 13.5], [146, 13.5]], watchers: [[34, 30.6, -PI / 2], [64, 30.6, -PI / 2], [78, 13.4, PI / 2], [110, 30.6, -PI / 2]], n: 3 },
   ];
-  const START_MONEY = 30000, ON_TIME = 10000, LATE = 5000, CRASH = 10000, STICKER = 5000, NOTICE = 15000, TOW = 40000;
+  const START = 50000, ON_TIME = 10000, LATE = 5000, CRASH = 10000, STICKER = 5000, NOTICE = 15000, TOW = 40000;
+  const SEE_R = 16, SEE_HALF = 35 * PI / 180, ENC_R = 7;
 
   const cv = $('#cv'), ctx = cv.getContext('2d');
-  let S = null; // 게임 상태
+  let S = null;
 
-  function parkedOf(lv) {
-    const list = (lv.parked || []).map(c => ({ ...c }));
-    (lv.slots || []).forEach(s => { if (J.slotOccupied(s, {})) list.push({ x: s.x + s.w / 2, y: s.y + s.h / 2, heading: s.h > s.w ? (s.id.charCodeAt(1) % 2 ? PI / 2 : -PI / 2) : (s.dir ?? 0), color: s.color, slot: s.id }); });
-    return list;
-  }
   function hhmm(t) { const [h, m] = t.split(':').map(Number); return h * 60 + m; }
   function fmt(min) { min = Math.round(min) % 1440; return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`; }
+
+  // ─── 장소 준비: 매번 다르게 ───
+  function prepare(d) {
+    const base = LEVELS.find(l => l.key === d.key);
+    const lv = JSON.parse(JSON.stringify(base));
+    lv.props = (lv.props || []).filter(p => p.type !== 'reporter');
+    const normal = lv.slots.filter(s => !s.disabled && !['ev', 'pregnant', 'compact', 'women', 'resident'].includes(s.type));
+    normal.forEach(s => { s.occupied = Math.random() < 0.85; s.freesOnCall = false; s.color = s.color || pick(['#e9e9e4', '#b8bcc2', '#2b2f36', '#6d7782', '#8c2f2f', '#2f4a6b']); });
+    if (normal.length && !normal.some(s => !s.occupied)) pick(normal).occupied = false;
+    const parked = (lv.parked || []).map(c => ({ ...c }));
+    if (d.maybeCar && Math.random() < 0.4) parked.push({ ...d.maybeCar, color: '#8c2f2f' });
+    lv.slots.forEach(s => { if (J.slotOccupied(s, {})) parked.push({ x: s.x + s.w / 2, y: s.y + s.h / 2, heading: s.h > s.w ? (Math.random() < 0.5 ? PI / 2 : -PI / 2) : (s.dir ?? 0), color: s.color, slot: s.id }); });
+    const watchers = shuffle(d.watchers).slice(0, d.n).map(([x, y, a]) => ({ x, y, base: a, ph: Math.random() * 6.28, sp: 5 + Math.random() * 4 }));
+    return { lv, parked, watchers, phase: Math.random() * d.loop, stay: pick(d.stays) };
+  }
+  function encAt(d, P, t) {
+    const [a, b] = d.patrol, u = (((t + P.phase) / d.loop) % 1 + 1) % 1, f = u < 0.5 ? u * 2 : 2 - u * 2;
+    return { x: a[0] + (b[0] - a[0]) * f, y: a[1] + (b[1] - a[1]) * f, dir: u < 0.5 ? 1 : -1 };
+  }
+  const watchAng = (w, t) => w.base + 0.95 * Math.sin(2 * PI * t / w.sp + w.ph);
+  const sees = (w, t, p) => dist(w, p) <= SEE_R && Math.abs(wrap(Math.atan2(p.y - w.y, p.x - w.x) - watchAng(w, t))) <= SEE_HALF;
 
   // ─── 화면 카드 ───
   function card(html, btn, onGo) {
@@ -106,41 +138,40 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   }
   function title() {
     S = null;
+    const best = store.get('pg-day-best', null);
     card(`<h2>주차 한 판</h2>
-      <p>지갑에 <b>30,000원</b>. 오늘 마트 들렀다가 병원까지 가야 해요.</p>
-      <p>가까운 데 대충 세울까, 멀어도 제대로 넣을까? <b>걸리면 지갑이 털립니다.</b></p>
-      <p class="why">왼쪽 동그라미를 <b>가고 싶은 쪽</b>으로 밀어요. 차 뒤쪽으로 당기면 후진, 손을 떼면 멈춰요. 다 세웠으면 <b>여기 세우기 P</b>.</p>
-      <p class="why"><span class="tag">시험판</span> 장소 2곳만 들어 있어요.</p>`, '출발', () => startDay());
+      <p>지갑에 <b>50,000원</b>. 오늘 다섯 곳을 돌아야 해요.</p>
+      <p><b>노란 조끼 단속원</b>이 길을 오가고, <b>주민</b>은 주황색 시야로 두리번거려요. 안 보일 때 잠깐 세울지, 멀어도 제대로 넣을지는 당신 몫.</p>
+      <p class="why">왼쪽 동그라미를 가고 싶은 쪽으로 밀기 · 차 뒤로 당기면 후진 · 다 세웠으면 <b>여기 세우기 P</b></p>
+      ${best != null ? `<p class="best">최고 기록: <b>${won(best)}</b></p>` : ''}
+      <p class="why"><span class="tag">시험판</span> 매 판 빈자리·주민·머무는 시간이 바뀝니다.</p>`, '출발', startDay);
   }
-  function startDay() { S = { money: START_MONEY, i: 0, log: [] }; setMoney(0); place(0); }
-
+  function startDay() { S = { money: START, i: 0, log: [] }; setMoney(0); place(0); }
   function place(i) {
-    const d = DAY[i], lv = d.lv;
-    S.i = i; S.d = d; S.lv = lv;
-    S.car = { x: lv.start.x, y: lv.start.y, heading: lv.start.heading, v: 0, steer: 0 };
-    S.parked = parkedOf(lv); S.left = d.limit; S.crash = 0; S.cool = 0; S.ff = null; S.done = false;
-    S.clock = hhmm(lv.clock);
-    $('#mission').innerHTML = `<b>${i + 1}/${DAY.length} · ${d.who}</b> — ${d.task}<br><span style="color:#9aa3ad">${d.hint}</span>`;
-    card(`<h2>${i + 1}. ${lv.title}</h2><p>${d.task}. <b>${d.limit}초 안에</b> 세우면 약속 보너스 <b>+${won(ON_TIME)}</b>.</p>
-      <p class="why">${d.hint}</p>`, '운전 시작', () => { S.running = true; });
+    const d = DAY[i], P = prepare(d), lv = P.lv;
+    Object.assign(S, { i, d, P, lv, parked: P.parked, left: d.limit, crash: 0, cool: 0, ff: null, done: false, running: false,
+      car: { x: lv.start.x, y: lv.start.y, heading: lv.start.heading, v: 0, steer: 0 }, clock: hhmm(lv.clock) });
+    $('#mission').innerHTML = `<b>${i + 1}/${DAY.length} · ${d.who}</b> — ${d.task} ${P.stay}분<br><span style="color:#9aa3ad">${d.guard} 1명 · 지켜보는 주민 ${P.watchers.length}명</span>`;
+    card(`<h2>${i + 1}. ${lv.title}</h2><p>${d.task}, 오늘은 <b>${P.stay}분</b> 걸려요. <b>${d.limit}초 안에</b> 세우면 약속 보너스 <b>+${won(ON_TIME)}</b>.</p>
+      <p class="why">${d.guard}은 ${d.loop}분마다 한 바퀴 돌아요. 오래 머물수록 마주칠 확률이 커집니다.</p>
+      <p>지갑: <b>${won(S.money)}</b></p>`, '운전 시작', () => { S.running = true; });
   }
 
-  // ─── 입력: 조이스틱 하나 (화면 기준 방향) + 키보드 ───
-  const keys = {};
-  const stick = { on: false, x: 0, y: 0, mag: 0, ang: 0, rev: false };
+  // ─── 입력: 조이스틱 + 키보드 ───
+  const keys = {}, stick = { on: false, mag: 0, ang: 0, rev: false };
   const stEl = $('#stick'), knob = $('#knob');
   function stickMove(e) {
     const r = stEl.getBoundingClientRect(), R0 = r.width / 2;
     let dx = e.clientX - (r.left + R0), dy = e.clientY - (r.top + R0);
-    const d = Math.hypot(dx, dy), lim = R0 * 0.62;
-    if (d > lim) { dx *= lim / d; dy *= lim / d; }
+    const dd = Math.hypot(dx, dy), lim = R0 * 0.62;
+    if (dd > lim) { dx *= lim / dd; dy *= lim / dd; }
     knob.style.transform = `translate(${dx}px, ${dy}px)`;
-    stick.mag = Math.min(1, d / lim); stick.ang = Math.atan2(dy, dx);
+    stick.mag = Math.min(1, dd / lim); stick.ang = Math.atan2(dy, dx);
   }
   stEl.addEventListener('pointerdown', e => { e.preventDefault(); stEl.setPointerCapture(e.pointerId); stick.on = true; stickMove(e); });
   stEl.addEventListener('pointermove', e => { if (stick.on) stickMove(e); });
   const stickOff = () => { stick.on = false; stick.mag = 0; knob.style.transform = ''; };
-  stEl.addEventListener('pointerup', stickOff); stEl.addEventListener('pointercancel', stickOff); stEl.addEventListener('lostpointercapture', stickOff);
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => stEl.addEventListener(ev, stickOff));
   const KM = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'gas', ArrowDown: 'back' };
   addEventListener('keydown', e => { if (KM[e.key]) { keys[KM[e.key]] = true; e.preventDefault(); } if (e.key === ' ' || e.key === 'p') tryPark(); });
   addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = false; });
@@ -153,8 +184,8 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     for (const poly of [a, b]) for (let i = 0; i < poly.length; i++) {
       const p = poly[i], q = poly[(i + 1) % poly.length], nx = q.y - p.y, ny = p.x - q.x;
       let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
-      for (const v of a) { const d = v.x * nx + v.y * ny; a0 = Math.min(a0, d); a1 = Math.max(a1, d); }
-      for (const v of b) { const d = v.x * nx + v.y * ny; b0 = Math.min(b0, d); b1 = Math.max(b1, d); }
+      for (const v of a) { const k = v.x * nx + v.y * ny; a0 = Math.min(a0, k); a1 = Math.max(a1, k); }
+      for (const v of b) { const k = v.x * nx + v.y * ny; b0 = Math.min(b0, k); b1 = Math.max(b1, k); }
       if (a1 < b0 || b1 < a0) return false;
     }
     return true;
@@ -171,16 +202,11 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     const c = S.car;
     let target = 0, vt = 0;
     if (stick.on && stick.mag > 0.15) {
-      // 앞쪽이면 전진, 차 뒤쪽이면 후진(경계에서 덜컹거리지 않게 여유를 둠)
-      const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
       const df = wrap(stick.ang - c.heading), off = Math.abs(df);
       if (stick.rev ? off < 1.2 : off > 1.95) stick.rev = !stick.rev;
       if (!stick.rev) { target = clamp(df / 0.55, -1, 1); vt = stick.mag * 4.5; }
-      else { const db = wrap(stick.ang - c.heading - PI); target = -clamp(db / 0.55, -1, 1); vt = -stick.mag * 2.8; }
-    } else {
-      target = keys.left ? -1 : keys.right ? 1 : 0;
-      vt = keys.gas ? 7 : keys.back ? -2.8 : 0;
-    }
+      else { target = -clamp(wrap(stick.ang - c.heading - PI) / 0.55, -1, 1); vt = -stick.mag * 2.8; }
+    } else { target = keys.left ? -1 : keys.right ? 1 : 0; vt = keys.gas ? 6 : keys.back ? -2.8 : 0; }
     c.steer += clamp(target - c.steer, -dt * 4, dt * 4);
     const dv = vt - c.v, a = Math.sign(dv) === Math.sign(c.v) || !c.v ? 3.5 : 7;
     c.v += clamp(dv, -a * dt, a * dt);
@@ -190,94 +216,131 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     const nx = { heading: c.heading + c.v / CAR.wheelbase * Math.tan(st) * dt, x: c.x + Math.cos(c.heading) * c.v * dt, y: c.y + Math.sin(c.heading) * c.v * dt };
     const h = hit(nx);
     if (h) {
-      if (h === 'car' && Math.abs(c.v) > 0.8 && S.cool <= 0) { S.crash++; S.cool = 1.5; pay(-CRASH); flash('쿵! 수리비 −' + won(CRASH).replace('−', ''), '#ff5a5a'); }
+      if (h === 'car' && Math.abs(c.v) > 0.8 && S.cool <= 0) { S.crash++; S.cool = 1.5; pay(-CRASH); flash('쿵! 수리비 ' + won(-CRASH), '#ff5a5a'); }
       c.v = 0; return;
     }
     Object.assign(c, nx);
   }
   function pay(n) { S.money += n; setMoney(n); }
   function setMoney(n) {
-    $('#money').textContent = won(S ? S.money : START_MONEY);
+    $('#money').textContent = won(S ? S.money : START);
     if (n < 0) { const w = $('#wallet'); w.classList.remove('hit'); void w.offsetWidth; w.classList.add('hit'); }
   }
   let flashT = 0;
   function flash(text, color = '#fff') { const f = $('#flash'); f.textContent = text; f.style.color = color; f.classList.remove('hidden'); flashT = 1.6; }
 
-  // ─── 세우기 → 시간 빨리 감기 → 정산 ───
+  // ─── 세우기: 볼일 보는 동안을 1분 단위로 시뮬레이션 ───
   function tryPark() {
     if (!S || !S.running || S.ff || Math.abs(S.car.v) > 0.3) return;
     S.running = false;
-    const d = S.d, lv = S.lv, pose = { x: S.car.x, y: S.car.y, heading: S.car.heading };
-    const late = S.left < 0;
-    const j = J.judgePose(lv, pose, 'park', { minutes: d.stay, clockMin: S.clock });
-    const risk = J.assessRisk(lv, pose, j, { minutes: d.stay, driverPresent: false });
-    const out = J.rollOutcome(risk);
-    S.ff = { t: 0, dur: 4.2, pose, j, risk, out, late, from: S.clock };
+    const { d, P, lv } = S, pose = { x: S.car.x, y: S.car.y, heading: S.car.heading }, stay = P.stay, t0 = S.clock;
+    const j = J.judgePose(lv, pose, 'park', { minutes: stay, clockMin: t0 });
+    const r = j.rule, bad = !j.legal, manner = j.legal && j.answer === 'manner';
+    const ev = []; const seen = [];
+    let ticket = null, report = null, cctv = null, spotted = null;
+    const cams = (lv.props || []).filter(p => p.type === 'cctv' && dist(p, pose) <= p.r);
+    // 언제부터 위반인가: 시간제 칸은 허용 시간이 끝난 뒤부터, 정차만 되는 곳은 5분 뒤부터
+    const flex = j.key === 'flex_zone' && lv.zones.find(z => z.hours && J.inZone(z, pose));
+    const from = !bad ? 0 : flex ? Math.max(0, flex.hours[1] - t0) : r.stop ? 5 : 0;
+    for (let m = 0; m < stay; m += 0.5) {
+      const illegalNow = bad && m >= from;
+      const t = t0 + m, e = encAt(d, P, t);
+      if ((illegalNow || manner) && ticket == null && dist(e, pose) <= ENC_R) { ticket = m; ev.push({ m, k: 'enc' }); }
+      P.watchers.forEach((w, wi) => { if (sees(w, t, pose)) { seen.push(m); if (spotted == null) { spotted = m; ev.push({ m, k: 'look', wi }); } } });
+      if (illegalNow && r.report && report == null && seen.filter(x => x >= from).length && m - seen.find(x => x >= from) >= 1 && seen.some(x => x === m)) { report = m; ev.push({ m, k: 'photo' }); }
+      if (illegalNow && r.fine && cams.length && cctv == null && m - from >= r.cctvGrace) { cctv = m; ev.push({ m, k: 'cctv' }); }
+    }
+    const caught = bad && ((ticket != null) || report != null || cctv != null);
+    const fined = caught && r.fine > 0;
+    const notice = bad && !r.fine && (ticket != null || (spotted != null && spotted >= from));
+    const firstCatch = Math.min(...[ticket, report, cctv].filter(x => x != null), Infinity);
+    const tow = caught && r.tow >= 0.5 && stay >= 30 && firstCatch + 10 <= stay ? firstCatch + 10 : null;
+    if (tow != null) ev.push({ m: tow, k: 'tow' });
+    const sticker = manner && (ticket != null || spotted != null);
+    S.ff = { t: 0, dur: 2.5 + stay / 60 * 2.5, pose, j, t0, stay, ev, from, res: { bad, manner, ticket, report, cctv, fined, notice, tow, sticker, spotted } };
   }
   function settle() {
-    const { j, risk, out, late } = S.ff, d = S.d, r = j.rule;
-    const lines = [];
+    const { j, res, stay } = S.ff, d = S.d, r = j.rule;
+    const late = S.left < 0, lines = [];
     lines.push(late ? ['약속에 늦음 (커피 사기)', -LATE] : ['약속 시간 지킴 보너스', ON_TIME]);
-
-    if (!j.legal) {
-      if (out.fined && risk.fine) lines.push([`과태료 — ${out.reported ? '주민신고' : out.cctv ? 'CCTV' : '단속'}`, -risk.fine]);
-      else if (!risk.fine) lines.push(['관리실 경고 스티커 + 이동 호출', -NOTICE]);
-      if (out.towed) lines.push(['견인료 + 보관료', -TOW]);
-      if (risk.fine && !out.fined && !out.towed) lines.push(['운 좋게 안 걸림', 0]);
-    } else if (j.answer === 'manner') lines.push(['앞유리에 항의 쪽지 (세차)', -STICKER]);
-    lines.filter(l => l[1]).forEach(l => S.money += l[1]);
-    setMoney(lines.reduce((a, l) => a + l[1], 0) < 0 ? -1 : 1);
-    const verdict = !j.legal ? `<span style="color:#c0262d">${r.name}</span>` : j.answer === 'manner' ? `<span style="color:#6b3fb8">${r.name} (비매너)</span>` : `<span style="color:#1f7a48">${r.name}</span>`;
-    S.log.push({ where: r.short, legal: j.legal, manner: j.answer === 'manner', sum: lines.reduce((a, l) => a + l[1], 0) - S.crash * CRASH });
+    if (res.fined) lines.push([`과태료 — ${res.report != null ? '주민이 1분 간격으로 두 번 찍어 신고' : res.cctv != null ? 'CCTV에 찍힘' : d.guard + '이 딱지'}`, -r.fine]);
+    if (res.notice) lines.push([res.ticket != null ? `${d.guard} 경고 스티커 + 이동 호출` : '주민이 관리실에 연락', -NOTICE]);
+    if (res.tow != null) lines.push(['견인료 + 보관료', -TOW]);
+    if (res.sticker) lines.push(['앞유리에 항의 쪽지 (세차)', -STICKER]);
+    if (res.bad && S.ff.from > 0) lines.push([`${Math.round(S.ff.from)}분까지는 괜찮았지만 그 뒤로는 위반`, 0]);
+    if (res.bad && !res.fined && !res.notice) lines.push(['아무도 못 봤어요 — 운이 좋았네요', 0]);
+    if (res.manner && !res.sticker) lines.push(['눈총은 받았지만 무사', 0]);
+    lines.forEach(l => S.money += l[1]);
+    setMoney(lines.reduce((a, l) => a + l[1], 0));
+    const tone = res.bad ? '#c0262d' : res.manner ? '#6b3fb8' : '#1f7a48';
+    S.log.push({ where: r.short, bad: res.bad, manner: res.manner, sum: lines.reduce((a, l) => a + l[1], 0) - S.crash * CRASH });
     const last = S.i === DAY.length - 1, broke = S.money < 0;
-    card(`<h2>${d.who} 정산</h2><p>세운 곳: <b>${verdict}</b></p>
+    card(`<h2>${d.who} 정산</h2><p>세운 곳: <b style="color:${tone}">${r.name}${res.bad ? ' (위반)' : res.manner ? ' (비매너)' : ''}</b> · ${stay}분</p>
       <div class="lines">${S.crash ? `<div><span>운전 중 접촉 사고 ${S.crash}번 (이미 냄)</span><span class="minus">${won(-S.crash * CRASH)}</span></div>` : ''}${lines.map(([t, n]) => `<div><span>${t}</span><span class="${n < 0 ? 'minus' : n > 0 ? 'plus' : ''}">${n ? (n > 0 ? '+' : '') + won(n) : '—'}</span></div>`).join('')}</div>
       <p class="why">${r.easy || r.desc}</p>
       <p>지갑: <b class="big">${won(S.money)}</b></p>`,
       broke ? '파산… 결과 보기' : last ? '하루 마감' : '다음 장소로', () => (broke || last ? endDay(broke) : place(S.i + 1)));
   }
   function endDay(broke) {
-    const m = S.money;
-    const rank = broke ? '파산' : m >= 45000 ? '주차 고수' : m >= 30000 ? '무난한 하루' : m >= 10000 ? '지갑이 얇아짐' : '거의 털림';
-    card(`<h2>${rank}</h2><p>남은 돈 <b class="big">${won(m)}</b> <span class="why">(시작 ${won(START_MONEY)})</span></p>
-      <div class="lines">${S.log.map((l, i) => `<div><span>${DAY[i].who} — ${l.where}${l.legal ? (l.manner ? ' · 비매너' : ' · 합법') : ' · 위반'}</span><span class="${l.sum < 0 ? 'minus' : 'plus'}">${(l.sum > 0 ? '+' : '') + won(l.sum)}</span></div>`).join('')}</div>
-      <p class="why">시험판입니다. 손맛·긴장감이 어땠는지 알려 주세요.</p>`, '한 번 더', () => startDay());
+    const m = S.money, best = store.get('pg-day-best', null), isBest = !broke && (best == null || m > best);
+    if (isBest) store.set('pg-day-best', m);
+    const rank = broke ? '파산' : m >= 90000 ? '주차의 신' : m >= 70000 ? '주차 고수' : m >= 50000 ? '무난한 하루' : m >= 25000 ? '지갑이 얇아짐' : '거의 털림';
+    card(`<h2>${rank}${isBest ? ' · 최고 기록!' : ''}</h2><p>남은 돈 <b class="big">${won(m)}</b> <span class="why">(시작 ${won(START)}${best != null && !isBest ? ` · 최고 ${won(best)}` : ''})</span></p>
+      <div class="lines">${S.log.map((l, i) => `<div><span>${DAY[i].who} — ${l.where}${l.bad ? ' · 위반' : l.manner ? ' · 비매너' : ''}</span><span class="${l.sum < 0 ? 'minus' : 'plus'}">${(l.sum > 0 ? '+' : '') + won(l.sum)}</span></div>`).join('')}</div>
+      <p class="why">다시 하면 빈자리·주민·머무는 시간이 바뀝니다.</p>`, '한 번 더', startDay);
   }
 
   // ─── 그리기 ───
   function camera(w, h) {
-    const ppm = Math.max(w / 40, h / 22), c = S.car, lv = S.lv;
+    const ppm = Math.max(w / 44, h / 24), c = S.car, lv = S.lv;
     let cx = c.x + Math.cos(c.heading) * c.v * 0.6, cy = c.y + Math.sin(c.heading) * c.v * 0.6;
     const hw = w / 2 / ppm, hh = h / 2 / ppm;
     cx = lv.world.w < 2 * hw ? lv.world.w / 2 : clamp(cx, hw, lv.world.w - hw);
     cy = lv.world.h < 2 * hh ? lv.world.h / 2 : clamp(cy, hh, lv.world.h - hh);
     return { cx, cy, ppm, w, h };
   }
-  function drawFF(cam, dpr, ff) {
-    const k = ff.t / ff.dur, lv = S.lv, out = ff.out;
-    const W2S = (x, y) => [(x - cam.cx) * cam.ppm + cam.w / 2, (y - cam.cy) * cam.ppm + cam.h / 2];
+  function drawAgents(cam, dpr, t, showRoute) {
+    const { d, P } = S, k = cam.ppm;
+    const W = (x, y) => [(x - cam.cx) * k + cam.w / 2, (y - cam.cy) * k + cam.h / 2];
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = `rgba(10,14,30,${0.15 + 0.25 * Math.sin(k * PI)})`; ctx.fillRect(0, 0, cam.w, cam.h);
-    ctx.font = '22px "Do Hyeon", sans-serif'; ctx.textAlign = 'center';
-    // 주민 사진 (1분 간격 두 장)
-    if (out.reported) (lv.props || []).filter(p => p.type === 'reporter' && Math.hypot(p.x - ff.pose.x, p.y - ff.pose.y) <= 30).forEach(p => {
-      if ((k > 0.2 && k < 0.3) || (k > 0.42 && k < 0.52)) { const [x, y] = W2S(p.x, p.y); ctx.fillStyle = '#fff'; ctx.fillText('📸 찰칵', x, y - 18); }
-    });
-    if (out.cctv && k > 0.3 && k < 0.7) (lv.props || []).filter(p => p.type === 'cctv').forEach(p => { const [x, y] = W2S(p.x, p.y); ctx.fillStyle = '#ff5a5a'; ctx.fillText('● REC', x, y - 16); });
-    if (out.patrol && k > 0.55 && k < 0.8) { const [x, y] = W2S(ff.pose.x, ff.pose.y); ctx.fillStyle = '#ffd23a'; ctx.fillText('단속 딱지!', x, y - 30); }
-    // 견인차
-    if (out.towed && k > 0.6) {
-      const kk = (k - 0.6) / 0.4, p = ff.pose;
-      const tx = kk < 0.5 ? p.x + 30 * (1 - kk * 2) : p.x - (kk - 0.5) * 2 * 40;
-      if (kk >= 0.5) { S.car.x = p.x - (kk - 0.5) * 2 * 40 + 5.5; }
-      ctx.setTransform(dpr * cam.ppm, 0, 0, dpr * cam.ppm, dpr * (cam.w / 2 - cam.cx * cam.ppm), dpr * (cam.h / 2 - cam.cy * cam.ppm));
-      R.drawCar(ctx, { x: tx - 3, y: p.y, heading: PI }, '#f0b400', {});
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const [x, y] = W2S(tx - 3, p.y); ctx.fillStyle = '#ffd23a'; ctx.fillText('견인 🚚', x, y - 22);
+    if (showRoute) { // 순찰길
+      const [a, b] = d.patrol.map(p => W(p[0], p[1]));
+      ctx.strokeStyle = 'rgba(255,210,58,.25)'; ctx.lineWidth = 3; ctx.setLineDash([6, 8]);
+      ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.stroke(); ctx.setLineDash([]);
     }
-    // 시계
-    ctx.font = '44px "Do Hyeon", sans-serif'; ctx.fillStyle = '#fff';
-    ctx.fillText(`${fmt(ff.from + S.d.stay * k)}  볼일 보는 중…`, cam.w / 2, cam.h * 0.62);
+    (S.lv.props || []).filter(p => p.type === 'cctv').forEach(p => { const [x, y] = W(p.x, p.y); ctx.strokeStyle = 'rgba(255,90,90,.35)'; ctx.lineWidth = 2; ctx.setLineDash([4, 6]); ctx.beginPath(); ctx.arc(x, y, p.r * k, 0, 2 * PI); ctx.stroke(); ctx.setLineDash([]); });
+    P.watchers.forEach(w => { // 주민 + 시야
+      const [x, y] = W(w.x, w.y), a = watchAng(w, t);
+      ctx.fillStyle = 'rgba(255,150,40,.20)'; ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, SEE_R * k, a - SEE_HALF, a + SEE_HALF); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#ff9a2a'; ctx.beginPath(); ctx.arc(x, y, Math.max(6, 0.5 * k), 0, 2 * PI); ctx.fill();
+      ctx.fillStyle = '#2b2118'; ctx.beginPath(); ctx.arc(x, y, Math.max(3, 0.25 * k), 0, 2 * PI); ctx.fill();
+    });
+    const e = encAt(d, P, t), [ex, ey] = W(e.x, e.y); // 단속원
+    ctx.fillStyle = 'rgba(255,210,58,.15)'; ctx.beginPath(); ctx.arc(ex, ey, ENC_R * k, 0, 2 * PI); ctx.fill();
+    ctx.fillStyle = '#ffd23a'; ctx.beginPath(); ctx.arc(ex, ey, Math.max(7, 0.55 * k), 0, 2 * PI); ctx.fill();
+    ctx.fillStyle = '#17202a'; ctx.font = `${Math.max(10, 0.5 * k)}px "Do Hyeon", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('단속', ex, ey);
+    if (ex < 0 || ex > cam.w || ey < 0 || ey > cam.h) { // 화면 밖이면 가장자리 화살표
+      const cx = clamp(ex, 70, cam.w - 70), cy = clamp(ey, 90, cam.h - 30);
+      ctx.fillStyle = 'rgba(255,210,58,.9)'; ctx.font = '15px "Do Hyeon", sans-serif';
+      ctx.fillText(`단속 ${ex < 0 ? '◀' : ex > cam.w ? '▶' : ey < 0 ? '▲' : '▼'} ${Math.round(Math.hypot(e.x - S.car.x, e.y - S.car.y))}m`, cx, cy);
+    }
+  }
+  function drawFF(cam, dpr, ff) {
+    const k = ff.t / ff.dur, m = ff.stay * k, lv = S.lv;
+    const W = (x, y) => [(x - cam.cx) * cam.ppm + cam.w / 2, (y - cam.cy) * cam.ppm + cam.h / 2];
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.font = '24px "Do Hyeon", sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+    const [px, py] = W(ff.pose.x, ff.pose.y);
+    ff.ev.filter(e => m >= e.m && m < e.m + Math.max(3, ff.stay * 0.12)).forEach(e => {
+      if (e.k === 'enc') { ctx.fillStyle = '#ffd23a'; ctx.fillText(ff.res.bad || ff.res.manner ? '단속원: 어? 이 차…' : '', px, py - 34); }
+      if (e.k === 'look') { const w = S.P.watchers[e.wi], [x, y] = W(w.x, w.y); ctx.fillStyle = '#ff9a2a'; ctx.fillText('👀', x, y - 18); }
+      if (e.k === 'photo') { ctx.fillStyle = '#fff'; ctx.fillText('📸 찰칵 · 찰칵', px, py - 56); }
+      if (e.k === 'cctv') { ctx.fillStyle = '#ff5a5a'; ctx.fillText('● CCTV 촬영', px, py + 44); }
+      if (e.k === 'tow') { ctx.fillStyle = '#ffd23a'; ctx.fillText('🚚 견인차 도착', px, py - 78); }
+    });
+    if (ff.res.tow != null && m >= ff.res.tow) S.car.x = ff.pose.x - (m - ff.res.tow) * 3;
+    ctx.font = '40px "Do Hyeon", sans-serif'; ctx.fillStyle = '#fff';
+    ctx.fillText(`${fmt(ff.t0 + m)}  볼일 보는 중… (${Math.round(m)}/${ff.stay}분)`, cam.w / 2, cam.h * 0.64);
   }
 
   let last = performance.now();
@@ -287,28 +350,27 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     if (flashT > 0) { flashT -= dt; if (flashT <= 0) $('#flash').classList.add('hidden'); }
     const { w, h, dpr } = R.sizeCanvas(cv);
     if (!S || !S.lv) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#2b3036'; ctx.fillRect(0, 0, w, h); return; }
-    if (S.running) {
-      for (let i = 0; i < 3; i++) step(dt / 3);
-      S.cool -= dt; S.left -= dt; S.clock += dt / 60 * 4;
-    }
-    if (S.ff && !S.done) { S.ff.t += dt; if (S.ff.t >= S.ff.dur) { S.done = true; settle(); } }
+    if (S.running) { for (let i = 0; i < 3; i++) step(dt / 3); S.cool -= dt; S.left -= dt; S.clock += dt * 0.5; }
+    let t = S.clock;
+    if (S.ff) { if (!S.done) { S.ff.t = Math.min(S.ff.dur, S.ff.t + dt); if (S.ff.t >= S.ff.dur) { S.done = true; setTimeout(settle, 400); } } t = S.ff.t0 + S.ff.stay * (S.ff.t / S.ff.dur); }
     const cam = camera(w, h);
-    R.drawWorld(ctx, S.lv, cam, { dpr, learn: false, state: {}, parked: S.parked, player: { ...S.car, gear: S.car.v < -0.05 ? 'R' : 'D', brakeOn: Math.abs(S.car.v) > 0.1 && !(stick.on && stick.mag > 0.15) && !keys.gas && !keys.back }, showDest: S.running, t: now / 1000 });
+    R.drawWorld(ctx, S.lv, cam, { dpr, learn: false, state: {}, parked: S.parked, player: { ...S.car, gear: S.car.v < -0.05 ? 'R' : 'D', brakeOn: false }, showDest: S.running, t: now / 1000 });
+    drawAgents(cam, dpr, t, S.running);
     if (S.running && stick.on && stick.mag > 0.15) {
       const sx = (S.car.x - cam.cx) * cam.ppm + cam.w / 2, sy = (S.car.y - cam.cy) * cam.ppm + cam.h / 2, L = 40 + 60 * stick.mag;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.strokeStyle = stick.rev ? 'rgba(255,90,90,.85)' : 'rgba(255,255,255,.8)'; ctx.lineWidth = 4; ctx.setLineDash([8, 6]);
+      ctx.strokeStyle = stick.rev ? 'rgba(255,90,90,.85)' : 'rgba(255,255,255,.8)'; ctx.lineWidth = 4; ctx.setLineDash([8, 6]);
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(stick.ang) * L, sy + Math.sin(stick.ang) * L); ctx.stroke(); ctx.setLineDash([]);
       if (stick.rev) { ctx.font = '18px "Do Hyeon", sans-serif'; ctx.fillStyle = '#ff8080'; ctx.textAlign = 'center'; ctx.fillText('후진', sx, sy - 26); }
     }
     if (S.ff) drawFF(cam, dpr, S.ff);
-    const t = Math.ceil(Math.abs(S.left));
-    $('#timer').textContent = (S.left < 0 ? '+' : '') + `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+    const tt = Math.ceil(Math.abs(S.left));
+    $('#timer').textContent = (S.left < 0 ? '+' : '') + `${Math.floor(tt / 60)}:${String(tt % 60).padStart(2, '0')}`;
     $('#timer').classList.toggle('late', S.left < 0);
     $('#parkBtn').disabled = !S.running || Math.abs(S.car.v) > 0.3;
   }
   requestAnimationFrame(loop);
   title();
-  window.__spike = { get S() { return S; }, tryPark, keys, stick };
+  window.__spike = { get S() { return S; }, tryPark, keys, stick, DAY, place };
 })();
 </script>
 </body>
