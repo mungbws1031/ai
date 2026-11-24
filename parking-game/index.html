@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b5aa8">
+<title>주차 한 판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* 주차 한 판 — 하루 버티기 + 직접 주차 */
+:root { color-scheme: dark; --ink: #17202a; --cash: #ffd23a; --bad: #ff5a5a; --good: #3ccf7d; --sign: #0b5aa8;
+  --display: 'Do Hyeon', 'Noto Sans KR', sans-serif; --body: 'Noto Sans KR', system-ui, sans-serif; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; background: #2b3036; color: #f4f5f0; font-family: var(--body); overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+.hidden { display: none !important; }
+canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+.hud { position: fixed; top: max(8px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left)); right: max(10px, env(safe-area-inset-right)); display: flex; align-items: flex-start; gap: 10px; pointer-events: none; }
+.wallet { background: rgba(23,32,42,.88); border-radius: 12px; padding: 6px 12px; font-family: var(--display); font-size: 30px; line-height: 1; color: var(--cash); min-width: 150px; }
+.wallet small { display: block; font-family: var(--body); font-size: 11px; color: #9aa3ad; margin-bottom: 2px; }
+.wallet.hit { animation: hit .5s; } @keyframes hit { 30% { transform: scale(1.12); color: var(--bad); } }
+.mission { flex: 1; text-align: center; background: rgba(23,32,42,.88); border-radius: 12px; padding: 6px 12px; font-size: 14px; max-width: 460px; margin: 0 auto; }
+.mission b { font-family: var(--display); font-weight: 400; font-size: 20px; }
+.timer { font-family: var(--display); font-size: 30px; line-height: 1; background: rgba(23,32,42,.88); border-radius: 12px; padding: 6px 12px; min-width: 70px; text-align: center; }
+.timer.late { color: var(--bad); }
+.quit { pointer-events: auto; position: fixed; right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); font-size: 12px; opacity: .6; background: none; }
+
+.best { font-size: 13px; color: #4a5563; }
+.stick { position: fixed; left: max(18px, env(safe-area-inset-left)); bottom: max(18px, env(safe-area-inset-bottom)); width: min(42vh, 170px); height: min(42vh, 170px); border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.10) 0 40%, rgba(23,32,42,.82) 41%); border: 3px solid rgba(255,255,255,.28); touch-action: none; }
+.stick .knob { position: absolute; left: 50%; top: 50%; width: 42%; height: 42%; margin: -21% 0 0 -21%; border-radius: 50%; background: #f1f2ee; box-shadow: 0 4px 12px rgba(0,0,0,.5); pointer-events: none; }
+.stick span { position: absolute; left: 0; right: 0; top: -20px; text-align: center; font-size: 11px; color: #9aa3ad; white-space: nowrap; }
+.parkbtn { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(34px, env(safe-area-inset-bottom)); width: min(30vh, 118px); height: min(30vh, 118px); background: var(--sign); border: 3px solid #fff; border-radius: 50%; font-family: var(--display); font-size: 20px; line-height: 1.15; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
+.parkbtn:disabled { opacity: .35; }
+.parkbtn.glow { box-shadow: 0 0 0 6px rgba(255,210,58,.7), 0 6px 18px rgba(0,0,0,.4); }
+
+.flash { position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); font-family: var(--display); font-size: 34px; text-shadow: 0 3px 10px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
+
+.card-wrap { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(12,15,19,.72); padding: 14px; z-index: 5; }
+.card { width: min(520px, 96vw); max-height: 94vh; overflow: auto; background: #f1f2ee; color: var(--ink); border-radius: 16px; padding: 16px 18px; touch-action: pan-y; }
+.card h2 { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0 0 6px; line-height: 1.15; }
+.card p { margin: 6px 0; line-height: 1.5; }
+.card .big { font-family: var(--display); font-size: 40px; color: #b8860b; }
+.lines { margin: 10px 0; border-top: 2px dashed #c9ccc4; }
+.lines div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid #dcdfd8; }
+.lines .minus { color: #c0262d; font-weight: 700; } .lines .plus { color: #1f7a48; font-weight: 700; }
+.why { font-size: 13px; color: #4a5563; }
+.go { width: 100%; margin-top: 10px; min-height: 52px; border-radius: 12px; background: var(--ink); color: #fff; font-family: var(--display); font-size: 22px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 700; background: #ffd23a; color: #3a2c00; border-radius: 999px; padding: 1px 9px; }
+.days { display: grid; gap: 8px; margin: 10px 0; }
+.daybtn { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; padding: 12px 14px; border-radius: 12px; background: #fff; border: 2px solid #d3d8dd; color: var(--ink); min-height: 56px; }
+.daybtn b { font-family: var(--display); font-weight: 400; font-size: 20px; display: block; }
+.daybtn small { color: #5b6774; }
+.daybtn:disabled { opacity: .45; cursor: not-allowed; }
+.daybtn .rec { font-family: var(--display); font-size: 18px; color: #b8860b; white-space: nowrap; }
+.btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.btns .go { flex: 1; min-width: 140px; margin-top: 0; }
+.go.sub { background: #dfe3e7; color: var(--ink); }
+.classic { display: inline-block; margin-top: 12px; font-size: 13px; color: #4a5563; }
+.rec-row { padding: 8px 0; border-bottom: 1px solid #dcdfd8; }
+.rec-row .top { display: flex; justify-content: space-between; gap: 10px; }
+.rec-row .easy { font-size: 13px; color: #4a5563; margin: 2px 0; }
+.rec-row details { font-size: 12px; color: #4a5563; }
+.rec-row summary { cursor: pointer; color: var(--sign); font-weight: 700; min-height: 28px; display: flex; align-items: center; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="hud">
+  <div class="wallet" id="wallet"><small>지갑</small><span id="money">50,000원</span></div>
+  <div class="mission" id="mission"></div>
+  <div class="timer" id="timer">0:45</div>
+</div>
+<div class="stick" id="stick" aria-label="조이스틱: 가고 싶은 방향으로 밀기"><div class="knob" id="knob"></div><span>가고 싶은 쪽으로 밀기</span></div>
+<button class="parkbtn" id="parkBtn" disabled>여기<br>세우기 P</button>
+<button class="quit" id="quit">처음으로</button>
+<div class="flash hidden" id="flash"></div>
+<div class="card-wrap" id="cardWrap"><div class="card" id="card"></div></div>
+
+<script src="rules.js"></script>
+<script src="levels.js"></script>
+<script src="judge.js"></script>
+<script src="render.js"></script>
+<script src="day-sim.js"></script>
+<script src="day-places.js"></script>
+<script src="day.js"></script>
+</body>
+</html>
