@@ -40,6 +40,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .stick span { position: absolute; left: 0; right: 0; top: -20px; text-align: center; font-size: 11px; color: #9aa3ad; white-space: nowrap; }
 .parkbtn { position: fixed; right: max(18px, env(safe-area-inset-right)); bottom: max(34px, env(safe-area-inset-bottom)); width: min(30vh, 118px); height: min(30vh, 118px); background: var(--sign); border: 3px solid #fff; border-radius: 50%; font-family: var(--display); font-size: 20px; line-height: 1.15; box-shadow: 0 6px 18px rgba(0,0,0,.4); }
 .parkbtn:disabled { opacity: .35; }
+.parkbtn.glow { box-shadow: 0 0 0 6px rgba(255,210,58,.7), 0 6px 18px rgba(0,0,0,.4); }
 
 .flash { position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); font-family: var(--display); font-size: 34px; text-shadow: 0 3px 10px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
 
@@ -142,14 +143,14 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     card(`<h2>주차 한 판</h2>
       <p>지갑에 <b>50,000원</b>. 오늘 다섯 곳을 돌아야 해요.</p>
       <p><b>노란 조끼 단속원</b>이 길을 오가고, <b>주민</b>은 주황색 시야로 두리번거려요. 안 보일 때 잠깐 세울지, 멀어도 제대로 넣을지는 당신 몫.</p>
-      <p class="why">왼쪽 동그라미를 가고 싶은 쪽으로 밀기 · 차 뒤로 당기면 후진 · 다 세웠으면 <b>여기 세우기 P</b></p>
+      <p class="why">왼쪽 동그라미를 가고 싶은 쪽으로 밀기 · 차 뒤로 당기면 후진. 칸 <b>근처에서 멈추면</b> 반투명 차가 보이고, <b>P</b>를 누르면 알아서 맞춰 줘요.</p>
       ${best != null ? `<p class="best">최고 기록: <b>${won(best)}</b></p>` : ''}
       <p class="why"><span class="tag">시험판</span> 매 판 빈자리·주민·머무는 시간이 바뀝니다.</p>`, '출발', startDay);
   }
   function startDay() { S = { money: START, i: 0, log: [] }; setMoney(0); place(0); }
   function place(i) {
     const d = DAY[i], P = prepare(d), lv = P.lv;
-    Object.assign(S, { i, d, P, lv, parked: P.parked, left: d.limit, crash: 0, cool: 0, ff: null, done: false, running: false,
+    Object.assign(S, { i, d, P, lv, parked: P.parked, left: d.limit, crash: 0, cool: 0, ff: null, done: false, running: false, snap: null, ghost: null,
       car: { x: lv.start.x, y: lv.start.y, heading: lv.start.heading, v: 0, steer: 0 }, clock: hhmm(lv.clock) });
     $('#mission').innerHTML = `<b>${i + 1}/${DAY.length} · ${d.who}</b> — ${d.task} ${P.stay}분<br><span style="color:#9aa3ad">${d.guard} 1명 · 지켜보는 주민 ${P.watchers.length}명</span>`;
     card(`<h2>${i + 1}. ${lv.title}</h2><p>${d.task}, 오늘은 <b>${P.stay}분</b> 걸려요. <b>${d.limit}초 안에</b> 세우면 약속 보너스 <b>+${won(ON_TIME)}</b>.</p>
@@ -204,19 +205,19 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     if (stick.on && stick.mag > 0.15) {
       const df = wrap(stick.ang - c.heading), off = Math.abs(df);
       if (stick.rev ? off < 1.2 : off > 1.95) stick.rev = !stick.rev;
-      if (!stick.rev) { target = clamp(df / 0.55, -1, 1); vt = stick.mag * 4.5; }
-      else { target = -clamp(wrap(stick.ang - c.heading - PI) / 0.55, -1, 1); vt = -stick.mag * 2.8; }
+      if (!stick.rev) { target = clamp(df / 0.55, -1, 1); vt = stick.mag * 4; }
+      else { target = -clamp(wrap(stick.ang - c.heading - PI) / 0.55, -1, 1); vt = -stick.mag * 2.5; }
     } else { target = keys.left ? -1 : keys.right ? 1 : 0; vt = keys.gas ? 6 : keys.back ? -2.8 : 0; }
     c.steer += clamp(target - c.steer, -dt * 4, dt * 4);
     const dv = vt - c.v, a = Math.sign(dv) === Math.sign(c.v) || !c.v ? 3.5 : 7;
     c.v += clamp(dv, -a * dt, a * dt);
     if (Math.abs(c.v) < 0.02 && !vt) c.v = 0;
     if (!c.v) return;
-    const st = c.steer * 35 * PI / 180;
+    const st = c.steer * 42 * PI / 180;
     const nx = { heading: c.heading + c.v / CAR.wheelbase * Math.tan(st) * dt, x: c.x + Math.cos(c.heading) * c.v * dt, y: c.y + Math.sin(c.heading) * c.v * dt };
     const h = hit(nx);
     if (h) {
-      if (h === 'car' && Math.abs(c.v) > 0.8 && S.cool <= 0) { S.crash++; S.cool = 1.5; pay(-CRASH); flash('쿵! 수리비 ' + won(-CRASH), '#ff5a5a'); }
+      if (h === 'car' && Math.abs(c.v) > 1.6 && S.cool <= 0) { S.crash++; S.cool = 1.5; pay(-CRASH); flash('쿵! 수리비 ' + won(-CRASH), '#ff5a5a'); }
       c.v = 0; return;
     }
     Object.assign(c, nx);
@@ -230,9 +231,37 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
   function flash(text, color = '#fff') { const f = $('#flash'); f.textContent = text; f.style.color = color; f.classList.remove('hidden'); flashT = 1.6; }
 
   // ─── 세우기: 볼일 보는 동안을 1분 단위로 시뮬레이션 ───
+  // ─── 자석 주차: 근처 칸·가장자리·후보 자리에 맞춰 줌 ───
+  const angGap = (a, b) => Math.abs(wrap(a - b));
+  const nearHeading = (h, a) => (angGap(h, a) <= angGap(h, a + PI) ? a : a + PI);
+  function snapTarget() {
+    const c = S.car, lv = S.lv, out = [];
+    (lv.slots || []).forEach(s => {
+      if (J.slotOccupied(s, {}) || S.parked.some(p => p.slot === s.id)) return;
+      out.push({ x: s.x + s.w / 2, y: s.y + s.h / 2, heading: nearHeading(c.heading, s.h > s.w ? PI / 2 : (s.dir ?? 0)) });
+    });
+    (lv.candidates || []).forEach(k => out.push({ x: k.x, y: k.y, heading: nearHeading(c.heading, k.heading) }));
+    lv.zones.filter(z => z.curb).forEach(z => {
+      const horiz = z.curb === 'top' || z.curb === 'bottom', half = CAR.length / 2 + 0.2;
+      if (horiz && z.w > CAR.length + 0.4) out.push({ x: clamp(c.x, z.x + half, z.x + z.w - half), y: z.y + z.h / 2, heading: nearHeading(c.heading, 0) });
+      if (!horiz && z.h > CAR.length + 0.4) out.push({ x: z.x + z.w / 2, y: clamp(c.y, z.y + half, z.y + z.h - half), heading: nearHeading(c.heading, PI / 2) });
+    });
+    let best = null, bd = 3.5;
+    out.forEach(t => {
+      const dd = Math.hypot(t.x - c.x, t.y - c.y);
+      if (dd < bd && angGap(t.heading, c.heading) <= 1.05 && !hit(t)) { best = t; bd = dd; }
+    });
+    return best;
+  }
   function tryPark() {
-    if (!S || !S.running || S.ff || Math.abs(S.car.v) > 0.3) return;
+    if (!S || !S.running || S.ff || S.snap || Math.abs(S.car.v) > 0.3) return;
     S.running = false;
+    const t = snapTarget();
+    if (t) { S.snap = { from: { x: S.car.x, y: S.car.y, heading: S.car.heading }, to: t, k: 0 }; return; }
+    doPark();
+  }
+  function doPark() {
+    S.snap = null;
     const { d, P, lv } = S, pose = { x: S.car.x, y: S.car.y, heading: S.car.heading }, stay = P.stay, t0 = S.clock;
     const j = J.judgePose(lv, pose, 'park', { minutes: stay, clockMin: t0 });
     const r = j.rule, bad = !j.legal, manner = j.legal && j.answer === 'manner';
@@ -351,6 +380,13 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
     const { w, h, dpr } = R.sizeCanvas(cv);
     if (!S || !S.lv) { ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.fillStyle = '#2b3036'; ctx.fillRect(0, 0, w, h); return; }
     if (S.running) { for (let i = 0; i < 3; i++) step(dt / 3); S.cool -= dt; S.left -= dt; S.clock += dt * 0.5; }
+    if (S.snap) {
+      const sn = S.snap; sn.k = Math.min(1, sn.k + dt / 0.45);
+      const e = 1 - (1 - sn.k) ** 3, dh = wrap(sn.to.heading - sn.from.heading);
+      Object.assign(S.car, { x: sn.from.x + (sn.to.x - sn.from.x) * e, y: sn.from.y + (sn.to.y - sn.from.y) * e, heading: sn.from.heading + dh * e, v: 0 });
+      if (sn.k >= 1) doPark();
+    }
+    S.ghost = S.running && Math.abs(S.car.v) < 1.2 ? snapTarget() : null;
     let t = S.clock;
     if (S.ff) { if (!S.done) { S.ff.t = Math.min(S.ff.dur, S.ff.t + dt); if (S.ff.t >= S.ff.dur) { S.done = true; setTimeout(settle, 400); } } t = S.ff.t0 + S.ff.stay * (S.ff.t / S.ff.dur); }
     const cam = camera(w, h);
@@ -362,11 +398,19 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(stick.ang) * L, sy + Math.sin(stick.ang) * L); ctx.stroke(); ctx.setLineDash([]);
       if (stick.rev) { ctx.font = '18px "Do Hyeon", sans-serif'; ctx.fillStyle = '#ff8080'; ctx.textAlign = 'center'; ctx.fillText('후진', sx, sy - 26); }
     }
+    if (S.ghost) {
+      ctx.setTransform(dpr * cam.ppm, 0, 0, dpr * cam.ppm, dpr * (cam.w / 2 - cam.cx * cam.ppm), dpr * (cam.h / 2 - cam.cy * cam.ppm));
+      R.drawCar(ctx, S.ghost, '#ffffff', { ghost: true });
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const gx = (S.ghost.x - cam.cx) * cam.ppm + cam.w / 2, gy = (S.ghost.y - cam.cy) * cam.ppm + cam.h / 2;
+      ctx.font = '15px "Do Hyeon", sans-serif'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.fillText('멈추고 P → 여기에 맞춰요', gx, gy - 24);
+    }
     if (S.ff) drawFF(cam, dpr, S.ff);
     const tt = Math.ceil(Math.abs(S.left));
     $('#timer').textContent = (S.left < 0 ? '+' : '') + `${Math.floor(tt / 60)}:${String(tt % 60).padStart(2, '0')}`;
     $('#timer').classList.toggle('late', S.left < 0);
     $('#parkBtn').disabled = !S.running || Math.abs(S.car.v) > 0.3;
+    $('#parkBtn').classList.toggle('glow', !!S.ghost && Math.abs(S.car.v) <= 0.3);
   }
   requestAnimationFrame(loop);
   title();
