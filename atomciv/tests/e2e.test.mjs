@@ -193,8 +193,9 @@ test('a second pointer does not hijack an atom drag', async () => {
     const sr = svg.getBoundingClientRect();
     ev('pointermove', 2, sr.x + 5, sr.y + 5, svg);
     ev('pointerup', 2, sr.x + 5, sr.y + 5, svg);
-    ev('pointerup', 1, x, y, svg);
+    // 첫 손가락을 떼기 전에 잰다 (그 자리에서 떼면 '톡 누르기'라 원자가 치워진다)
     const r2 = svg.querySelector(`.atom[data-id="${id}"]`).getBoundingClientRect();
+    ev('pointerup', 1, x, y, svg);
     return Math.hypot(r2.x - r.x, r2.y - r.y);
   }, id);
   assert.ok(moved < 2, `atom moved ${moved}px`);
@@ -815,5 +816,19 @@ test('review: old saves show 보통 as the selected difficulty', async () => {
   const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true }));
   await page.click('#save-menu');
   assert.equal(await page.getAttribute('#panel [data-mode=normal]', 'aria-pressed'), 'true');
+  await ctx.close();
+});
+
+test('tapping an atom on the bench takes it away; dragging still moves it', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=H]'); await page.click('[data-atom=O]');
+  const [h] = await benchIds(page, 'H'); const [o] = await benchIds(page, 'O');
+  await page.click(`.atom[data-id="${h}"]`);
+  assert.equal(await page.locator(`.atom[data-id="${h}"]`).count(), 0, 'tapped atom is gone');
+  assert.equal(await page.locator(`.atom[data-id="${o}"]`).count(), 1, 'other atom stays');
+  const before = await page.locator(`.atom[data-id="${o}"]`).boundingBox();
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down(); await page.mouse.move(before.x + 120, before.y + 60, { steps: 5 }); await page.mouse.up();
+  assert.equal(await page.locator(`.atom[data-id="${o}"]`).count(), 1, 'dragging does not remove');
   await ctx.close();
 });
