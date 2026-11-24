@@ -137,9 +137,7 @@
       <div>
         <label>난이도 (매진 속도)</label>
         <select id="cfg_diff">
-          <option value="easy">쉬움 · 천천히 매진</option>
-          <option value="normal" selected>보통 · 빠르게 매진</option>
-          <option value="hard">어려움 · 순삭</option>
+          <option value="hard" selected>어려움 · 순삭</option>
           <option value="hell">피켓팅(헬) · 광클 지옥</option>
         </select>
       </div>
@@ -260,6 +258,14 @@ function S(id,label,grade,r,c){ return {id,label,grade,rows:r,cols:c}; }
 function nseats(tier,grade,r,c,from,to){ const a=[]; for(let n=from;n<=to;n++) a.push(S(tier+n, `${tier} ${n}`, grade, r, c)); return a; }
 
 const VENUES = {
+  hwajung: { name:"고려대 화정체육관", note:"공식 좌석배치도(콘서트) 기준 · FLOOR+2층 · 약 4,350석", zones:[
+    { band:"FLOOR (무대 앞)", secs:[ S("F1","F1","VIP",10,20), S("F2","F2","VIP",10,20), S("F3","F3","VIP",10,20), S("F4","F4","VIP",10,20) ] },
+    { band:"2층 측면 상 (무대쪽)", secs:[ S("I","I","R",15,23), S("F","F","R",15,23) ] },
+    { band:"2층 측면 중상", secs:[ S("J","J","S",13,20), S("E","E","S",13,20) ] },
+    { band:"2층 측면 중하", secs:[ S("K","K","S",17,22), S("D","D","S",14,19) ] },
+    { band:"2층 코너 (하)", secs:[ S("L","L","A",14,21), S("C","C","A",14,21) ] },
+    { band:"2층 무대 정면", secs:[ S("M","M","A",15,19), S("N","N","A",13,20), S("A","A","A",13,20), S("B","B","A",16,18) ] },
+  ]},
   jamsil: { name:"잠실실내체육관", note:"체조경기장형 · 플로어+1·2·3층", zones:[
     { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","R",12,16) ] },
     { band:"1층", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,108) ] },
@@ -303,11 +309,6 @@ const VENUES = {
   olympichall: { name:"올림픽홀", note:"공연 전용홀 · 1·2층 좌석제", zones:[
     { band:"1층", secs:[ ...nseats("1층","R",8,14,1,2), ...nseats("1층","S",8,14,3,4) ] },
     { band:"2층", secs:[ ...nseats("2층","A",8,16,1,2), ...nseats("2층","B",8,16,3,4) ] },
-  ]},
-  hwajung: { name:"고려대 화정체육관", note:"다목적 체육관 · 플로어+1·2층", zones:[
-    { band:"플로어(아레나)", secs:[ S("F-A","플로어 A","VIP",12,16), S("F-B","플로어 B","VIP",12,16), S("F-C","플로어 C","R",12,16) ] },
-    { band:"1층 스탠드", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,108) ] },
-    { band:"2층 스탠드", secs:[ ...nseats("2층","S",11,20,201,204), ...nseats("2층","A",11,20,205,208), ...nseats("2층","B",11,20,209,210) ] },
   ]},
 };
 function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*s.cols)); return n; }
