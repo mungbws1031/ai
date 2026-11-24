@@ -1,6 +1,6 @@
-// 티켓팅 가상 연습 service worker — v1
+// 티켓팅 가상 연습 service worker — v4
 // HTML/내비게이션은 network-first(항상 최신), 그 외 자산은 cache-first.
-const CACHE = "ticketing-v1";
+const CACHE = "ticketing-v4";
 const ASSETS = [
   "./",
   "./index.html",

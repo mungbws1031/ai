@@ -1,0 +1,76 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace = "com.jeonjahyeo.app"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.jeonjahyeo.app"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    // 릴리스 서명: 환경변수가 모두 설정되고 키스토어 파일이 있을 때만 적용한다.
+    // 없으면 서명 없이(unsigned) 빌드된다. 키스토어는 저장소에 넣지 않는다.
+    def cjKeystorePath = System.getenv("CJ_KEYSTORE_PATH")
+    def cjSigningReady = cjKeystorePath && file(cjKeystorePath).exists()
+    signingConfigs {
+        release {
+            if (cjSigningReady) {
+                storeFile file(cjKeystorePath)
+                storePassword System.getenv("CJ_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("CJ_KEY_ALIAS")
+                keyPassword System.getenv("CJ_KEY_PASSWORD")
+            }
+        }
+    }
+    buildTypes {
+        // 폰에 직접 설치해 보는 시험용(debug) 앱: 플레이 정식 앱과 따로 깔리도록 ID·이름을 다르게 한다.
+        debug {
+            applicationIdSuffix ".test"
+            versionNameSuffix "-test"
+        }
+        release {
+            if (cjSigningReady) {
+                signingConfig signingConfigs.release
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

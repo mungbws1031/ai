@@ -1,0 +1,149 @@
+name: Build 전자혀 Android AAB
+
+# 전자혀(cook/) 웹 테스트를 돌리고, Capacitor 프로젝트(cook/app)에서
+# 구글 플레이 업로드용 AAB(app-release.aab)와 폰에 바로 깔아 보는 시험용 APK(app-debug.apk)를 빌드한다.
+# 서명 시크릿: CJ_KEYSTORE_BASE64, CJ_KEYSTORE_PASSWORD, CJ_KEY_ALIAS, CJ_KEY_PASSWORD
+# (CJ_KEYSTORE_BASE64가 없으면 서명되지 않은 AAB가 나온다 — 플레이 업로드 불가)
+
+on:
+  workflow_dispatch: {}
+  push:
+    paths:
+      - "cook/**"
+      - ".github/workflows/cook-android.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cook-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-aab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cook/app/package-lock.json
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          # 기본값(`tools` 패키지)은 cmdline-tools 16.0 에서 실패한다. 필요한 패키지만 명시.
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+
+      - name: Install deps & sync web assets into Android project
+        working-directory: cook/app
+        run: |
+          npm ci
+          npm run sync
+
+      # tests/helpers.js 는 require('playwright') 실패 시 `npm root -g` 의 playwright 를 쓴다.
+      # 전역 설치하면 두 경로 모두 해석된다.
+      - name: Install Playwright (global) + Chromium
+        run: |
+          npm i -g playwright@1.49.1
+          playwright install --with-deps chromium
+
+      - name: Run web tests
+        run: node --test cook/tests/*.test.js
+
+      - name: Prepare signing (if keystore secret is set)
+        id: signing
+        env:
+          CJ_KEYSTORE_BASE64: ${{ secrets.CJ_KEYSTORE_BASE64 }}
+          CJ_KEYSTORE_PASSWORD: ${{ secrets.CJ_KEYSTORE_PASSWORD }}
+          CJ_KEY_ALIAS: ${{ secrets.CJ_KEY_ALIAS }}
+          CJ_KEY_PASSWORD: ${{ secrets.CJ_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CJ_KEYSTORE_BASE64:-}" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::CJ_KEYSTORE_BASE64 시크릿이 없어 서명되지 않은 AAB를 빌드합니다."
+            exit 0
+          fi
+          # 스토어에 올릴(서명된) 빌드인데 방침 연락처가 자리표시자 그대로면 중단
+          if grep -q '{{CONTACT_EMAIL}}' cook/privacy.html; then
+            echo "::error::cook/privacy.html 에 {{CONTACT_EMAIL}} 가 그대로 남아 있습니다. 실제 연락처 이메일로 바꾼 뒤(docs/RELEASE.md 6번) 다시 빌드하세요."
+            exit 1
+          fi
+          for name in CJ_KEYSTORE_PASSWORD CJ_KEY_ALIAS CJ_KEY_PASSWORD; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::CJ_KEYSTORE_BASE64 는 설정됐지만 $name 시크릿이 비어 있습니다."
+              exit 1
+            fi
+          done
+          KS="$RUNNER_TEMP/release.jks"
+          printf '%s' "$CJ_KEYSTORE_BASE64" | base64 -d > "$KS"
+          if [ ! -s "$KS" ]; then
+            echo "::error::CJ_KEYSTORE_BASE64 디코드 결과가 비어 있습니다."
+            exit 1
+          fi
+          chmod 600 "$KS"
+          {
+            echo "signed=true"
+            echo "keystore=$KS"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build release AAB
+        working-directory: cook/app/android
+        env:
+          CJ_KEYSTORE_PATH: ${{ steps.signing.outputs.keystore }}
+          CJ_KEYSTORE_PASSWORD: ${{ secrets.CJ_KEYSTORE_PASSWORD }}
+          CJ_KEY_ALIAS: ${{ secrets.CJ_KEY_ALIAS }}
+          CJ_KEY_PASSWORD: ${{ secrets.CJ_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew bundleRelease --no-daemon --stacktrace
+
+      - name: Verify AAB exists
+        run: |
+          AAB=cook/app/android/app/build/outputs/bundle/release/app-release.aab
+          if [ ! -s "$AAB" ]; then
+            echo "::error::$AAB 가 생성되지 않았습니다."
+            exit 1
+          fi
+          ls -l "$AAB"
+
+      - name: Summary
+        if: success()
+        env:
+          SIGNED: ${{ steps.signing.outputs.signed }}
+        run: |
+          if [ "$SIGNED" = "true" ]; then
+            echo "✅ 서명된 AAB" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ 서명되지 않음 — 플레이 업로드 불가" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # 폰에 바로 설치해 보는 시험용 APK (디버그 키로 서명, 앱 이름 "전자혀 테스트", 플레이 업로드용 아님)
+      - name: Build test APK (debug)
+        working-directory: cook/app/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jeonjahyeo-test-apk
+          path: cook/app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: jeonjahyeo-aab
+          path: cook/app/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error

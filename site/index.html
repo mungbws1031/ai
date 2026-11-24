@@ -304,6 +304,11 @@ const VENUES = {
     { band:"1층", secs:[ ...nseats("1층","R",8,14,1,2), ...nseats("1층","S",8,14,3,4) ] },
     { band:"2층", secs:[ ...nseats("2층","A",8,16,1,2), ...nseats("2층","B",8,16,3,4) ] },
   ]},
+  hwajung: { name:"고려대 화정체육관", note:"다목적 체육관 · 플로어+1·2층", zones:[
+    { band:"플로어(아레나)", secs:[ S("F-A","플로어 A","VIP",12,16), S("F-B","플로어 B","VIP",12,16), S("F-C","플로어 C","R",12,16) ] },
+    { band:"1층 스탠드", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,108) ] },
+    { band:"2층 스탠드", secs:[ ...nseats("2층","S",11,20,201,204), ...nseats("2층","A",11,20,205,208), ...nseats("2층","B",11,20,209,210) ] },
+  ]},
 };
 function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*s.cols)); return n; }
 

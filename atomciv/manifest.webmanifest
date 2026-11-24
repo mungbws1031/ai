@@ -1,0 +1,18 @@
+{
+  "name": "원자에서 문명까지",
+  "short_name": "원자문명",
+  "description": "원자를 손잡게 해서 분자를 만들고, 석기시대부터 철기시대까지 문명을 키우는 초등 과학 게임",
+  "lang": "ko",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#fff7e8",
+  "theme_color": "#ffd98a",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
