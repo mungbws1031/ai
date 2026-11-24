@@ -31,6 +31,11 @@ android {
         }
     }
     buildTypes {
+        // 폰에 직접 설치해 보는 시험용(debug) 앱: 플레이 정식 앱과 따로 깔리도록 ID·이름을 다르게 한다.
+        debug {
+            applicationIdSuffix ".test"
+            versionNameSuffix "-test"
+        }
         release {
             if (cjSigningReady) {
                 signingConfig signingConfigs.release

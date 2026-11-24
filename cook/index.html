@@ -352,6 +352,35 @@
   .cart-cook:empty{display:none}
   .cart-cook span{font-size:12px;font-weight:800;color:var(--muted);margin-right:2px}
   .cart-cook button{font-family:var(--body);font-size:12.5px;font-weight:700;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:6px 11px;cursor:pointer}
+  .dish-cook{display:block;width:100%;font-family:var(--body);font-weight:900;font-size:15px;color:#fff;background:#2B2620;border:none;border-radius:13px;padding:13px;margin-bottom:8px;cursor:pointer}
+  .howto-sec small{font-weight:600;color:var(--faint)}
+  .howto-ing b small{font-weight:600;color:var(--faint);font-size:11px}
+  .rc-cook{margin:12px 0 0}
+  .cookmode{min-height:55dvh}
+  .cook-prog{font-size:13px;color:var(--muted);margin:4px 0 6px}
+  .cook-prog b{color:var(--accent);font-size:15px}
+  .cook-bar{height:6px;background:var(--surface);border-radius:99px;overflow:hidden;margin-bottom:16px}
+  .cook-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+  .cook-step{font-size:21px;line-height:1.55;font-weight:700;margin:0 0 18px;word-break:keep-all}
+  .cook-timer{display:block;width:100%;font-family:var(--mono);font-size:18px;font-weight:800;color:var(--accent);background:var(--accent-soft);border:1.5px solid var(--accent);border-radius:14px;padding:14px;margin-bottom:14px;cursor:pointer}
+  .cook-timer.on{background:var(--accent);color:#fff}
+  .cook-nav{display:flex;gap:8px}
+  .cook-nav button{flex:1;font-family:var(--body);font-weight:800;font-size:15px;padding:14px;border-radius:13px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer}
+  .cook-nav button.primary{flex:2;background:linear-gradient(135deg,#FFB36B,#FF8A4C);border:none;color:#1a130c}
+  .cook-nav button:disabled{opacity:.4}
+  .cook-seas{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:-6px 0 16px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+  .cook-seas div{width:100%;font-size:12px;font-weight:800;color:var(--muted)}
+  .cook-seas b{color:var(--accent)}
+  .cook-ask{font-size:15px;margin:0 0 10px}
+  .cook-taste{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .dish-find{padding:12px 16px 4px}
+  .dish-find input{width:100%;box-sizing:border-box;font-family:var(--body);font-size:15px;padding:13px 14px;border:1.5px solid var(--accent);border-radius:14px;background:#fff;color:var(--text)}
+  .df-head{font-size:12.5px;font-weight:800;color:var(--muted);margin:12px 2px 8px}
+  .df-list{display:flex;flex-wrap:wrap;gap:7px}
+  .df-item{font-family:var(--body);font-size:14px;font-weight:700;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left}
+  .df-item small{display:block;font-size:11px;font-weight:600;color:var(--faint);margin-top:2px}
+  .df-none{font-size:13px;color:var(--muted);background:var(--surface);border-radius:12px;padding:12px}
+  .sense-or{margin-top:14px}
   .toastmsg{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px);transform:translateX(-50%);background:#2B2620;color:#fff;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90%}
   .toastmsg.show{opacity:1}
   .style-cart-btn{margin-top:10px}
@@ -631,9 +660,14 @@
       <div class="kicker">맛 표현</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">맛</div>
-        <div><div class="name">맛 고르기</div><div class="sub">먹고 싶은 맛을 고르면 재료와 양을 알려줘요</div></div>
+        <div><div class="name">맛 고르기</div><div class="sub">요리를 찾거나, 땡기는 맛을 골라 보세요</div></div>
       </div>
     </div>
+    <div class="dish-find">
+      <input type="search" id="dishSearch" placeholder="🔍 요리 이름이나 재료로 찾기 (예: 떡볶이, 닭, 계란)" aria-label="요리 찾기" autocomplete="off" />
+      <div id="dishResults"></div>
+    </div>
+    <div class="savedhdr sense-or">또는 땡기는 맛으로 고르기</div>
     <div id="senseGrid"></div>
     <div id="senseDetail"></div>
   </section>
@@ -1293,9 +1327,12 @@ FIX.forEach(f=>{ const el=document.createElement("button"); el.className="chip";
   fixChips.appendChild(el); });
 function renderFix(fixId){
   const w=parseFloat($("fixWeight").value)||300;
+  $("fixResult").innerHTML=fixHtml(w, fixId);
+}
+function fixHtml(w, fixId){
   const r=fixRecipe(w, fixId);
   const p1g = r.p1.range ? `<b>${fmtG(r.p1.range.lo)}~${fmtG(r.p1.range.hi)}g</b> (${r.p1.range.name}, ≈ ${spoonStr((r.p1.range.lo+r.p1.range.hi)/2, r.p1.range.density)})` : "";
-  $("fixResult").innerHTML=`
+  return `
     <div class="fixcard">
       <div class="ft">“${r.name}” 처방</div>
       <div class="fixstep"><span class="tag">1차</span><div class="tx">${r.p1.t} ${p1g}</div></div>
@@ -1505,11 +1542,15 @@ function recipeCardHTML(r){
       <div class="rsec"><h4>재료</h4><div class="rings">${r.ing.map(x=>`<span>${x}</span>`).join("")}</div></div>
       <div class="rsec"><h4>만드는 법</h4><ol class="rsteps">${r.steps.map(s=>`<li>${s}</li>`).join("")}</ol></div>
       <div class="rtip">💡 ${r.tip}</div>
+      <button class="dish-cook rc-cook" data-name="${escAttr(r.name)}">▶ 요리 시작 (한 단계씩)</button>
     </div></div>`;
 }
 function wireRecipeCards(container){
   container.querySelectorAll(".rc").forEach(c=>{
     c.querySelector(".rch").addEventListener("click", e=>{ if(e.target.closest(".favbtn")) return; c.classList.toggle("open"); });
+    const ck=c.querySelector(".rc-cook");
+    if(ck) ck.addEventListener("click", e=>{ e.stopPropagation(); const f=findDish(ck.dataset.name); if(!f) return;
+      $("dishSheet").classList.add("show"); startCookMode(null,f.dish,recipeServes(RECIPES.find(x=>x.name===ck.dataset.name)),()=>closeDishSheet()); });
     const fb=c.querySelector(".favbtn");
     if(fb) fb.addEventListener("click", e=>{ e.stopPropagation(); toggleFav(fb.dataset.name); });
   });
@@ -1967,7 +2008,7 @@ function selectSense(idx){
 function renderSenseDetail(idx){
   const w=TASTE_WORDS[idx];
   const bars=SW_KEYS.map((k,ki)=>`<div class="sd-taste-item"><div class="sd-taste-label" style="color:${SW_COLORS[ki]}">${SW_LABELS[ki]}</div><div class="sd-taste-bar-wrap"><div class="sd-taste-bar" style="width:${(w.v[k]||0)*10}%;background:${SW_COLORS[ki]}"></div></div><div class="sd-taste-val">${(w.v[k]||0).toFixed(1)}</div></div>`).join("");
-  const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="goRecipe('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
+  const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="openDishByName('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
   $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 맛 그래프 열기</button>${w.sid?`<button class="sd-apply-btn" style="margin-top:8px" onclick="goCalcWithStyle('${w.sid}')">⚖️ 이 맛으로 g 배합 계산하기</button>`:""}${w.sid&&TASTE_DISHES[w.sid]?`<button class="sd-apply-btn" style="margin-top:8px" onclick="openDishPicker('${w.sid}')">🛒 살 재료 · 만드는 법</button>`:""}</div></div>`;
 }
 function applySenseToExplore(idx){
@@ -2036,43 +2077,43 @@ const STYLE_VECTORS={
 /* 맛 → 대표 요리 (장바구니용). recipe가 있으면 RECIPES 재료 그대로, 없으면 main + 계산된 양념 */
 const TASTE_DISHES={
   pa_oil:[
-    {name:"파기름 볶음밥",steps:["대파를 송송 썰고, 계란은 그릇에 풀어 둬요.", "팬에 식용유와 대파를 넣고 약한 불에서 2~3분, 파가 노릇해지고 향이 날 때까지 볶아 파기름을 내요.", "파를 한쪽으로 밀고 계란을 부어 젓가락으로 휘저어 반쯤 익혀요.", "밥을 넣고 센 불로 올려 2분 볶아요. 양념은 팬 가장자리에 둘러 지글 끓인 뒤 밥과 섞어요.", "맛을 보고 싱거우면 소금을 조금씩 더해요."],emoji:"🍳",cat:"rice_bowl",gPerServing:165,main:[{name:"밥",per1:1,unit:"공기"},{name:"계란",per1:1,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"파기름 볶음밥",steps:["대파를 송송 썰고, 계란은 그릇에 풀어 둬요. 식용유·다진마늘을 뺀 양념은 작은 그릇에 미리 섞어 둬요.", "팬에 식용유와 대파를 넣고 약한 불에서 2~3분 볶아요. 파가 노릇해지면 다진마늘을 넣고 30초 더 볶아 파기름을 내요.", "파를 한쪽으로 밀고 계란을 부어 젓가락으로 휘저어 반쯤 익혀요.", "밥을 넣고 센 불로 올려 2분 볶아요. 섞어 둔 양념을 팬 가장자리에 둘러 지글 끓인 뒤 밥과 섞어요.", "맛을 보고 싱거우면 소금을 조금씩 더해요."],extra:[{name: "소금(간 맞추기용)", qty: "약간"}],emoji:"🍳",cat:"rice_bowl",gPerServing:165,main:[{name:"밥",per1:1,unit:"공기"},{name:"계란",per1:1,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
     {name:"계란볶음밥",emoji:"🍚",recipe:"계란볶음밥",main:[]},
-    {name:"파기름 비빔국수",steps:["대파를 아주 잘게 썰어요.", "작은 팬에 식용유와 대파를 넣고 약한 불에서 3분, 노릇해질 때까지 볶아 파기름을 만들어 식혀요.", "파기름에 양념 재료를 모두 넣고 섞어 양념장을 만들어요.", "소면을 끓는 물에 3분 삶고, 찬물에 비벼 헹궈 물기를 꼭 빼요.", "면에 양념장을 넣고 비벼요. 맛을 보고 모자라면 양념장을 조금씩 더해요."],emoji:"🍜",cat:"noodle_pasta",gPerServing:165,main:[{name:"소면",per1:100,unit:"g"},{name:"대파",per1:1,unit:"대"}]}
+    {name:"파기름 비빔국수",steps:["대파를 아주 잘게 썰어요.", "작은 팬에 식용유와 대파를 넣고 약한 불에서 3분, 노릇해질 때까지 볶아 파기름을 만들어 식혀요.", "파기름에 양념 재료를 모두 넣고 섞어 양념장을 만들어요.", "소면을 끓는 물에 3분 삶고, 찬물에 비벼 헹궈 물기를 꼭 빼요.", "면에 양념장을 넣고 비벼요. 맛을 보고 모자라면 양념장을 조금씩 더해요."],adj:{"간장": 1.8, "설탕": 3},emoji:"🍜",cat:"noodle_pasta",gPerServing:165,main:[{name:"소면",per1:100,unit:"g"},{name:"대파",per1:1,unit:"대"}]}
   ],
   oil_tteokbokki:[
     {name:"기름떡볶이",steps:["떡이 딱딱하면 따뜻한 물에 5분 불리고, 대파는 송송 썰어요.", "양념 재료를 그릇에 모두 넣고 섞어요.", "팬에 식용유를 두르고 떡을 중불에서 3~4분, 겉이 살짝 노릇해질 때까지 볶아요.", "불을 약하게 줄이고 양념을 넣어 1~2분 볶아요. 고춧가루는 타기 쉬우니 계속 저어요.", "대파를 넣고 30초 더 볶아 마무리해요."],emoji:"🔥",cat:"stir_fry",gPerServing:165,main:[{name:"떡볶이 떡",per1:200,unit:"g"},{name:"대파",per1:0.5,unit:"대"}]},
     {name:"김말이 기름떡볶이",steps:["떡은 따뜻한 물에 5분 불리고, 대파는 송송 썰어요.", "김말이는 에어프라이어 180℃에서 8분(또는 기름 두른 팬에서 굴리며 5분) 바삭하게 익혀요.", "양념 재료를 그릇에 모두 넣고 섞어요.", "팬에 식용유를 두르고 떡을 중불에서 3~4분 볶은 뒤, 약한 불에서 양념을 넣고 1~2분 볶아요.", "김말이와 대파를 넣고 30초 버무려 마무리해요."],emoji:"🍢",cat:"stir_fry",gPerServing:165,main:[{name:"떡볶이 떡",per1:150,unit:"g"},{name:"김말이",per1:3,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
-    {name:"어묵 볶음",steps:["어묵은 한입 크기로, 양파는 채 썰어요.", "어묵을 끓는 물에 10초 데쳐 기름기를 빼요(생략해도 돼요).", "양념 재료를 그릇에 모두 넣고 섞어요.", "팬에 식용유를 두르고 양파를 중불에서 1분 볶다가 어묵을 넣고 1분 더 볶아요.", "양념을 넣고 1~2분 졸이듯 볶아요. 마지막에 참기름이나 깨를 뿌려도 좋아요."],emoji:"🍥",cat:"stir_fry",gPerServing:165,main:[{name:"어묵",per1:2,unit:"장"},{name:"양파",per1:0.5,unit:"개"}]}
+    {name:"어묵 볶음",steps:["어묵은 한입 크기로, 양파는 채 썰고, 대파는 잘게 다져요.", "어묵을 끓는 물에 10초 데쳐 기름기를 빼요(생략해도 돼요).", "양념 재료를 그릇에 모두 넣고 섞어요.", "팬에 식용유를 두르고 양파를 중불에서 1분 볶다가 어묵을 넣고 1분 더 볶아요.", "양념과 물 3큰술을 넣고 1~2분 졸이듯 볶아요."],emoji:"🍥",cat:"stir_fry",gPerServing:165,main:[{name:"어묵",per1:2,unit:"장"},{name:"양파",per1:0.5,unit:"개"}]}
   ],
   maepdan:[
-    {name:"매콤 제육볶음",steps:["고기는 한입 크기로, 양파는 채, 대파는 어슷하게 썰어요.", "양념 재료를 모두 섞어 고기에 버무리고 10분 재워요(바쁘면 바로 해도 돼요).", "팬에 식용유를 두르고 고기를 중불에서 5분, 분홍빛이 없어질 때까지 볶아요.", "양파를 넣고 2~3분 더 볶아요. 양념이 타면 물을 2큰술 넣어요.", "대파를 넣고 30초 볶아 마무리해요. 고기를 하나 잘라 속까지 익었는지 확인해요."],emoji:"🥩",cat:"stir_fry",gPerServing:280,main:[{name:"돼지고기 앞다리살",per1:200,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
-    {name:"매콤 닭볶음",steps:["닭고기는 한입 크기로, 감자는 큼직하게, 양파는 큼직하게 썰어요.", "양념 재료를 모두 섞어 양념장을 만들어요.", "냄비에 닭고기·감자·양념장과 물을 1인분에 반 컵(100ml)씩 넣고 센 불에서 끓여요.", "끓으면 중불로 줄여 뚜껑을 덮고 15분 졸여요. 중간에 한 번 섞어요.", "양파를 넣고 5분 더 졸여요. 감자가 젓가락으로 쑥 들어가면 완성이에요."],emoji:"🍗",cat:"braise",gPerServing:300,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"감자",per1:0.5,unit:"개"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"매콤 제육볶음",steps:["고기는 한입 크기로, 양파는 채, 대파는 어슷하게 썰어요.", "양념 재료를 모두 섞어 고기에 버무리고 10분 재워요(바쁘면 바로 해도 돼요).", "팬에 식용유를 두르고 고기를 중불에서 5분, 분홍빛이 없어질 때까지 볶아요.", "양파를 넣고 2~3분 더 볶아요. 양념이 타면 물을 2큰술 넣어요.", "대파를 넣고 30초 볶아 마무리해요. 고기를 하나 잘라 속까지 익었는지 확인해요."],adj:{"설탕": 0.55, "올리고당/물엿": 0},emoji:"🥩",cat:"stir_fry",gPerServing:280,main:[{name:"돼지고기 앞다리살",per1:200,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"매콤 닭볶음",steps:["닭고기는 한입 크기로, 감자는 2cm 크기로, 양파는 큼직하게 썰어요.", "양념 재료를 모두 섞어 양념장을 만들어요.", "냄비에 닭고기·감자·양념장과 물을 1인분에 반 컵(100ml)씩 넣고 센 불에서 끓여요.", "끓으면 중불로 줄여 뚜껑을 덮고 15분 졸여요. 5분마다 바닥까지 저어 주고, 국물이 너무 줄면 물을 조금 더해요.", "양파를 넣고 5분 더 졸여요. 감자가 젓가락으로 쑥 들어가고, 닭을 하나 잘라 속이 하얗게 익었으면 완성이에요."],apart:["식용유"],adj:{"식용유": 0, "설탕": 0.4, "올리고당/물엿": 0},emoji:"🍗",cat:"braise",gPerServing:300,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"감자",per1:0.5,unit:"개"},{name:"양파",per1:0.5,unit:"개"}]},
     {name:"떡볶이",emoji:"🌶️",recipe:"떡볶이",main:[]}
   ],
   dan_jjan:[
-    {name:"소불고기",steps:["고기는 키친타월로 핏물을 살짝 닦고, 양파는 채, 대파는 어슷하게 썰어요.", "양념 재료를 모두 섞어 고기에 버무리고 15분 재워요.", "팬을 중불로 달군 뒤 고기와 양파를 넣고 4~5분 볶아요.", "국물이 자작하게 졸아들면 대파를 넣고 30초 더 볶아요.", "맛을 보고 싱거우면 간장을 조금 더해요."],emoji:"🥩",cat:"stir_fry",gPerServing:230,main:[{name:"불고기용 소고기",per1:150,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
-    {name:"간장 닭조림",steps:["닭고기는 한입 크기로, 감자는 큼직하게 썰어요.", "양념 재료를 모두 섞어 양념장을 만들어요.", "팬에 식용유를 두르고 닭고기 껍질 쪽부터 중불에서 4분 노릇하게 구워요.", "감자·양념장과 물을 1인분에 4큰술(50ml)씩 넣고 끓으면 뚜껑을 덮어 중약불에서 12분 졸여요.", "뚜껑을 열고 국물이 걸쭉해질 때까지 2~3분 더 졸이며 뒤적여요."],emoji:"🍗",cat:"braise",gPerServing:230,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"감자",per1:0.5,unit:"개"}]},
+    {name:"소불고기",steps:["고기는 키친타월로 핏물을 살짝 닦고, 양파는 채, 대파는 어슷하게 썰어요.", "버터를 뺀 양념 재료를 섞어 고기에 버무리고 15분 재워요.", "팬에 버터를 녹인 뒤 고기와 양파를 넣고 중불에서 4~5분 볶아요.", "국물이 자작하게 졸아들면 대파를 넣고 30초 더 볶아요.", "맛을 보고 싱거우면 간장을 조금 더해요."],apart:["버터"],emoji:"🥩",cat:"stir_fry",gPerServing:230,main:[{name:"불고기용 소고기",per1:150,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"간장 닭조림",steps:["닭고기는 한입 크기로, 감자는 2cm 크기로 썰어요.", "버터를 뺀 양념 재료를 모두 섞어 양념장을 만들어요.", "팬에 버터를 녹이고 닭고기 껍질 쪽부터 중불에서 4분 노릇하게 구워요.", "감자·양념장과 물을 1인분에 반 컵(100ml)씩 넣고, 끓으면 뚜껑을 덮어 중약불에서 12분 졸여요. 중간에 한 번 뒤적여요.", "감자가 젓가락으로 쑥 들어가면 뚜껑을 열고, 국물이 걸쭉해질 때까지 2~3분 더 졸여요. 닭을 하나 잘라 속이 하얗게 익었는지 확인해요."],apart:["버터"],emoji:"🍗",cat:"braise",gPerServing:230,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"감자",per1:0.5,unit:"개"}]},
     {name:"참치마요덮밥",emoji:"🍚",recipe:"참치마요덮밥",main:[]}
   ],
   chodding:[
-    {name:"소시지 야채볶음",steps:["소시지는 칼집을 내고, 양파와 파프리카는 한입 크기로 썰어요.", "양념 재료를 그릇에 모두 넣고 섞어요.", "팬에 식용유를 두르고 소시지를 중불에서 2분 볶아요.", "양파와 파프리카를 넣고 2분 더 볶아요.", "양념을 넣고 1분 볶아 골고루 묻혀요."],emoji:"🌭",cat:"stir_fry",gPerServing:200,main:[{name:"비엔나소시지",per1:100,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"파프리카",per1:0.5,unit:"개"}]},
-    {name:"달콤 닭강정",steps:["닭고기는 한입 크기로 썰어 튀김가루를 골고루 묻혀요.", "팬에 식용유를 1cm 높이로 붓고 중불에서 닭을 5~6분, 노릇하게 뒤집어 가며 튀기듯 구워요.", "닭을 건져 기름을 빼고, 팬의 기름은 키친타월로 닦아요.", "같은 팬에 양념 재료를 모두 넣고 약한 불에서 끓어오르면 1분 졸여요.", "닭을 넣고 30초 버무려 양념을 입혀요."],emoji:"🍗",cat:"stir_fry",gPerServing:200,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"튀김가루",per1:30,unit:"g"}]},
+    {name:"소시지 야채볶음",steps:["소시지는 칼집을 내고, 양파와 파프리카는 한입 크기로 썰어요.", "버터를 뺀 양념 재료를 그릇에 모두 넣고 섞어요.", "팬에 버터를 녹이고 소시지를 중불에서 2분 볶아요.", "양파와 파프리카를 넣고 2분 더 볶아요.", "양념을 넣고 1분 볶아 골고루 묻혀요."],apart:["버터"],adj:{"마요네즈": 0},emoji:"🌭",cat:"stir_fry",gPerServing:200,main:[{name:"비엔나소시지",per1:100,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"파프리카",per1:0.5,unit:"개"}]},
+    {name:"달콤 닭강정",steps:["닭고기는 한입 크기로 썰어 튀김가루를 골고루 묻혀요.", "팬에 튀김용 식용유를 1cm 높이로 붓고 중불에서 3분 달궈요. 튀김가루를 조금 떨어뜨려 바로 떠오르면 닭을 넣고 5~6분, 뒤집어 가며 노릇하게 튀겨요. 하나 잘라 속이 하얗게 익었는지 확인해요.", "닭을 건져 기름을 빼요. 불을 끄고 기름이 완전히 식으면 다른 그릇에 따라 내고, 팬은 키친타월로 가볍게 닦아요.", "같은 팬에 버터를 녹이고 나머지 양념 재료와 물 3큰술을 넣어, 약한 불에서 끓어오르면 1분 졸여요.", "닭을 넣고 30초 버무려 양념을 입혀요."],apart:["버터"],adj:{"마요네즈": 0, "다시다": 0, "설탕": 1.8},extra:[{name: "식용유(튀김용)", qty: "300ml"}],emoji:"🍗",cat:"stir_fry",gPerServing:200,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"튀김가루",per1:30,unit:"g"}]},
     {name:"참치마요덮밥",emoji:"🍚",recipe:"참치마요덮밥",main:[]}
   ],
   honey_butter:[
-    {name:"허니버터 감자구이",steps:["감자는 껍질째 깨끗이 씻어 반달 모양으로 썰어요.", "전자레인지용 그릇에 감자와 물 2큰술을 넣고 랩을 씌워 5분 돌려 익혀요.", "팬에 버터를 녹이고 감자를 중불에서 4~5분, 겉이 노릇해질 때까지 구워요.", "불을 약하게 줄이고 양념 재료를 넣어 30초 버무려요."],emoji:"🥔",cat:"grill",gPerServing:250,main:[{name:"감자",per1:1,unit:"개"},{name:"버터",per1:10,unit:"g"}]},
-    {name:"허니버터 고구마",steps:["고구마는 깨끗이 씻어 1cm 두께로 동그랗게 썰어요.", "전자레인지용 그릇에 고구마와 물 2큰술을 넣고 랩을 씌워 5분 돌려 익혀요.", "팬에 버터를 녹이고 고구마를 중불에서 앞뒤로 2분씩 노릇하게 구워요.", "불을 약하게 줄이고 양념 재료를 넣어 30초 버무려요."],emoji:"🍠",cat:"grill",gPerServing:250,main:[{name:"고구마",per1:1,unit:"개"},{name:"버터",per1:10,unit:"g"}]},
+    {name:"허니버터 감자구이",steps:["감자는 껍질째 깨끗이 씻어 1cm 두께 반달 모양으로 썰어요.", "전자레인지용 그릇에 감자와 물 2큰술을 넣고 랩을 씌워 5분 돌려 익혀요.", "팬에 버터를 녹이고 감자를 중불에서 4~5분, 겉이 노릇해질 때까지 구워요.", "불을 약하게 줄이고 양념 재료를 넣어 1분, 설탕이 녹을 때까지 버무려요."],adj:{"설탕": 0.5},emoji:"🥔",cat:"grill",gPerServing:250,main:[{name:"감자",per1:1,unit:"개"},{name:"버터",per1:10,unit:"g"}]},
+    {name:"허니버터 고구마",steps:["고구마는 깨끗이 씻어 1cm 두께로 동그랗게 썰어요.", "전자레인지용 그릇에 고구마와 물 2큰술을 넣고 랩을 씌워 5분 돌려 익혀요.", "팬에 버터를 녹이고 고구마를 중불에서 앞뒤로 2분씩 노릇하게 구워요.", "불을 약하게 줄이고 양념 재료를 넣어 1분, 설탕이 녹을 때까지 버무려요."],adj:{"설탕": 0.5},emoji:"🍠",cat:"grill",gPerServing:250,main:[{name:"고구마",per1:1,unit:"개"},{name:"버터",per1:10,unit:"g"}]},
     {name:"허니버터 토스트",steps:["버터는 실온에 꺼내 부드럽게 해 두고, 양념 재료와 섞어요.", "식빵 한쪽 면에 섞은 버터를 골고루 펴 발라요.", "약한 불로 달군 팬에 발라 둔 면이 아래로 가게 올려 2분 구워요.", "뒤집어서 1분 더 구워 양쪽이 노릇하면 완성이에요."],emoji:"🍞",cat:"grill",gPerServing:100,main:[{name:"식빵",per1:2,unit:"장"},{name:"버터",per1:10,unit:"g"}]}
   ],
   fire_wok:[
-    {name:"불맛 볶음밥",steps:["대파는 송송 썰고, 계란은 풀어 두고, 밥은 미리 꺼내 식혀 둬요(찬밥이 더 잘 볶여요).", "팬을 센 불로 연기가 날 때까지 달군 뒤 식용유와 대파를 넣고 30초 볶아요.", "계란을 붓고 휘저어 반쯤 익으면 밥을 넣고 센 불에서 2분 볶아요.", "양념을 팬 가장자리에 둘러 지글 끓게 한 뒤 섞어요. 이때 나는 탄 향이 불맛이에요.", "맛을 보고 싱거우면 소금을 조금씩 더해요."],emoji:"🔥",cat:"rice_bowl",gPerServing:200,main:[{name:"밥",per1:1,unit:"공기"},{name:"계란",per1:1,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
-    {name:"소고기 채소볶음",steps:["양배추와 양파는 한입 크기로 썰고, 양념 재료는 그릇에 섞어 둬요.", "팬을 센 불로 달군 뒤 식용유를 두르고 고기를 2분 볶아 꺼내 둬요.", "같은 팬에 양배추와 양파를 넣고 센 불에서 2분 볶아요.", "고기를 다시 넣고 양념을 둘러 1분 더 볶아요."],emoji:"🥬",cat:"stir_fry",gPerServing:200,main:[{name:"소고기 불고기감",per1:120,unit:"g"},{name:"양배추",per1:100,unit:"g"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"불맛 볶음밥",steps:["대파는 송송 썰고, 계란은 풀어 두고, 밥은 미리 꺼내 식혀 둬요(찬밥이 더 잘 볶여요). 식용유·대파·다진마늘을 뺀 양념은 작은 그릇에 미리 섞어 둬요.", "팬에 식용유를 두르고 센 불에서 30초 달군 뒤 대파·다진마늘을 넣고 중불에서 30초 볶아요.", "계란을 붓고 휘저어 반쯤 익으면 밥을 넣고 센 불에서 2분 볶아요.", "섞어 둔 양념을 팬 가장자리에 둘러 지글 끓게 한 뒤 섞어요. 이때 나는 고소한 탄 향이 불맛이에요.", "맛을 보고 싱거우면 소금을 조금씩 더해요."],adj:{"굴소스": 0.6},extra:[{name: "소금(간 맞추기용)", qty: "약간"}],emoji:"🔥",cat:"rice_bowl",gPerServing:200,main:[{name:"밥",per1:1,unit:"공기"},{name:"계란",per1:1,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"소고기 채소볶음",steps:["양배추와 양파는 한입 크기로 썰고 대파는 잘게 다져요. 양념 재료는 그릇에 섞어 둬요.", "팬을 센 불로 달군 뒤 식용유를 두르고 고기를 2분 볶아 꺼내 둬요.", "같은 팬에 양배추와 양파를 넣고 센 불에서 2분 볶아요.", "고기를 다시 넣고 양념을 둘러 1분 더 볶아요."],emoji:"🥬",cat:"stir_fry",gPerServing:200,main:[{name:"소고기 불고기감",per1:120,unit:"g"},{name:"양배추",per1:100,unit:"g"},{name:"양파",per1:0.5,unit:"개"}]},
     {name:"계란볶음밥",emoji:"🍳",recipe:"계란볶음밥",main:[]}
   ],
   eolkeun:[
-    {name:"얼큰 김치찌개",steps:["김치와 고기는 한입 크기로, 두부는 깍둑, 대파는 어슷하게 썰어요.", "냄비에 식용유를 두르고 고기를 중불에서 2분 볶다가 김치를 넣고 3분 더 볶아요.", "물을 1인분에 2컵(400ml)씩 붓고, 양념 재료를 넣어 센 불에서 끓여요.", "끓으면 중불로 줄여 10분 끓여요.", "두부와 대파를 넣고 3분 더 끓인 뒤, 맛을 보고 싱거우면 김치 국물을 조금 더해요."],emoji:"🍲",cat:"stew",gPerServing:400,main:[{name:"김치",per1:150,unit:"g"},{name:"돼지고기 목살",per1:100,unit:"g"},{name:"두부",per1:0.25,unit:"모"},{name:"대파",per1:0.5,unit:"대"}]},
-    {name:"얼큰 순두부찌개",steps:["애호박은 반달 모양으로, 대파는 송송 썰어요.", "뚝배기나 냄비에 식용유와 양념 재료를 넣고 약한 불에서 1분 볶아 고추기름을 내요.", "물을 1인분에 1컵(200ml)씩, 애호박과 함께 넣고 센 불에서 끓여요.", "끓으면 순두부를 큼직하게 떠 넣고 중불에서 4분 끓여요. 너무 젓지 마세요.", "대파를 넣고, 계란을 하나 깨 넣어도 좋아요. 1분 더 끓이면 완성이에요."],emoji:"🥘",cat:"stew",gPerServing:400,main:[{name:"순두부",per1:0.5,unit:"봉"},{name:"애호박",per1:0.25,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]}
+    {name:"얼큰 김치찌개",steps:["김치와 고기는 한입 크기로, 두부는 깍둑, 대파는 어슷하게 썰어요.", "냄비에 식용유를 두르고 고기를 중불에서 2분 볶다가 김치를 넣고 3분 더 볶아요.", "물을 1인분에 2컵(400ml)씩 붓고, 양념 재료를 넣어 센 불에서 끓여요.", "끓으면 중불로 줄여 10분 끓여요.", "두부와 대파를 넣고 3분 더 끓여요. 맛을 보고 싱거우면 액젓이나 김치 국물을 조금씩 더해요."],adj:{"액젓": 0.5},emoji:"🍲",cat:"stew",gPerServing:400,main:[{name:"김치",per1:150,unit:"g"},{name:"돼지고기 목살",per1:100,unit:"g"},{name:"두부",per1:0.25,unit:"모"},{name:"대파",per1:0.5,unit:"대"}]},
+    {name:"얼큰 순두부찌개",steps:["애호박은 반달 모양으로, 대파는 송송 썰어요.", "뚝배기나 냄비에 식용유와 다진마늘·고춧가루만 넣고 약한 불에서 1분 볶아 고추기름을 내요.", "물을 1인분에 1컵(200ml)씩 붓고 애호박과 나머지 양념 재료를 넣어 센 불에서 끓여요.", "끓으면 순두부를 큼직하게 떠 넣고 중불에서 4분 끓여요. 너무 젓지 마세요.", "대파를 넣고 1분 더 끓이면 완성이에요. 계란이 있으면 하나 깨 넣어도 좋아요."],adj:{"액젓": 0.5},emoji:"🥘",cat:"stew",gPerServing:400,main:[{name:"순두부",per1:0.5,unit:"봉"},{name:"애호박",per1:0.25,unit:"개"},{name:"대파",per1:0.5,unit:"대"}]}
   ],
   mala:[
     {name:"마라 볶음면",steps:["청경채는 반으로 가르고, 숙주는 씻어 물기를 빼요.", "면은 봉지에 적힌 시간대로 삶아 찬물에 헹궈 물기를 빼요.", "팬에 식용유와 양념 재료를 넣고 약한 불에서 1분 볶아 향을 내요.", "청경채와 숙주를 넣고 중불에서 1분 볶은 뒤 면을 넣어 1~2분 볶아요.", "매운 정도를 맛보고, 너무 얼얼하면 설탕을 조금 더해요."],emoji:"🍜",cat:"noodle_pasta",gPerServing:180,main:[{name:"중화면",per1:1,unit:"인분"},{name:"청경채",per1:2,unit:"포기"},{name:"숙주",per1:50,unit:"g"}]},
@@ -2080,8 +2121,8 @@ const TASTE_DISHES={
     {name:"마라 닭볶음",steps:["닭고기는 한입 크기로, 양파와 피망은 큼직하게 썰어요.", "팬에 식용유를 두르고 닭고기를 중불에서 5~6분, 속까지 익을 때까지 볶아요.", "불을 약하게 줄이고 양념 재료를 넣어 1분 볶아 향을 내요.", "양파와 피망을 넣고 중불에서 2분 더 볶아요.", "닭을 하나 잘라 속이 하얗게 익었는지 확인해요."],emoji:"🍗",cat:"stir_fry",gPerServing:180,main:[{name:"닭다리살",per1:200,unit:"g"},{name:"양파",per1:0.5,unit:"개"},{name:"피망",per1:0.5,unit:"개"}]}
   ],
   chojang:[
-    {name:"골뱅이무침",steps:["골뱅이는 체에 밭쳐 국물을 빼고 큰 것은 반으로 잘라요.", "오이는 어슷하게, 양파는 얇게 채 썰어 찬물에 5분 담갔다 물기를 빼요(매운맛이 빠져요).", "양념 재료를 큰 그릇에 모두 넣고 섞어 양념장을 만들어요.", "골뱅이·오이·양파를 넣고 살살 버무려요.", "맛을 보고 새콤함이 모자라면 식초를 조금씩 더해요. 소면을 삶아 곁들여도 좋아요."],emoji:"🥗",cat:"muchim",gPerServing:165,main:[{name:"골뱅이 통조림",per1:0.5,unit:"캔"},{name:"오이",per1:0.5,unit:"개"},{name:"양파",per1:0.5,unit:"개"}]},
-    {name:"오이 초무침",steps:["오이는 얇게 어슷하게, 양파는 얇게 채 썰어요.", "오이에 소금 한 꼬집을 뿌려 10분 두었다가 물기를 꼭 짜요.", "양념 재료를 그릇에 모두 넣고 섞어요.", "오이와 양파를 넣고 버무려 바로 먹거나, 냉장고에 10분 두면 더 맛있어요."],emoji:"🥒",cat:"muchim",gPerServing:150,main:[{name:"오이",per1:1,unit:"개"},{name:"양파",per1:0.25,unit:"개"}]},
+    {name:"골뱅이무침",steps:["골뱅이는 체에 밭쳐 국물을 빼고 큰 것은 반으로 잘라요.", "오이는 어슷하게, 양파는 얇게 채 썰어 찬물에 5분 담갔다 물기를 빼요(매운맛이 빠져요).", "양념 재료를 큰 그릇에 모두 넣고 섞어 양념장을 만들어요.", "골뱅이·오이·양파를 넣고 살살 버무려요.", "맛을 보고 새콤함이 모자라면 식초를 조금씩 더해요. 소면을 삶아 곁들여도 좋아요."],adj:{"식초": 1.8},emoji:"🥗",cat:"muchim",gPerServing:165,main:[{name:"골뱅이 통조림",per1:0.5,unit:"캔"},{name:"오이",per1:0.5,unit:"개"},{name:"양파",per1:0.5,unit:"개"}]},
+    {name:"오이 초무침",steps:["오이는 얇게 어슷하게, 양파는 얇게 채 썰어요.", "오이에 소금 1작은술을 뿌려 10분 절인 뒤, 찬물에 한 번 헹궈 물기를 꼭 짜요.", "양념 재료를 그릇에 모두 넣고 섞어요.", "오이와 양파를 넣고 버무려요. 맛을 보고 새콤함이 모자라면 식초를 조금씩 더해요. 냉장고에 10분 두면 더 맛있어요."],adj:{"식초": 1.8},extra:[{name: "소금(절임용)", qty: "1작은술"}],emoji:"🥒",cat:"muchim",gPerServing:150,main:[{name:"오이",per1:1,unit:"개"},{name:"양파",per1:0.25,unit:"개"}]},
     {name:"해물파전",emoji:"🥞",recipe:"해물파전",main:[]}
   ]
 };
@@ -2093,8 +2134,11 @@ function dishLines(styleId,dish,servings){
   }
   const out=dish.main.map(m=>({name:m.name, qty:fmtNum(m.per1*servings)+m.unit}));
   const res=calcRecipe({categoryId:dish.cat, stylePresetId:styleId, foodWeightG:dish.gPerServing*servings, intensity:"normal"});
-  const have=dish.main.map(m=>m.name);
-  res.ingredients.forEach(i=>{ if(i.id==="water"||i.id==="starch_water"||have.includes(i.name)) return; out.push({name:i.name, qty:fmtG(i.amountG)+"g"}); });
+  const have=dish.main.map(m=>m.name), adj=dish.adj||{};
+  (dish.extra||[]).forEach(x=>out.push({name:x.name, qty:x.per1!=null?fmtNum(x.per1*servings)+x.unit:x.qty}));
+  res.ingredients.forEach(i=>{ if(i.id==="water"||i.id==="starch_water"||have.includes(i.name)) return;
+    const f=adj[i.name]==null?1:adj[i.name]; if(!f) return; const g=i.amountG*f;
+    out.push({name:i.name, qty:fmtG(g)+"g", spoon:spoonStr(g,i.density)}); });
   return out;
 }
 
@@ -2212,7 +2256,7 @@ _dishesReady=true; showStyleDesc();
 })();
 
 /* ── 요리 고르기 시트 ── */
-function closeDishSheet(){ $("dishSheet").classList.remove("show"); $("dishSheet").innerHTML=""; }
+function closeDishSheet(){ if(typeof endCookMode==="function") endCookMode(); $("dishSheet").classList.remove("show"); $("dishSheet").innerHTML=""; }
 const COOK_SERV_KEY="cj_cook_serv";
 function loadCookServ(){ try{ const o=JSON.parse(localStorage.getItem(COOK_SERV_KEY)||"{}"); return o&&typeof o==="object"?o:{}; }catch(e){ return {}; } }
 function saveCookServ(name,serv){ try{ const o=loadCookServ(); o[name]=serv; localStorage.setItem(COOK_SERV_KEY, JSON.stringify(o)); }catch(e){} }
@@ -2223,25 +2267,59 @@ function findDish(name){
   return r?{styleId:null,dish:{name:r.name,emoji:r.emoji,recipe:r.name,main:[]}}:null;
 }
 function dishSteps(dish){
-  if(dish.steps) return {steps:dish.steps,tip:""};
+  if(dish.steps){
+    // 식용유를 따로 쓰는 요리면, 양념 재료를 처음 다루는 단계에 "식용유는 빼고"를 붙인다
+    const oilUsed=dish.steps.some(t=>/식용유/.test(t));
+    const first=oilUsed?dish.steps.findIndex(t=>/양념 재료/.test(t)&&!/식용유/.test(t)):-1;
+    return {steps:dish.steps.map((t,i)=>i===first?t.replace("양념 재료","양념 재료(식용유는 빼고)"):t),tip:""};
+  }
   const r=dish.recipe&&RECIPES.find(x=>x.name===dish.recipe);
   return r?{steps:r.steps||[],tip:r.tip||""}:{steps:[],tip:""};
 }
 function howToHtml(styleId,dish,serv){
   const lines=dishLines(styleId,dish,serv), st=dishSteps(dish);
   return `<h3>${esc(dish.emoji||"")} ${esc(dish.name)} · ${serv}인분</h3>`+
-    `<div class="howto-sec">재료</div><ul class="howto-ing">${lines.map(l=>`<li><span>${esc(l.name)}</span><b>${esc(l.qty)}</b></li>`).join("")}</ul>`+
+    `<div class="howto-sec">재료 <small>(저울이 없으면 숟가락 양을 보세요)</small></div><ul class="howto-ing">${lines.map(l=>`<li><span>${esc(l.name)}</span><b>${l.spoon&&l.spoon!=="약간"?`${esc(l.spoon)} <small>${esc(l.qty)}</small>`:l.spoon==="약간"?`약간 <small>${esc(l.qty)}</small>`:esc(l.qty)}</b></li>`).join("")}</ul>`+
     `<div class="howto-sec">만드는 법</div><ol class="howto-steps">${st.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>`+
     `<p class="howto-tip">💡 ${esc(st.tip||"양념은 80%만 먼저 넣고, 맛을 보며 조금씩 더하세요.")}</p>`;
 }
 /* 장바구니에서 바로 '만드는 법' 열기 */
 function openHowTo(name){
   const f=findDish(name); if(!f) return;
-  const serv=loadCookServ()[name]||2, sh=$("dishSheet");
-  sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="만드는 법">${howToHtml(f.styleId,f.dish,serv)}<button class="dish-close">닫기</button></div>`;
-  sh.classList.add("show");
-  sh.onclick=e=>{ if(e.target===sh||e.target.closest(".dish-close")) closeDishSheet(); };
+  let serv=loadCookServ()[name]||2; const sh=$("dishSheet");
+  const draw=()=>{ sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="만드는 법"><div class="dish-serv"><span>인분</span>${[1,2,4].map(n=>`<button class="chip${n===serv?" on":""}" data-serv="${n}">${n}</button>`).join("")}</div>${howToHtml(f.styleId,f.dish,serv)}<button class="dish-cook">▶ 요리 시작 (한 단계씩)</button><button class="dish-add">🛒 이 재료 장바구니에 담기</button><button class="dish-close">닫기</button></div>`; };
+  draw(); sh.classList.add("show");
+  sh.onclick=e=>{
+    const sv=e.target.closest("[data-serv]");
+    if(sv){ serv=+sv.dataset.serv; saveCookServ(name,serv); draw(); return; }
+    if(e.target.closest(".dish-cook")){ startCookMode(f.styleId,f.dish,serv,()=>openHowTo(name)); return; }
+    if(e.target.closest(".dish-add")){ addToCart(dishLines(f.styleId,f.dish,serv), f.dish.name); saveCookServ(name,serv); closeDishSheet(); updateCartBadge(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); if(typeof renderCart==="function"&&$("view-cart").classList.contains("active")) renderCart(); return; }
+    if(e.target===sh||e.target.closest(".dish-close")) closeDishSheet(); };
 }
+function openDishByName(n){ if(findDish(n)) openHowTo(n); else goRecipe(n); }
+/* ── 요리 찾기: 이름·재료로 맛 카드 요리 + 요리 레시피를 한 번에 ── */
+function allDishes(){
+  const seen=new Set(), out=[];
+  for(const sid in TASTE_DISHES) for(const d of TASTE_DISHES[sid]){ if(seen.has(d.name)) continue; seen.add(d.name);
+    const r=d.recipe&&RECIPES.find(x=>x.name===d.recipe);
+    out.push({name:d.name,emoji:d.emoji||"",words:[d.name,...(d.main||[]).map(m=>m.name),...(r?r.ing:[])].join(" "),easy:true}); }
+  RECIPES.forEach(r=>{ if(seen.has(r.name)) return; seen.add(r.name);
+    out.push({name:r.name,emoji:r.emoji||"",words:[r.name,...r.ing].join(" "),easy:/★☆☆/.test(r.diff||""),time:r.time}); });
+  return out;
+}
+const _norm=t=>String(t||"").replace(/\s+/g,"").toLowerCase();
+function renderDishSearch(){
+  const q=_norm($("dishSearch").value), list=allDishes();
+  let hits, head;
+  if(!q){ hits=list.filter(d=>d.easy).slice(0,8); head=`<div class="df-head">🍳 처음이라면 이런 요리부터</div>`; }
+  else { hits=list.filter(d=>_norm(d.words).includes(q)); hits.sort((a,b)=>(_norm(b.name).includes(q))-(_norm(a.name).includes(q)));
+    head=`<div class="df-head">“${esc($("dishSearch").value.trim())}” 요리 ${hits.length}개</div>`; }
+  $("dishResults").innerHTML=head+(hits.length?`<div class="df-list">${hits.map(d=>`<button class="df-item" data-dish="${escAttr(d.name)}">${esc(d.emoji)} ${esc(d.name)}${d.time?`<small>${esc(d.time)}</small>`:""}</button>`).join("")}</div>`
+    :`<div class="df-none">찾는 요리가 없어요. 재료 이름(예: 돼지고기, 두부)으로 찾아보거나, 아래에서 땡기는 맛을 골라 보세요.</div>`);
+}
+$("dishSearch").addEventListener("input",renderDishSearch);
+$("dishResults").addEventListener("click",e=>{ const b=e.target.closest("[data-dish]"); if(b) openHowTo(b.dataset.dish); });
+renderDishSearch();
 function openDishPicker(styleId){
   const dishes=TASTE_DISHES[styleId]; if(!dishes||!dishes.length) return;
   let di=0, serv=2, how=false;
@@ -2249,22 +2327,96 @@ function openDishPicker(styleId){
   const draw=()=>{
     const d=dishes[di];
     sh.innerHTML=how
-      ? `<div class="dishsheet" role="dialog" aria-label="만드는 법"><button class="dish-back">← 요리 목록</button>${howToHtml(styleId,d,serv)}<button class="dish-add">🛒 이 재료 장바구니에 담기</button></div>`
+      ? `<div class="dishsheet" role="dialog" aria-label="만드는 법"><button class="dish-back">← 요리 목록</button>${howToHtml(styleId,d,serv)}<button class="dish-cook">▶ 요리 시작 (한 단계씩)</button><button class="dish-add">🛒 이 재료 장바구니에 담기</button></div>`
       : `<div class="dishsheet" role="dialog" aria-label="요리 고르기"><h3>어떤 요리를 만들까요?</h3><div class="dish-list">${dishes.map((x,i)=>`<button class="dish-opt${i===di?" on":""}" data-i="${i}">${esc(x.emoji||"")} ${esc(x.name)}</button>`).join("")}</div>`+
         `<div class="dish-serv"><span>인분</span>${[1,2,4].map(n=>`<button class="chip${n===serv?" on":""}" data-serv="${n}">${n}</button>`).join("")}</div><button class="dish-how">👩‍🍳 만드는 법 보기</button><button class="dish-add">🛒 장바구니에 담기</button></div>`;
     const box=sh.querySelector(".dishsheet"); if(box) box.scrollTop=0;
   };
   draw(); sh.classList.add("show");
-  sh.onclick=e=>{
+  const pickClick=e=>{
     if(e.target===sh){ closeDishSheet(); return; }
     const o=e.target.closest(".dish-opt"), sv=e.target.closest("[data-serv]"), ad=e.target.closest(".dish-add");
     if(o){ di=+o.dataset.i; draw(); }
     else if(sv){ serv=+sv.dataset.serv; draw(); }
     else if(e.target.closest(".dish-how")){ how=true; draw(); }
+    else if(e.target.closest(".dish-cook")){ startCookMode(styleId,dishes[di],serv,()=>{ how=true; draw(); sh.onclick=pickClick; }); }
     else if(e.target.closest(".dish-back")){ how=false; draw(); }
     else if(ad){ const d=dishes[di]; addToCart(dishLines(styleId,d,serv), d.name); saveCookServ(d.name,serv); closeDishSheet(); updateCartBadge(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); }
   };
+  sh.onclick=pickClick;
 }
+
+/* ── 요리 모드: 한 단계씩 큰 글씨, 단계 속 "N분/N초"로 타이머, 화면 꺼짐 방지, 끝나면 맛보기 ── */
+let _cook=null;
+function stepTimerSec(t){
+  const m=t.match(/(\d+)(?:~\d+)?\s*분/); if(m) return +m[1]*60;
+  const s=t.match(/(\d+)\s*초/); return s?+s[1]:0;
+}
+function fmtClock(sec){ return Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0"); }
+function cookBeep(){
+  try{ navigator.vibrate&&navigator.vibrate([300,150,300,150,300]); }catch(e){}
+  try{ const A=window.AudioContext||window.webkitAudioContext; if(!A) return; const ctx=new A();
+    [0,0.35,0.7].forEach(d=>{ const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=880; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.25,ctx.currentTime+d); o.start(ctx.currentTime+d); o.stop(ctx.currentTime+d+0.2); });
+    setTimeout(()=>ctx.close(),1500); }catch(e){}
+}
+function stopCookTimer(){ if(_cook&&_cook.tid){ clearInterval(_cook.tid); _cook.tid=null; } }
+async function cookWake(on){
+  try{
+    if(on&&"wakeLock" in navigator&&!(_cook&&_cook.lock)){ const l=await navigator.wakeLock.request("screen"); if(_cook) _cook.lock=l; else l.release(); }
+    if(!on&&_cook&&_cook.lock){ _cook.lock.release(); _cook.lock=null; }
+  }catch(e){}
+}
+function endCookMode(){ stopCookTimer(); cookWake(false); _cook=null; }
+function startCookMode(styleId,dish,serv,onBack){
+  const steps=dishSteps(dish).steps; if(!steps.length) return;
+  endCookMode();
+  _cook={i:0,left:0,tid:null,lock:null,done:false};
+  const sh=$("dishSheet"), weight=dish.gPerServing?dish.gPerServing*serv:300;
+  const oilApart=(dish.steps||[]).some(t=>/식용유/.test(t));
+  const apart=dish.apart||[];
+  const seas=dish.recipe?[]:dishLines(styleId,dish,serv).filter(l=>l.spoon&&!apart.includes(l.name)&&!(oilApart&&/식용유/.test(l.name)));
+  const seasHtml=t=>seas.length&&/양념/.test(t)?`<div class="cook-seas"><div>이 단계에 쓰는 양념</div>${seas.map(l=>`<span>${esc(l.name)} <b>${esc(l.spoon==="약간"?"약간":l.spoon)}</b></span>`).join("")}</div>`:"";
+  const draw=()=>{
+    const c=_cook; if(!c) return;
+    if(c.done){
+      sh.innerHTML=`<div class="dishsheet cookmode" role="dialog" aria-label="맛보기"><button class="dish-back" data-ck="back">← 마지막 단계</button>`+
+        `<h3>🥄 이제 맛을 보세요</h3><p class="cook-ask">한 숟가락 떠서 식혀 맛봐요. 어때요?</p>`+
+        `<div class="cook-taste"><button class="chip" data-ck="good">😋 딱 좋아요</button>${FIX.map(f=>`<button class="chip" data-fix="${f.id}">${esc(f.name)}</button>`).join("")}</div>`+
+        `<div id="cookFix"></div><button class="dish-close" data-ck="close">닫기</button></div>`;
+      return;
+    }
+    const t=steps[c.i], sec=stepTimerSec(t);
+    sh.innerHTML=`<div class="dishsheet cookmode" role="dialog" aria-label="요리 모드"><button class="dish-back" data-ck="exit">← 만드는 법</button>`+
+      `<div class="cook-prog">${esc(dish.emoji||"")} ${esc(dish.name)} · <b>${c.i+1}</b> / ${steps.length} 단계</div>`+
+      `<div class="cook-bar"><i style="width:${Math.round((c.i+1)/steps.length*100)}%"></i></div>`+
+      `<p class="cook-step">${esc(t)}</p>`+seasHtml(t)+
+      (sec?`<button class="cook-timer${c.tid?" on":""}" data-ck="timer">${c.tid?`⏸ ${fmtClock(c.left)} 남음`:c.left>0&&c.left<sec?`▶ 이어서 (${fmtClock(c.left)})`:`⏱ ${fmtClock(sec)} 타이머 시작`}</button>`:"")+
+      `<div class="cook-nav"><button data-ck="prev"${c.i?"":" disabled"}>◀ 이전</button><button class="primary" data-ck="next">${c.i===steps.length-1?"다 했어요! 맛보기 ▶":"다음 ▶"}</button></div></div>`;
+  };
+  const go=i=>{ stopCookTimer(); _cook.i=i; _cook.left=0; draw(); };
+  sh.onclick=e=>{
+    const c=_cook; if(!c) return;
+    const b=e.target.closest("[data-ck]"), fx=e.target.closest("[data-fix]");
+    if(fx){ [...sh.querySelectorAll(".cook-taste .chip")].forEach(x=>x.classList.toggle("on",x===fx)); $("cookFix").innerHTML=fixHtml(weight, fx.dataset.fix); return; }
+    if(!b){ if(e.target===sh){ endCookMode(); closeDishSheet(); } return; }
+    const k=b.dataset.ck;
+    if(k==="next"){ if(c.i<steps.length-1) go(c.i+1); else { stopCookTimer(); c.done=true; draw(); } }
+    else if(k==="prev"&&c.i>0) go(c.i-1);
+    else if(k==="back"){ c.done=false; draw(); }
+    else if(k==="timer"){
+      if(c.tid){ stopCookTimer(); draw(); return; }
+      if(!(c.left>0)) c.left=stepTimerSec(steps[c.i]);
+      c.tid=setInterval(()=>{ if(!_cook) return; _cook.left--; if(_cook.left<=0){ stopCookTimer(); _cook.left=0; cookBeep(); toast("⏰ 시간 됐어요! 상태를 보고 다음 단계로"); } draw(); },1000);
+      draw();
+    }
+    else if(k==="good"){ endCookMode(); closeDishSheet(); toast("잘 만들었어요! 😋"); }
+    else if(k==="close"){ endCookMode(); closeDishSheet(); }
+    else if(k==="exit"){ endCookMode(); onBack&&onBack(); }
+  };
+  cookWake(true); draw();
+}
+document.addEventListener("visibilitychange",()=>{ if(_cook&&document.visibilityState==="visible"){ _cook.lock=null; cookWake(true); } });
 </script>
 <script>if('serviceWorker' in navigator&&!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())){window.addEventListener('load',function(){navigator.serviceWorker.register('./sw.js').catch(function(){});});}</script>
 </body>
