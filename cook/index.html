@@ -373,6 +373,14 @@
   .cook-seas b{color:var(--accent)}
   .cook-ask{font-size:15px;margin:0 0 10px}
   .cook-taste{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .dish-find{padding:12px 16px 4px}
+  .dish-find input{width:100%;box-sizing:border-box;font-family:var(--body);font-size:15px;padding:13px 14px;border:1.5px solid var(--accent);border-radius:14px;background:#fff;color:var(--text)}
+  .df-head{font-size:12.5px;font-weight:800;color:var(--muted);margin:12px 2px 8px}
+  .df-list{display:flex;flex-wrap:wrap;gap:7px}
+  .df-item{font-family:var(--body);font-size:14px;font-weight:700;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left}
+  .df-item small{display:block;font-size:11px;font-weight:600;color:var(--faint);margin-top:2px}
+  .df-none{font-size:13px;color:var(--muted);background:var(--surface);border-radius:12px;padding:12px}
+  .sense-or{margin-top:14px}
   .toastmsg{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px);transform:translateX(-50%);background:#2B2620;color:#fff;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90%}
   .toastmsg.show{opacity:1}
   .style-cart-btn{margin-top:10px}
@@ -652,9 +660,14 @@
       <div class="kicker">맛 표현</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">맛</div>
-        <div><div class="name">맛 고르기</div><div class="sub">먹고 싶은 맛을 고르면 재료와 양을 알려줘요</div></div>
+        <div><div class="name">맛 고르기</div><div class="sub">요리를 찾거나, 땡기는 맛을 골라 보세요</div></div>
       </div>
     </div>
+    <div class="dish-find">
+      <input type="search" id="dishSearch" placeholder="🔍 요리 이름이나 재료로 찾기 (예: 떡볶이, 닭, 계란)" aria-label="요리 찾기" autocomplete="off" />
+      <div id="dishResults"></div>
+    </div>
+    <div class="savedhdr sense-or">또는 땡기는 맛으로 고르기</div>
     <div id="senseGrid"></div>
     <div id="senseDetail"></div>
   </section>
@@ -1995,7 +2008,7 @@ function selectSense(idx){
 function renderSenseDetail(idx){
   const w=TASTE_WORDS[idx];
   const bars=SW_KEYS.map((k,ki)=>`<div class="sd-taste-item"><div class="sd-taste-label" style="color:${SW_COLORS[ki]}">${SW_LABELS[ki]}</div><div class="sd-taste-bar-wrap"><div class="sd-taste-bar" style="width:${(w.v[k]||0)*10}%;background:${SW_COLORS[ki]}"></div></div><div class="sd-taste-val">${(w.v[k]||0).toFixed(1)}</div></div>`).join("");
-  const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="goRecipe('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
+  const dishes=w.dishes.map(d=>`<button class="sd-dish-chip" onclick="openDishByName('${d.replace(/'/g,"\\'")}')">${d}</button>`).join("");
   $("senseDetail").innerHTML=`<div class="sense-detail"><div class="sd-head"><div class="sd-em">${w.em}</div><div class="sd-left"><div class="sd-nm">${w.nm}</div></div></div><div class="sd-body"><div class="sd-desc">${w.desc}</div><div class="sd-taste-row">${bars}</div><div class="sd-dishes">${dishes}</div><button class="sd-apply-btn" onclick="applySenseToExplore(${idx})">🎚️ 이 맛으로 맛 그래프 열기</button>${w.sid?`<button class="sd-apply-btn" style="margin-top:8px" onclick="goCalcWithStyle('${w.sid}')">⚖️ 이 맛으로 g 배합 계산하기</button>`:""}${w.sid&&TASTE_DISHES[w.sid]?`<button class="sd-apply-btn" style="margin-top:8px" onclick="openDishPicker('${w.sid}')">🛒 살 재료 · 만드는 법</button>`:""}</div></div>`;
 }
 function applySenseToExplore(idx){
@@ -2273,12 +2286,40 @@ function howToHtml(styleId,dish,serv){
 /* 장바구니에서 바로 '만드는 법' 열기 */
 function openHowTo(name){
   const f=findDish(name); if(!f) return;
-  const serv=loadCookServ()[name]||2, sh=$("dishSheet");
-  sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="만드는 법">${howToHtml(f.styleId,f.dish,serv)}<button class="dish-cook">▶ 요리 시작 (한 단계씩)</button><button class="dish-close">닫기</button></div>`;
-  sh.classList.add("show");
-  sh.onclick=e=>{ if(e.target.closest(".dish-cook")){ startCookMode(f.styleId,f.dish,serv,()=>openHowTo(name)); return; }
+  let serv=loadCookServ()[name]||2; const sh=$("dishSheet");
+  const draw=()=>{ sh.innerHTML=`<div class="dishsheet" role="dialog" aria-label="만드는 법"><div class="dish-serv"><span>인분</span>${[1,2,4].map(n=>`<button class="chip${n===serv?" on":""}" data-serv="${n}">${n}</button>`).join("")}</div>${howToHtml(f.styleId,f.dish,serv)}<button class="dish-cook">▶ 요리 시작 (한 단계씩)</button><button class="dish-add">🛒 이 재료 장바구니에 담기</button><button class="dish-close">닫기</button></div>`; };
+  draw(); sh.classList.add("show");
+  sh.onclick=e=>{
+    const sv=e.target.closest("[data-serv]");
+    if(sv){ serv=+sv.dataset.serv; saveCookServ(name,serv); draw(); return; }
+    if(e.target.closest(".dish-cook")){ startCookMode(f.styleId,f.dish,serv,()=>openHowTo(name)); return; }
+    if(e.target.closest(".dish-add")){ addToCart(dishLines(f.styleId,f.dish,serv), f.dish.name); saveCookServ(name,serv); closeDishSheet(); updateCartBadge(); toast("담았어요 · 장바구니 "+loadCart().length+"개"); if(typeof renderCart==="function"&&$("view-cart").classList.contains("active")) renderCart(); return; }
     if(e.target===sh||e.target.closest(".dish-close")) closeDishSheet(); };
 }
+function openDishByName(n){ if(findDish(n)) openHowTo(n); else goRecipe(n); }
+/* ── 요리 찾기: 이름·재료로 맛 카드 요리 + 요리 레시피를 한 번에 ── */
+function allDishes(){
+  const seen=new Set(), out=[];
+  for(const sid in TASTE_DISHES) for(const d of TASTE_DISHES[sid]){ if(seen.has(d.name)) continue; seen.add(d.name);
+    const r=d.recipe&&RECIPES.find(x=>x.name===d.recipe);
+    out.push({name:d.name,emoji:d.emoji||"",words:[d.name,...(d.main||[]).map(m=>m.name),...(r?r.ing:[])].join(" "),easy:true}); }
+  RECIPES.forEach(r=>{ if(seen.has(r.name)) return; seen.add(r.name);
+    out.push({name:r.name,emoji:r.emoji||"",words:[r.name,...r.ing].join(" "),easy:/★☆☆/.test(r.diff||""),time:r.time}); });
+  return out;
+}
+const _norm=t=>String(t||"").replace(/\s+/g,"").toLowerCase();
+function renderDishSearch(){
+  const q=_norm($("dishSearch").value), list=allDishes();
+  let hits, head;
+  if(!q){ hits=list.filter(d=>d.easy).slice(0,8); head=`<div class="df-head">🍳 처음이라면 이런 요리부터</div>`; }
+  else { hits=list.filter(d=>_norm(d.words).includes(q)); hits.sort((a,b)=>(_norm(b.name).includes(q))-(_norm(a.name).includes(q)));
+    head=`<div class="df-head">“${esc($("dishSearch").value.trim())}” 요리 ${hits.length}개</div>`; }
+  $("dishResults").innerHTML=head+(hits.length?`<div class="df-list">${hits.map(d=>`<button class="df-item" data-dish="${escAttr(d.name)}">${esc(d.emoji)} ${esc(d.name)}${d.time?`<small>${esc(d.time)}</small>`:""}</button>`).join("")}</div>`
+    :`<div class="df-none">찾는 요리가 없어요. 재료 이름(예: 돼지고기, 두부)으로 찾아보거나, 아래에서 땡기는 맛을 골라 보세요.</div>`);
+}
+$("dishSearch").addEventListener("input",renderDishSearch);
+$("dishResults").addEventListener("click",e=>{ const b=e.target.closest("[data-dish]"); if(b) openHowTo(b.dataset.dish); });
+renderDishSearch();
 function openDishPicker(styleId){
   const dishes=TASTE_DISHES[styleId]; if(!dishes||!dishes.length) return;
   let di=0, serv=2, how=false;
