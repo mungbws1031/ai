@@ -100,8 +100,8 @@ jobs:
           cp -r atomciv/. _site/atomciv/
           rm -rf _site/atomciv/tests
           mkdir -p _site/parking-game
-          cp parking-game/index.html parking-game/*.js _site/parking-game/
-          rm -f _site/parking-game/test-judge.js
+          cp parking-game/*.html parking-game/*.js _site/parking-game/
+          rm -f _site/parking-game/test-*.js
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

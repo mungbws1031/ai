@@ -12,7 +12,7 @@ for (const lv of LEVELS) {
       (ok ? '' : `  (기대: ${c.expect} ${c.answer}; 걸친 구역 ${j.hitKeys.join(',')})`));
   });
   for (const s of lv.samples) {
-    const j = J.judgePose(lv, s, s.mode, { minutes: s.minutes, state: { afterCall: !!s.afterCall } });
+    const j = J.judgePose(lv, s, s.mode, { minutes: s.minutes, clockMin: s.clockMin, state: { afterCall: !!s.afterCall } });
     const ok = j.key === s.expect && j.legal === s.legal;
     ok ? pass++ : fail++;
     console.log(`${ok ? 'PASS' : 'FAIL'}  L${lv.id} ${s.name}: ${j.key} ${j.legal ? '합법' : '불법'}` +
