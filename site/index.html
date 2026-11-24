@@ -258,6 +258,11 @@ function S(id,label,grade,r,c){ return {id,label,grade,rows:r,cols:c}; }
 function nseats(tier,grade,r,c,from,to){ const a=[]; for(let n=from;n<=to;n++) a.push(S(tier+n, `${tier} ${n}`, grade, r, c)); return a; }
 
 const VENUES = {
+  hwajung: { name:"고려대 화정체육관", note:"다목적 아레나 · 플로어+1·2층 · 약 6,500석", zones:[
+    { band:"플로어(아레나)", secs:[ S("F-A","플로어 A","VIP",12,16), S("F-B","플로어 B","VIP",12,16), S("F-C","플로어 C","R",12,16), S("F-D","플로어 D","R",12,16) ] },
+    { band:"1층 스탠드", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,112) ] },
+    { band:"2층 스탠드", secs:[ ...nseats("2층","S",11,20,201,206), ...nseats("2층","A",11,20,207,214), ...nseats("2층","B",11,20,215,216) ] },
+  ]},
   jamsil: { name:"잠실실내체육관", note:"체조경기장형 · 플로어+1·2·3층", zones:[
     { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","R",12,16) ] },
     { band:"1층", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,108) ] },
@@ -301,11 +306,6 @@ const VENUES = {
   olympichall: { name:"올림픽홀", note:"공연 전용홀 · 1·2층 좌석제", zones:[
     { band:"1층", secs:[ ...nseats("1층","R",8,14,1,2), ...nseats("1층","S",8,14,3,4) ] },
     { band:"2층", secs:[ ...nseats("2층","A",8,16,1,2), ...nseats("2층","B",8,16,3,4) ] },
-  ]},
-  hwajung: { name:"고려대 화정체육관", note:"다목적 아레나 · 플로어+1·2층 · 약 6,500석", zones:[
-    { band:"플로어(아레나)", secs:[ S("F-A","플로어 A","VIP",12,16), S("F-B","플로어 B","VIP",12,16), S("F-C","플로어 C","R",12,16), S("F-D","플로어 D","R",12,16) ] },
-    { band:"1층 스탠드", secs:[ ...nseats("1층","R",10,18,101,104), ...nseats("1층","S",10,18,105,112) ] },
-    { band:"2층 스탠드", secs:[ ...nseats("2층","S",11,20,201,206), ...nseats("2층","A",11,20,207,214), ...nseats("2층","B",11,20,215,216) ] },
   ]},
 };
 function venueTotal(v){ let n=0; v.zones.forEach(z=>z.secs.forEach(s=>n+=s.rows*s.cols)); return n; }
