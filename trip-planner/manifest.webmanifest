@@ -1,0 +1,14 @@
+{
+  "name": "챙겨줘 트립",
+  "short_name": "챙겨줘",
+  "description": "아이 동반 가족 여행 — 준비물·일정·맛집·D-day 할 일을 끝낼 때까지 챙겨줘요",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#E9EEF4",
+  "theme_color": "#15233F",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
