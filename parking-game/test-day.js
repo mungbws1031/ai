@@ -39,5 +39,27 @@ const car = { x: 41, y: 17.4, heading: PI };
 ok('자석: 빈 가장자리면 맞춰 줌', (D.snapTarget(mk, [], car) || {}).y === 15.25);
 ok('자석: 그 자리에 차가 있으면 null', D.snapTarget(mk, [{ x: 41, y: 15.25, heading: PI }], car) === null);
 
+// 8. 3일치 장소 설정
+const { DAYS, preparePlace } = require('./day-places.js');
+DAYS.forEach(day => day.places.forEach(pl => {
+  const lv = lvOf(pl.key);
+  ok(`${day.day}일차 ${pl.who}: 지도 있음`, !!lv);
+  const inside = ([x, y]) => x >= 0 && y >= 0 && x <= lv.world.w && y <= lv.world.h;
+  ok(`${day.day}일차 ${pl.who}: 순찰길·주민 자리가 지도 안`, pl.patrol.every(inside) && pl.watchers.every(inside) && pl.n <= pl.watchers.length);
+  let seed = 7; const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  let allOk = true;
+  for (let k = 0; k < 50; k++) {
+    const P = preparePlace(LEVELS, pl, day.hard, rand);
+    const spots = [
+      ...P.lv.slots.filter(sl => !J.slotOccupied(sl, {})).map(sl => ({ x: sl.x + sl.w / 2, y: sl.y + sl.h / 2, heading: sl.h > sl.w ? PI / 2 : (sl.dir ?? 0) })),
+      ...(P.lv.candidates || []),
+    ];
+    const legal = spots.some(sp => !D.hitTest(P.lv, P.parked, sp) && J.judgePose(P.lv, sp, 'park', { minutes: P.stay, clockMin: 600 }).legal);
+    if (!legal) { allOk = false; break; }
+  }
+  ok(`${day.day}일차 ${pl.who}: 무작위 50판 모두 합법 자리 ≥1`, allOk);
+}));
+ok('3일차는 단속원 2명·시간 80%', DAYS[2].hard.guards === 2 && DAYS[2].hard.limitScale === 0.8);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
