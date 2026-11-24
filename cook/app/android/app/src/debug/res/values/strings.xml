@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- 시험용(debug) 앱 이름: 정식 앱과 홈 화면에서 구분되게 -->
+    <string name="app_name">전자혀 테스트</string>
+    <string name="title_activity_main">전자혀 테스트</string>
+</resources>

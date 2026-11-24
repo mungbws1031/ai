@@ -1,7 +1,7 @@
 name: Build 전자혀 Android AAB
 
 # 전자혀(cook/) 웹 테스트를 돌리고, Capacitor 프로젝트(cook/app)에서
-# 구글 플레이 업로드용 AAB(app-release.aab)를 빌드한다.
+# 구글 플레이 업로드용 AAB(app-release.aab)와 폰에 바로 깔아 보는 시험용 APK(app-debug.apk)를 빌드한다.
 # 서명 시크릿: CJ_KEYSTORE_BASE64, CJ_KEYSTORE_PASSWORD, CJ_KEY_ALIAS, CJ_KEY_PASSWORD
 # (CJ_KEYSTORE_BASE64가 없으면 서명되지 않은 AAB가 나온다 — 플레이 업로드 불가)
 
@@ -128,6 +128,18 @@ jobs:
           else
             echo "⚠️ 서명되지 않음 — 플레이 업로드 불가" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # 폰에 바로 설치해 보는 시험용 APK (디버그 키로 서명, 앱 이름 "전자혀 테스트", 플레이 업로드용 아님)
+      - name: Build test APK (debug)
+        working-directory: cook/app/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: jeonjahyeo-test-apk
+          path: cook/app/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4

@@ -10,12 +10,15 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const PAGE = pathToFileURL(path.join(here, '..', 'index.html')).href;
 
 let browser;
+const PHONE = { width: 412, height: 915 };
 before(async () => { browser = await chromium.launch(); });
 after(async () => { await browser.close(); });
 
-async function fresh(viewport = { width: 1024, height: 768 }, init, stayOnStart = false) {
+async function fresh(viewport = { width: 1024, height: 768 }, init, stayOnStart = false, noDefault = false) {
   const ctx = await browser.newContext({ viewport, hasTouch: false });
   if (init) await ctx.addInitScript(init);
+  // 기존 테스트는 난이도 고르기 카드 없이 보통 모드로 시작한다
+  if (!noDefault) await ctx.addInitScript(() => { try { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify({ found: [], mode: 'normal' })); } catch (e) { /* 저장 막힘 */ } });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
@@ -67,9 +70,14 @@ test('making water shows a card, lands in dex and survives reload', async () => 
   await page.click('#card-ok');
   await page.click('[data-tab=dex]');
   assert.equal(await page.locator('.dex-item[data-key=H2O]').count(), 1);
-  await page.reload();
-  await page.click('[data-tab=dex]');
-  assert.equal(await page.locator('.dex-item[data-key=H2O]').count(), 1);
+  // 새로고침 대신: 저장된 값을 그대로 가진 새 페이지에서 도감이 복원되는지 본다
+  // (크로미움은 localStorage 커밋을 묶어서 늦게 하므로 바로 새로고침하면 가끔 빈 저장을 읽는다)
+  const saved = await page.evaluate(() => localStorage.getItem('atomciv.v1'));
+  assert.match(saved, /H2O/);
+  const again = await fresh(undefined, new Function(`localStorage.setItem('atomciv.v1', ${JSON.stringify(saved)});`));
+  await again.page.click('[data-tab=dex]');
+  assert.equal(await again.page.locator('.dex-item[data-key=H2O]').count(), 1);
+  await again.ctx.close();
   assert.deepEqual(errors, []);
   await ctx.close();
 });
@@ -185,8 +193,9 @@ test('a second pointer does not hijack an atom drag', async () => {
     const sr = svg.getBoundingClientRect();
     ev('pointermove', 2, sr.x + 5, sr.y + 5, svg);
     ev('pointerup', 2, sr.x + 5, sr.y + 5, svg);
-    ev('pointerup', 1, x, y, svg);
+    // 첫 손가락을 떼기 전에 잰다 (그 자리에서 떼면 '톡 누르기'라 원자가 치워진다)
     const r2 = svg.querySelector(`.atom[data-id="${id}"]`).getBoundingClientRect();
+    ev('pointerup', 1, x, y, svg);
     return Math.hypot(r2.x - r.x, r2.y - r.y);
   }, id);
   assert.ok(moved < 2, `atom moved ${moved}px`);
@@ -195,6 +204,7 @@ test('a second pointer does not hijack an atom drag', async () => {
 
 test('an atom dropped on the tray is pushed back into open bench space', async () => {
   const { ctx, page } = await fresh();
+  await page.click('#drawer [data-item=wood]'); // 그릇이 보이게
   await page.click('[data-atom=O]');
   const id = (await benchIds(page, 'O'))[0];
   await drag(page, `.atom[data-id="${id}"]`, '#tray');
@@ -282,12 +292,19 @@ test('C: water made on the bench drops into the tray; plain H2 does not', async 
   await ctx.close();
 });
 
-test('A: empty tray shows how to use it', async () => {
-  const { ctx, page } = await fresh();
-  assert.ok(await page.locator('#tray-empty').isVisible());
-  assert.match(await page.textContent('#tray-empty'), /재료/);
+test('empty bowl stays hidden until an ingredient is dragged or added', async () => {
+  const { ctx, page } = await fresh(PHONE);
+  assert.ok(await page.locator('#mixer').isHidden(), 'hidden when empty');
+  assert.equal(await page.locator('#tray-empty').count(), 0, 'no drag-here text');
+  await page.locator('#drawer [data-item=wood]').scrollIntoViewIfNeeded();
+  const a = await center(page, '#drawer [data-item=wood]');
+  await page.mouse.move(a.x, a.y); await page.mouse.down();
+  await page.mouse.move(a.x, a.y - 120, { steps: 5 });
+  assert.ok(await page.locator('#mixer').isVisible(), 'shows while dragging');
+  await page.mouse.up();
+  assert.ok(await page.locator('#mixer').isHidden(), 'hides again when nothing was dropped');
   await page.click('#drawer [data-item=wood]');
-  assert.ok(await page.locator('#tray-empty').isHidden());
+  assert.ok(await page.locator('#mixer').isVisible(), 'shows with an ingredient');
   await ctx.close();
 });
 
@@ -457,10 +474,11 @@ test('territory map: hex island with fog, borders grow, tapping a building opens
   await ctx.close();
 });
 
-const PHONE = { width: 412, height: 915 };
 
 test('phone: atoms never appear under the mixing bowl', async () => {
   const { ctx, page } = await fresh(PHONE);
+  await page.locator('#drawer [data-item=wood]').scrollIntoViewIfNeeded();
+  await page.click('#drawer [data-item=wood]'); // 그릇이 보이게
   for (let i = 0; i < 6; i++) await page.click('[data-atom=H]');
   const box = await page.locator('#mixer').boundingBox();
   const bench = await page.locator('#bench').boundingBox();
@@ -549,5 +567,268 @@ test('sodium hydroxide shows O with a 1- charge (it got one electron)', async ()
   await drag(page, `.atom[data-id="${na}"]`, `.atom[data-id="${o}"]`);
   assert.equal(await page.textContent(`.atom[data-id="${o}"] .charge`), '−');
   assert.equal(await page.textContent(`.atom[data-id="${na}"] .charge`), '+');
+  await ctx.close();
+});
+
+test('bowl reaction: CO2 + water makes carbonic acid with a molecule card', async () => {
+  const init = () => { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify({ found: ['CO2', 'H2O', 'fire', 'stone_axe', 'charcoal', 'pottery'], muted: true, trayIntro: true, mode: 'normal' })); };
+  const { ctx, page, errors } = await fresh(undefined, init);
+  await page.click('#drawer [data-item=CO2]'); await page.click('#drawer [data-item=H2O]');
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card-name'), /탄산/);
+  assert.match(await page.textContent('#card-formula'), /H₂CO₃/);
+  await page.click('#card-ok');
+  const found = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found);
+  assert.ok(found.includes('CH2O3'));
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('CO2 made during its own mission does not jump into the bowl', async () => {
+  const init = () => { if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', JSON.stringify({ found: ['H2', 'H2O', 'O2'], muted: true, mode: 'normal' })); };
+  const { ctx, page } = await fresh(undefined, init);
+  for (const s of ['O', 'C', 'O']) await page.click(`[data-atom=${s}]`);
+  const [o1, o2] = await benchIds(page, 'O'); const [c] = await benchIds(page, 'C');
+  for (const [x, y] of [[o1, c], [o1, c], [o2, c], [o2, c]]) await drag(page, `.atom[data-id="${x}"]`, `.atom[data-id="${y}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  assert.equal(await page.locator('#tray [data-item]').count(), 0);
+  await ctx.close();
+});
+
+test('first launch asks for a difficulty; choosing hard is saved', async () => {
+  const { ctx, page } = await fresh(PHONE, undefined, true, true);
+  assert.ok(await page.locator('#mode-pick').isVisible());
+  await page.click('#mode-pick [data-mode=hard]');
+  assert.ok(await page.locator('#mode-pick').isHidden());
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'hard');
+  await page.reload();
+  assert.ok(await page.locator('#mode-pick').isHidden(), 'asked only once');
+  await page.click('#save-menu');
+  assert.equal(await page.getAttribute('#panel [data-mode=hard]', 'aria-pressed'), 'true');
+  await page.click('#panel [data-mode=easy]');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'easy');
+  await ctx.close();
+});
+
+const withState = (st) => new Function(`if (!localStorage.getItem('atomciv.v1')) localStorage.setItem('atomciv.v1', ${JSON.stringify(JSON.stringify(st))});`);
+async function buildCaOH2(page) {
+  for (const s of ['Ca', 'O', 'O', 'H', 'H']) await page.click(`[data-atom=${s}]`);
+  const [ca] = await benchIds(page, 'Ca'); const [o1, o2] = await benchIds(page, 'O'); const [h1, h2] = await benchIds(page, 'H');
+  for (const [x, y] of [[o1, ca], [o2, ca], [h1, o1], [h2, o2]]) await drag(page, `.atom[data-id="${x}"]`, `.atom[data-id="${y}"]`);
+  await page.waitForSelector('#card:not([hidden])');
+}
+
+test('hard mode: reaction molecules built from atoms are not accepted', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true, mode: 'hard' }));
+  await buildCaOH2(page);
+  assert.match(await page.textContent('#card'), /반응/);
+  await page.click('#card-ok');
+  const found = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found);
+  assert.ok(!found.includes('CaH2O2'));
+  assert.equal(await page.locator('#bench .atom').count(), 0, 'atoms cleared');
+  await ctx.close();
+});
+
+test('normal mode: atom-built reaction molecule counts and shows the real reaction', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true, mode: 'normal' }));
+  await buildCaOH2(page);
+  assert.match(await page.textContent('#card-why'), /실제로는/);
+  assert.match(await page.textContent('#card-why'), /CaO \+ H₂O/);
+  await page.click('#card-ok');
+  assert.ok((await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found)).includes('CaH2O2'));
+  await ctx.close();
+});
+
+test('hard mode: no hand dots in the drawer, three hints per mission', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode: 'hard' }), true);
+  assert.ok(await page.locator('[data-atom=H] .hands').isHidden());
+  for (let i = 0; i < 3; i++) await page.click('#hint-btn');
+  assert.ok(await page.locator('#hint-btn').isDisabled());
+  assert.equal(await page.locator('#tip').count() && await page.locator('#tip').isVisible(), false);
+  await ctx.close();
+});
+
+test('easy and normal: the first molecule missions show step-by-step tips', async () => {
+  for (const mode of ['easy', 'normal']) {
+    const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode }), true);
+    assert.ok(await page.locator('#tip').isVisible(), mode);
+    assert.match(await page.textContent('#tip'), /H.*2번/);
+    await ctx.close();
+  }
+});
+
+test('easy mode: hint puts the needed atoms on the bench and shows a finger guide', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode: 'easy' }), true);
+  await page.click('#hint-btn');
+  assert.equal(await page.locator('#bench .atom[data-sym=H]').count(), 2);
+  assert.ok(await page.locator('#guide').isVisible());
+  await ctx.close();
+});
+
+test('phone: atoms already on the bench move out when the bowl fills up', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'CO2', 'H2O'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  for (let i = 0; i < 8; i++) await page.click('[data-atom=H]');
+  for (const id of ['wood', 'flint', 'clay', 'CO2', 'H2O', 'charcoal']) {
+    await page.locator(`#drawer [data-item=${id}]`).scrollIntoViewIfNeeded();
+    await page.click(`#drawer [data-item=${id}]`);
+  }
+  await page.waitForTimeout(300);
+  const box = await page.locator('#mixer').boundingBox();
+  const centers = await page.$$eval('#bench .atom', els => els.map(e => { const b = e.getBoundingClientRect(); return [b.x + b.width / 2, b.y + b.height / 2]; }));
+  for (const [x, y] of centers) assert.ok(!(x > box.x && x < box.x + box.width && y > box.y && y < box.y + box.height), `atom at ${x},${y} under bowl`);
+  await ctx.close();
+});
+
+test('settings button: difficulty comes first and easy/normal can switch to hard', async () => {
+  for (const from of ['easy', 'normal']) {
+    const { ctx, page } = await fresh(PHONE, withState({ found: ['H2'], muted: true, mode: from }));
+    assert.equal((await page.textContent('#save-menu')).trim(), '⚙️');
+    await page.click('#save-menu');
+    assert.match(await page.textContent('#panel-title'), /설정/);
+    assert.equal(await page.textContent('#panel-body h3:first-of-type'), '난이도');
+    await page.click('#panel [data-mode=hard]');
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'hard');
+    assert.ok(await page.locator('[data-atom=H] .hands').isHidden(), 'hard rules apply right away');
+    await ctx.close();
+  }
+});
+
+test('settings: start over asks first, keeps other sites data, then shows the difficulty picker', async () => {
+  const init = () => { if (!localStorage.getItem('atomciv.v1')) { localStorage.setItem('atomciv.v1', JSON.stringify({ found: ['H2', 'H2O', 'fire'], mode: 'hard', muted: true })); localStorage.setItem('other.app', 'keep'); } };
+  const { ctx, page } = await fresh(PHONE, init, false, true);
+  await page.click('#save-menu');
+  await page.click('#reset-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /3개/);
+  // 취소하면 그대로
+  await page.click('#card-cancel');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).found.length), 3);
+  await page.click('#reset-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  await page.click('#card-ok');
+  await page.waitForSelector('#mode-pick:not([hidden])');
+  const st = await page.evaluate(() => ({ save: localStorage.getItem('atomciv.v1'), other: localStorage.getItem('other.app') }));
+  assert.equal(st.other, 'keep');
+  assert.ok(!st.save || JSON.parse(st.save).found.length === 0);
+  assert.equal(await page.locator('#drawer [data-item=fire]').count(), 0, 'inventions gone');
+  await page.click('#mode-pick [data-mode=easy]');
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).mode), 'easy');
+  await ctx.close();
+});
+
+test('build a hut, place it on a glowing map tile, and see it on the map', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'H2O', 'cave_painting'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page, errors } = await fresh(PHONE, init);
+  for (const id of ['wood', 'clay']) { await page.locator(`#drawer [data-item=${id}]`).scrollIntoViewIfNeeded(); await page.click(`#drawer [data-item=${id}]`); }
+  await page.click('#combine-btn');
+  await page.waitForSelector('#card:not([hidden])');
+  assert.match(await page.textContent('#card'), /움집/);
+  assert.match(await page.textContent('#card-ok'), /지도/);
+  await page.click('#card-ok');
+  await page.waitForSelector('#panel:not([hidden]) .hex.site');
+  assert.match(await page.textContent('#panel'), /세울 곳/);
+  await page.locator('.hex.site').first().click();
+  const placed = await page.evaluate(() => JSON.parse(localStorage.getItem('atomciv.v1')).placed);
+  assert.ok(Array.isArray(placed.hut), 'hut placed');
+  assert.equal(await page.locator('.map-node[data-id=hut]').count(), 1);
+  assert.equal(await page.locator('.hex.site').count(), 0, 'placing mode ends');
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test('a building made but not placed waits as a chip on the map', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'H2O', 'farm'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  await page.click('[data-tab=map]');
+  await page.click('#panel [data-build=farm]');
+  assert.ok(await page.locator('.hex.site').count() > 0);
+  await page.locator('.hex.site').first().click();
+  assert.equal(await page.locator('#panel [data-build=farm]').count(), 0);
+  assert.equal(await page.locator('.hex.farm').count(), 1, 'the tile became a farm');
+  await ctx.close();
+});
+
+test('phone: the bigger map scrolls and opens centred on the capital', async () => {
+  const { ctx, page } = await fresh(PHONE);
+  await page.click('[data-tab=map]');
+  const r = await page.evaluate(() => { const s = document.querySelector('#map-scroll'); return { sw: s.scrollWidth, cw: s.clientWidth, sl: s.scrollLeft }; });
+  assert.ok(r.sw > r.cw, 'map is wider than the screen');
+  assert.ok(Math.abs(r.sl - (r.sw - r.cw) / 2) < 30, 'centred');
+  await ctx.close();
+});
+
+// ---- 검토에서 나온 문제들 ----
+test('review: hand dots show in easy and normal, hidden only in hard', async () => {
+  for (const [mode, shown] of [['easy', true], ['normal', true], ['hard', false]]) {
+    const { ctx, page } = await fresh(undefined, withState({ found: [], muted: true, mode }));
+    assert.equal(await page.locator('[data-atom=O] .hands').isVisible(), shown, mode);
+    await ctx.close();
+  }
+});
+
+test('review: easy finger hides when a panel opens and ignores atoms not in the target', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true, mode: 'easy' }), true);
+  await page.click('[data-tab=lab]');
+  await page.click('[data-atom=Na]');
+  await page.click('[data-tab=mission]');
+  await page.click('#hint-btn');
+  await page.waitForSelector('#guide:not([hidden])');
+  const syms = await page.evaluate(() => [document.querySelector('#guide').dataset.from, document.querySelector('#guide').dataset.to]
+    .map(id => document.querySelector(`#bench .atom[data-id="${id}"]`).dataset.sym));
+  assert.ok(!syms.includes('Na'), `guide pair ${syms}`);
+  await page.click('[data-tab=dex]');
+  assert.ok(await page.locator('#guide').isHidden(), 'hidden under the dex');
+  await ctx.close();
+});
+
+test('review: start over while placing a building leaves no placing mode behind', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'H2O', 'hut'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  await page.click('[data-tab=map]');
+  await page.click('#panel [data-build=hut]');
+  await page.click('#save-menu');
+  await page.click('#reset-btn'); await page.click('#card-ok');
+  await page.click('#mode-pick [data-mode=normal]');
+  await page.click('[data-tab=map]');
+  assert.equal(await page.locator('#place-bar').count(), 0);
+  assert.equal(await page.locator('.hex.site').count(), 0);
+  await ctx.close();
+});
+
+test('review: a bonded pair moves together when the bowl grows', async () => {
+  const init = withState({ found: ['fire', 'stone_axe', 'charcoal', 'pottery', 'CO2', 'H2O'], muted: true, trayIntro: true, mode: 'normal' });
+  const { ctx, page } = await fresh(PHONE, init);
+  for (let i = 0; i < 6; i++) await page.click('[data-atom=H]');
+  await page.click('[data-atom=C]'); await page.click('[data-atom=O]');
+  const [c] = await benchIds(page, 'C'); const [o] = await benchIds(page, 'O');
+  await drag(page, `.atom[data-id="${o}"]`, `.atom[data-id="${c}"]`);
+  for (const id of ['wood', 'flint', 'clay', 'CO2', 'H2O', 'charcoal']) { await page.locator(`#drawer [data-item=${id}]`).scrollIntoViewIfNeeded(); await page.click(`#drawer [data-item=${id}]`); }
+  const d = await page.evaluate(([a, b]) => { const r = id => document.querySelector(`#bench .atom[data-id="${id}"]`).getBoundingClientRect();
+    const p = r(a), q = r(b); return Math.hypot(p.x - q.x, p.y - q.y); }, [c, o]);
+  assert.ok(d < 140, `bonded atoms ${Math.round(d)}px apart`);
+  await ctx.close();
+});
+
+test('review: old saves show 보통 as the selected difficulty', async () => {
+  const { ctx, page } = await fresh(undefined, withState({ found: ['H2'], muted: true }));
+  await page.click('#save-menu');
+  assert.equal(await page.getAttribute('#panel [data-mode=normal]', 'aria-pressed'), 'true');
+  await ctx.close();
+});
+
+test('tapping an atom on the bench takes it away; dragging still moves it', async () => {
+  const { ctx, page } = await fresh();
+  await page.click('[data-atom=H]'); await page.click('[data-atom=O]');
+  const [h] = await benchIds(page, 'H'); const [o] = await benchIds(page, 'O');
+  await page.click(`.atom[data-id="${h}"]`);
+  assert.equal(await page.locator(`.atom[data-id="${h}"]`).count(), 0, 'tapped atom is gone');
+  assert.equal(await page.locator(`.atom[data-id="${o}"]`).count(), 1, 'other atom stays');
+  const before = await page.locator(`.atom[data-id="${o}"]`).boundingBox();
+  await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
+  await page.mouse.down(); await page.mouse.move(before.x + 120, before.y + 60, { steps: 5 }); await page.mouse.up();
+  assert.equal(await page.locator(`.atom[data-id="${o}"]`).count(), 1, 'dragging does not remove');
   await ctx.close();
 });
