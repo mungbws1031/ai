@@ -1,0 +1,8 @@
+{
+  "name": "ivdr-kordoc-sidecar",
+  "private": true,
+  "description": "Pinned kordoc CLI used by app/services/document_extract_service.py (PoC)",
+  "dependencies": {
+    "kordoc": "4.25.11"
+  }
+}
