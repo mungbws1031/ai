@@ -18,7 +18,8 @@
   const fmt = min => { min = Math.round(min) % 1440; return `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`; };
 
   const cv = $('#cv'), ctx = cv.getContext('2d');
-  let S = null;
+  let S = null, settleTimer = 0;
+  const stopSettle = () => { clearTimeout(settleTimer); settleTimer = 0; };
 
   // ─── 카드 ───
   function card(html, buttons) {
@@ -28,7 +29,7 @@
     $('#card').scrollTop = 0;
   }
   function title() {
-    S = null;
+    stopSettle(); S = null;
     const pr = progress();
     $('#card').innerHTML = `<h2>주차 한 판</h2>
       <p>지갑에 <b>${won(M.START)}</b> 들고 하루를 돌아요. <b>노란 단속원</b>은 길을 오가고, <b>주민</b>은 주황색 시야로 두리번거려요.</p>
@@ -43,6 +44,7 @@
   }
   function startDay(di) { S = { di, day: DAYS[di], money: M.START, log: [] }; setMoney(0); place(0); }
   function place(i) {
+    stopSettle(); stick.rev = false;
     const day = S.day, P = preparePlace(window.LEVELS, day.places[i], day.hard), pl = P.place, lv = P.lv;
     Object.assign(S, { i, P, pl, lv, parked: P.parked, left: pl.limit, crash: 0, cool: 0, ff: null, done: false, running: false,
       snap: null, ghost: null, usedSnap: false, car: { x: lv.start.x, y: lv.start.y, heading: lv.start.heading, v: 0, steer: 0 }, clock: hhmm(lv.clock) });
@@ -66,7 +68,7 @@
   }
   stEl.addEventListener('pointerdown', e => { e.preventDefault(); stEl.setPointerCapture(e.pointerId); stick.on = true; stickMove(e); });
   stEl.addEventListener('pointermove', e => { if (stick.on) stickMove(e); });
-  const stickOff = () => { stick.on = false; stick.mag = 0; knob.style.transform = ''; };
+  const stickOff = () => { stick.on = false; stick.mag = 0; stick.rev = false; knob.style.transform = ''; };
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(ev => stEl.addEventListener(ev, stickOff));
   const KM = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'gas', ArrowDown: 'back' };
   addEventListener('keydown', e => { if (KM[e.key]) { keys[KM[e.key]] = true; e.preventDefault(); } if (e.key === ' ' || e.key === 'p') tryPark(); });
@@ -127,6 +129,8 @@
     S.ff = { t: 0, dur: 2.5 + stay / 60 * 2.5, pose, judgement, t0, stay, ...sim };
   }
   function settle() {
+    settleTimer = 0;
+    if (!S || !S.ff) return;
     const { judgement: j, res, stay } = S.ff, pl = S.pl, r = j.rule;
     const skill = !S.usedSnap && j.legal && !!j.inSlot && j.align.score >= 80;
     const lines = D.settleLines(res, j, { late: S.left < 0, guard: pl.guard, skill });
@@ -238,7 +242,7 @@
     S.ghost = S.running && Math.abs(S.car.v) < 1.2 ? D.snapTarget(S.lv, S.parked, S.car) : null;
     let t = S.clock;
     if (S.ff) {
-      if (!S.done) { S.ff.t = Math.min(S.ff.dur, S.ff.t + dt); if (S.ff.t >= S.ff.dur) { S.done = true; setTimeout(settle, 400); } }
+      if (!S.done) { S.ff.t = Math.min(S.ff.dur, S.ff.t + dt); if (S.ff.t >= S.ff.dur) { S.done = true; settleTimer = setTimeout(settle, 400); } }
       t = S.ff.t0 + S.ff.stay * (S.ff.t / S.ff.dur);
     }
     const cam = camera(w, h);

@@ -40,7 +40,7 @@ canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
 .flash { position: fixed; left: 50%; top: 30%; transform: translate(-50%, -50%); font-family: var(--display); font-size: 34px; text-shadow: 0 3px 10px rgba(0,0,0,.7); pointer-events: none; white-space: nowrap; }
 
 .card-wrap { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(12,15,19,.72); padding: 14px; z-index: 5; }
-.card { width: min(520px, 96vw); max-height: 94vh; overflow: auto; background: #f1f2ee; color: var(--ink); border-radius: 16px; padding: 16px 18px; touch-action: pan-y; }
+.card { width: min(520px, 96vw); max-height: calc(100vh - 28px); max-height: calc(100dvh - 28px); overflow: auto; background: #f1f2ee; color: var(--ink); border-radius: 16px; padding: 16px 18px; touch-action: pan-y; }
 .card h2 { font-family: var(--display); font-weight: 400; font-size: 28px; margin: 0 0 6px; line-height: 1.15; }
 .card p { margin: 6px 0; line-height: 1.5; }
 .card .big { font-family: var(--display); font-size: 40px; color: #b8860b; }
