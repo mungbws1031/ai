@@ -267,14 +267,14 @@ function S(id,label,grade,r,c){ return {id,label,grade,rows:r,cols:c}; }
 function nseats(tier,grade,r,c,from,to){ const a=[]; for(let n=from;n<=to;n++) a.push(S(tier+n, `${tier} ${n}`, grade, r, c)); return a; }
 
 const VENUES = {
-  hwajung: { name:"고려대 화정체육관", note:"공식 좌석배치도(콘서트) 기준 · FLOOR+2층 · 약 4,350석",
+  hwajung: { name:"고려대 화정체육관", note:"공식 좌석배치도(콘서트) 기준 · FLOOR+2층 · 4,350석",
     geo:{ left:["I","J","K","L"], right:["F","E","D","C"], floor:["F1","F2","F3","F4"], front:["M","N","A","B"], console:"CONSOLE" }, zones:[
-    { band:"FLOOR (무대 앞)", secs:[ S("F1","F1","VIP",10,20), S("F2","F2","VIP",10,20), S("F3","F3","VIP",10,20), S("F4","F4","VIP",10,20) ] },
-    { band:"2층 측면 상 (무대쪽)", secs:[ S("I","I","R",15,23), S("F","F","R",15,23) ] },
+    { band:"FLOOR (무대 앞)", secs:[ S("F1","F1","VIP",10,20), S("F2","F2","VIP",10,20), S("F3","F3","VIP",10,20), S("F4","F4","VIP",14,14) ] },
+    { band:"2층 측면 상 (무대쪽)", secs:[ S("I","I","R",12,29), S("F","F","R",14,25) ] },
     { band:"2층 측면 중상", secs:[ S("J","J","S",13,20), S("E","E","S",13,20) ] },
-    { band:"2층 측면 중하", secs:[ S("K","K","S",17,22), S("D","D","S",14,19) ] },
-    { band:"2층 코너 (하)", secs:[ S("L","L","A",14,21), S("C","C","A",14,21) ] },
-    { band:"2층 무대 정면", secs:[ S("M","M","A",15,19), S("N","N","A",13,20), S("A","A","A",13,20), S("B","B","A",16,18) ] },
+    { band:"2층 측면 중하", secs:[ S("K","K","S",17,22), S("D","D","S",15,18) ] },
+    { band:"2층 코너 (하)", secs:[ S("L","L","A",14,21), S("C","C","A",15,20) ] },
+    { band:"2층 무대 정면", secs:[ S("M","M","A",10,29), S("N","N","A",13,20), S("A","A","A",13,20), S("B","B","A",16,18) ] },
   ]},
   jamsil: { name:"잠실실내체육관", note:"체조경기장형 · 플로어+1·2·3층", zones:[
     { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","R",12,16) ] },
