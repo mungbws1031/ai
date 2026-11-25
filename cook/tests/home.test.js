@@ -122,7 +122,7 @@ test("단계는 4~6개, 아이 팁은 모두 있다", async () => {
 });
 
 test("고기·닭·해산물 요리는 속까지 익었는지 확인한다", async () => {
-  const raw = /고기|돼지|삼겹|목살|갈비|닭|오리|새우|오징어|고등어|코다리|동태|바지락|꼬막/;
+  const raw = /고기|돼지|삼겹|목살|갈비|닭|오리|새우(?!젓)|오징어|고등어|코다리|동태|바지락|꼬막/;
   const bad = (await homeList()).filter(h => h.ing.some(i => raw.test(i.n)) && !h.steps.some(s => s.includes("속까지"))).map(h => h.name);
   assert.deepStrictEqual(bad, []);
 });
