@@ -109,10 +109,14 @@ test("요리 사전은 95개 이상, 분류별 최소 개수", async () => {
   for (const c in min) assert.ok((cnt[c] || 0) >= min[c], c + " " + (cnt[c] || 0) + "개");
 });
 
-test("단계에 나오는 식용유·버터·소금·참기름·설탕이 재료에 있다", async () => {
+test("단계에 나오는 식용유·버터·소금·참기름·설탕·물·간장 등이 재료에 있다", async () => {
+  const words = ["식용유", "버터", "소금", "참기름", "설탕", "물", "간장", "다진마늘", "후추", "올리고당", "전분", "올리브유", "굴소스", "케첩"];
+  // '물'은 물기·찬물·계란물·끓는 물처럼 다른 말에도 들어가므로, 앞이 한글이 아니고 뒤가 조사·공백일 때만 센다
+  // '전분을 뺀다'는 감자에서 빠지는 전분이라 재료가 아니다
+  const used = (s, w) => w === "전분" ? /전분(?!을 (빼|뺀))/.test(s) : w === "물" ? /(^|[^가-힣])물(을|에|이|은|과|도|로|만)?(?![가-힣])/.test(s) : s.includes(w);
   const bad = [];
-  for (const h of await homeList()) for (const w of ["식용유", "버터", "소금", "참기름", "설탕"])
-    if (h.steps.some(s => s.includes(w)) && !h.ing.some(i => i.n.includes(w))) bad.push(h.name + ":" + w);
+  for (const h of await homeList()) for (const w of words)
+    if (h.steps.some(s => used(s, w)) && !h.ing.some(i => i.n.includes(w))) bad.push(h.name + ":" + w);
   assert.deepStrictEqual(bad, []);
 });
 
@@ -130,6 +134,12 @@ test("고기·닭·해산물 요리는 속까지 익었는지 확인한다", asy
 test("매운 요리는 아이용(kid)이 아니고 아이 몫 덜기 팁이 있다", async () => {
   const hot = /고춧가루|고추장|청양고추/;
   const bad = (await homeList()).filter(h => h.ing.some(i => hot.test(i.n)) && (h.kid || !h.kidTip.includes("덜어"))).map(h => h.name);
+  assert.deepStrictEqual(bad, []);
+});
+
+test("매운 재료(페페론치노·두반장·고추기름·김치)가 든 요리는 아이용(kid)이 아니다", async () => {
+  const hot = /고춧가루|고추장|청양고추|페페론치노|두반장|고추기름|김치/;
+  const bad = (await homeList()).filter(h => h.kid && h.ing.some(i => hot.test(i.n))).map(h => h.name);
   assert.deepStrictEqual(bad, []);
 });
 
