@@ -20,6 +20,8 @@ test("개인정보처리방침 페이지 내용", async () => {
     assert.ok(body.includes("삭제"));
     assert.ok(body.includes("Google Fonts"), body);
     assert.ok(body.includes("외부 연결"), body);
+    assert.ok(body.includes("아이 반응") && body.includes("인분"), body);
+    assert.ok(body.includes("10000recipe.com") && body.includes("검색어만"), body);
     assert.strictEqual(await page.getAttribute('a[href="./index.html"]', "href"), "./index.html");
     assert.deepStrictEqual(page.__errors, []);
   } finally { await browser.close(); }
@@ -52,7 +54,7 @@ test("저장 탭 하단에 개인정보처리방침 링크가 있다", async () 
 test("서비스워커 캐시에 privacy.html이 들어가고 버전이 올라갔다", () => {
   const sw = fs.readFileSync(path.join(__dirname, "..", "sw.js"), "utf8");
   assert.ok(sw.includes('"./privacy.html"'));
-  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v16"'));
+  assert.ok(sw.includes('const CACHE = "jeonjahyeo-v17"'));
 });
 
 test("개인정보처리방침의 돌아가기는 저장한 배합 화면으로 복귀", async () => {

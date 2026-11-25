@@ -13,7 +13,8 @@
 > 1. `cook/app/android/app/build.gradle` 에서 `versionCode` 숫자를 1 올리고(1 → 2 → 3 …), `versionName` 도 알맞게 바꿉니다(예: `"1.0.0"` → `"1.0.1"`). **플레이는 이미 쓴 `versionCode` 를 거부합니다.**
 > 2. 그 변경을 **main 브랜치에 올립니다(push 또는 PR 병합).**
 > 3. GitHub → Actions → "Build 전자혀 Android AAB" 실행이 초록색 체크가 되면, 실행 화면 아래 Artifacts 의 `jeonjahyeo-aab` 를 받아 압축을 풀고 `app-release.aab` 를 플레이 콘솔에 새 버전으로 올립니다.
-> 4. 아래 8번·10번이 이 박스를 가리킵니다.
+> 4. `cook/dishes.js`(요리 데이터)나 `cook/index.html` 을 고쳤다면 `cook/sw.js` 맨 위 `CACHE` 버전 숫자도 1 올립니다(예: `jeonjahyeo-v17` → `jeonjahyeo-v18`). 안 올리면 이미 쓰던 사람 폰에 옛 요리 데이터가 남습니다.
+> 5. 아래 8번·10번이 이 박스를 가리킵니다.
 
 ## 0. 먼저 해 보기: 내 폰에 시험용 앱 깔기 (계정·이메일 없이 가능)
 
