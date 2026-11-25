@@ -2343,7 +2343,7 @@ function dishSteps(dish){
 function howToHtml(styleId,dish,serv){
   const lines=dishLines(styleId,dish,serv), st=dishSteps(dish);
   const h=dish.home;
-  const meta=h?`<div class="howto-meta">🍳 ${esc(levelText(h.level))} · ⏱ ${esc(h.time)} · ${esc(h.tools.join("·"))} 하나씩</div>`+(h.kidTip?`<div class="howto-kid"><b>👶 아이랑 먹는다면</b>${esc(h.kidTip)}</div>`:""):"";
+  const meta=h?`<div class="howto-meta">🍳 ${esc(levelText(h.level))} · ⏱ ${esc(h.time)} · ${esc(h.tools.join("·"))}만 있으면 돼요</div>`+(h.kidTip?`<div class="howto-kid"><b>👶 아이랑 먹는다면</b>${esc(h.kidTip)}</div>`:""):"";
   return `<h3>${esc(dish.emoji||"")} ${esc(dish.name)} · ${serv}인분</h3>`+meta+
     `<div class="howto-sec">재료 <small>(저울이 없으면 숟가락 양을 보세요)</small></div><ul class="howto-ing">${lines.map(l=>`<li><span>${esc(l.name)}</span><b>${l.spoon&&l.spoon!=="약간"?`${esc(l.spoon)} <small>${esc(l.qty)}</small>`:l.spoon==="약간"?`약간 <small>${esc(l.qty)}</small>`:esc(l.qty)}</b></li>`).join("")}</ul>`+
     `<div class="howto-sec">만드는 법</div><ol class="howto-steps">${st.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>`+
