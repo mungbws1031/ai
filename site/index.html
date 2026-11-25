@@ -70,6 +70,15 @@
   .block.soldout{ opacity:.4; } .block.soldout em{ color:var(--bad); }
   .block.g-VIP{ border-color:#e0a82e; } .block.g-R{ border-color:#e0667a; }
   .block.g-S{ border-color:#b06be6; } .block.g-A{ border-color:#4aa3df; } .block.g-B{ border-color:#8a94a6; }
+  /* 실제 좌석도형(기하) 배치 — 좌/중앙/우 */
+  .arena-geo{ display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:8px; justify-content:center; align-items:start; }
+  .arena-geo .block{ min-width:58px; padding:7px 5px; }
+  .arena-geo .block b{ font-size:12px; }
+  .ageo-left,.ageo-right{ display:flex; flex-direction:column; gap:7px; }
+  .ageo-center{ display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .ageo-floor{ display:grid; grid-template-columns:repeat(2,minmax(58px,1fr)); gap:7px; }
+  .ageo-front{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; }
+  .ageo-console{ font-size:10px; letter-spacing:2px; color:var(--muted); background:#0c0f1c; border:1px solid var(--line); border-radius:6px; padding:3px 12px; }
 
   /* 좌석 그리드 */
   .seatmap{ display:grid; gap:4px; justify-content:center; margin:0 auto 14px; max-width:100%; overflow-x:auto; }
@@ -258,7 +267,8 @@ function S(id,label,grade,r,c){ return {id,label,grade,rows:r,cols:c}; }
 function nseats(tier,grade,r,c,from,to){ const a=[]; for(let n=from;n<=to;n++) a.push(S(tier+n, `${tier} ${n}`, grade, r, c)); return a; }
 
 const VENUES = {
-  hwajung: { name:"고려대 화정체육관", note:"공식 좌석배치도(콘서트) 기준 · FLOOR+2층 · 약 4,350석", zones:[
+  hwajung: { name:"고려대 화정체육관", note:"공식 좌석배치도(콘서트) 기준 · FLOOR+2층 · 약 4,350석",
+    geo:{ left:["I","J","K","L"], right:["F","E","D","C"], floor:["F1","F2","F3","F4"], front:["M","N","A","B"], console:"CONSOLE" }, zones:[
     { band:"FLOOR (무대 앞)", secs:[ S("F1","F1","VIP",10,20), S("F2","F2","VIP",10,20), S("F3","F3","VIP",10,20), S("F4","F4","VIP",10,20) ] },
     { band:"2층 측면 상 (무대쪽)", secs:[ S("I","I","R",15,23), S("F","F","R",15,23) ] },
     { band:"2층 측면 중상", secs:[ S("J","J","S",13,20), S("E","E","S",13,20) ] },
@@ -589,18 +599,33 @@ function popCancellation(secId){
   }, win);
 }
 
+function blockHTML(s){
+  const rt=T.secMap[s.id]; const left=rt.total-rt.taken.size; const sold=left<=0;
+  return `<button id="blk-${s.id}" class="block g-${s.grade}${sold?' soldout':''}" ${sold?'disabled':''} onclick="openSection('${s.id}')">
+    <b>${s.label}</b><span>${GRADES[s.grade].name}</span><em>${sold?'매진':left}</em></button>`;
+}
 function renderOverview(){
   T.openSec=null;
   $("sectionDetail").classList.add("hidden");
   $("overview").classList.remove("hidden");
+  const g=T.venue.geo;
+  if(g){ // 실제 좌석도형 기하 배치 (무대 아래 중앙 FLOOR, 좌/우 측면, 아래 정면)
+    const col=ids=>ids.map(id=>T.secById[id]?blockHTML(T.secById[id]):"").join("");
+    $("bowl").innerHTML = `<div class="arena-geo">
+      <div class="ageo-left">${col(g.left||[])}</div>
+      <div class="ageo-center">
+        <div class="ageo-floor">${col(g.floor||[])}</div>
+        ${g.console?`<div class="ageo-console">${g.console}</div>`:``}
+        <div class="ageo-front">${col(g.front||[])}</div>
+      </div>
+      <div class="ageo-right">${col(g.right||[])}</div>
+    </div>`;
+    return;
+  }
   const bands=T.venue.zones;
   $("bowl").innerHTML = bands.map((z,idx)=>{
     const w = Math.min(100, 52 + idx*16); // 무대에서 멀어질수록 넓어지는 U자 보울
-    const blocks=z.secs.map(s=>{
-      const rt=T.secMap[s.id]; const left=rt.total-rt.taken.size; const sold=left<=0;
-      return `<button id="blk-${s.id}" class="block g-${s.grade}${sold?' soldout':''}" ${sold?'disabled':''} onclick="openSection('${s.id}')">
-        <b>${s.label}</b><span>${GRADES[s.grade].name}</span><em>${sold?'매진':left}</em></button>`;
-    }).join("");
+    const blocks=z.secs.map(s=>blockHTML(s)).join("");
     return `<div class="zoneband"><div class="zonelabel">${z.band}</div>
       <div class="blocks" style="max-width:${w}%;margin:0 auto">${blocks}</div></div>`;
   }).join("");
