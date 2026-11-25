@@ -78,11 +78,17 @@ test("만드는 법 재료에 저울 없이 쓸 숟가락 양이 함께 나온�
   assert.ok(t.includes("400g"), "주재료는 g/개 그대로: " + t);
 }));
 
+async function passPrep(page) {
+  for (const c of await page.locator("#dishSheet .cook-prep input").all()) await c.check();
+  await page.click('#dishSheet [data-ck="prepdone"]');
+}
+
 test("요리 모드: 한 단계씩 넘기고, 타이머가 끝나면 알리고, 마지막에 맛보기 처방이 나온다", () => withApp(async page => {
   await page.click(".scard:has-text('기름떡볶이맛')");
   await page.click("text=살 재료 · 만드는 법");
   await page.click("#dishSheet .dish-how");
   await page.click("#dishSheet .dish-cook");
+  await passPrep(page);
   assert.ok((await page.innerText("#dishSheet .cook-prog")).includes("1 / 5"));
   assert.ok(await page.isDisabled('#dishSheet [data-ck="prev"]'));
   // 1단계 "5분 불리고" → 타이머 버튼
@@ -117,6 +123,7 @@ test("요리 모드에서 '← 만드는 법'으로 돌아가고, 장바구니�
   await page.click('.nav button[data-view="cart"]');
   await page.click('#cartCook button[data-cook="기름떡볶이"]');
   await page.click("#dishSheet .dish-cook");
+  await passPrep(page);
   assert.ok((await page.innerText("#dishSheet .cook-prog")).includes("1 / 5"));
   await page.click('#dishSheet [data-ck="exit"]');
   assert.ok((await page.innerText("#dishSheet")).includes("기름떡볶이 · 2인분"));
@@ -140,6 +147,7 @@ test("양념 섞는 단계는 식용유를 빼라고 하고, 요리 모드에서
   await page.click("text=살 재료 · 만드는 법");
   await page.click("#dishSheet .dish-how");
   await page.click("#dishSheet .dish-cook");
+  await passPrep(page);
   assert.strictEqual(await page.locator("#dishSheet .cook-seas").count(), 0, "1단계엔 양념 목록 없음");
   await page.click('#dishSheet [data-ck="next"]');
   const t = await page.innerText("#dishSheet .cook-seas");

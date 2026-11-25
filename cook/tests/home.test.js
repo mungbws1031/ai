@@ -141,3 +141,120 @@ test("검색어 목록이 모두 찾힌다", () => withApp(async page => {
   }
   assert.deepStrictEqual(miss, []);
 }));
+
+/* ── Task 3: 준비 체크 · 칭찬 · 아이 반응 ── */
+async function startCook(page, name) {
+  await page.fill("#dishSearch", name);
+  await page.click(`#dishResults [data-dish="${name}"]`);
+  await page.click("#dishSheet .dish-cook");
+}
+async function passPrep(page) {
+  for (const c of await page.locator("#dishSheet .cook-prep input").all()) await c.check();
+  await page.click('#dishSheet [data-ck="prepdone"]');
+}
+async function toDone(page, name) {
+  await startCook(page, name);
+  await passPrep(page);
+  const n = await page.evaluate(n => dishSteps(findDish(n).dish).steps.length, name);
+  for (let i = 0; i < n; i++) await page.click('#dishSheet [data-ck="next"]');
+}
+
+test("준비 단계: 모두 체크하기 전엔 못 넘어가고, 체크하면 1 / N, 다시 열면 초기화", () => withApp(async page => {
+  await startCook(page, "된장찌개");
+  assert.ok((await page.innerText("#dishSheet")).includes("불 켜기 전에, 이것만 준비해요"));
+  assert.ok((await page.innerText("#dishSheet .cook-prog")).includes("준비"));
+  const boxes = page.locator("#dishSheet .cook-prep input[type=checkbox]");
+  assert.ok((await boxes.count()) >= 3);
+  assert.ok(await page.isDisabled('#dishSheet [data-ck="prepdone"]'));
+  await boxes.first().check();
+  assert.ok(await page.isDisabled('#dishSheet [data-ck="prepdone"]'));
+  await passPrep(page);
+  const n = await page.evaluate(() => dishSteps(findDish("된장찌개").dish).steps.length);
+  assert.ok((await page.innerText("#dishSheet .cook-prog")).includes(`1 / ${n}`));
+  await page.click('#dishSheet [data-ck="exit"]');
+  await page.click("#dishSheet .dish-cook");
+  assert.strictEqual(await page.locator("#dishSheet .cook-prep input:checked").count(), 0);
+  assert.ok(await page.isDisabled('#dishSheet [data-ck="prepdone"]'));
+}));
+
+test("요리 모드: 우리 집 요리도 양념 단계에서 숟가락 양을 보여 준다", () => withApp(async page => {
+  const idx = await page.evaluate(() => dishSteps(findDish("된장찌개").dish).steps.findIndex(t => /양념|된장/.test(t)));
+  await startCook(page, "된장찌개");
+  await passPrep(page);
+  let found = "";
+  const n = await page.evaluate(() => dishSteps(findDish("된장찌개").dish).steps.length);
+  for (let i = 0; i < n; i++) {
+    if (await page.locator("#dishSheet .cook-seas").count()) found += await page.innerText("#dishSheet .cook-seas");
+    if (i < n - 1) await page.click('#dishSheet [data-ck="next"]');
+  }
+  assert.ok(idx >= 0 && /큰술|작은술|컵/.test(found), found);
+}));
+
+test("끝나면 칭찬 문구 + 아이 반응 버튼 3개", () => withApp(async page => {
+  await toDone(page, "된장찌개");
+  const t = await page.innerText("#dishSheet");
+  assert.ok(t.includes("끝까지 해냈어요! 오늘 한 끼, 정말 멋졌어요."));
+  assert.deepStrictEqual(await page.locator("#dishSheet [data-kid]").evaluateAll(a => a.map(x => x.dataset.kid)), ["good", "meh", "no"]);
+}));
+
+test("아이 반응 good → 새로 연 앱(같은 storage)의 빈 검색에 우리 집 성공 요리로 보인다", async () => {
+  const { browser, page } = await openApp({ device: "Pixel 7" });
+  page.setDefaultTimeout(4000);
+  try {
+    await toDone(page, "된장찌개");
+    await page.click('#dishSheet [data-kid="good"]');
+    assert.ok((await page.innerText("#toastMsg")).includes("우리 집 성공 요리에 담았어요"));
+    assert.strictEqual(await page.locator("#dishSheet.show").count(), 0);
+    const saved = await page.evaluate(() => localStorage.getItem("cj_kid_log"));
+    const { browser: b2, page: p2 } = await openApp({ device: "Pixel 7", storage: { cj_kid_log: saved } });
+    try {
+      const t = await p2.innerText("#dishResults");
+      assert.ok(t.includes("🏆 우리 집 성공 요리") && t.includes("된장찌개"), t);
+      assert.deepStrictEqual(p2.__errors, []);
+    } finally { await b2.close(); }
+    assert.deepStrictEqual(page.__errors, []);
+  } finally { await browser.close(); }
+});
+
+test("아이 반응 meh → 격려 토스트", () => withApp(async page => {
+  await toDone(page, "된장찌개");
+  await page.click('#dishSheet [data-kid="meh"]');
+  assert.ok((await page.innerText("#toastMsg")).includes("괜찮아요, 조금씩 늘어날 거예요"));
+  assert.strictEqual(await page.locator("#dishSheet.show").count(), 0);
+}));
+
+test("아이 반응 no → 위로 문구 + 아이 팁 + 처방 + 추천 요리 3개", () => withApp(async page => {
+  await toDone(page, "된장찌개");
+  await page.click('#dishSheet [data-kid="no"]');
+  const t = await page.innerText("#cookKid");
+  assert.ok(t.includes("속상하셨죠. 아이가 안 먹는 건 요리 실력 탓이 아니에요. 아이 입맛은 같은 음식을 여러 번 만나야 열려요. 다음엔 이렇게 해 볼까요?"), t);
+  assert.ok(t.includes("처방"));
+  const kt = await page.evaluate(() => findDish("된장찌개").dish.home.kidTip);
+  if (kt) assert.ok(t.includes(kt.slice(0, 10)));
+  assert.strictEqual(await page.locator("#cookKid [data-dish]").count(), 3);
+  await page.click("#cookKid [data-dish] >> nth=0");
+  assert.ok((await page.innerText("#dishSheet")).includes("만드는 법"));
+}));
+
+test("localStorage 쓰기가 실패해도 오류 없이 동작한다", () => withApp(async page => {
+  await page.evaluate(() => { Storage.prototype.setItem = () => { throw new Error("quota"); }; });
+  await toDone(page, "된장찌개");
+  await page.click('#dishSheet [data-kid="good"]');
+  assert.strictEqual(await page.locator("#dishSheet.show").count(), 0);
+}));
+
+test("컵 단위는 0.5컵 미만이면 큰술로 보여 준다", () => withApp(async page => {
+  const r = await page.evaluate(() => homeLines({ ing: [{ n: "육수", a: 0.5, u: "컵" }, { n: "물", a: 2, u: "컵" }, { n: "x", a: 0.01, u: "컵" }] }, 1).map(l => l.qty));
+  assert.deepStrictEqual(r, ["3.5큰술", "1컵", "약간"]);
+}));
+
+test("아이가 잘 먹는 목록에서 '← 전체 보기'로 돌아오고, 맛 화면에 다시 오면 초기화된다", () => withApp(async page => {
+  await page.click(".df-kid");
+  assert.ok((await page.innerText("#dishResults")).includes("아이가 잘 먹는 요리"));
+  await page.click(".df-all");
+  assert.ok((await page.innerText("#dishResults")).includes("처음이라면"));
+  await page.click(".df-kid");
+  await page.click('.nav button[data-view="cart"]');
+  await page.click('.nav button[data-view="sense"]');
+  assert.ok((await page.innerText("#dishResults")).includes("처음이라면"));
+}));
