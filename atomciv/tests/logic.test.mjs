@@ -538,3 +538,31 @@ test('review: hard-mode hint counts survive the save file', async () => {
   const r = await run(A => A.importSave(A.exportSave({ found: ['H2'], mode: 'hard', hintUsed: { H2O: 3, junk: 'x' } })).hintUsed);
   assert.deepEqual(r, { H2O: 3 });
 });
+
+test('molecule pack 3: 22 more molecules, real builds are recognised', async () => {
+  const cases = [
+    [['C', 'C', 'H', 'H', 'H', 'H', 'H', 'H'], [[0, 1], [0, 2], [0, 3], [0, 4], [1, 5], [1, 6], [1, 7]], '에테인'],
+    [['C', 'Cl', 'Cl', 'F', 'F'], [[0, 1], [0, 2], [0, 3], [0, 4]], '프레온'],
+    [['K', 'O', 'H'], [[0, 1], [1, 2]], '수산화칼륨'],
+    [['C', 'S', 'S'], [[0, 1], [0, 1], [0, 2], [0, 2]], '이황화탄소'],
+    [['C', 'C', 'C', 'C', 'C', 'C', 'H', 'H', 'H', 'H', 'H', 'H'],
+      [[0, 1], [0, 1], [1, 2], [2, 3], [2, 3], [3, 4], [4, 5], [4, 5], [5, 0], [0, 6], [1, 7], [2, 8], [3, 9], [4, 10], [5, 11]], '벤젠'],
+    [['Na', 'O', 'Na'], [[0, 1], [1, 2]], '산화나트륨'],
+  ];
+  for (const [atoms, bonds, name] of cases) {
+    const r = await run((A, s) => {
+      let g = { atoms: s.atoms.map((sym, i) => ({ id: 'a' + i, sym })), bonds: [] };
+      for (const [x, y] of s.bonds) g = A.addBond(g, 'a' + x, 'a' + y);
+      return A.judge(g).map(j => ({ status: j.status, name: j.molecule && j.molecule.name }));
+    }, { atoms, bonds });
+    assert.equal(r.length, 1, name); assert.equal(r[0].status, 'known', name); assert.match(r[0].name, new RegExp(name), name);
+  }
+  // 모든 분자는 손을 전부 잡을 수 있어야 한다 (손 합이 짝수, 하나로 이어질 만큼 충분)
+  const bad = await run(A => Object.keys(A.MOLECULES).filter(k => {
+    const parts = [...k.matchAll(/([A-Z][a-z]?)(\d*)/g)].map(([, s, n]) => [s, +(n || 1)]);
+    const n = parts.reduce((t, [, c]) => t + c, 0), hands = parts.reduce((t, [s, c]) => t + A.ATOMS[s].hands * c, 0);
+    return n > 1 && (hands % 2 || hands / 2 < n - 1);
+  }));
+  assert.deepEqual(bad, []);
+  assert.ok(await run(A => Object.keys(A.MOLECULES).length) >= 68);
+});
