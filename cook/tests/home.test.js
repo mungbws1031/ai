@@ -96,3 +96,48 @@ test("placeholder·sub 문구", () => withApp(async page => {
   assert.strictEqual(await page.getAttribute("#dishSearch", "placeholder"), "뭐 해 먹을까요? 요리 이름이나 재료를 쳐 보세요");
   assert.strictEqual((await page.innerText("#view-sense .hd .sub")).trim(), "처음이어도 괜찮아요. 하나씩 같이 해요");
 }));
+
+/* ── Task 2: 집밥 요리 약 100개 ── */
+async function homeList() { let v; await withApp(async page => { v = await page.evaluate(() => HOME_DISHES); }); return v; }
+
+test("요리 사전은 95개 이상, 분류별 최소 개수", async () => {
+  const list = await homeList();
+  assert.ok(list.length >= 95, "총 " + list.length);
+  const min = { rice: 14, soup: 14, stir: 19, side: 14, noodle: 9, snack: 9, egg: 7, western: 6 };
+  const cnt = {};
+  for (const h of list) cnt[h.cat] = (cnt[h.cat] || 0) + 1;
+  for (const c in min) assert.ok((cnt[c] || 0) >= min[c], c + " " + (cnt[c] || 0) + "개");
+});
+
+test("단계에 나오는 식용유·버터·소금·참기름·설탕이 재료에 있다", async () => {
+  const bad = [];
+  for (const h of await homeList()) for (const w of ["식용유", "버터", "소금", "참기름", "설탕"])
+    if (h.steps.some(s => s.includes(w)) && !h.ing.some(i => i.n.includes(w))) bad.push(h.name + ":" + w);
+  assert.deepStrictEqual(bad, []);
+});
+
+test("단계는 4~6개, 아이 팁은 모두 있다", async () => {
+  const bad = (await homeList()).filter(h => h.steps.length < 4 || h.steps.length > 6 || h.kidTip.trim().length < 10).map(h => h.name);
+  assert.deepStrictEqual(bad, []);
+});
+
+test("고기·닭·해산물 요리는 속까지 익었는지 확인한다", async () => {
+  const raw = /고기|돼지|삼겹|목살|갈비|닭|오리|새우|오징어|고등어|코다리|동태|바지락|꼬막/;
+  const bad = (await homeList()).filter(h => h.ing.some(i => raw.test(i.n)) && !h.steps.some(s => s.includes("속까지"))).map(h => h.name);
+  assert.deepStrictEqual(bad, []);
+});
+
+test("매운 요리는 아이용(kid)이 아니고 아이 몫 덜기 팁이 있다", async () => {
+  const hot = /고춧가루|고추장|청양고추/;
+  const bad = (await homeList()).filter(h => h.ing.some(i => hot.test(i.n)) && (h.kid || !h.kidTip.includes("덜어"))).map(h => h.name);
+  assert.deepStrictEqual(bad, []);
+});
+
+test("검색어 목록이 모두 찾힌다", () => withApp(async page => {
+  const miss = [];
+  for (const q of ["된장찌개", "김치찌개", "미역국", "계란말이", "제육", "잡채", "라면", "카레", "떡국", "불고기", "오므라이스", "볶음밥", "비빔밥", "감자조림", "콩나물무침"]) {
+    await page.fill("#dishSearch", q);
+    if (!(await page.$$("#dishResults .df-item")).length) miss.push(q);
+  }
+  assert.deepStrictEqual(miss, []);
+}));
