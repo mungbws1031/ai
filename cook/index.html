@@ -379,6 +379,11 @@
   .df-list{display:flex;flex-wrap:wrap;gap:7px}
   .df-item{font-family:var(--body);font-size:14px;font-weight:700;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left}
   .df-item small{display:block;font-size:11px;font-weight:600;color:var(--faint);margin-top:2px}
+  .howto-meta{font-size:12.5px;font-weight:700;color:var(--muted);margin:-2px 0 8px}
+  .howto-kid{font-size:13px;line-height:1.55;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:6px 0 4px}
+  .howto-kid b{display:block;margin-bottom:3px}
+  .df-kid,.df-web{font-family:var(--body);font-size:13px;font-weight:800;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:9px 12px;cursor:pointer;margin:10px 0 0}
+  .df-web{margin-top:8px}
   .df-none{font-size:13px;color:var(--muted);background:var(--surface);border-radius:12px;padding:12px}
   .sense-or{margin-top:14px}
   .toastmsg{position:fixed;left:50%;bottom:calc(var(--navh) + env(safe-area-inset-bottom) + 64px);transform:translateX(-50%);background:#2B2620;color:#fff;border-radius:99px;padding:9px 16px;font-size:13px;font-weight:700;z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;max-width:90%}
@@ -660,11 +665,11 @@
       <div class="kicker">맛 표현</div>
       <div class="row">
         <div class="avatar" style="background:linear-gradient(135deg,#9B59B6,#5A1E80)">맛</div>
-        <div><div class="name">맛 고르기</div><div class="sub">요리를 찾거나, 땡기는 맛을 골라 보세요</div></div>
+        <div><div class="name">맛 고르기</div><div class="sub">처음이어도 괜찮아요. 하나씩 같이 해요</div></div>
       </div>
     </div>
     <div class="dish-find">
-      <input type="search" id="dishSearch" placeholder="🔍 요리 이름이나 재료로 찾기 (예: 떡볶이, 닭, 계란)" aria-label="요리 찾기" autocomplete="off" />
+      <input type="search" id="dishSearch" placeholder="뭐 해 먹을까요? 요리 이름이나 재료를 쳐 보세요" aria-label="요리 찾기" autocomplete="off" />
       <div id="dishResults"></div>
     </div>
     <div class="savedhdr sense-or">또는 땡기는 맛으로 고르기</div>
@@ -704,6 +709,7 @@
   <div class="dishsheet-bg" id="dishSheet"></div>
 </div>
 
+<script src="./dishes.js"></script>
 <script>
 "use strict";
 /* ════════════════════════════════════════════════════════════════════
@@ -2127,7 +2133,18 @@ const TASTE_DISHES={
   ]
 };
 
+/* 요리 사전(HOME_DISHES): 2인분 기준 → 인분 수만큼. 숟가락·컵은 0.5 단위로 */
+function homeLines(h,servings){
+  return h.ing.map(i=>{
+    if(i.a==null) return {name:i.n, qty:i.t||"약간"};
+    let v=i.a*servings/2;
+    if(["큰술","작은술","컵"].includes(i.u)){ v=Math.round(v*2)/2; if(v===0) return {name:i.n, qty:"약간"}; }
+    return {name:i.n, qty:fmtNum(v)+i.u};
+  });
+}
+function levelText(l){ return ["계란 프라이 할 줄 알면 OK","라면 끓일 줄 알면 OK","한두 번 해 보면 OK"][(l||1)-1]||""; }
 function dishLines(styleId,dish,servings){
+  if(dish.home) return homeLines(dish.home,servings);
   if(dish.recipe){
     const r=RECIPES.find(x=>x.name===dish.recipe); if(!r) return [];
     return recipeLines(r,servings/recipeServes(r));
@@ -2263,10 +2280,13 @@ function saveCookServ(name,serv){ try{ const o=loadCookServ(); o[name]=serv; loc
 /* 요리 이름 → {styleId, dish}. 맛 카드 요리가 없으면 요리 레시피에서 찾는다. */
 function findDish(name){
   for(const sid in TASTE_DISHES){ const d=TASTE_DISHES[sid].find(x=>x.name===name); if(d) return {styleId:sid,dish:d}; }
+  const h=HOME_DISHES.find(x=>x.name===name);
+  if(h) return {styleId:null,dish:{name:h.name,emoji:h.emoji,home:h,main:[]}};
   const r=RECIPES.find(x=>x.name===name);
   return r?{styleId:null,dish:{name:r.name,emoji:r.emoji,recipe:r.name,main:[]}}:null;
 }
 function dishSteps(dish){
+  if(dish.home) return {steps:dish.home.steps,tip:dish.home.tip||""};
   if(dish.steps){
     // 식용유를 따로 쓰는 요리면, 양념 재료를 처음 다루는 단계에 "식용유는 빼고"를 붙인다
     const oilUsed=dish.steps.some(t=>/식용유/.test(t));
@@ -2278,7 +2298,9 @@ function dishSteps(dish){
 }
 function howToHtml(styleId,dish,serv){
   const lines=dishLines(styleId,dish,serv), st=dishSteps(dish);
-  return `<h3>${esc(dish.emoji||"")} ${esc(dish.name)} · ${serv}인분</h3>`+
+  const h=dish.home;
+  const meta=h?`<div class="howto-meta">🍳 ${esc(levelText(h.level))} · ⏱ ${esc(h.time)} · ${esc(h.tools.join("·"))} 하나씩</div>`+(h.kidTip?`<div class="howto-kid"><b>👶 아이랑 먹는다면</b>${esc(h.kidTip)}</div>`:""):"";
+  return `<h3>${esc(dish.emoji||"")} ${esc(dish.name)} · ${serv}인분</h3>`+meta+
     `<div class="howto-sec">재료 <small>(저울이 없으면 숟가락 양을 보세요)</small></div><ul class="howto-ing">${lines.map(l=>`<li><span>${esc(l.name)}</span><b>${l.spoon&&l.spoon!=="약간"?`${esc(l.spoon)} <small>${esc(l.qty)}</small>`:l.spoon==="약간"?`약간 <small>${esc(l.qty)}</small>`:esc(l.qty)}</b></li>`).join("")}</ul>`+
     `<div class="howto-sec">만드는 법</div><ol class="howto-steps">${st.steps.map(t=>`<li>${esc(t)}</li>`).join("")}</ol>`+
     `<p class="howto-tip">💡 ${esc(st.tip||"양념은 80%만 먼저 넣고, 맛을 보며 조금씩 더하세요.")}</p>`;
@@ -2305,20 +2327,27 @@ function allDishes(){
     out.push({name:d.name,emoji:d.emoji||"",words:[d.name,...(d.main||[]).map(m=>m.name),...(r?r.ing:[])].join(" "),easy:true}); }
   RECIPES.forEach(r=>{ if(seen.has(r.name)) return; seen.add(r.name);
     out.push({name:r.name,emoji:r.emoji||"",words:[r.name,...r.ing].join(" "),easy:/★☆☆/.test(r.diff||""),time:r.time}); });
+  HOME_DISHES.forEach(h=>{ if(seen.has(h.name)) return; seen.add(h.name);
+    out.push({name:h.name,emoji:h.emoji||"",words:[h.name,...h.alias,...h.ing.map(i=>i.n)].join(" "),easy:h.level===1,time:h.time,kid:h.kid}); });
   return out;
 }
 const _norm=t=>String(t||"").replace(/\s+/g,"").toLowerCase();
+let _kidList=false;
 function renderDishSearch(){
-  const q=_norm($("dishSearch").value), list=allDishes();
-  let hits, head;
-  if(!q){ hits=list.filter(d=>d.easy).slice(0,8); head=`<div class="df-head">🍳 처음이라면 이런 요리부터</div>`; }
+  const raw=$("dishSearch").value.trim(), q=_norm(raw), list=allDishes();
+  let hits, head, pre="";
+  if(!q&&_kidList){ hits=list.filter(d=>d.kid); head=`<div class="df-head">👶 아이가 잘 먹는 요리 ${hits.length}개</div>`; }
+  else if(!q){ hits=list.filter(d=>d.easy).slice(0,8); pre=`<button class="df-kid">👶 아이가 잘 먹는</button>`; head=`<div class="df-head">🍳 처음이라면 이런 요리부터</div>`; }
   else { hits=list.filter(d=>_norm(d.words).includes(q)); hits.sort((a,b)=>(_norm(b.name).includes(q))-(_norm(a.name).includes(q)));
     head=`<div class="df-head">“${esc($("dishSearch").value.trim())}” 요리 ${hits.length}개</div>`; }
-  $("dishResults").innerHTML=head+(hits.length?`<div class="df-list">${hits.map(d=>`<button class="df-item" data-dish="${escAttr(d.name)}">${esc(d.emoji)} ${esc(d.name)}${d.time?`<small>${esc(d.time)}</small>`:""}</button>`).join("")}</div>`
-    :`<div class="df-none">찾는 요리가 없어요. 재료 이름(예: 돼지고기, 두부)으로 찾아보거나, 아래에서 땡기는 맛을 골라 보세요.</div>`);
+  $("dishResults").innerHTML=pre+head+(hits.length?`<div class="df-list">${hits.map(d=>`<button class="df-item" data-dish="${escAttr(d.name)}">${esc(d.emoji)} ${esc(d.name)}${d.time?`<small>${esc(d.time)}</small>`:""}</button>`).join("")}</div>`
+    :`<div class="df-none">아직 이 요리는 없어요. 비슷한 요리를 골라 보거나, 인터넷에서 레시피를 찾아볼 수 있어요.</div><button class="df-web">🌐 인터넷에서 “${esc(raw)}” 레시피 찾기</button>`);
 }
-$("dishSearch").addEventListener("input",renderDishSearch);
-$("dishResults").addEventListener("click",e=>{ const b=e.target.closest("[data-dish]"); if(b) openHowTo(b.dataset.dish); });
+$("dishSearch").addEventListener("input",()=>{ _kidList=false; renderDishSearch(); });
+$("dishResults").addEventListener("click",e=>{
+  if(e.target.closest(".df-kid")){ _kidList=true; renderDishSearch(); return; }
+  if(e.target.closest(".df-web")){ openExternal("https://www.10000recipe.com/recipe/list.html?q="+encodeURIComponent($("dishSearch").value.trim())); return; }
+  const b=e.target.closest("[data-dish]"); if(b) openHowTo(b.dataset.dish); });
 renderDishSearch();
 function openDishPicker(styleId){
   const dishes=TASTE_DISHES[styleId]; if(!dishes||!dishes.length) return;

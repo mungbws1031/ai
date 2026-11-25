@@ -46,7 +46,7 @@ test("재료로 찾으면 그 재료가 들어간 요리가 나온다 (맛 카�
 
 test("없는 요리는 안내 문구를 보여 준다", () => withApp(async page => {
   await page.fill("#dishSearch", "랍스터테르미도르");
-  assert.ok((await page.innerText("#dishResults")).includes("찾는 요리가 없어요"));
+  assert.ok((await page.innerText("#dishResults")).includes("아직 이 요리는 없어요"));
 }));
 
 test("맛 카드 상세의 요리 이름도 바로 만드는 법으로 열린다", () => withApp(async page => {

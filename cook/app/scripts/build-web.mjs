@@ -10,6 +10,7 @@ const out = join(here, "..", "www");
 const FILES = [
   "index.html",
   "privacy.html",
+  "dishes.js",
   "manifest.webmanifest",
   "icon-192.png",
   "icon-512.png",
