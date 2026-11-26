@@ -259,6 +259,8 @@ const GRADES = {
   A:  { name:"A석",   price:110000, color:"#4aa3df" },
   B:  { name:"B석",   price:88000,  color:"#8a94a6" },
 };
+// 공연장별 등급 재정의(이름/가격/색)가 있으면 우선 적용
+function GR(k){ const g=(typeof T!=="undefined")&&T.venue&&T.venue.grades; return (g&&g[k])||GRADES[k]; }
 const GRADE_RANK = { VIP:0, R:1, S:2, A:3, B:4 };
 
 //// 공연장 좌석도 (실제 구조 참고 · 근사 배치, 좌석수 확대) ////
@@ -267,14 +269,12 @@ function S(id,label,grade,r,c){ return {id,label,grade,rows:r,cols:c}; }
 function nseats(tier,grade,r,c,from,to){ const a=[]; for(let n=from;n<=to;n++) a.push(S(tier+n, `${tier} ${n}`, grade, r, c)); return a; }
 
 const VENUES = {
-  hwajung: { name:"고려대 화정체육관", note:"공식 좌석배치도(콘서트) 기준 · FLOOR+2층 · 4,350석",
-    geo:{ left:["I","J","K","L"], right:["F","E","D","C"], floor:["F1","F2","F3","F4"], front:["M","N","A","B"], console:"CONSOLE" }, zones:[
+  hwajung: { name:"고려대 화정체육관", note:"콘서트 좌석배치도 · FLOOR+2층 · 전석 110,000 / 시야제한석 99,000",
+    grades:{ VIP:{ name:"VIP석", price:110000, color:"#74c7ec" }, A:{ name:"일반석", price:110000, color:"#1f9d57" }, B:{ name:"시야제한석", price:99000, color:"#e58aad" } },
+    geo:{ left:["J","K","L"], right:["E","D","C"], floor:["F1","F2","F3","F4"], front:["M","N","A","B"], console:"CONSOLE" }, zones:[
     { band:"FLOOR (무대 앞)", secs:[ S("F1","F1","VIP",10,20), S("F2","F2","VIP",10,20), S("F3","F3","VIP",10,20), S("F4","F4","VIP",14,14) ] },
-    { band:"2층 측면 상 (무대쪽)", secs:[ S("I","I","R",12,29), S("F","F","R",14,25) ] },
-    { band:"2층 측면 중상", secs:[ S("J","J","S",13,20), S("E","E","S",13,20) ] },
-    { band:"2층 측면 중하", secs:[ S("K","K","S",17,22), S("D","D","S",15,18) ] },
-    { band:"2층 코너 (하)", secs:[ S("L","L","A",14,21), S("C","C","A",15,20) ] },
-    { band:"2층 무대 정면", secs:[ S("M","M","A",10,29), S("N","N","A",13,20), S("A","A","A",13,20), S("B","B","A",16,18) ] },
+    { band:"2층 일반석", secs:[ S("K","K","A",17,22), S("L","L","A",14,21), S("D","D","A",15,18), S("M","M","A",10,29), S("N","N","A",13,20), S("A","A","A",13,20), S("B","B","A",16,18) ] },
+    { band:"2층 시야제한석", secs:[ S("J","J","B",13,20), S("E","E","B",13,20), S("C","C","B",15,20) ] },
   ]},
   jamsil: { name:"잠실실내체육관", note:"체조경기장형 · 플로어+1·2·3층", zones:[
     { band:"플로어", secs:[ S("FA","플로어 A","VIP",12,16), S("FB","플로어 B","VIP",12,16), S("FC","플로어 C","R",12,16) ] },
@@ -546,7 +546,7 @@ function buildVenue(){
     ln.innerHTML = `✅ 보안문자 한 번에 통과! 남은 좋은 자리를 빠르게 잡으세요.`;
   }
   $("seatNeed").textContent = `${T.need}석 선택`;
-  $("gradeLegend").innerHTML = Object.values(GRADES).map(g=>
+  $("gradeLegend").innerHTML = Object.values(T.venue.grades||GRADES).map(g=>
     `<span><i style="background:${g.color}"></i>${g.name} ${g.price.toLocaleString()}원</span>`).join("");
   T.ticketingMode=false; $("ticketBanner").classList.add("hidden");
   renderOverview(); updatePicked(); updateRemain();
@@ -595,8 +595,8 @@ function popCancellation(secId){
 
 function blockHTML(s){
   const rt=T.secMap[s.id]; const left=rt.total-rt.taken.size; const sold=left<=0;
-  return `<button id="blk-${s.id}" class="block g-${s.grade}${sold?' soldout':''}" ${sold?'disabled':''} onclick="openSection('${s.id}')">
-    <b>${s.label}</b><span>${GRADES[s.grade].name}</span><em>${sold?'매진':left}</em></button>`;
+  return `<button id="blk-${s.id}" class="block g-${s.grade}${sold?' soldout':''}" style="border-color:${GR(s.grade).color}" ${sold?'disabled':''} onclick="openSection('${s.id}')">
+    <b>${s.label}</b><span>${GR(s.grade).name}</span><em>${sold?'매진':left}</em></button>`;
 }
 function renderOverview(){
   T.openSec=null;
@@ -638,13 +638,14 @@ function openSection(secId){
   T.openSec=secId;
   $("overview").classList.add("hidden");
   $("sectionDetail").classList.remove("hidden");
-  $("secTitle").innerHTML = `<b>${T.venue.name}</b> · ${s.label} <span style="color:${GRADES[s.grade].color}">${GRADES[s.grade].name} ${GRADES[s.grade].price.toLocaleString()}원</span> · ${s.rows}열 ${s.cols}석`;
+  $("secTitle").innerHTML = `<b>${T.venue.name}</b> · ${s.label} <span style="color:${GR(s.grade).color}">${GR(s.grade).name} ${GR(s.grade).price.toLocaleString()}원</span> · ${s.rows}열 ${s.cols}석`;
   const grid=$("seatGrid"); grid.style.gridTemplateColumns=`repeat(${s.cols},18px)`; grid.innerHTML="";
   const frag=document.createDocumentFragment();
   for(let i=0;i<rt.total;i++){
     const d=document.createElement("div");
     const pid=secId+"#"+i;
     d.className="seat g-"+s.grade+(rt.taken.has(i)?" taken":"")+(T.picked.has(pid)?" sel":"");
+    d.style.background=GR(s.grade).color;
     d.dataset.sec=secId; d.dataset.i=i;
     d.title=`${s.label} ${rowLetter(Math.floor(i/s.cols))}열 ${i%s.cols+1}번`;
     d.onclick=()=>pickSeat(secId,i,d);
@@ -746,7 +747,7 @@ function goPay(){
   $("ticketBanner").classList.add("hidden");
   T.t_seatDone=performance.now();
   let total=0;
-  const labels=[...T.picked].map(pid=>{ const sp=T.secById[pid.split("#")[0]]; total+=GRADES[sp.grade].price; return seatLabel(pid); });
+  const labels=[...T.picked].map(pid=>{ const sp=T.secById[pid.split("#")[0]]; total+=GR(sp.grade).price; return seatLabel(pid); });
   $("paySummary").innerHTML=`
     <div class="stat"><span>공연장</span><b>${T.venue.name}</b></div>
     <div class="stat"><span>좌석</span><b>${labels.join("<br>")}</b></div>
