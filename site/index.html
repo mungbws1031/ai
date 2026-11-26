@@ -547,7 +547,7 @@ function buildVenue(){
   const realElapsed = Math.max(0.3, (performance.now() - (T.openEnabledAt||performance.now()))/1000);
   const elapsed = (realElapsed + misses*PENALTY) * (T.diff.preStart||1);
   T.misses = misses; T.lateSec = misses*PENALTY;
-  const tauBase=[3.0, 6, 10, 16, 26];     // VIP,R,S,A,B 등급별 매진 시간상수(초)
+  const tauBase=[3.0, 6, 10, 16, 48];     // VIP,R,S,A,B 등급별 매진 시간상수(초) — 시야제한석(B)은 훨씬 늦게
   const mul=T.diff.tauMul||1;
   T.allSecs.forEach(s=>{
     const rt=T.secMap[s.id];
@@ -707,10 +707,14 @@ function rivalGrab(){
   let avail=T.allSecs.filter(s=> freeInSec(s.id)>0);
   if(!avail.length){ clearInterval(T.seatTimer); updateRemain(); return; }
   avail.sort((a,b)=> GRADE_RANK[a.grade]-GRADE_RANK[b.grade]);
+  const worstRank=Math.max(...T.allSecs.map(s=>GRADE_RANK[s.grade])); // 시야제한석 등 최하 등급
   for(let k=0;k<T.diff.batch;k++){
     const a2=avail.filter(s=> freeInSec(s.id)>0);
     if(!a2.length) break;
-    const s=a2[Math.floor(Math.pow(Math.random(),2.2)*a2.length)]; // 상위 등급에 치우침
+    // 상위 등급이 남아 있는 동안엔 시야제한석(최하 등급)은 거의 건드리지 않음(가끔 10%만 포함)
+    const better=a2.filter(s=> GRADE_RANK[s.grade]<worstRank);
+    const pool=(better.length && Math.random()>0.1) ? better : a2;
+    const s=pool[Math.floor(Math.pow(Math.random(),2.2)*pool.length)]; // 상위 등급에 치우침
     const i=randomFreeSeat(s.id); if(i<0) continue;
     T.secMap[s.id].taken.add(i);
     if(T.openSec===s.id){ const cell=cellEl(s.id,i);
@@ -744,7 +748,7 @@ function pickSeat(secId,i,d){
   if(T.picked.has(pid)){ T.picked.delete(pid); d.classList.remove("sel"); updatePicked(); return; }
   if(T.picked.size>=T.need){ toast(`${T.need}석까지만 선택할 수 있어요`, true); return; }
   // 실전 재현: 누르는 순간 선점당할 수 있음. 상위 등급일수록 확률↑.
-  const boost={ VIP:1.7, R:1.4, S:1.1, A:0.9, B:0.7 }[T.secById[secId].grade];
+  const boost={ VIP:1.7, R:1.4, S:1.1, A:0.9, B:0.45 }[T.secById[secId].grade];
   const chance=Math.min(0.7, T.diff.preempt*boost);
   if(Math.random()<chance){
     rt.taken.add(i); T.preempted++;
