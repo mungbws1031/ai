@@ -103,6 +103,25 @@ button{font:inherit;color:inherit}
 .editing.warn{color:var(--warn);background:color-mix(in srgb,var(--warn) 10%,var(--sheet))}
 .editing.warn b{color:inherit}
 .meal-time{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:13px}
+.photolog{border-top:1px solid var(--rule);padding-top:10px}
+.photolog summary{cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;list-style:none}
+.photolog summary::-webkit-details-marker{display:none}
+.photolog summary::before{content:"▸";color:var(--ink-2);transition:transform .15s}
+.photolog[open] summary::before{transform:rotate(90deg)}
+.log-body{display:grid;gap:14px;padding-top:10px}
+.log-day h4{margin:0 0 6px;font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:10px}
+.log-day h4 span{font-family:var(--mono);font-weight:500;color:var(--ink-2)}
+.log-list{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.log-item{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 8px;border:1px solid var(--rule);border-radius:8px;background:var(--sheet)}
+.log-item img,.log-item .noimg{width:48px;height:48px;border-radius:6px;object-fit:cover;background:var(--paper)}
+.log-item .who{font-size:13px;min-width:0}
+.log-item .who b{font-family:var(--mono);font-weight:500;margin-right:6px}
+.log-item .who small{display:block;color:var(--ink-2);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-item .acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.log-item .acts .chip{font-size:12px;padding:2px 9px}
+.log-item .acts .del.arm{border-color:var(--bad);color:var(--bad)}
+.log-empty{font-size:13px;color:var(--ink-2)}
+@media (max-width:560px){.log-item{grid-template-columns:40px minmax(0,1fr)}.log-item img,.log-item .noimg{width:40px;height:40px}.log-item .acts{grid-column:1 / -1;justify-content:flex-start}}
 .habits{border-top:1px solid var(--rule);padding-top:10px}
 .habits summary{cursor:pointer;font-size:13px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;list-style:none}
 .habits summary::-webkit-details-marker{display:none}
@@ -377,6 +396,10 @@ button{font:inherit;color:inherit}
         <div class="note" id="photoNote"></div>
       </div>
     </div>
+    <details class="photolog" id="photolog">
+      <summary><span class="habit-lbl">사진 기록</span> <span class="muted" id="logSummary">불러오는 중…</span></summary>
+      <div class="log-body" id="logBody"></div>
+    </details>
     <div class="sliders" id="sliders"></div>
     <details class="habits" id="habits">
       <summary><span class="habit-lbl">생활·배변 습관</span> <span class="muted" id="habitSummary"></span></summary>
@@ -1754,7 +1777,7 @@ async function analyzePhotos(files){
       const r = chunk.length===1 ? {photos:[await sampleFn.json(PHOTO_PROMPT,{images:chunk[0],signal:photoCtl.signal})]}
                                  : await sampleFn.json(MULTI_PROMPT(chunk.length),{images:chunk,signal:photoCtl.signal});
       const ps=Array.isArray(r?.photos)?r.photos:[];
-      chunk.forEach((f,k)=>res.push({file:f, items:Array.isArray(ps[k]?.items)?ps[k].items:[], note:ps[k]?.note}));
+      chunk.forEach((f,k)=>res.push({file:f, items:Array.isArray(ps[k]?.items)?ps[k].items:[], note:ps[k]?.note, conf:ps[k]?.confidence}));
     }
     const found=res.filter(x=>x.items.length);
     if (!found.length){ $('photoStatus').textContent='음식을 찾지 못했습니다'; $('photoNote').textContent='다른 사진을 올려 주세요.'; return; }
@@ -1772,11 +1795,13 @@ async function analyzePhotos(files){
       relabelSnacks();
       DAY.active=DAY.meals.indexOf(found[found.length-1].snack); meal=DAY.meals[DAY.active];
       rows=found.map(x=>({head:`${x.snack.label} · ${todClock(toMin(x.snack.time))}${x.timed?'':' (시각 임의)'}`, items:x.items}));
+      logPhotos(found.map(x=>({file:x.file, items:x.items, conf:x.conf, where:`${x.snack.label} · ${todClock(toMin(x.snack.time))}`})));
     } else {
       // single-meal mode: everything in the photos is one meal
       const all=found.flatMap(x=>x.items);
       capped=applyTotals(target,totalsFrom(all),`사진 ${found.length}장: `+foodNames(all));
       rows=found.map((x,k)=>({head:`사진 ${res.indexOf(x)+1}`, items:x.items}));
+      logPhotos(found.map((x,k)=>({file:x.file, items:x.items, conf:x.conf, where:`한 끼 (사진 ${k+1}/${found.length})`})));
     }
     saveDay();
     if (target===meal || day){ syncSliders(); markPreset('photo'); }
@@ -1807,6 +1832,7 @@ async function analyzePhoto(file){
     const items = Array.isArray(r?.items) ? r.items : [];
     if (!items.length){ $('photoStatus').textContent='음식을 찾지 못했습니다'; $('photoNote').textContent=String(r?.note||'다른 사진을 올려 주세요.'); return; }
     const capped=applyTotals(target,totalsFrom(items),'사진: '+foodNames(items)); saveDay();
+    logPhotos([{file, items, conf:r.confidence, where: DAY.mode==='day' ? `${target.label} · ${todClock(toMin(target.time))}` : `한 끼 · ${todClock(toMin(MEALT.time))}`}]);
     if (target===meal){ syncSliders(); markPreset('photo'); }
     if (DAY.mode==='day') renderDayCards();
     u=uOf(6); recompute();
@@ -1818,6 +1844,91 @@ async function analyzePhoto(file){
   } catch(e){ photoFailed(e); }
   finally { photoBusy=false; $('photoStop').hidden=true; }
 }
+// ---------- photo log (each viewer's own records, in the artifact's database) ----------
+let logCol=null, logEntries=[], logArmed=null;
+const LOG_MAX=200;
+(async()=>{
+  try {
+    if (!window.claude) throw 0;
+    const [db,user]=await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+    const uid = user ? await user.id() : null;
+    if (!db || !uid){ logUnavailable(); return; }
+    logCol=db.doc(`data/users/${uid}/profile`).collection('photolog');
+    logCol.orderBy('at','desc').limit(LOG_MAX).onSnapshot(
+      snap=>{ logEntries=snap.docs.map(d=>({id:d.id, ...d.data()})); renderLog(); },
+      ()=>{ $('logSummary').textContent='기록을 불러오지 못했습니다. 새로고침해 보세요.'; });
+  } catch(e){ logUnavailable(); }
+})();
+function logUnavailable(){
+  $('logSummary').textContent='claude.ai에서 로그인한 상태로 열면 사진 분석 결과가 기록됩니다.';
+  $('logBody').innerHTML='';
+}
+// a small JPEG preview so the record shows what was eaten (the photo itself is not kept)
+async function thumbOf(file){
+  try {
+    const bmp=await createImageBitmap(file), k=96/Math.max(bmp.width,bmp.height,1);
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(bmp.width*k)); c.height=Math.max(1,Math.round(bmp.height*k));
+    c.getContext('2d').drawImage(bmp,0,0,c.width,c.height); bmp.close?.();
+    return c.toDataURL('image/jpeg',0.6);
+  } catch(e){ return null; }
+}
+const cleanItem=it=>({name:String(it.name||'음식').slice(0,60), portion:String(it.portion||'').slice(0,60),
+  carb_g:num(it.carb_g), protein_g:num(it.protein_g), fat_g:num(it.fat_g), fiber_g:num(it.fiber_g),
+  soluble_fiber_share:clamp(num(it.soluble_fiber_share)||0.3,0,1), water_ml:num(it.water_ml)});
+async function logPhotos(list){
+  if (!logCol) return;
+  for (const x of list){
+    const items=x.items.slice(0,20).map(cleanItem), t=totalsFrom(items);
+    const doc={at:Date.now(), where:String(x.where||'').slice(0,60), items,
+      kcal:Math.round(kcalMacro(t.carb,t.prot,t.fat,t.fib)), confidence:['high','medium','low'].includes(x.conf)?x.conf:'medium',
+      thumb:await thumbOf(x.file)};
+    try { await logCol.add(doc); }
+    catch(e){
+      const n=$('photoNote');
+      n.textContent=(n.textContent?n.textContent+' ':'')+(e&&e.code==='quota_exceeded'?'사진 기록 공간이 가득 차서 이번 결과는 기록하지 못했습니다. 오래된 기록을 지워 주세요.':'이번 결과는 기록하지 못했습니다.');
+      return;
+    }
+  }
+}
+function renderLog(){
+  const n=logEntries.length;
+  $('logSummary').textContent = n ? `${n}건${n>=LOG_MAX?` (최근 ${LOG_MAX}건만 표시)`:''} · 사진을 분석할 때마다 자동으로 저장됩니다` : '아직 없습니다 · 사진을 분석하면 여기에 자동으로 저장됩니다';
+  if (!n){ $('logBody').innerHTML='<p class="log-empty">음식 사진을 올리면 날짜별로 무엇을 먹었고 몇 kcal였는지 쌓입니다. 기록은 나만 볼 수 있습니다.</p>'; return; }
+  const days=new Map();
+  for (const e of logEntries){ const d=new Date(e.at||0), key=`${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}.`; if (!days.has(key)) days.set(key,[]); days.get(key).push(e); }
+  let h='';
+  for (const [day,list] of days){
+    const kc=list.reduce((a,e)=>a+(Number(e.kcal)||0),0);
+    h+=`<section class="log-day"><h4>${esc(day)}<span>${list.length}장 · ${Math.round(kc).toLocaleString('ko-KR')} kcal</span></h4><ul class="log-list">`;
+    for (const e of list){
+      const d=new Date(e.at||0), hm=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      const items=Array.isArray(e.items)?e.items:[];
+      const img=typeof e.thumb==='string' && e.thumb.startsWith('data:image/') ? `<img alt="" src="${esc(e.thumb)}">` : '<span class="noimg"></span>';
+      h+=`<li class="log-item" data-id="${esc(e.id)}">${img}<div class="who"><b>${hm}</b>${esc(foodNames(items)||'음식')} · <span class="mono">${Math.round(Number(e.kcal)||0)} kcal</span><small>${e.where?esc(e.where)+'에 넣음':''}</small></div>
+        <div class="acts"><button type="button" class="chip use">지금 끼니에 넣기</button><button type="button" class="chip del${logArmed===e.id?' arm':''}">${logArmed===e.id?'정말 지우기':'지우기'}</button></div></li>`;
+    }
+    h+='</ul></section>';
+  }
+  $('logBody').innerHTML=h;
+}
+$('logBody').addEventListener('click',async ev=>{
+  const btn=ev.target.closest('button'); if (!btn) return;
+  const li=btn.closest('.log-item'), e=logEntries.find(x=>x.id===li?.dataset.id); if (!e) return;
+  if (btn.classList.contains('use')){
+    const items=Array.isArray(e.items)?e.items:[];
+    applyTotals(meal,totalsFrom(items),'사진: '+foodNames(items)); saveDay();
+    syncSliders(); markPreset('photo'); if (DAY.mode==='day') renderDayCards();
+    u=uOf(6); recompute();
+    $('photoOut').hidden=false; $('photoStatus').textContent=`기록에서 불러왔습니다: ${foodNames(items)}`;
+    $('photoItems').innerHTML=''; $('photoNote').textContent= DAY.mode==='day' ? `${DAY.meals[DAY.active].label}에 넣었습니다.` : '한 끼에 넣었습니다.';
+    return;
+  }
+  if (btn.classList.contains('del')){
+    if (logArmed!==e.id){ logArmed=e.id; renderLog(); return; }   // second click confirms
+    logArmed=null;
+    try { await logCol.doc(e.id).delete(); } catch(err){ renderLog(); }
+  }
+});
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 syncMode(); syncSliders(); markPreset(meal.id); syncMealTime(); syncHabit(); syncLife(); drawTicks();
