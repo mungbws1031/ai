@@ -13,7 +13,8 @@ companion app), `scent-mixer/` (single-file PWA), `handfont/` (손글씨 → TTF
 `atomciv/` (원자에서 문명까지 — 초등학생용 원자→분자→발명→시대 과학 게임, 단일 HTML PWA), and
 `parking-game/` (가로 화면 주차 게임 '주차 한 판' — 지갑 들고 하루 돌며 직접 주차, 도로교통법 기준 판정, 정적 HTML + 바닐라 JS), and
 `cook/` (전자혀 — 요리 초보용 맛 튜닝 계산기 단일 파일 PWA + Capacitor 안드로이드 셸 `cook/app/`, 기획서 `cook/docs/PRD.md`, 출시 체크리스트 `cook/docs/RELEASE.md`), and
-`pm-map/` (PM 역량 맵 PWA — 16개 역량 맵·업무별 하이라이트·회고 퀴즈·PM 캐릭터·팀 퀘스트 배정, 단일 HTML).
+`pm-map/` (PM 역량 맵 PWA — 16개 역량 맵·업무별 하이라이트·회고 퀴즈·PM 캐릭터·팀 퀘스트 배정, 단일 HTML), and
+`mold-quote/` (단일 파일 금형·사출 가상 견적 — QDM/일반/정밀 금형비와 개당 사출비 어림).
 
 ## Scope of rules
 
