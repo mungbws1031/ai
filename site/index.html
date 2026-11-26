@@ -400,17 +400,11 @@ function startCountdown(){
   T.capTries = 0;
   T.refreshes = 0;
   T.earlyRefresh = 0;
-  // 랜덤(약 50%): 정시에 버튼이 자동 활성화되지 않고 직접 새로고침해야 입장
-  T.mustRefresh = Math.random() < 0.5;
-  if(T.mustRefresh){
-    $("openBtn").disabled = false;
-    $("openBtn").textContent = "🔄 새로고침";
-    $("openHint").innerHTML = "⚠️ 이 공연은 버튼이 자동으로 안 열려요! <b>정시(00:00)에 직접 🔄 새로고침</b>해야 입장됩니다. (너무 일찍 누르면 헛수고)";
-  } else {
-    $("openBtn").disabled = true;
-    $("openBtn").textContent = "예매하기";
-    $("openHint").innerHTML = "정시에 '예매하기'가 활성화돼요. 너무 일찍 누르면 실패로 기록됩니다.";
-  }
+  // 항상 정시(00:00)에 '예매하기' 버튼이 활성화되는 방식 (새로고침 모드 없음)
+  T.mustRefresh = false;
+  $("openBtn").disabled = true;
+  $("openBtn").textContent = "예매하기";
+  $("openHint").innerHTML = "정시에 '예매하기'가 활성화돼요. 너무 일찍 누르면 실패로 기록됩니다.";
   show("s_count");
   tick();
 }
