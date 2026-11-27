@@ -11,7 +11,10 @@ from urllib.parse import parse_qs, urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "api"))
-from core import handle_download, handle_resolve  # noqa: E402
+from _core import handle_download, handle_resolve  # noqa: E402
+
+
+STATIC = {"/", "/index.html", "/manifest.webmanifest", "/sw.js", "/icon.svg"}
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -35,8 +38,10 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_header(key, value)
             self.end_headers()
             self.wfile.write(body)
-        else:
+        elif parsed.path in STATIC:
             super().do_GET()
+        else:
+            self.send_error(404)
 
 
 if __name__ == "__main__":

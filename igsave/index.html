@@ -46,7 +46,8 @@ const ERR = {
   blocked: "인스타가 서버 접근을 막았어요. 잠시 뒤 다시 해보세요.",
   private_or_login: "비공개이거나 로그인이 필요한 게시물이에요.",
   unsupported_url: "인스타그램/스레드 게시물 링크만 지원해요.",
-  not_found: "이 링크에서 사진이나 영상을 찾지 못했어요."
+  not_found: "이 링크에서 사진이나 영상을 찾지 못했어요.",
+  unknown: "가져오는 중 알 수 없는 오류가 났어요. 링크를 확인하거나 잠시 뒤 다시 해보세요."
 };
 let items = [];
 
@@ -54,25 +55,29 @@ function setMsg(t, ok){ const m=$("msg"); m.textContent=t||""; m.className=ok?"o
 function extOf(it){ return it.type==="video" ? "mp4" : "jpg"; }
 function dlUrl(it,i){ return "api/download?u="+encodeURIComponent(it.url)+"&name="+encodeURIComponent("igsave-"+(i+1)+"."+extOf(it)); }
 
-async function saveOne(it,i){
+async function saveOne(it,i,noShare){
   const name = "igsave-"+(i+1)+"."+extOf(it);
+  let blob;
   try{
     const res = await fetch(dlUrl(it,i));
     if(!res.ok) throw new Error(res.status);
-    const blob = await res.blob();
+    blob = await res.blob();
+  }catch(e){
+    setMsg(it.type==="video" ? "영상을 받지 못했어요. 용량이 큰 영상은 서버 제한 때문일 수 있어요." : "사진을 받지 못했어요. 잠시 뒤 다시 해보세요.");
+    return;
+  }
+  // Share sheet needs a fresh tap; if it is refused (or we are batch-saving) fall back to a plain download.
+  if(!noShare){
     const file = new File([blob], name, {type: blob.type});
     if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file]});
-      return;
+      try{ await navigator.share({files:[file]}); return; }
+      catch(e){ if(e && e.name==="AbortError") return; }
     }
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob); a.download = name;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
-  }catch(e){
-    if(e && e.name==="AbortError") return;
-    setMsg("저장에 실패했어요. 영상이 너무 크면 서버 용량 제한 때문일 수 있어요.");
   }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 10000);
 }
 
 function render(){
@@ -80,7 +85,7 @@ function render(){
   items.forEach((it,i)=>{
     const card=document.createElement("div"); card.className="item";
     const media=document.createElement(it.type==="video"?"video":"img");
-    if(it.type==="video"){ media.controls=true; media.playsInline=true; media.preload="metadata"; if(it.thumb) media.poster=it.thumb; }
+    if(it.type==="video"){ media.controls=true; media.playsInline=true; media.preload="none"; if(it.thumb) media.poster=it.thumb; }
     media.src = "api/download?u="+encodeURIComponent(it.url);
     const bar=document.createElement("div"); bar.className="bar";
     const label=document.createElement("span"); label.textContent=(it.type==="video"?"영상 ":"사진 ")+(i+1);
@@ -104,7 +109,7 @@ async function run(url){
 
 $("go").onclick=()=>run($("url").value);
 $("url").addEventListener("keydown",e=>{ if(e.key==="Enter") run($("url").value); });
-$("saveAll").onclick=async()=>{ for(let i=0;i<items.length;i++) await saveOne(items[i],i); };
+$("saveAll").onclick=async()=>{ for(let i=0;i<items.length;i++) await saveOne(items[i],i,true); };
 
 // Share Target: ?url=… or ?text=… containing a link
 const p=new URLSearchParams(location.search);

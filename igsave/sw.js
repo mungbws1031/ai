@@ -8,6 +8,10 @@ self.addEventListener("activate", e => e.waitUntil(
 ));
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.pathname.includes("/api/")) return;
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request, { ignoreSearch: true })));
+  if (e.request.method !== "GET" || /\/api\/(resolve|download)$/.test(url.pathname)) return;
+  e.respondWith(
+    fetch(e.request).catch(() =>
+      caches.match(e.request, { ignoreSearch: true }).then(r => r || Response.error())
+    )
+  );
 });

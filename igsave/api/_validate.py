@@ -27,6 +27,10 @@ def is_allowed_media_host(url):
     except ValueError:
         return False
     host = parsed.hostname or ""
-    if parsed.scheme != "https":
+    try:
+        port = parsed.port
+    except ValueError:
+        return False
+    if parsed.scheme != "https" or port not in (None, 443):
         return False
     return any(host == s or host.endswith("." + s) for s in MEDIA_HOST_SUFFIXES)

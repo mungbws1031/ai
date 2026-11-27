@@ -1,11 +1,12 @@
 """Framework-free request logic, shared by the Vercel handlers and server.py."""
+import http.client
 import re
 import urllib.error
 import urllib.request
 from urllib.parse import quote
 
-from resolver import resolve
-from validate import is_allowed_media_host
+from _resolver import resolve
+from _validate import is_allowed_media_host
 
 STATUS_BY_ERROR = {
     "unsupported_url": 400,
@@ -13,6 +14,9 @@ STATUS_BY_ERROR = {
     "not_found": 404,
     "blocked": 429,
 }
+
+
+MAX_BYTES = 100 * 1024 * 1024  # refuse anything bigger instead of buffering it
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -52,12 +56,18 @@ def handle_download(query, opener=_default_opener):
         return 400, {"Content-Type": "text/plain"}, b"blocked host"
     try:
         resp = opener(url)
-        body = resp.read()
-    except (urllib.error.URLError, OSError):
+        length = resp.headers.get("Content-Length", "")
+        if length.isdigit() and int(length) > MAX_BYTES:
+            return 413, {"Content-Type": "text/plain"}, b"too large"
+        body = resp.read(MAX_BYTES + 1)
+        if len(body) > MAX_BYTES:
+            return 413, {"Content-Type": "text/plain"}, b"too large"
+    except (urllib.error.URLError, OSError, http.client.HTTPException):
         return 502, {"Content-Type": "text/plain"}, b"fetch failed"
     name = _safe_name(_first(query, "name"))
     headers = {
         "Content-Type": resp.headers.get("Content-Type", "application/octet-stream"),
+        "X-Content-Type-Options": "nosniff",
         "Content-Disposition": "attachment; filename*=UTF-8''" + quote(name),
     }
     return 200, headers, body

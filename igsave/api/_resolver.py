@@ -3,9 +3,9 @@ import json
 import subprocess
 import sys
 
-from validate import is_allowed_media_host, validate_post_url
+from _validate import is_allowed_media_host, validate_post_url
 
-TIMEOUT_SEC = 25
+TIMEOUT_SEC = 12  # two extractors in sequence must fit Vercel maxDuration (30s)
 VIDEO_EXT = (".mp4", ".mov", ".webm", ".m4v")
 
 
@@ -15,13 +15,13 @@ class ExtractorError(Exception):
 
 def classify_error(message):
     m = (message or "").lower()
-    if "429" in m or "too many" in m or "rate limit" in m or "403" in m or "challenge" in m:
-        return "blocked"
     if "login" in m or "private" in m or "401" in m or "authentication" in m or "cookies" in m:
         return "private_or_login"
+    if "429" in m or "too many" in m or "rate limit" in m or "403" in m or "challenge" in m or "proxy" in m:
+        return "blocked"
     if "404" in m or "not found" in m or "unavailable" in m:
         return "not_found"
-    return "blocked"
+    return "unknown"
 
 
 def _kind(url):
@@ -77,7 +77,10 @@ def _run_extractors(url):
     try:
         return _yt_dlp(url)
     except ExtractorError as exc:
-        raise last or exc
+        # keep the more specific reason; "unknown" never hides a real one
+        if str(exc) == "unknown" and last is not None:
+            raise last
+        raise
     except ImportError:
         if last:
             raise last

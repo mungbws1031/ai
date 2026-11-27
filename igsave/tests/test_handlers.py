@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "api"))
 
-import core
+import _core as core
 
 CDN = "https://scontent.cdninstagram.com/v/a.jpg"
 
@@ -35,7 +35,7 @@ def test_download_sets_attachment_header():
     class Resp:
         headers = {"Content-Type": "image/jpeg"}
 
-        def read(self):
+        def read(self, n=-1):
             return b"bytes"
 
     status, headers, body = core.handle_download({"u": [CDN], "name": ["my pic.jpg"]}, opener=lambda u: Resp())
@@ -49,9 +49,52 @@ def test_download_filename_is_sanitized():
     class Resp:
         headers = {"Content-Type": "image/jpeg"}
 
-        def read(self):
+        def read(self, n=-1):
             return b"x"
 
     _s, headers, _b = core.handle_download({"u": [CDN], "name": ['a"/../b\r\nX: y.jpg']}, opener=lambda u: Resp())
     disp = headers["Content-Disposition"]
     assert "\r" not in disp and "\n" not in disp and ".." not in disp and "/" not in disp
+
+
+def test_download_rejects_oversized_by_content_length():
+    class Big:
+        headers = {"Content-Type": "video/mp4", "Content-Length": str(core.MAX_BYTES + 1)}
+
+        def read(self, n=-1):
+            raise AssertionError("must not read body")
+
+    status, _h, _b = core.handle_download({"u": [CDN]}, opener=lambda u: Big())
+    assert status == 413
+
+
+def test_download_rejects_oversized_without_content_length():
+    class Big:
+        headers = {"Content-Type": "video/mp4"}
+
+        def read(self, n=-1):
+            return b"x" * (core.MAX_BYTES + 1)
+
+    status, _h, _b = core.handle_download({"u": [CDN]}, opener=lambda u: Big())
+    assert status == 413
+
+
+def test_download_sets_nosniff_and_survives_incomplete_read():
+    import http.client
+
+    class Ok:
+        headers = {"Content-Type": "image/jpeg"}
+
+        def read(self, n=-1):
+            return b"x"
+
+    _s, headers, _b = core.handle_download({"u": [CDN]}, opener=lambda u: Ok())
+    assert headers["X-Content-Type-Options"] == "nosniff"
+
+    class Cut:
+        headers = {}
+
+        def read(self, n=-1):
+            raise http.client.IncompleteRead(b"par")
+
+    assert core.handle_download({"u": [CDN]}, opener=lambda u: Cut())[0] == 502

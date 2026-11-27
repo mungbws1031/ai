@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "api"))
 
-from validate import is_allowed_media_host, validate_post_url
+from _validate import is_allowed_media_host, validate_post_url
 
 
 def test_accepts_instagram_reel_with_igsh():
@@ -36,3 +36,8 @@ def test_media_host_allows_cdn_suffix_only():
     assert not is_allowed_media_host("https://evil.com/cdninstagram.com")
     assert not is_allowed_media_host("https://evilcdninstagram.com/a.jpg")
     assert not is_allowed_media_host("http://scontent.cdninstagram.com/a.jpg")
+
+
+def test_media_host_rejects_non_default_port():
+    assert not is_allowed_media_host("https://scontent.cdninstagram.com:22/x")
+    assert is_allowed_media_host("https://scontent.cdninstagram.com:443/x")

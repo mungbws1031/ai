@@ -3,8 +3,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "api"))
 
-import resolver
-from resolver import ExtractorError, resolve
+import _resolver as resolver
+from _resolver import ExtractorError, resolve
 
 CDN = "https://scontent.cdninstagram.com/v/"
 
@@ -63,3 +63,15 @@ def test_classify_error_maps_messages():
     assert resolver.classify_error("login required") == "private_or_login"
     assert resolver.classify_error("Private account") == "private_or_login"
     assert resolver.classify_error("HTTP Error 404") == "not_found"
+
+
+def test_classify_prefers_private_over_403_and_unknown_is_not_blocked():
+    assert resolver.classify_error("HTTP Error 403: Forbidden ... login required") == "private_or_login"
+    assert resolver.classify_error("something weird happened") == "unknown"
+    assert resolver.classify_error("No module named gallery_dl") == "unknown"
+
+
+def test_specific_error_beats_unknown(monkeypatch):
+    monkeypatch.setattr(resolver, "_gallery_dl", lambda u: (_ for _ in ()).throw(resolver.ExtractorError("unknown")))
+    monkeypatch.setattr(resolver, "_yt_dlp", lambda u: (_ for _ in ()).throw(resolver.ExtractorError("private_or_login")))
+    assert resolver.resolve("https://www.instagram.com/p/ABC/")["error"] == "private_or_login"

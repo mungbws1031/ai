@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, os.path.dirname(__file__))
-from core import handle_download  # noqa: E402
+from _core import handle_download  # noqa: E402
 
 
 class handler(BaseHTTPRequestHandler):
