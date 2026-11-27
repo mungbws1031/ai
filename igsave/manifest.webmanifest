@@ -1,0 +1,11 @@
+{
+  "name": "짤저장",
+  "short_name": "짤저장",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }],
+  "share_target": { "action": "./", "method": "GET", "params": { "url": "url", "text": "text", "title": "title" } }
+}
