@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파일 → 마크다운</title>
+<meta name="description" content="PDF·워드·엑셀·파워포인트·한글(HWPX)·이미지 등 거의 모든 파일을 브라우저 안에서 마크다운(.md)으로 바꿉니다. 파일은 어디에도 업로드되지 않습니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E9EEF3; --panel:#FFFFFF; --ink:#18293C; --muted:#5A6B7E; --line:#C7D2DD;
+  --mark:#D8970A; --mark-soft:#FBF0D3; --ok:#2F7D55; --err:#B3362C;
+  --sans:"IBM Plex Sans KR",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#101A26; --panel:#172333; --ink:#E3EAF2; --muted:#93A3B5; --line:#2C3B4E;
+  --mark:#F0B429; --mark-soft:#3A2F12; --ok:#5CC28E; --err:#F0776B; color-scheme:dark;
+}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans);min-height:100vh}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 60px}
+
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;margin-bottom:22px}
+h1{margin:0;font-size:clamp(1.9rem,4.5vw,2.7rem);line-height:1.15;font-weight:700;letter-spacing:-.02em}
+h1 .hash{font-family:var(--mono);color:var(--mark);margin-right:.35em;font-weight:600}
+.lede{margin:6px 0 0;color:var(--muted);max-width:60ch}
+.local{font-size:.9rem;color:var(--ok);font-weight:500}
+
+/* drop zone: a blank markdown document waiting for content */
+.drop{position:relative;display:grid;grid-template-columns:auto 1fr;gap:4px 18px;align-items:center;
+  background:var(--panel);border:2px dashed var(--line);border-radius:14px;padding:26px 24px;cursor:pointer;
+  transition:border-color .15s,background .15s}
+.drop:hover,.drop.over{border-color:var(--mark);background:var(--mark-soft)}
+.drop .glyph{grid-row:span 2;font:600 3.4rem/1 var(--mono);color:var(--mark)}
+.drop strong{font-size:1.2rem}
+.drop span{color:var(--muted);font-size:.95rem}
+.drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.formats{margin:10px 2px 0;color:var(--muted);font-size:.85rem}
+
+.opts{display:flex;flex-wrap:wrap;gap:6px 22px;margin:16px 2px 22px;font-size:.95rem}
+.opts label{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.opts input{accent-color:var(--mark);width:18px;height:18px}
+.opts small{color:var(--muted)}
+
+.work{display:grid;grid-template-columns:290px 1fr;gap:18px;align-items:start}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.list-head{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:.9rem;color:var(--muted)}
+.list ul{list-style:none;margin:0;padding:0;max-height:60vh;overflow:auto}
+.list li button{display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;text-align:left;background:none;border:0;
+  border-bottom:1px solid var(--line);padding:10px 14px;cursor:pointer}
+.list li:last-child button{border-bottom:0}
+.list li button[aria-current="true"]{background:var(--mark-soft);box-shadow:inset 4px 0 0 var(--mark)}
+.fname{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmeta{grid-column:1;font-size:.8rem;color:var(--muted)}
+.state{grid-row:1/3;grid-column:2;align-self:center;font-size:.8rem;color:var(--muted)}
+.state.done{color:var(--ok)} .state.error{color:var(--err)}
+.empty{padding:22px 14px;color:var(--muted);font-size:.92rem}
+
+.out{background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:62vh}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tabs{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:auto}
+.tabs button{border:0;background:none;padding:6px 14px;cursor:pointer;font-size:.92rem}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.92rem}
+.btn:hover{border-color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+textarea.src{flex:1;width:100%;border:0;resize:none;padding:16px 18px;background:transparent;
+  font:14px/1.65 var(--mono);tab-size:2;min-height:56vh}
+textarea.src:focus-visible{outline-offset:-3px}
+.preview{flex:1;padding:6px 26px 26px;overflow:auto;max-height:72vh;line-height:1.7}
+.preview img{max-width:100%}
+.preview table{border-collapse:collapse;display:block;overflow:auto;font-size:.92rem}
+.preview th,.preview td{border:1px solid var(--line);padding:4px 10px}
+.preview pre{background:var(--paper);padding:12px;border-radius:8px;overflow:auto}
+.preview code{font-family:var(--mono);font-size:.9em}
+.preview blockquote{margin:0;padding-left:14px;border-left:3px solid var(--mark);color:var(--muted)}
+.status{padding:8px 14px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);min-height:2.2em}
+.status.err{color:var(--err)}
+.hidden{display:none!important}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--panel);
+  padding:8px 16px;border-radius:8px;font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.show{opacity:1}
+footer{margin-top:28px;color:var(--muted);font-size:.85rem}
+
+@media (max-width:820px){
+  .work{grid-template-columns:1fr}
+  .list ul{max-height:30vh}
+  .drop{padding:20px 16px}
+  .drop .glyph{font-size:2.6rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="hash" aria-hidden="true">#</span>파일을 마크다운으로</h1>
+      <p class="lede">문서·표·슬라이드·이미지를 넣으면 바로 .md로 바꿔 드려요. 결과는 고쳐서 복사하거나 내려받을 수 있습니다.</p>
+    </div>
+    <span class="local">파일은 이 브라우저 밖으로 나가지 않습니다</span>
+  </header>
+
+  <label class="drop" id="drop">
+    <span class="glyph" aria-hidden="true">.md</span>
+    <strong>파일을 여기에 끌어다 놓거나 눌러서 고르세요</strong>
+    <span>여러 개를 한 번에 넣어도 됩니다 · ZIP 안의 파일도 하나씩 변환</span>
+    <input type="file" id="picker" multiple aria-label="변환할 파일 선택">
+  </label>
+  <p class="formats">PDF, Word(.docx), Excel(.xlsx .xls .ods), PowerPoint(.pptx), 한글(.hwpx), ODT, EPUB, HTML, RTF, CSV/TSV, JSON, XML, YAML, 주피터(.ipynb), 이메일(.eml), ZIP, 이미지, 오디오·영상(정보만), 각종 코드·텍스트 파일</p>
+
+  <div class="opts">
+    <label><input type="checkbox" id="optImages"> 문서 속 이미지도 넣기 <small>(파일이 커집니다)</small></label>
+    <label><input type="checkbox" id="optOcr"> 이미지·스캔 PDF 글자 읽기(OCR) <small>(한국어+영어, 처음엔 느림)</small></label>
+  </div>
+
+  <section class="work">
+    <aside class="list" aria-label="변환한 파일">
+      <div class="list-head"><span id="count">파일 0개</span><button class="btn" id="clear" type="button" disabled>모두 지우기</button></div>
+      <ul id="files"></ul>
+      <p class="empty" id="emptyList">아직 넣은 파일이 없어요.</p>
+    </aside>
+
+    <section class="out" aria-label="변환 결과">
+      <div class="bar">
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" id="tabSrc" type="button">마크다운</button>
+          <button role="tab" aria-selected="false" id="tabView" type="button">미리보기</button>
+        </div>
+        <button class="btn" id="copy" type="button" disabled>복사</button>
+        <button class="btn primary" id="save" type="button" disabled>.md 내려받기</button>
+        <button class="btn" id="saveAll" type="button" disabled title="모든 결과를 .md 파일들로 묶은 ZIP">전체 ZIP</button>
+        <button class="btn" id="merge" type="button" disabled title="모든 결과를 하나의 .md로 합침">하나로 합치기</button>
+      </div>
+      <textarea class="src" id="src" spellcheck="false" placeholder="변환 결과가 여기에 나타납니다. 직접 고쳐도 됩니다." aria-label="마크다운 결과"></textarea>
+      <div class="preview hidden" id="view"></div>
+      <div class="status" id="status" role="status"></div>
+    </section>
+  </section>
+
+  <footer>변환에 필요한 라이브러리(pdf.js, mammoth, SheetJS, JSZip, Turndown, Tesseract)는 해당 형식을 처음 열 때만 불러옵니다. 서식이 복잡한 문서는 표·레이아웃이 단순해질 수 있어요.</footer>
+</div>
+<div class="toast" id="toast" role="alert"></div>
+
+<script>
+'use strict';
+/* ---------- 라이브러리 지연 로딩 ---------- */
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+const LIBS = {
+  pdf: [PDFJS + 'pdf.min.js'],
+  mammoth: ['https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'],
+  turndown: ['https://unpkg.com/turndown@7.1.2/dist/turndown.js', 'https://unpkg.com/turndown-plugin-gfm@1.0.2/dist/turndown-plugin-gfm.js'],
+  xlsx: ['https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'],
+  jszip: ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'],
+  marked: ['https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js'],
+  tesseract: ['https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js'],
+};
+const loaded = {};
+function loadScript(url) {
+  return loaded[url] ||= new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = url; s.onload = res;
+    s.onerror = () => { delete loaded[url]; rej(new Error('라이브러리를 불러오지 못했어요. 인터넷 연결을 확인하세요: ' + url.split('/').slice(-1)[0])); };
+    document.head.appendChild(s);
+  });
+}
+async function need(name) { for (const u of LIBS[name]) await loadScript(u); }
+
+/* ---------- 공통 도우미 ---------- */
+const ext = n => (n.match(/\.([^.\/]+)$/) || [, ''])[1].toLowerCase();
+const fmtSize = b => b < 1024 ? b + ' B' : b < 1048576 ? (b / 1024).toFixed(1) + ' KB' : (b / 1048576).toFixed(1) + ' MB';
+const cell = v => String(v ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>').trim();
+const byLocal = (el, name) => Array.from(el.getElementsByTagNameNS('*', name));
+const parseXml = s => new DOMParser().parseFromString(s, 'application/xml');
+const tidy = md => md.replace(/^[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n')
+  .replace(/^(\s*(?:[-*]|\d+[.)]|[①-⑳]) .*)\n\n(?=\s*(?:[-*]|\d+[.)]|[①-⑳]) )/gm, '$1\n')   // 목록 항목 사이 빈 줄 제거
+  .trim() + '\n';
+
+function decodeText(buf) {
+  const u8 = new Uint8Array(buf);
+  if (u8[0] === 0xFF && u8[1] === 0xFE) return new TextDecoder('utf-16le').decode(u8);
+  if (u8[0] === 0xFE && u8[1] === 0xFF) return new TextDecoder('utf-16be').decode(u8);
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(u8).replace(/^﻿/, ''); }
+  catch { return new TextDecoder('euc-kr').decode(u8); }   // 한국어 레거시(CP949) 파일
+}
+function looksBinary(buf) {
+  const u8 = new Uint8Array(buf.slice(0, 4096)); let bad = 0;
+  for (const c of u8) if (c === 0 || (c < 8) || (c > 13 && c < 32 && c !== 27)) bad++;
+  return u8.length && bad / u8.length > 0.05;
+}
+function table(rows) {
+  rows = rows.map(r => r.map(cell));
+  while (rows.length && rows[rows.length - 1].every(c => !c)) rows.pop();
+  if (!rows.length) return '';
+  let w = Math.max(...rows.map(r => r.length));
+  while (w > 0 && rows.every(r => !r[w - 1])) w--;
+  if (!w) return '';
+  rows = rows.map(r => Array.from({ length: w }, (_, i) => r[i] || ''));
+  const line = r => '| ' + r.join(' | ') + ' |';
+  return [line(rows[0]), '| ' + Array(w).fill('---').join(' | ') + ' |', ...rows.slice(1).map(line)].join('\n');
+}
+const fence = (code, lang = '') => {
+  const ticks = '`'.repeat(Math.max(3, ...(code.match(/`+/g) || ['']).map(s => s.length + 1)));
+  return ticks + lang + '\n' + code.replace(/\n$/, '') + '\n' + ticks;
+};
+const blobToDataUrl = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+
+/* ---------- HTML → Markdown ---------- */
+async function htmlToMd(html, opts) {
+  await need('turndown');
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  doc.querySelectorAll('script,style,noscript,template').forEach(e => e.remove());
+  // 표: 머리 행이 없으면 첫 행을 머리로, 셀 안 문단은 한 줄로
+  doc.querySelectorAll('table').forEach(t => {
+    const first = t.rows[0]; if (!first) return;
+    if (!first.querySelector('th')) Array.from(first.cells).forEach(td => {
+      const th = doc.createElement('th'); th.innerHTML = td.innerHTML; td.replaceWith(th);
+    });
+    t.querySelectorAll('td,th').forEach(c => {
+      const ps = c.querySelectorAll('p,div,li');
+      if (ps.length) c.textContent = Array.from(ps).map(p => p.textContent.trim()).filter(Boolean).join(' / ');
+    });
+  });
+  const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-', emDelimiter: '*', hr: '---' });
+  td.use(turndownPluginGfm.gfm);
+  td.addRule('img', {
+    filter: 'img',
+    replacement: (_, n) => {
+      const alt = (n.getAttribute('alt') || '').trim(), src = n.getAttribute('src') || '';
+      if (opts.images && src) return `![${alt}](${src})`;
+      if (src && !src.startsWith('data:')) return `![${alt}](${src})`;
+      return alt ? `*[이미지: ${alt}]*` : '*[이미지]*';
+    }
+  });
+  return td.turndown(doc.body || doc.documentElement).replace(/^(\s*)([-*]|\d+\.) {2,}/gm, '$1$2 ');
+}
+
+/* ---------- 형식별 변환기 ---------- */
+const CODE = { js:'javascript', mjs:'javascript', cjs:'javascript', ts:'typescript', tsx:'tsx', jsx:'jsx', py:'python', rb:'ruby', java:'java',
+  kt:'kotlin', swift:'swift', go:'go', rs:'rust', c:'c', h:'c', cpp:'cpp', hpp:'cpp', cc:'cpp', cs:'csharp', php:'php', sh:'bash', bash:'bash',
+  zsh:'bash', ps1:'powershell', bat:'bat', sql:'sql', r:'r', m:'matlab', scala:'scala', lua:'lua', pl:'perl', dart:'dart', vue:'vue', svelte:'svelte',
+  css:'css', scss:'scss', less:'less', xml:'xml', svg:'xml', yaml:'yaml', yml:'yaml', toml:'toml', ini:'ini', cfg:'ini', conf:'', env:'',
+  dockerfile:'dockerfile', gradle:'groovy', tex:'latex', graphql:'graphql', proto:'protobuf', log:'', diff:'diff', patch:'diff' };
+const IMG = ['png','jpg','jpeg','gif','webp','bmp','avif','tif','tiff','ico','heic'];
+const AV = ['mp3','wav','m4a','aac','ogg','flac','opus','mp4','mov','webm','mkv','avi','m4v'];
+
+async function convert(name, buf, opts, say = () => {}) {
+  const e = ext(name);
+  switch (e) {
+    case 'md': case 'markdown': case 'txt': case 'text': return decodeText(buf);
+    case 'html': case 'htm': case 'xhtml': return htmlToMd(decodeText(buf), opts);
+    case 'csv': case 'tsv': return csvToMd(decodeText(buf), e === 'tsv' ? '\t' : null);
+    case 'json': return jsonToMd(decodeText(buf));
+    case 'ipynb': return ipynbToMd(decodeText(buf));
+    case 'pdf': return pdfToMd(buf, opts, say);
+    case 'docx': case 'docm': case 'dotx': return docxToMd(buf, opts);
+    case 'xlsx': case 'xlsm': case 'xls': case 'xlsb': case 'ods': case 'numbers': return sheetToMd(buf);
+    case 'pptx': case 'ppsx': case 'potx': return pptxToMd(buf);
+    case 'odt': case 'odp': return odfToMd(buf);
+    case 'hwpx': return hwpxToMd(buf);
+    case 'hwp': throw new Error('예전 한글(.hwp) 형식은 브라우저에서 읽을 수 없어요. 한글에서 "다른 이름으로 저장 → HWPX 또는 DOCX/PDF"로 저장한 뒤 넣어 주세요.');
+    case 'doc': case 'ppt': throw new Error('예전 오피스 형식(.' + e + ')은 지원하지 않아요. 오피스에서 .' + e + 'x 형식으로 저장한 뒤 넣어 주세요.');
+    case 'epub': return epubToMd(buf, opts);
+    case 'rtf': return rtfToMd(buf);
+    case 'eml': return emlToMd(buf, opts);
+    case 'zip': return zipToMd(buf, opts, say);
+  }
+  if (IMG.includes(e)) return imageToMd(name, buf, opts, say);
+  if (AV.includes(e)) return mediaToMd(name, buf);
+  if (e in CODE || /^(makefile|dockerfile|readme|license)$/i.test(name.split('/').pop())) return fence(decodeText(buf), CODE[e] || '');
+  if (!looksBinary(buf)) return fence(decodeText(buf), '');
+  return `> 이 형식(.${e || '확장자 없음'})은 글자를 뽑아낼 수 없어 파일 정보만 남겼어요.\n\n| 항목 | 값 |\n| --- | --- |\n| 파일 이름 | ${cell(name)} |\n| 크기 | ${fmtSize(buf.byteLength)} |\n`;
+}
+
+function parseCsv(text, delim) {
+  if (!delim) { const head = text.slice(0, 2000); delim = [',', ';', '\t', '|'].sort((a, b) => head.split(b).length - head.split(a).length)[0]; }
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"' && f === '') q = true;
+    else if (c === delim) { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const csvToMd = (t, d) => table(parseCsv(t, d));
+
+function jsonToMd(text) {
+  let data; try { data = JSON.parse(text); } catch { return fence(text, 'json'); }
+  const flat = v => v !== null && typeof v === 'object' ? JSON.stringify(v) : v;
+  if (Array.isArray(data) && data.length && data.every(o => o && typeof o === 'object' && !Array.isArray(o))) {
+    const keys = [...new Set(data.flatMap(Object.keys))];
+    if (keys.length <= 30) return table([keys, ...data.map(o => keys.map(k => flat(o[k])))]) + '\n\n' + fence(JSON.stringify(data, null, 2), 'json');
+  }
+  return fence(JSON.stringify(data, null, 2), 'json');
+}
+
+function ipynbToMd(text) {
+  const nb = JSON.parse(text);
+  const lang = nb.metadata?.kernelspec?.language || nb.metadata?.language_info?.name || 'python';
+  const src = s => Array.isArray(s) ? s.join('') : (s || '');
+  return (nb.cells || []).map(c => {
+    if (c.cell_type === 'markdown') return src(c.source);
+    if (c.cell_type === 'code') {
+      let out = fence(src(c.source), lang);
+      const txt = (c.outputs || []).map(o => src(o.text) || src(o.data?.['text/plain'])).filter(Boolean).join('\n');
+      if (txt) out += '\n\n' + fence(txt, 'text');
+      return out;
+    }
+    return src(c.source);
+  }).join('\n\n');
+}
+
+async function docxToMd(buf, opts) {
+  await need('mammoth');
+  const r = await mammoth.convertToHtml({ arrayBuffer: buf });
+  return htmlToMd(r.value, opts);
+}
+
+async function sheetToMd(buf) {
+  await need('xlsx');
+  const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+  return wb.SheetNames.map(n => {
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: false, defval: '', blankrows: false });
+    const t = table(rows);
+    return `## ${n}\n\n` + (t || '*(빈 시트)*');
+  }).join('\n\n');
+}
+
+/* PDF: 글자 조각을 줄·문단으로 다시 묶고, 큰 글씨는 제목으로 */
+async function pdfToMd(buf, opts, say) {
+  await need('pdf');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js';
+  const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf), cMapUrl: 'https://unpkg.com/pdfjs-dist@3.11.174/cmaps/', cMapPacked: true }).promise;
+  const pages = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    say(`PDF ${p}/${pdf.numPages}쪽 읽는 중`);
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const rows = [];
+    for (const it of tc.items) {
+      if (!it.str || !it.str.trim() && !it.str.length) continue;
+      const x = it.transform[4], y = it.transform[5], size = Math.hypot(it.transform[2], it.transform[3]) || it.height || 10;
+      let row = rows.find(r => Math.abs(r.y - y) < Math.max(r.size, size) * 0.5);
+      if (!row) rows.push(row = { y, size, items: [] });
+      row.size = Math.max(row.size, size);
+      row.items.push({ x, w: it.width, s: it.str, size });
+    }
+    rows.sort((a, b) => b.y - a.y);
+    for (const r of rows) {
+      r.items.sort((a, b) => a.x - b.x);
+      let t = '', end = null;
+      for (const i of r.items) {
+        if (end !== null && i.x - end > i.size * 0.22 && !/\s$/.test(t) && !/^\s/.test(i.s)) t += ' ';
+        t += i.s; end = i.x + i.w;
+      }
+      r.text = t.replace(/\s+/g, ' ').trim();
+    }
+    pages.push({ page, rows: rows.filter(r => r.text) });
+  }
+  const sizes = pages.flatMap(p => p.rows.map(r => Math.round(r.size * 2) / 2)).sort((a, b) => a - b);
+  const body = sizes[Math.floor(sizes.length / 2)] || 10;
+  const chars = pages.reduce((n, p) => n + p.rows.reduce((m, r) => m + r.text.length, 0), 0);
+
+  if (chars < 30 * pdf.numPages) {
+    if (!opts.ocr) return (chars ? '' : '') + '> 이 PDF는 글자 대신 그림(스캔본)으로 되어 있는 것 같아요. 위의 "OCR" 옵션을 켜고 다시 넣으면 글자를 읽어 옵니다.\n';
+    const out = [];
+    for (let i = 0; i < pages.length; i++) {
+      say(`스캔 PDF ${i + 1}/${pages.length}쪽 글자 인식 중`);
+      const vp = pages[i].page.getViewport({ scale: 2 });
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await pages[i].page.render({ canvasContext: c.getContext('2d'), viewport: vp }).promise;
+      out.push(`<!-- ${i + 1}쪽 -->\n\n` + await ocr(c, say));
+    }
+    return out.join('\n\n');
+  }
+
+  const out = [];
+  pages.forEach((pg, pi) => {
+    if (pages.length > 1) out.push(`<!-- ${pi + 1}쪽 -->`);
+    let para = '', prev = null;
+    const flush = () => { if (para) out.push(para); para = ''; };
+    for (const r of pg.rows) {
+      const ratio = r.size / body, short = r.text.length < 90;
+      let head = '';
+      if (short && ratio >= 1.6) head = '# '; else if (short && ratio >= 1.3) head = '## '; else if (short && ratio >= 1.12) head = '### ';
+      const bullet = r.text.match(/^([•●○◦▪■□◆◇‣∙·\-–*]|\d{1,2}[.)]|[①-⑳])\s*(.*)$/);
+      const gap = prev ? prev.y - r.y : 0;
+      if (head) { flush(); out.push(head + r.text); prev = null; continue; }
+      if (bullet) { flush(); para = /^\d/.test(bullet[1]) ? bullet[1].replace(')', '.') + ' ' + bullet[2] : (/[①-⑳]/.test(bullet[1]) ? bullet[1] + ' ' + bullet[2] : '- ' + bullet[2]); prev = r; continue; }
+      if (prev && (gap > r.size * 1.9 || Math.abs(prev.size - r.size) > 1)) flush();
+      if (!para) para = r.text;
+      else if (/[A-Za-z]-$/.test(para)) para = para.slice(0, -1) + r.text;
+      else para += ' ' + r.text;
+      prev = r;
+    }
+    flush();
+  });
+  return out.join('\n\n');
+}
+
+let ocrWorker = null;
+async function ocr(image, say) {
+  await need('tesseract');
+  if (!ocrWorker) { say('글자 인식 엔진 준비 중(처음 한 번, 수십 MB)'); ocrWorker = await Tesseract.createWorker(['kor', 'eng']); }
+  const { data } = await ocrWorker.recognize(image);
+  return data.text.split(/\n{2,}/).map(p => p.replace(/\n/g, ' ').trim()).filter(Boolean).join('\n\n');
+}
+
+async function imageToMd(name, buf, opts, say) {
+  const blob = new Blob([buf], { type: 'image/' + (ext(name) === 'jpg' ? 'jpeg' : ext(name)) });
+  let dim = '';
+  try { const bmp = await createImageBitmap(blob); dim = `${bmp.width} × ${bmp.height}px`; bmp.close(); } catch {}
+  const base = name.split('/').pop();
+  let md = `| 항목 | 값 |\n| --- | --- |\n| 파일 | ${cell(base)} |\n| 크기 | ${fmtSize(buf.byteLength)} |` + (dim ? `\n| 해상도 | ${dim} |` : '');
+  md += '\n\n' + (opts.images ? `![${base}](${await blobToDataUrl(blob)})` : `![${base}](${encodeURI(base)})`);
+  if (opts.ocr) {
+    say('이미지 글자 인식 중');
+    const text = await ocr(blob, say);
+    md += '\n\n## 이미지 속 글자\n\n' + (text || '*(읽을 수 있는 글자가 없어요)*');
+  }
+  return md;
+}
+
+function mediaToMd(name, buf) {
+  return new Promise(res => {
+    const e = ext(name), isVideo = ['mp4','mov','webm','mkv','avi','m4v'].includes(e);
+    const el = document.createElement(isVideo ? 'video' : 'audio');
+    const url = URL.createObjectURL(new Blob([buf]));
+    const done = () => {
+      const d = el.duration, rows = [['항목', '값'], ['파일', name.split('/').pop()], ['종류', isVideo ? '영상' : '오디오'], ['크기', fmtSize(buf.byteLength)]];
+      if (isFinite(d)) rows.push(['길이', `${Math.floor(d / 60)}분 ${Math.round(d % 60)}초`]);
+      if (isVideo && el.videoWidth) rows.push(['해상도', `${el.videoWidth} × ${el.videoHeight}px`]);
+      URL.revokeObjectURL(url);
+      res(table(rows) + '\n\n> 소리·영상 내용 자체는 글자로 바꾸지 않아요. 받아쓰기가 필요하면 자막(.srt/.vtt) 파일을 넣어 주세요.');
+    };
+    el.preload = 'metadata'; el.onloadedmetadata = done; el.onerror = done; el.src = url;
+    setTimeout(done, 4000);
+  }).then(x => x);
+}
+
+/* PowerPoint: 슬라이드 순서대로 제목·글머리·표·발표자 노트 */
+async function pptxToMd(buf) {
+  await need('jszip');
+  const zip = await JSZip.loadAsync(buf);
+  const num = n => +n.match(/(\d+)\.xml$/)[1];
+  const slides = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n)).sort((a, b) => num(a) - num(b));
+  const paraText = p => byLocal(p, 't').map(t => t.textContent).join('').trim();
+  const out = [];
+  for (const [i, path] of slides.entries()) {
+    const doc = parseXml(await zip.file(path).async('string'));
+    const lines = []; let title = '';
+    const walk = node => {
+      for (const ch of node.children) {
+        if (ch.localName === 'sp') {
+          const ph = byLocal(ch, 'ph')[0]?.getAttribute('type') || '';
+          const paras = byLocal(ch, 'p').filter(p => p.namespaceURI?.includes('drawingml'));
+          if (/title/i.test(ph) && !title) { title = paras.map(paraText).filter(Boolean).join(' '); if (ph !== 'subTitle') continue; }
+          for (const p of paras) {
+            const t = paraText(p); if (!t) continue;
+            const lvl = +(byLocal(p, 'pPr')[0]?.getAttribute('lvl') || 0);
+            lines.push(ph === 'subTitle' ? `*${t}*` : '  '.repeat(lvl) + '- ' + t);
+          }
+        } else if (ch.localName === 'graphicFrame') {
+          for (const tbl of byLocal(ch, 'tbl')) lines.push('\n' + table(byLocal(tbl, 'tr').map(tr => byLocal(tr, 'tc').map(tc => byLocal(tc, 'p').map(paraText).join(' ')))) + '\n');
+        } else if (ch.localName === 'grpSp' || ch.localName === 'spTree') walk(ch);
+        else if (ch.localName === 'pic') lines.push('*[그림]*');
+      }
+    };
+    const tree = byLocal(doc, 'spTree')[0]; if (tree) walk(tree);
+    let md = `## ${i + 1}. ${title || '슬라이드'}\n\n` + lines.join('\n');
+    const rels = zip.file(path.replace('slides/', 'slides/_rels/') + '.rels');
+    if (rels) {
+      const m = (await rels.async('string')).match(/Target="\.\.\/notesSlides\/(notesSlide\d+\.xml)"/);
+      const nf = m && zip.file('ppt/notesSlides/' + m[1]);
+      if (nf) {
+        const nd = parseXml(await nf.async('string'));
+        const notes = byLocal(nd, 'sp').filter(sp => byLocal(sp, 'ph')[0]?.getAttribute('type') === 'body')
+          .flatMap(sp => byLocal(sp, 'p').map(paraText)).filter(Boolean);
+        if (notes.length) md += '\n\n> **발표자 노트**\n>\n> ' + notes.join('\n>\n> ');
+      }
+    }
+    out.push(md);
+  }
+  return out.join('\n\n---\n\n');
+}
+
+/* 한글 HWPX: Contents/section*.xml 의 문단과 표 */
+async function hwpxToMd(buf) {
+  await need('jszip');
+  const zip = await JSZip.loadAsync(buf);
+  const secs = Object.keys(zip.files).filter(n => /^Contents\/section\d+\.xml$/i.test(n)).sort((a, b) => +a.match(/(\d+)/)[1] - +b.match(/(\d+)/)[1]);
+  if (!secs.length) throw new Error('HWPX 본문을 찾지 못했어요.');
+  const out = [];
+  const tblMd = tbl => table(byLocal(tbl, 'tr').filter(tr => tr.closest ? true : true).map(tr =>
+    Array.from(tr.children).filter(c => c.localName === 'tc').map(tc => byLocal(tc, 't').map(t => t.textContent).join(' '))));
+  const para = p => {
+    let text = ''; const tables = [];
+    const walk = n => { for (const c of n.children) { if (c.localName === 'tbl') tables.push(c); else if (c.localName === 't') text += c.textContent; else walk(c); } };
+    walk(p);
+    if (text.trim()) out.push(text.trim());
+    tables.forEach(t => out.push(tblMd(t)));
+  };
+  for (const s of secs) {
+    const doc = parseXml(await zip.file(s).async('string'));
+    for (const p of Array.from(doc.documentElement.children).filter(c => c.localName === 'p')) para(p);
+  }
+  return out.join('\n\n');
+}
+
+/* ODT/ODP: content.xml */
+async function odfToMd(buf) {
+  await need('jszip');
+  const zip = await JSZip.loadAsync(buf);
+  const doc = parseXml(await zip.file('content.xml').async('string'));
+  const out = [];
+  const txt = el => el.textContent.trim();
+  const walk = (node, depth) => {
+    for (const c of node.children) {
+      const n = c.localName;
+      if (n === 'h') out.push('#'.repeat(Math.min(6, +(c.getAttribute('text:outline-level') || c.getAttributeNS('*', 'outline-level') || 1))) + ' ' + txt(c));
+      else if (n === 'p') { const t = txt(c); if (t) out.push(depth ? '  '.repeat(depth - 1) + '- ' + t : t); }
+      else if (n === 'list') walk(c, depth + 1);
+      else if (n === 'table') out.push(table(byLocal(c, 'table-row').map(r => byLocal(r, 'table-cell').map(txt))));
+      else if (n === 'page') { out.push('---'); walk(c, depth); }
+      else walk(c, depth);
+    }
+  };
+  walk(byLocal(doc, 'body')[0] || doc.documentElement, 0);
+  return out.join('\n\n').replace(/(- .*)\n\n(?=\s*- )/g, '$1\n');
+}
+
+async function epubToMd(buf, opts) {
+  await need('jszip');
+  const zip = await JSZip.loadAsync(buf);
+  const container = parseXml(await zip.file('META-INF/container.xml').async('string'));
+  const opfPath = byLocal(container, 'rootfile')[0].getAttribute('full-path');
+  const dir = opfPath.includes('/') ? opfPath.replace(/[^/]*$/, '') : '';
+  const opf = parseXml(await zip.file(opfPath).async('string'));
+  const items = Object.fromEntries(byLocal(opf, 'item').map(i => [i.getAttribute('id'), i.getAttribute('href')]));
+  const title = byLocal(opf, 'title')[0]?.textContent;
+  const out = title ? ['# ' + title] : [];
+  for (const ref of byLocal(opf, 'itemref')) {
+    const href = items[ref.getAttribute('idref')]; if (!href) continue;
+    const f = zip.file(decodeURIComponent(dir + href.split('#')[0])); if (!f) continue;
+    out.push(await htmlToMd(await f.async('string'), { ...opts, images: false }));
+  }
+  return out.join('\n\n---\n\n');
+}
+
+/* RTF: 제어어를 걷어내고 \'hh(CP949) 와 \uN 를 글자로 */
+function rtfToMd(buf) {
+  const s = new TextDecoder('latin1').decode(buf);
+  let out = '', bytes = [], depth = 0, skipAt = -1, uc = 1, i = 0;
+  const flushBytes = () => { if (bytes.length) { out += new TextDecoder('euc-kr').decode(new Uint8Array(bytes)); bytes = []; } };
+  const SKIP = /^(fonttbl|colortbl|stylesheet|info|pict|object|header|footer|themedata|colorschememapping|latentstyles|datastore|xmlnstbl|listtable|listoverridetable|rsidtbl|generator)$/;
+  while (i < s.length) {
+    const c = s[i];
+    if (c === '{') { depth++; i++; if (s[i] === '\\' && s[i + 1] === '*' && skipAt < 0) skipAt = depth; continue; }
+    if (c === '}') { if (depth === skipAt) skipAt = -1; depth--; i++; continue; }
+    if (c === '\\') {
+      const m = s.slice(i).match(/^\\([a-zA-Z]+)(-?\d+)? ?|^\\'([0-9a-fA-F]{2})|^\\(.)/);
+      i += m[0].length;
+      if (skipAt >= 0) continue;
+      if (m[3]) { bytes.push(parseInt(m[3], 16)); continue; }
+      flushBytes();
+      if (m[4]) { if ('\\{}'.includes(m[4])) out += m[4]; else if (m[4] === '~') out += ' '; continue; }
+      const w = m[1];
+      if (SKIP.test(w)) { skipAt = depth; continue; }
+      if (w === 'par' || w === 'line') out += '\n';
+      else if (w === 'tab') out += '\t';
+      else if (w === 'uc') uc = +m[2];
+      else if (w === 'u') { let n = +m[2]; if (n < 0) n += 65536; out += String.fromCharCode(n); for (let k = 0; k < uc && i < s.length; k++) { if (s[i] === '\\' && s[i + 1] === "'") i += 4; else i++; } }
+      continue;
+    }
+    if (skipAt >= 0 || c === '\r' || c === '\n') { i++; continue; }
+    flushBytes(); out += c; i++;
+  }
+  flushBytes();
+  return out.split('\n').map(l => l.trim()).join('\n').replace(/\n{2,}/g, '\n\n').replace(/([^\n])\n([^\n])/g, '$1\n\n$2');
+}
+
+/* 이메일(.eml) */
+function decodeWords(s) {
+  return s.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_, cs, enc, data) => {
+    try {
+      const bytes = enc.toUpperCase() === 'B' ? Uint8Array.from(atob(data), c => c.charCodeAt(0))
+        : Uint8Array.from(data.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16))), c => c.charCodeAt(0));
+      return new TextDecoder(cs).decode(bytes);
+    } catch { return data; }
+  }).replace(/\?=\s+=\?/g, '');
+}
+function parseMime(raw) {
+  const [head, ...rest] = raw.split(/\r?\n\r?\n/); const body = rest.join('\n\n');
+  const headers = {};
+  head.replace(/\r?\n[ \t]+/g, ' ').split(/\r?\n/).forEach(l => { const k = l.indexOf(':'); if (k > 0) headers[l.slice(0, k).toLowerCase()] = l.slice(k + 1).trim(); });
+  return { headers, body };
+}
+function partText({ headers, body }) {
+  const cs = (headers['content-type'] || '').match(/charset="?([^";]+)/i)?.[1] || 'utf-8';
+  const te = (headers['content-transfer-encoding'] || '').toLowerCase();
+  let bytes;
+  if (te === 'base64') bytes = Uint8Array.from(atob(body.replace(/\s/g, '')), c => c.charCodeAt(0));
+  else if (te === 'quoted-printable') bytes = Uint8Array.from(body.replace(/=\r?\n/g, '').replace(/=([0-9A-F]{2})/gi, (_, h) => String.fromCharCode(parseInt(h, 16))), c => c.charCodeAt(0));
+  else bytes = Uint8Array.from(body, c => c.charCodeAt(0) & 255);
+  try { return new TextDecoder(cs).decode(bytes); } catch { return new TextDecoder().decode(bytes); }
+}
+async function emlToMd(buf, opts) {
+  const raw = new TextDecoder('latin1').decode(buf);
+  const msg = parseMime(raw);
+  const h = msg.headers;
+  let md = `# ${decodeWords(h.subject || '(제목 없음)')}\n\n| 항목 | 값 |\n| --- | --- |\n` +
+    [['보낸 사람', h.from], ['받는 사람', h.to], ['참조', h.cc], ['날짜', h.date]].filter(r => r[1]).map(([k, v]) => `| ${k} | ${cell(decodeWords(v))} |`).join('\n');
+  const parts = [], attachments = [];
+  const collect = m => {
+    const ct = (m.headers['content-type'] || 'text/plain').toLowerCase();
+    const b = (m.headers['content-type'] || '').match(/boundary="?([^";]+)"?/i);
+    if (ct.startsWith('multipart/') && b) m.body.split('--' + b[1]).slice(1).filter(p => !p.startsWith('--')).forEach(p => collect(parseMime(p.replace(/^\r?\n/, ''))));
+    else if (/attachment|filename/i.test(m.headers['content-disposition'] || '') || /name=/i.test(ct)) attachments.push(decodeWords(((m.headers['content-disposition'] || '') + ct).match(/name\*?="?([^";]+)/i)?.[1] || '첨부'));
+    else parts.push({ ct, text: partText(m) });
+  };
+  collect(msg);
+  const plain = parts.find(p => p.ct.startsWith('text/plain')), html = parts.find(p => p.ct.startsWith('text/html'));
+  md += '\n\n' + (html ? await htmlToMd(html.text, opts) : plain ? plain.text : '');
+  if (attachments.length) md += '\n\n## 첨부 파일\n\n' + attachments.map(a => '- ' + a).join('\n');
+  return md;
+}
+
+async function zipToMd(buf, opts, say) {
+  await need('jszip');
+  const zip = await JSZip.loadAsync(buf);
+  const names = Object.keys(zip.files).filter(n => !zip.files[n].dir && !/(^|\/)(__MACOSX|\.DS_Store)/.test(n)).slice(0, 300);
+  const out = ['## 들어 있는 파일\n\n' + names.map(n => '- ' + n).join('\n')];
+  for (const [i, n] of names.entries()) {
+    say(`ZIP ${i + 1}/${names.length}: ${n}`);
+    try {
+      const md = await convert(n, await zip.file(n).async('arraybuffer'), opts, say);
+      out.push(`## ${n}\n\n` + md.replace(/^(#{1,5}) /gm, '#$1 '));
+    } catch (e) { out.push(`## ${n}\n\n> 변환하지 못했어요: ${e.message}`); }
+  }
+  return out.join('\n\n');
+}
+
+/* ---------- 화면 ---------- */
+const $ = id => document.getElementById(id);
+const files = []; let current = null, mode = 'src', queue = Promise.resolve();
+const opts = () => ({ images: $('optImages').checked, ocr: $('optOcr').checked });
+const mdName = n => n.replace(/\.[^.]+$/, '') + '.md';
+
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1800); }
+function download(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); }
+
+function renderList() {
+  $('files').innerHTML = '';
+  for (const f of files) {
+    const li = document.createElement('li'), b = document.createElement('button');
+    b.type = 'button'; b.setAttribute('aria-current', f === current);
+    const label = { wait: '대기', run: '변환 중', done: '완료', error: '실패' }[f.state];
+    b.innerHTML = `<span class="fname"></span><span class="state ${f.state}">${label}</span><span class="fmeta">${fmtSize(f.size)}</span>`;
+    b.querySelector('.fname').textContent = f.name; b.title = f.name;
+    b.onclick = () => select(f);
+    li.appendChild(b); $('files').appendChild(li);
+  }
+  const done = files.filter(f => f.state === 'done').length;
+  $('count').textContent = `파일 ${files.length}개` + (files.length ? ` · 완료 ${done}` : '');
+  $('emptyList').classList.toggle('hidden', files.length > 0);
+  $('clear').disabled = !files.length;
+  $('saveAll').disabled = $('merge').disabled = !done;
+}
+function select(f) {
+  current = f; renderList();
+  $('src').value = f.md || '';
+  const has = f.state === 'done';
+  $('copy').disabled = $('save').disabled = !has;
+  setStatus(f.state === 'error' ? f.error : f.state === 'done' ? `${mdName(f.name)} · ${f.md.length.toLocaleString()}자` : f.note || '변환을 기다리는 중', f.state === 'error');
+  if (mode === 'view') showPreview();
+}
+function setStatus(t, err) { $('status').textContent = t || ''; $('status').classList.toggle('err', !!err); }
+
+async function showPreview() {
+  const v = $('view');
+  try { await need('marked'); v.innerHTML = DOMPurify.sanitize(marked.parse($('src').value || '')); }
+  catch (e) { v.textContent = e.message; }
+}
+function setMode(m) {
+  mode = m;
+  $('tabSrc').setAttribute('aria-selected', m === 'src'); $('tabView').setAttribute('aria-selected', m === 'view');
+  $('src').classList.toggle('hidden', m !== 'src'); $('view').classList.toggle('hidden', m !== 'view');
+  if (m === 'view') showPreview();
+}
+
+function addFiles(list) {
+  for (const file of list) {
+    const f = { name: file.name, size: file.size, state: 'wait', md: '', file };
+    files.push(f);
+    if (!current) select(f);
+    queue = queue.then(() => run(f));
+  }
+  renderList();
+}
+async function run(f) {
+  f.state = 'run'; renderList(); if (f === current) select(f);
+  const say = msg => { f.note = msg; if (f === current) setStatus(msg); };
+  try {
+    say('읽는 중');
+    f.md = tidy(await convert(f.name, await f.file.arrayBuffer(), opts(), say));
+    f.state = 'done';
+  } catch (e) { console.error(e); f.state = 'error'; f.error = e.message || String(e); }
+  f.file = null; renderList(); if (f === current) select(f);
+}
+
+$('picker').onchange = e => { addFiles(e.target.files); e.target.value = ''; };
+const drop = $('drop');
+['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(t => drop.addEventListener(t, () => drop.classList.remove('over')));
+drop.addEventListener('drop', e => { e.preventDefault(); addFiles(e.dataTransfer.files); });
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => { e.preventDefault(); if (!drop.contains(e.target)) addFiles(e.dataTransfer.files); });
+document.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) addFiles(fs); });
+
+$('src').oninput = () => { if (current && current.state === 'done') current.md = $('src').value; };
+$('tabSrc').onclick = () => setMode('src'); $('tabView').onclick = () => setMode('view');
+$('copy').onclick = async () => { try { await navigator.clipboard.writeText($('src').value); toast('복사했어요'); } catch { $('src').select(); document.execCommand('copy'); toast('복사했어요'); } };
+$('save').onclick = () => download(mdName(current.name), new Blob([$('src').value], { type: 'text/markdown;charset=utf-8' }));
+$('merge').onclick = () => {
+  const md = files.filter(f => f.state === 'done').map(f => `<!-- 원본: ${f.name} -->\n\n${f.md.trim()}`).join('\n\n---\n\n') + '\n';
+  download('합친문서.md', new Blob([md], { type: 'text/markdown;charset=utf-8' }));
+};
+$('saveAll').onclick = async () => {
+  try {
+    await need('jszip'); const zip = new JSZip(), used = {};
+    for (const f of files.filter(f => f.state === 'done')) { let n = mdName(f.name); if (used[n]) n = n.replace(/\.md$/, `_${++used[n]}.md`); else used[n] = 1; zip.file(n, f.md); }
+    download('마크다운.zip', await zip.generateAsync({ type: 'blob' }));
+  } catch (e) { toast(e.message); }
+};
+$('clear').onclick = () => { files.length = 0; current = null; $('src').value = ''; $('view').innerHTML = ''; setStatus(''); $('copy').disabled = $('save').disabled = true; renderList(); };
+renderList();
+</script>
+</body>
+</html>
