@@ -130,6 +130,8 @@
   .strip .mute{margin-top:8px;width:100%;background:transparent;border:1px solid var(--line);border-radius:var(--r-sm);padding:6px}
   .strip .mute[aria-pressed="true"]{background:var(--wall);color:var(--muted);text-decoration:line-through}
   .strip.muted{opacity:.55}
+  .sbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .strip .solo[aria-pressed="true"]{background:var(--c);color:var(--wall);text-decoration:none;font-weight:700;border-color:var(--c)}
 
   footer{color:var(--muted);font-size:13px;margin-top:24px}
 
@@ -204,6 +206,19 @@
         <label class="inline">템포를 알면 <input type="number" id="file-bpm" min="0" max="220" placeholder="자동" /> BPM</label>
       </div>
       <div class="status" id="file-status"></div>
+      <div class="row" id="tempo-fix" hidden style="margin-top:10px">
+        <span style="color:var(--muted);font-size:14px">템포가 원곡의 절반이나 두 배로 잡혔다면</span>
+        <button class="btn" id="tempo-x2">두 배로 다시 분석</button>
+        <button class="btn" id="tempo-h">절반으로 다시 분석</button>
+      </div>
+      <div class="row" id="song-ctl" hidden style="margin-top:10px">
+        <label class="inline"><input type="checkbox" id="with-song" checked /> 재생할 때 원곡도 같이 틀기</label>
+        <label class="inline">원곡 볼륨 <input type="range" id="song-vol" min="0" max="1" step="0.01" value="0.6" /></label>
+        <span class="inline" style="color:var(--muted);font-size:14px">박자 맞추기</span>
+        <button class="btn" id="nudge-m" aria-label="밴드를 20밀리초 앞당기기">−20ms</button>
+        <span id="nudge-v" style="min-width:52px;text-align:center;font-size:14px">0ms</span>
+        <button class="btn" id="nudge-p" aria-label="밴드를 20밀리초 늦추기">+20ms</button>
+      </div>
     </div>
   </section>
 
@@ -216,7 +231,7 @@
       <div class="styles" id="styles" role="group" aria-label="장르"></div>
       <div class="sep"></div>
       <div class="tempo">
-        <label class="inline">템포 <input type="number" id="bpm" min="40" max="220" value="96" /></label>
+        <label class="inline">템포 <input type="number" id="bpm" min="40" max="220" step="any" value="96" /></label>
         <button class="btn" id="tap">탭</button>
       </div>
       <div class="tempo" role="group" aria-label="키 옮기기">
@@ -356,6 +371,11 @@ const STYLES = {
     bass:[[0,'R',2],[2,'R',2],[4,'R',2],[6,'R',2],[8,'R',2],[10,'R',2],[12,'8',2],[14,'5',2]],
     keys:{mode:'organ', hits:[[0,16,.32]]},
     guitar:{mode:'power', hits:[[0,'D',2,.9],[2,'D',2,.6,1],[4,'D',2,.6,1],[6,'D',2,.75],[8,'D',2,.9],[10,'D',2,.6,1],[12,'D',2,.6,1],[14,'D',2,.75]]}},
+  speed:{name:'스피드 록', bpm:156, swing:0,
+    drums:{k:'X.x...x.X.x...x.', s:'....X.......X...', h:'X.x.X.x.X.x.X.x.'},
+    bass:[[0,'R',2],[2,'8',2],[4,'R',2],[6,'8',2],[8,'R',2],[10,'8',2],[12,'5',2],[14,'A',2]],
+    keys:{mode:'organ', hits:[[0,16,.26]]},
+    guitar:{mode:'power', hits:[[0,'D',2,.95],[2,'D',2,.7],[4,'D',2,.8],[6,'D',2,.7],[8,'D',2,.95],[10,'D',2,.7],[12,'D',2,.8],[14,'D',2,.7]]}},
   ballad:{name:'발라드', bpm:70, swing:0,
     drums:{k:'x.........x.....', s:'........x.......', h:'x.x.x.x.x.x.x.x.', soft:true},
     bass:[[0,'R',8],[8,'5',6],[14,'A',2]],
@@ -407,7 +427,8 @@ function initAudio(){
   const nd=noiseBuf.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
   return ctx;
 }
-function applyMix(k){ if(busses[k]) busses[k].gain.value = mix[k].mute?0:mix[k].vol; }
+let solo=null;
+function applyMix(k){ if(busses[k]) busses[k].gain.value = (mix[k].mute||(solo&&solo!==k))?0:mix[k].vol; }
 function env(g,t,a,peak,d,sus,rel,end){
   g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+a);
   g.gain.setTargetAtTime(sus,t+a,d);
@@ -582,9 +603,11 @@ function scheduleStep(gs,t){
     strum(notes, tt, len*sd, vel, dir, {muted:!!muted, slow:G.slow, chop:G.chop, tone:G.nylon?2200:(G.mode==='power'?2600:4200)});
   }
 }
+const song = {buf:null, start:0, bpm:0, nudge:0, src:null, gain:null};
 function scheduler(){
   const sd = 60/state.bpm/4;
   while(state.nextTime < ctx.currentTime + .12){
+    if(state.once && state.step >= state.arr.length*16) return;
     scheduleStep(state.step, state.nextTime);
     state.nextTime += sd; state.step++;
   }
@@ -592,12 +615,24 @@ function scheduler(){
 function play(){
   if(!state.arr.length) return;
   initAudio(); ctx.resume();
-  state.playing=true; state.step=0; state.nextTime=ctx.currentTime+.08; state.visQ=[];
+  state.playing=true; state.step=0; state.nextTime=ctx.currentTime+.08; state.visQ=[]; state.once=false;
+  if(song.buf && $('#with-song').checked){
+    // 원곡과 같이: 원곡의 첫 마디 시작 시각에 밴드 1마디를 맞춤, 반복하지 않음
+    const t0=ctx.currentTime+.15; let bandStart=t0+song.start+song.nudge/1000, skip=0;
+    if(bandStart<t0+.05){ skip=t0+.05-bandStart; bandStart=t0+.05; }
+    song.gain=ctx.createGain(); song.gain.gain.value=+$('#song-vol').value; song.gain.connect(master);
+    song.src=ctx.createBufferSource(); song.src.buffer=song.buf; song.src.connect(song.gain);
+    song.src.onended=()=>{ if(state.playing) stop(); };
+    song.src.start(t0, skip);
+    if(Math.abs(state.bpm-song.bpm)>.001) song.src.playbackRate.value=state.bpm/song.bpm;  // 템포를 바꿨으면 원곡도 같이 빠르기 조절
+    state.nextTime=bandStart; state.once=true;
+  }
   scheduler(); state.timer=setInterval(scheduler,25);
   setPlayIcon(true);
 }
 function stop(){
   state.playing=false; clearInterval(state.timer); state.timer=null; setPlayIcon(false);
+  if(song.src){ try{ song.src.onended=null; song.src.stop(); }catch(e){} song.src=null; }
   document.querySelectorAll('.bar.on').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.bar .head').forEach(h=>h.style.width='0');
 }
@@ -662,6 +697,7 @@ const INST = [
 const ROLE = {
   pop:{bass:'루트 8비트, 다음 코드로 반음 접근', keys:'일렉 피아노 코드 유지', guitar:'다운·다운업·업다운업 스트로크', drums:'킥 1·3, 스네어 2·4'},
   rock:{bass:'루트 8분음 밀어붙이기', keys:'오르간 패드', guitar:'파워코드, 사이사이 브리지 뮤트', drums:'강한 백비트, 오픈 하이햇'},
+  speed:{bass:'루트-옥타브 8분음 펌핑, 다음 코드로 접근', keys:'오르간 깔기', guitar:'오픈 파워코드 8분음', drums:'질주하는 킥, 강한 백비트'},
   ballad:{bass:'온음표 루트와 5도', keys:'분산화음 아르페지오', guitar:'느린 스트로크', drums:'하프타임, 3박 스네어'},
   funk:{bass:'싱코페이션 옥타브', keys:'짧게 끊는 스탭', guitar:'16비트 커팅', drums:'16비트 하이햇, 고스트노트'},
   shuffle:{bass:'R-3-5-6-♭7 워킹', keys:'뒷박 콤핑', guitar:'뮤트 셔플', drums:'스윙 8분음'},
@@ -673,8 +709,11 @@ function renderMixer(){
     const d=document.createElement('div'); d.className='strip'+(mix[i.k].mute?' muted':''); d.dataset.k=i.k; d.style.setProperty('--c',i.c);
     d.innerHTML=`<h3>${i.name}<span class="led"></span></h3><p>${ROLE[state.style][i.k]}</p>
       <input type="range" min="0" max="1" step="0.01" value="${mix[i.k].vol}" aria-label="${i.name} 볼륨">
-      <button class="mute" aria-pressed="${mix[i.k].mute}">${mix[i.k].mute?'꺼짐':'켜짐'}</button>`;
+      <div class="sbtns"><button class="mute" aria-pressed="${mix[i.k].mute}">${mix[i.k].mute?'꺼짐':'켜짐'}</button>
+      <button class="mute solo" aria-pressed="${solo===i.k}">${solo===i.k?'같이 듣기':'이것만'}</button></div>`;
     d.querySelector('input').oninput=e=>{ mix[i.k].vol=+e.target.value; applyMix(i.k); };
+    if(solo && solo!==i.k) d.classList.add('muted');
+    d.querySelector('.solo').onclick=()=>{ solo = solo===i.k?null:i.k; Object.keys(mix).forEach(applyMix); renderMixer(); };
     d.querySelector('.mute').onclick=()=>{ mix[i.k].mute=!mix[i.k].mute; applyMix(i.k); renderMixer(); };
     el.appendChild(d);
   }
@@ -683,11 +722,11 @@ function renderStyles(){
   const el=$('#styles'); el.innerHTML='';
   for(const [k,s] of Object.entries(STYLES)){
     const b=document.createElement('button'); b.className='style'; b.textContent=s.name; b.setAttribute('aria-pressed', k===state.style);
-    b.onclick=()=>{ state.style=k; setBpm(s.bpm); renderStyles(); renderMixer(); };
+    b.onclick=()=>{ state.style=k; if(!(song.buf && $('#with-song').checked)) setBpm(s.bpm); renderStyles(); renderMixer(); };
     el.appendChild(b);
   }
 }
-function setBpm(v){ state.bpm=Math.max(40,Math.min(220,Math.round(v))); $('#bpm').value=state.bpm; }
+function setBpm(v){ state.bpm=Math.max(40,Math.min(220,Math.round(v*100)/100)); $('#bpm').value=+state.bpm.toFixed(2); }
 
 /* =========================================================
    7. 듣기: 크로마 → 코드 추정
@@ -766,15 +805,22 @@ function estimateTempo(onset, ohSec){
   // 평균 빼기 → 자기상관, 60~180 BPM, 110 근처 선호
   const n=onset.length, mean=onset.reduce((a,b)=>a+b,0)/n, o=onset.map(v=>v-mean);
   let best=null;
-  for(let bpm=60;bpm<=180;bpm+=.5){
+  for(let bpm=60;bpm<=200;bpm+=.5){
     const lag=60/bpm/ohSec, l0=Math.floor(lag), fr=lag-l0; let s=0;
     for(let i=0;i+l0+1<n;i++) s+=o[i]*(o[i+l0]*(1-fr)+o[i+l0+1]*fr);
-    s*=Math.exp(-.5*Math.pow(Math.log2(bpm/110)/.9,2));
+    s*=Math.exp(-.5*Math.pow(Math.log2(bpm/120)/1.0,2));
     if(!best||s>best.s) best={bpm,s};
   }
-  const period=60/best.bpm/ohSec; let bp=0,bs=-1;
-  for(let ph=0;ph<period;ph+=.5){ let s=0,c=0; for(let x=ph;x<n;x+=period){ s+=onset[Math.round(x)]||0; c++; } s/=c||1; if(s>bs){bs=s;bp=ph;} }
-  return {bpm:best.bpm, phase:bp*ohSec};
+  return refineTempo(onset, ohSec, best.bpm, .6);
+}
+/* 곡 전체에서 박 위치와 온셋이 가장 잘 겹치는 템포·시작점 (0.02 BPM 단위, 원곡 싱크용) */
+function refineTempo(onset, ohSec, bpm0, range){
+  const n=onset.length; let best={s:-1};
+  const score=(bpm)=>{ const period=60/bpm/ohSec; let bs=-1,bp=0;
+    for(let ph=0;ph<period;ph+=.5){ let s=0,c=0; for(let x=ph;x<n;x+=period){ const i=Math.floor(x), f=x-i; s+=(onset[i]||0)*(1-f)+(onset[i+1]||0)*f; c++; } s/=c||1; if(s>bs){bs=s;bp=ph;} }
+    return {s:bs, ph:bp}; };
+  for(let b=bpm0-range;b<=bpm0+range+1e-9;b+=.02){ const r=score(b); if(r.s>best.s) best={s:r.s,bpm:b,ph:r.ph}; }
+  return {bpm:Math.round(best.bpm*100)/100, phase:best.ph*ohSec};
 }
 /* 박마다 크로마 평균 → 비터비로 매끄럽게 */
 function beatChords(frames, beatTimes){
@@ -824,14 +870,14 @@ function changesInside(beats, offset){
 /* 노래 파일 분석 (BPM 모름) */
 function analyzeSong(samples, sr, bpmHint){
   const A=analyzeFrames(samples,sr);
-  const tempo = estimateTempo(A.onset, A.ohSec);
-  const bpm = bpmHint>0 ? bpmHint : tempo.bpm, beat=60/bpm;
+  const tempo = bpmHint>0 ? refineTempo(A.onset, A.ohSec, bpmHint, .5) : estimateTempo(A.onset, A.ohSec);
+  const bpm = tempo.bpm, beat=60/bpm;
   const times=[]; for(let t=tempo.phase; t<A.dur; t+=beat) times.push(t);
   const beats=beatChords(A.frames, times);
   let bo=0, bc=1e9; for(let o=0;o<4;o++){ const c=changesInside(beats,o); if(c<bc){bc=c;bo=o;} }
   // 앞뒤 무음 마디 정리
   let bars=beatsToBars(beats, bo, true);
-  return {bpm:Math.round(bpm), bars};
+  return {bpm, bars, start: times[bo]||0};
 }
 /* 마이크 녹음 분석 (BPM·박 위치를 앎) */
 function analyzeTake(samples, sr, bpm, nBars, split){
@@ -840,7 +886,7 @@ function analyzeTake(samples, sr, bpm, nBars, split){
   const beats=beatChords(A.frames, times);
   return beatsToBars(beats, 0, split);
 }
-window.__jam = {parseProgression, parseChord, analyzeSong, analyzeTake, keysVoicing, guitarVoicing, STYLES, state};
+window.__jam = {song, estimateTempo, refineTempo, parseProgression, parseChord, analyzeSong, analyzeTake, keysVoicing, guitarVoicing, STYLES, state};
 
 /* =========================================================
    8. 마이크 녹음
@@ -911,7 +957,7 @@ function finishMic(ok, opt){
 /* =========================================================
    9. 노래 파일
    ========================================================= */
-async function handleFile(file){
+async function handleFile(file, hint){
   if(!file) return;
   initAudio();
   const st=$('#file-status'); st.textContent='파일을 여는 중…';
@@ -921,10 +967,13 @@ async function handleFile(file){
     await new Promise(r=>setTimeout(r,30));
     const L=buf.getChannelData(0), R=buf.numberOfChannels>1?buf.getChannelData(1):L, mono=new Float32Array(L.length);
     for(let i=0;i<L.length;i++) mono[i]=(L[i]+R[i])*.5;
-    const res=analyzeSong(mono, buf.sampleRate, +$('#file-bpm').value||0);
+    song.mono=mono;
+    const res=analyzeSong(mono, buf.sampleRate, hint || +$('#file-bpm').value||0);
     if(!res.bars.length){ st.textContent='코드를 찾지 못했어요. 반주가 또렷한 구간이 있는 파일로 다시 해 보세요.'; return; }
+    song.buf=buf; song.start=res.start; song.bpm=res.bpm; song.nudge=0; $('#nudge-v').textContent='0ms';
     applyDetected(res.bars, res.bpm);
-    st.textContent=`템포 약 ${res.bpm} BPM, ${res.bars.length}마디를 적었어요. 필요한 구간만 남기려면 ‘직접 적기’에서 지우면 돼요.`;
+    $('#song-ctl').hidden=false; $('#tempo-fix').hidden=false;
+    st.textContent=`템포 ${res.bpm.toFixed(1)} BPM, ${res.bars.length}마디를 적었어요. 재생하면 원곡 위에 밴드가 얹혀요. 마디 수는 그대로 두고 코드만 고쳐야 싱크가 맞아요.`;
   }catch(e){
     st.textContent='이 파일은 열 수 없어요. mp3, m4a, wav 파일로 다시 골라 주세요.';
   }
@@ -959,6 +1008,11 @@ function init(){
   $('#tr-down').onclick=()=>{ $('#prog').value=progressionToText(transposeBars(state.bars,-1)); readText(); };
   $('#mic-btn').onclick=()=> mic.on ? finishMic(false) : startMic();
   $('#file-in').onchange=e=>handleFile(e.target.files[0]);
+  $('#tempo-x2').onclick=()=>{ if(song.bpm*2<=220) handleFile($('#file-in').files[0], song.bpm*2); };
+  $('#tempo-h').onclick=()=>{ if(song.bpm/2>=40) handleFile($('#file-in').files[0], song.bpm/2); };
+  $('#song-vol').oninput=e=>{ if(song.gain) song.gain.gain.value=+e.target.value; };
+  const nudge=d=>{ song.nudge+=d; $('#nudge-v').textContent=(song.nudge>0?'+':'')+song.nudge+'ms'; if(state.playing && state.once) state.nextTime+=d/1000; };
+  $('#nudge-m').onclick=()=>nudge(-20); $('#nudge-p').onclick=()=>nudge(20);
   document.addEventListener('keydown',e=>{ if(e.code==='Space' && !/TEXTAREA|INPUT|SELECT|BUTTON/.test(e.target.tagName)){ e.preventDefault(); state.playing?stop():play(); } });
   buildChromaUI(); renderStyles(); renderMixer(); setBpm(STYLES.pop.bpm); readText();
 }
