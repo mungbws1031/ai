@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>합주실 — 코드만 들려주면 밴드가 따라 쳐요</title>
+<meta name="description" content="노래 코드를 마이크·파일·텍스트로 들려주면 베이스, 키보드, 기타, 드럼이 어울리게 반주해 주는 웹앱" />
+<meta name="theme-color" content="#1e2447" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --wall:#1e2447;      /* 방음벽 남색 */
+    --wall2:#262d58;
+    --panel:#2f376a;
+    --line:#434c86;
+    --ink:#f3f1ff;
+    --muted:#a9addb;
+    --tape:#f4d35e;      /* 마스킹 테이프 */
+    --tape-ink:#3a2f05;
+    --bass:#4cc9b0;
+    --keys:#ff8fa3;
+    --gtr:#ff9f43;
+    --drum:#b8a4ff;
+    --bad:#ff6b6b;
+    --r-sm:6px; --r-lg:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--wall);
+    background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.05) 1px, transparent 0);
+    background-size:14px 14px;
+    color:var(--ink);
+    font:400 16px/1.55 "IBM Plex Sans KR", system-ui, sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:24px 16px 80px}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:3px solid var(--tape);outline-offset:2px}
+
+  /* 테이프 라벨 */
+  .tape{
+    display:inline-block;background:var(--tape);color:var(--tape-ink);
+    font-family:"Gaegu",cursive;font-weight:700;
+    padding:2px 12px 0;transform:rotate(-1.5deg);
+    clip-path:polygon(2% 0,100% 4%,98% 100%,0 94%);
+  }
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+  h1{margin:0;font-family:"Gaegu",cursive;font-size:56px;line-height:1;font-weight:700;letter-spacing:-.5px}
+  h1 .tape{font-size:56px;padding:4px 18px 0}
+  .lead{margin:10px 0 0;color:var(--muted);max-width:60ch}
+
+  section{background:var(--wall2);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;margin-top:16px}
+  h2{margin:0 0 12px;font-size:18px;font-weight:700}
+
+  /* 입력 탭 */
+  .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{background:transparent;border:1px solid var(--line);border-radius:999px;padding:7px 14px;color:var(--muted)}
+  .tab[aria-selected="true"]{background:var(--ink);color:var(--wall);border-color:var(--ink);font-weight:700}
+  .pane[hidden]{display:none}
+  textarea{
+    width:100%;min-height:92px;resize:vertical;background:var(--wall);border:1px solid var(--line);
+    border-radius:var(--r-sm);padding:12px;font-size:20px;line-height:1.5;font-family:"IBM Plex Sans KR",sans-serif;
+  }
+  .hint{color:var(--muted);font-size:14px;margin:8px 0 0}
+  .hint code{background:var(--wall);padding:1px 6px;border-radius:4px;color:var(--ink)}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:5px 10px;font-size:14px}
+  .chip:hover{border-color:var(--muted)}
+  .btn{background:var(--panel);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 16px;font-weight:500}
+  .btn:hover{border-color:var(--muted)}
+  .btn.primary{background:var(--tape);color:var(--tape-ink);border-color:var(--tape);font-weight:700}
+  .btn.rec{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:700}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .err{color:var(--bad);font-size:14px;margin-top:8px;min-height:1em}
+  label.inline{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
+  select,input[type=number]{background:var(--wall);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 8px}
+  input[type=number]{width:76px}
+
+  /* 마이크 */
+  .listen{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:center;margin-top:12px}
+  .now-chord{font-family:"Gaegu",cursive;font-size:64px;font-weight:700;line-height:1;min-height:64px}
+  .chroma{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:90px;align-items:end}
+  .chroma div{background:var(--tape);border-radius:3px 3px 0 0;height:2%;transition:height .08s linear}
+  .chroma-labels{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;font-size:11px;color:var(--muted);text-align:center;margin-top:3px}
+  .meter{height:8px;background:var(--wall);border-radius:4px;overflow:hidden;margin-top:10px}
+  .meter i{display:block;height:100%;width:0;background:var(--bad)}
+  .status{font-size:15px;margin-top:8px;min-height:1.5em}
+
+  /* 트랜스포트 */
+  .transport{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .play{
+    width:64px;height:64px;border-radius:50%;border:none;background:var(--tape);color:var(--tape-ink);
+    display:grid;place-items:center;flex:none
+  }
+  .play svg{width:26px;height:26px}
+  .styles{display:flex;gap:6px;flex-wrap:wrap}
+  .style{border:1px solid var(--line);background:transparent;border-radius:var(--r-sm);padding:7px 12px;color:var(--muted)}
+  .style[aria-pressed="true"]{border-color:var(--tape);color:var(--tape);font-weight:700}
+  .tempo{display:flex;gap:6px;align-items:center}
+  .sep{flex:1}
+
+  /* 코드 차트: 테이프가 붙은 마디 */
+  .chart{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:16px;border-left:3px solid var(--ink)}
+  .bar{
+    position:relative;border-right:2px solid var(--muted);padding:14px 8px 10px;min-height:78px;
+    display:flex;gap:6px;align-items:flex-start
+  }
+  .bar:nth-child(4n){border-right:3px solid var(--ink)}
+  .bar .num{position:absolute;left:6px;bottom:4px;font-size:11px;color:var(--muted)}
+  .bar .tape{font-size:26px;line-height:1.2}
+  .bar .tape:nth-child(2n){transform:rotate(1.2deg)}
+  .bar.on{background:rgba(244,211,94,.1)}
+  .bar .head{position:absolute;bottom:0;left:0;height:3px;background:var(--tape);width:0}
+  .empty{color:var(--muted);padding:18px 4px}
+
+  /* 믹서 */
+  .mixer{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .strip{background:var(--panel);border-radius:var(--r-lg);padding:14px;border-top:5px solid var(--c)}
+  .strip h3{margin:0;font-size:17px;display:flex;justify-content:space-between;align-items:center}
+  .led{width:14px;height:14px;border-radius:50%;background:var(--wall);box-shadow:inset 0 0 0 2px rgba(0,0,0,.3)}
+  .led.hit{background:var(--c);box-shadow:0 0 14px var(--c)}
+  .strip p{margin:4px 0 10px;font-size:13px;color:var(--muted);min-height:2.6em}
+  .strip input[type=range]{width:100%;accent-color:var(--c)}
+  .strip .mute{margin-top:8px;width:100%;background:transparent;border:1px solid var(--line);border-radius:var(--r-sm);padding:6px}
+  .strip .mute[aria-pressed="true"]{background:var(--wall);color:var(--muted);text-decoration:line-through}
+  .strip.muted{opacity:.55}
+
+  footer{color:var(--muted);font-size:13px;margin-top:24px}
+
+  @media (max-width:760px){
+    h1,h1 .tape{font-size:42px}
+    .chart{grid-template-columns:repeat(2,1fr)}
+    .bar:nth-child(4n){border-right:2px solid var(--muted)}
+    .bar:nth-child(2n){border-right:3px solid var(--ink)}
+    .mixer{grid-template-columns:repeat(2,1fr)}
+    .listen{grid-template-columns:1fr}
+    .sep{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .chroma div{transition:none}
+    .led.hit{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span class="tape">합주실</span></h1>
+      <p class="lead">코드를 들려주세요. 베이스, 키보드, 기타, 드럼이 그 코드에 맞춰 같이 연주해요.</p>
+    </div>
+  </header>
+
+  <section aria-labelledby="in-h">
+    <h2 id="in-h">코드 들려주기</h2>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-pane="p-text" id="t-text">직접 적기</button>
+      <button class="tab" role="tab" aria-selected="false" data-pane="p-mic" id="t-mic">마이크로 연주하기</button>
+      <button class="tab" role="tab" aria-selected="false" data-pane="p-file" id="t-file">노래 파일 넣기</button>
+    </div>
+
+    <div class="pane" id="p-text" role="tabpanel" aria-labelledby="t-text">
+      <textarea id="prog" spellcheck="false" aria-label="코드 진행">C G Am F</textarea>
+      <p class="hint">한 칸이 한 마디예요. 한 마디에 코드 두 개는 쉼표로 <code>C,G</code>, 앞 마디 반복은 <code>%</code>. <code>Am7</code> <code>Cmaj7</code> <code>G/B</code> <code>Bm7b5</code> <code>Dsus4</code> 같은 표기를 읽어요.</p>
+      <div class="chips" id="presets"></div>
+      <div class="err" id="parse-err" role="alert"></div>
+    </div>
+
+    <div class="pane" id="p-mic" role="tabpanel" aria-labelledby="t-mic" hidden>
+      <p class="hint" style="margin-top:0">기타나 피아노로 코드를 치면 박자에 맞춰 들은 뒤, 마디마다 코드를 적어요. 딸깍 소리가 박자예요. 이어폰을 끼면 더 정확해요.</p>
+      <div class="row" style="margin-top:10px">
+        <label class="inline">템포 <input type="number" id="mic-bpm" min="40" max="220" value="90" /> BPM</label>
+        <label class="inline">길이
+          <select id="mic-bars"><option value="4">4마디</option><option value="8" selected>8마디</option><option value="16">16마디</option></select>
+        </label>
+        <label class="inline">한 마디에
+          <select id="mic-split"><option value="1">코드 1개</option><option value="2" selected>최대 2개</option></select>
+        </label>
+        <button class="btn rec" id="mic-btn">듣기 시작</button>
+      </div>
+      <div class="listen">
+        <div>
+          <div class="now-chord" id="mic-chord" aria-live="polite">–</div>
+          <div class="status" id="mic-status">준비되면 ‘듣기 시작’을 누르세요. 한 마디 동안 딸깍 소리로 세어 드려요.</div>
+          <div class="meter" aria-hidden="true"><i id="mic-meter"></i></div>
+        </div>
+        <div aria-hidden="true">
+          <div class="chroma" id="chroma"></div>
+          <div class="chroma-labels" id="chroma-labels"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pane" id="p-file" role="tabpanel" aria-labelledby="t-file" hidden>
+      <p class="hint" style="margin-top:0">mp3, m4a, wav 같은 노래 파일을 고르면 템포와 마디별 코드를 찾아 적어요. 파일은 이 기기 안에서만 분석해요.</p>
+      <div class="row" style="margin-top:10px">
+        <input type="file" id="file-in" accept="audio/*" />
+        <label class="inline">템포를 알면 <input type="number" id="file-bpm" min="0" max="220" placeholder="자동" /> BPM</label>
+      </div>
+      <div class="status" id="file-status"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="band-h">
+    <h2 id="band-h">밴드</h2>
+    <div class="transport">
+      <button class="play" id="play" aria-label="반주 시작">
+        <svg viewBox="0 0 24 24" id="play-ico"><path d="M7 4l13 8-13 8z" fill="currentColor"/></svg>
+      </button>
+      <div class="styles" id="styles" role="group" aria-label="장르"></div>
+      <div class="sep"></div>
+      <div class="tempo">
+        <label class="inline">템포 <input type="number" id="bpm" min="40" max="220" value="96" /></label>
+        <button class="btn" id="tap">탭</button>
+      </div>
+      <div class="tempo" role="group" aria-label="키 옮기기">
+        <button class="btn" id="tr-down" aria-label="반음 내리기">♭ 반음</button>
+        <button class="btn" id="tr-up" aria-label="반음 올리기">♯ 반음</button>
+      </div>
+    </div>
+    <div class="chart" id="chart" aria-label="코드 차트"></div>
+  </section>
+
+  <section aria-labelledby="mix-h">
+    <h2 id="mix-h">믹서</h2>
+    <div class="mixer" id="mixer"></div>
+  </section>
+
+  <footer>마이크·파일 분석은 코드의 소리 성분(크로마)을 비교해 추정한 결과예요. 틀린 마디는 위 칸에서 고쳐 쓰면 바로 반영돼요.</footer>
+</div>
+
+<script>
+'use strict';
+/* =========================================================
+   1. 음악 기초: 음이름, 코드 파싱
+   ========================================================= */
+const NAMES = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+const LETTER = {C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const QUALITY = {
+  '':[0,4,7], m:[0,3,7], '7':[0,4,7,10], maj7:[0,4,7,11], m7:[0,3,7,10], mmaj7:[0,3,7,11],
+  dim:[0,3,6], dim7:[0,3,6,9], m7b5:[0,3,6,10], aug:[0,4,8], sus4:[0,5,7], sus2:[0,2,7], '7sus4':[0,5,7,10],
+  '6':[0,4,7,9], m6:[0,3,7,9], '9':[0,4,7,10,14], m9:[0,3,7,10,14], maj9:[0,4,7,11,14], add9:[0,4,7,14], madd9:[0,3,7,14]
+};
+const QALIAS = {
+  M:'', maj:'', major:'', min:'m', '-':'m', mi:'m', M7:'maj7', 'Δ':'maj7', 'Δ7':'maj7', ma7:'maj7',
+  min7:'m7', '-7':'m7', mi7:'m7', 'ø':'m7b5', 'ø7':'m7b5', 'm7-5':'m7b5', '-7b5':'m7b5',
+  '°':'dim', o:'dim', '°7':'dim7', o7:'dim7', '+':'aug', sus:'sus4', mM7:'mmaj7', 'm(maj7)':'mmaj7',
+  dom7:'7', '2':'add9', add2:'add9', m2:'madd9'
+};
+function pcOf(str){
+  const m = /^([A-Ga-g])([#b♯♭]?)$/.exec(str); if(!m) return null;
+  let pc = LETTER[m[1].toUpperCase()];
+  if(m[2]==='#'||m[2]==='♯') pc++; if(m[2]==='b'||m[2]==='♭') pc--;
+  return (pc+12)%12;
+}
+function parseChord(tok){
+  const m = /^([A-Ga-g])([#b♯♭]?)([^/]*)(?:\/([A-Ga-g][#b♯♭]?))?$/.exec(tok.trim());
+  if(!m) return null;
+  const root = pcOf(m[1]+m[2]); let q = m[3];
+  if(!(q in QUALITY)) q = QALIAS[q];
+  if(q===undefined || !(q in QUALITY)) return null;
+  const bass = m[4] ? pcOf(m[4]) : null;
+  return {root, q, iv:QUALITY[q], bass, name:chordName(root,q,bass)};
+}
+function chordName(root,q,bass){ return NAMES[root]+q+(bass!=null&&bass!==root?'/'+NAMES[bass]:''); }
+
+/* "C G Am F" → [[C],[G],[Am],[F]]  /  "C,G" → 한 마디 두 코드 */
+function parseProgression(text){
+  const toks = text.replace(/[|｜\n\r\t]/g,' ').split(' ').filter(Boolean);
+  const bars = [], bad = [];
+  for(const t of toks){
+    if(t==='%'){ if(bars.length) bars.push(bars[bars.length-1]); continue; }
+    const parts = t.split(',').filter(Boolean).map(p=>{ const c=parseChord(p); if(!c) bad.push(p); return c; });
+    if(parts.every(Boolean) && parts.length) bars.push(parts.slice(0,4));
+  }
+  return {bars, bad};
+}
+function progressionToText(bars){
+  const lines = [];
+  for(let i=0;i<bars.length;i+=4) lines.push(bars.slice(i,i+4).map(b=>b.map(c=>c.name).join(',')).join('  '));
+  return lines.join('\n');
+}
+function transposeBars(bars, n){
+  return bars.map(b=>b.map(c=>{
+    const root=(c.root+n+12)%12, bass=c.bass==null?null:(c.bass+n+12)%12;
+    return {...c, root, bass, name:chordName(root,c.q,bass)};
+  }));
+}
+
+/* =========================================================
+   2. 보이싱 (키보드는 가까운 자리바꿈으로 이어 가기)
+   ========================================================= */
+function chordPcs(c){
+  let iv = c.iv.map(x=>x%12);
+  iv = [...new Set(iv)];
+  if(iv.length>4) iv = iv.filter(x=>x!==7);           // 5음 이상이면 5음 생략
+  return iv.map(x=>(c.root+x)%12);
+}
+function keysVoicing(c, prev){
+  const pcs = chordPcs(c); let best=null, bestCost=1e9;
+  for(let rot=0; rot<pcs.length; rot++){
+    const order = pcs.slice(rot).concat(pcs.slice(0,rot));
+    for(let base=52; base<=64; base++){
+      if(base%12!==order[0]) continue;
+      const v=[base];
+      for(let i=1;i<order.length;i++){ let n=v[i-1]+1; while(n%12!==order[i]) n++; v.push(n); }
+      if(v[v.length-1]>79) continue;
+      let cost;
+      if(prev){ cost=0; for(let i=0;i<Math.max(v.length,prev.length);i++){ cost+=Math.abs((v[Math.min(i,v.length-1)])-(prev[Math.min(i,prev.length-1)])); } }
+      else cost = Math.abs(v.reduce((a,b)=>a+b,0)/v.length-64);
+      if(cost<bestCost){bestCost=cost;best=v;}
+    }
+  }
+  return best;
+}
+function guitarVoicing(c){
+  const lowPc = c.bass!=null ? c.bass : c.root;
+  let low = 40; while(low%12!==lowPc) low++;            // E2 ~ Eb3
+  const pcs = chordPcs(c);
+  const v=[low];
+  // 5도(있으면)를 바로 위에
+  const fifth = pcs.find(p=>(p-c.root+12)%12===7 || (p-c.root+12)%12===6 || (p-c.root+12)%12===8);
+  let n = low+1;
+  if(fifth!=null){ while(n%12!==fifth) n++; v.push(n); }
+  // 위쪽 옥타브에 모든 코드음
+  const upper = [];
+  for(const p of pcs){ let m=v[v.length-1]+1; while(m%12!==p) m++; upper.push(m); }
+  upper.sort((a,b)=>a-b);
+  for(const m of upper){ if(v.length<6) v.push(m); }
+  if(v.length<6){ let m=v[v.length-1]+1; while(m%12!==c.root) m++; if(m<=71) v.push(m); }
+  return v.slice(0,6);
+}
+function bassRoot(c){ const pc = c.bass!=null?c.bass:c.root; let n=28; while(n%12!==pc) n++; return n; }  // E1~Eb2
+
+/* =========================================================
+   3. 장르별 패턴 (한 마디 = 16칸)
+   drums: X 강하게, x 보통, g 고스트
+   bass: [칸, 음(R 5 8 3 6 b7 A=다음 코드로 다가가는 음), 길이]
+   keys: block [칸,길이,세기] / arp [칸,길이,순번,세기] / organ
+   guitar: strum [칸,방향,길이,세기,뮤트] / pick [칸,길이,줄,세기]
+   ========================================================= */
+const STYLES = {
+  pop:{name:'팝', bpm:96, swing:0,
+    drums:{k:'x.......x.x.....', s:'....X.......X...', h:'x.x.x.x.x.x.x.x.'},
+    bass:[[0,'R',3],[3,'R',1],[6,'R',2],[8,'R',3],[11,'5',1],[12,'8',2],[14,'A',2]],
+    keys:{mode:'block', hits:[[0,7,.5],[8,6,.42],[14,2,.32]]},
+    guitar:{mode:'strum', hits:[[0,'D',4,.85],[4,'D',2,.6],[6,'U',4,.45],[10,'U',2,.5],[12,'D',2,.65],[14,'U',2,.45]]}},
+  rock:{name:'록', bpm:124, swing:0,
+    drums:{k:'X.....x.X.x.....', s:'....X.......X...', h:'x.x.x.x.x.x.x.x.'},
+    bass:[[0,'R',2],[2,'R',2],[4,'R',2],[6,'R',2],[8,'R',2],[10,'R',2],[12,'8',2],[14,'5',2]],
+    keys:{mode:'organ', hits:[[0,16,.32]]},
+    guitar:{mode:'power', hits:[[0,'D',2,.9],[2,'D',2,.6,1],[4,'D',2,.6,1],[6,'D',2,.75],[8,'D',2,.9],[10,'D',2,.6,1],[12,'D',2,.6,1],[14,'D',2,.75]]}},
+  ballad:{name:'발라드', bpm:70, swing:0,
+    drums:{k:'x.........x.....', s:'........x.......', h:'x.x.x.x.x.x.x.x.', soft:true},
+    bass:[[0,'R',8],[8,'5',6],[14,'A',2]],
+    keys:{mode:'arp', hits:[[0,4,0,.6],[2,4,1,.38],[4,4,2,.42],[6,4,3,.38],[8,4,4,.5],[10,4,3,.36],[12,4,2,.4],[14,2,1,.34]]},
+    guitar:{mode:'strum', slow:true, hits:[[0,'D',8,.4],[8,'D',8,.32]]}},
+  funk:{name:'펑크', bpm:104, swing:.12, swingRes:16,
+    drums:{k:'x.....x...x..x..', s:'....X..g.g..X..g', h:'XxxxXxxxXxxxXxxx'},
+    bass:[[0,'R',1],[3,'8',1],[6,'R',1],[7,'R',1],[10,'b7',1],[11,'8',1],[13,'R',1],[14,'5',1]],
+    keys:{mode:'block', hits:[[3,1,.4],[7,1,.32],[11,1,.4]]},
+    guitar:{mode:'strum', chop:true, hits:[[0,'D',1,.8],[2,'D',1,.5,1],[3,'U',1,.55],[5,'U',1,.4,1],[6,'D',1,.7],[8,'D',1,.5,1],[10,'D',1,.7],[11,'U',1,.5],[13,'U',1,.4,1],[14,'D',1,.6]]}},
+  shuffle:{name:'셔플 블루스', bpm:100, swing:.33, swingRes:8,
+    drums:{k:'x.......x.......', s:'....x.......x...', h:'x.x.x.x.x.x.x.x.'},
+    bass:[[0,'R',2],[2,'3',2],[4,'5',2],[6,'6',2],[8,'b7',2],[10,'6',2],[12,'5',2],[14,'3',2]],
+    keys:{mode:'block', hits:[[2,1,.35],[6,1,.35],[10,1,.35],[14,1,.35]]},
+    guitar:{mode:'power', hits:[[0,'D',2,.7,1],[2,'D',2,.5,1],[4,'D',2,.7,1],[6,'D',2,.5,1],[8,'D',2,.7,1],[10,'D',2,.5,1],[12,'D',2,.7,1],[14,'D',2,.5,1]]}},
+  bossa:{name:'보사노바', bpm:128, swing:0,
+    drums:{k:'x..x....x..x....', r:'x..x..x...x..x..', h:'x.x.x.x.x.x.x.x.', soft:true},
+    bass:[[0,'R',3],[3,'5',5],[8,'5',3],[11,'R',5]],
+    keys:{mode:'block', hits:[[0,16,.18]]},
+    guitar:{mode:'strum', nylon:true, hits:[[0,'D',2,.5],[3,'D',2,.45],[6,'D',2,.5],[10,'D',2,.45],[12,'D',2,.5]]}}
+};
+
+/* =========================================================
+   4. 오디오 엔진 (전부 Web Audio로 합성)
+   ========================================================= */
+let ctx=null, master, busses={}, verbIn, noiseBuf;
+const mix = {bass:{vol:.8,mute:false}, keys:{vol:.7,mute:false}, guitar:{vol:.7,mute:false}, drums:{vol:.8,mute:false}};
+function mtof(m){ return 440*Math.pow(2,(m-69)/12); }
+
+function initAudio(){
+  if(ctx) return ctx;
+  ctx = new (window.AudioContext||window.webkitAudioContext)();
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value=-14; comp.ratio.value=3; comp.attack.value=.01; comp.release.value=.2;
+  master = ctx.createGain(); master.gain.value=.8;
+  master.connect(comp).connect(ctx.destination);
+  // 작은 방 리버브
+  const conv = ctx.createConvolver(); const len = ctx.sampleRate*1.6;
+  const ir = ctx.createBuffer(2,len,ctx.sampleRate);
+  for(let ch=0;ch<2;ch++){ const d=ir.getChannelData(ch); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3); }
+  conv.buffer=ir; verbIn=ctx.createGain(); verbIn.gain.value=.22; verbIn.connect(conv).connect(master);
+  const sends={bass:.02,keys:.35,guitar:.25,drums:.12};
+  for(const k of Object.keys(mix)){
+    const g=ctx.createGain(); g.connect(master);
+    const s=ctx.createGain(); s.gain.value=sends[k]; g.connect(s).connect(verbIn);
+    busses[k]=g; applyMix(k);
+  }
+  noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+  const nd=noiseBuf.getChannelData(0); for(let i=0;i<nd.length;i++) nd[i]=Math.random()*2-1;
+  return ctx;
+}
+function applyMix(k){ if(busses[k]) busses[k].gain.value = mix[k].mute?0:mix[k].vol; }
+function env(g,t,a,peak,d,sus,rel,end){
+  g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(peak,t+a);
+  g.gain.setTargetAtTime(sus,t+a,d);
+  g.gain.setTargetAtTime(0,end,rel);
+}
+
+/* 베이스: 톱니 + 사인 서브, 로우패스 */
+function playBass(m,t,dur,vel){
+  const f=mtof(m), o=ctx.createOscillator(), sub=ctx.createOscillator(), lp=ctx.createBiquadFilter(), g=ctx.createGain();
+  o.type='sawtooth'; o.frequency.value=f; sub.type='sine'; sub.frequency.value=f;
+  lp.type='lowpass'; lp.Q.value=2; lp.frequency.setValueAtTime(900+vel*600,t); lp.frequency.setTargetAtTime(260,t,.08);
+  const sg=ctx.createGain(); sg.gain.value=.9;
+  o.connect(lp); sub.connect(sg).connect(lp); lp.connect(g).connect(busses.bass);
+  env(g,t,.008,.55*vel,.25,.35*vel,.04,t+dur*.95);
+  o.start(t); sub.start(t); o.stop(t+dur+.4); sub.stop(t+dur+.4);
+  flash('bass',t);
+}
+/* 일렉 피아노: FM 사인 */
+function playEP(m,t,dur,vel){
+  const f=mtof(m), car=ctx.createOscillator(), mod=ctx.createOscillator(), mg=ctx.createGain(), g=ctx.createGain();
+  car.frequency.value=f; mod.frequency.value=f*1.0;
+  mg.gain.setValueAtTime(f*1.6*vel,t); mg.gain.setTargetAtTime(f*.15,t,.18);
+  mod.connect(mg).connect(car.frequency);
+  const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  car.connect(g); if(pan){ pan.pan.value=-.15; g.connect(pan).connect(busses.keys);} else g.connect(busses.keys);
+  env(g,t,.004,.22*vel,.5,.09*vel,.12,t+dur);
+  car.start(t); mod.start(t); car.stop(t+dur+.8); mod.stop(t+dur+.8);
+}
+/* 오르간: 드로바 3개 */
+function playOrgan(m,t,dur,vel){
+  const g=ctx.createGain(); g.connect(busses.keys);
+  env(g,t,.02,.09*vel,.3,.08*vel,.05,t+dur);
+  for(const [r,a] of [[1,1],[2,.5],[3,.35],[.5,.4]]){
+    const o=ctx.createOscillator(), og=ctx.createGain(); o.frequency.value=mtof(m)*r; og.gain.value=a;
+    o.connect(og).connect(g); o.start(t); o.stop(t+dur+.4);
+  }
+}
+/* 기타: 카플러스-스트롱 줄 튕김 (음마다 버퍼 캐시) */
+const ksCache = new Map();
+function ksBuffer(m){
+  if(ksCache.has(m)) return ksCache.get(m);
+  const sr=ctx.sampleRate, N=Math.max(2,Math.round(sr/mtof(m))), len=Math.floor(sr*2.4);
+  const buf=ctx.createBuffer(1,len,sr), d=buf.getChannelData(0), ring=new Float32Array(N);
+  let last=0; for(let i=0;i<N;i++){ const r=Math.random()*2-1; last=last*.5+r*.5; ring[i]=last; }
+  const damp = m<52 ? .997 : .995;
+  let idx=0;
+  for(let i=0;i<len;i++){ const a=ring[idx], b=ring[(idx+1)%N]; d[i]=a; ring[idx]=(a+b)*.5*damp; idx=(idx+1)%N; }
+  ksCache.set(m,buf); return buf;
+}
+function playString(m,t,dur,vel,muted,tone){
+  const src=ctx.createBufferSource(); src.buffer=ksBuffer(m);
+  const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value = muted?900:(tone||4200);
+  const g=ctx.createGain(); const len = muted?Math.min(dur,.09):dur;
+  g.gain.setValueAtTime(.42*vel,t); g.gain.setTargetAtTime(0,t+len,muted?.02:.06);
+  const pan = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+  src.connect(lp).connect(g); if(pan){ pan.pan.value=.25; g.connect(pan).connect(busses.guitar);} else g.connect(busses.guitar);
+  src.start(t); src.stop(t+len+.6);
+}
+function strum(notes,t,dur,vel,dir,opts){
+  const gap = opts.slow?.028:(opts.chop?.008:.014);
+  let ns = dir==='U' ? notes.slice(1).reverse() : notes;
+  ns.forEach((m,i)=>playString(m, t+i*gap, dur, vel*(1-i*.04), opts.muted, opts.tone));
+  flash('guitar',t);
+}
+/* 드럼 */
+function noise(t,dur,filterType,freq,q,vel,dest){
+  const src=ctx.createBufferSource(); src.buffer=noiseBuf;
+  const f=ctx.createBiquadFilter(); f.type=filterType; f.frequency.value=freq; f.Q.value=q;
+  const g=ctx.createGain(); g.gain.setValueAtTime(vel,t); g.gain.exponentialRampToValueAtTime(.001,t+dur);
+  src.connect(f).connect(g).connect(dest||busses.drums); src.start(t, Math.random()*.5); src.stop(t+dur+.02);
+}
+function kick(t,vel){
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(45,t+.12);
+  g.gain.setValueAtTime(vel,t); g.gain.exponentialRampToValueAtTime(.001,t+.35);
+  o.connect(g).connect(busses.drums); o.start(t); o.stop(t+.4);
+}
+function snare(t,vel){
+  noise(t,.18,'bandpass',1800,.7,.7*vel);
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.type='triangle'; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(160,t+.05);
+  g.gain.setValueAtTime(.35*vel,t); g.gain.exponentialRampToValueAtTime(.001,t+.1); o.connect(g).connect(busses.drums); o.start(t); o.stop(t+.12);
+}
+function hat(t,vel,open){ noise(t,open?.32:.045,'highpass',7500,.5,.32*vel); }
+function rim(t,vel){
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.type='square'; o.frequency.value=1700;
+  g.gain.setValueAtTime(.18*vel,t); g.gain.exponentialRampToValueAtTime(.001,t+.03); o.connect(g).connect(busses.drums); o.start(t); o.stop(t+.04);
+  noise(t,.03,'bandpass',3000,2,.25*vel);
+}
+function crash(t){ noise(t,1.4,'highpass',5000,.3,.28); }
+function tom(t,vel,freq){
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.setValueAtTime(freq,t); o.frequency.exponentialRampToValueAtTime(freq*.6,t+.2);
+  g.gain.setValueAtTime(.6*vel,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.connect(g).connect(busses.drums); o.start(t); o.stop(t+.32);
+}
+/* 박자 딸깍 (음높이가 없어 코드 인식을 방해하지 않음) */
+function click(t,accent){ noise(t,.03,'highpass',6000,1,accent?.9:.5,master); }
+
+/* =========================================================
+   5. 편곡 + 스케줄러
+   ========================================================= */
+const state = { bars:[], arr:[], style:'pop', bpm:96, playing:false, step:0, nextTime:0, timer:null, visQ:[] };
+
+function buildArrangement(bars){
+  // 마디·코드마다 보이싱을 미리 계산 (키보드는 앞 코드와 가깝게)
+  const arr=[]; let prev=null;
+  for(let pass=0; pass<2; pass++){        // 두 번 돌려 루프 연결부도 자연스럽게
+    arr.length=0;
+    for(const bar of bars){
+      arr.push(bar.map(c=>{ const kv=keysVoicing(c,prev); prev=kv; return {c, kv, gv:guitarVoicing(c), br:bassRoot(c)}; }));
+    }
+  }
+  return arr;
+}
+function chordAt(bar,step){ const b=state.arr[bar]; return b[Math.min(b.length-1, Math.floor(step*b.length/16))]; }
+function chordAfter(bar,step){
+  if(step>=16){ return state.arr[(bar+1)%state.arr.length][0]; }
+  return chordAt(bar,step);
+}
+const DEG = {R:0,'5':7,'8':12,'3':null,'6':9,b7:10};
+
+function scheduleStep(gs,t){
+  const st = STYLES[state.style], bars=state.arr.length; if(!bars) return;
+  const bar = Math.floor(gs/16)%bars, s = gs%16, sd = 60/state.bpm/4;
+  // 스윙
+  let off=0;
+  if(st.swing){ if(st.swingRes===8 && s%4===2) off=st.swing*2*sd; if(st.swingRes===16 && s%2===1) off=st.swing*sd; }
+  const tt = t+off, ch = chordAt(bar,s);
+  if(s===0) state.visQ.push({time:tt, bar});
+
+  // 드럼
+  const D=st.drums, v=c=>c==='X'?1:c==='x'?.75:c==='g'?.28:0, soft=D.soft?.6:1;
+  const lastBar = bar===bars-1 && bars>1;
+  if(s===0 && bar===0 && gs>0) { crash(tt); }
+  if(lastBar && s>=12 && !D.soft){
+    tom(tt,.8,[220,180,140,110][s-12]); if(s===12) kick(tt,.9);
+  } else {
+    if(D.k && v(D.k[s])) kick(tt,v(D.k[s])*soft);
+    if(D.s && v(D.s[s])) snare(tt,v(D.s[s])*soft);
+    if(D.r && v(D.r[s])) rim(tt,v(D.r[s]));
+    if(D.h && v(D.h[s])) hat(tt,v(D.h[s])*soft*(s%4===0?1:.7), state.style==='rock' && s===14);
+  }
+  if((D.k&&v(D.k[s]))||(D.s&&v(D.s[s]))) flash('drums',tt);
+
+  // 베이스
+  for(const [bs,deg,len] of st.bass){ if(bs!==s) continue;
+    let m;
+    if(deg==='A'){
+      const nx = chordAfter(bar,s+len); const target = nx.br;
+      m = (nx.c.root===ch.c.root && nx.c.bass===ch.c.bass) ? ch.br+7 : target-1;
+      if(m<28) m+=12;
+    } else if(deg==='3'){ const third=ch.c.iv.includes(3)?3:(ch.c.iv.includes(4)?4:5); m=ch.br+third; }
+    else m = ch.br + DEG[deg];
+    playBass(m, tt, len*sd, .9);
+  }
+  // 키보드
+  const K=st.keys;
+  for(const h of K.hits){ if(h[0]!==s) continue;
+    if(K.mode==='block'){ ch.kv.forEach(n=>playEP(n,tt,h[1]*sd,h[2])); }
+    else if(K.mode==='organ'){ const segEnd = ch===chordAt(bar,15) ? 16 : 8; ch.kv.forEach(n=>playOrgan(n,tt,(segEnd-s)*sd*.98,h[2])); }
+    else if(K.mode==='arp'){ const arp=[ch.kv[0]-12, ...ch.kv]; const n=arp[h[2]%arp.length]; playEP(n,tt,h[1]*sd,h[3]); }
+    flash('keys',tt);
+  }
+  // 오르간은 마디 중간 코드 바뀜도 따라가게
+  if(K.mode==='organ' && s===8 && state.arr[bar].length>1){ ch.kv.forEach(n=>playOrgan(n,tt,8*sd*.98,.32)); }
+  // 기타
+  const G=st.guitar;
+  for(const h of G.hits){ if(h[0]!==s) continue;
+    const [, dir, len, vel, muted] = h;
+    let notes = ch.gv;
+    if(G.mode==='power'){ const r=ch.gv[0]; notes=[r, r+7, r+12]; }
+    else if(G.chop){ notes = ch.gv.slice(-4); }
+    else if(G.nylon){ notes = ch.gv.slice(1); }
+    strum(notes, tt, len*sd, vel, dir, {muted:!!muted, slow:G.slow, chop:G.chop, tone:G.nylon?2200:(G.mode==='power'?2600:4200)});
+  }
+}
+function scheduler(){
+  const sd = 60/state.bpm/4;
+  while(state.nextTime < ctx.currentTime + .12){
+    scheduleStep(state.step, state.nextTime);
+    state.nextTime += sd; state.step++;
+  }
+}
+function play(){
+  if(!state.arr.length) return;
+  initAudio(); ctx.resume();
+  state.playing=true; state.step=0; state.nextTime=ctx.currentTime+.08; state.visQ=[];
+  scheduler(); state.timer=setInterval(scheduler,25);
+  setPlayIcon(true);
+}
+function stop(){
+  state.playing=false; clearInterval(state.timer); state.timer=null; setPlayIcon(false);
+  document.querySelectorAll('.bar.on').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.bar .head').forEach(h=>h.style.width='0');
+}
+
+/* =========================================================
+   6. 화면: 차트, 믹서, 불빛
+   ========================================================= */
+const $ = s=>document.querySelector(s);
+const flashQ = [];
+function flash(inst,t){ flashQ.push({inst,t}); }
+let curBar=-1, curBarTime=0;
+function frame(){
+  if(ctx){
+    const now = ctx.currentTime;
+    while(flashQ.length && flashQ[0].t<=now){
+      const {inst} = flashQ.shift(); const led=document.querySelector(`.strip[data-k="${inst}"] .led`);
+      if(led){ led.classList.add('hit'); clearTimeout(led._t); led._t=setTimeout(()=>led.classList.remove('hit'),90); }
+    }
+    if(flashQ.length>400) flashQ.splice(0,flashQ.length-400);
+    while(state.visQ.length && state.visQ[0].time<=now){
+      const q=state.visQ.shift(); curBar=q.bar; curBarTime=q.time;
+      document.querySelectorAll('.bar').forEach((b,i)=>{ b.classList.toggle('on', i===curBar); if(i!==curBar) b.querySelector('.head').style.width='0'; });
+    }
+    if(state.playing && curBar>=0){
+      const barDur = 60/state.bpm*4, p=Math.min(1,(now-curBarTime)/barDur);
+      const h=document.querySelectorAll('.bar .head')[curBar]; if(h) h.style.width=(p*100)+'%';
+    }
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+function setPlayIcon(on){
+  $('#play-ico').innerHTML = on ? '<rect x="6" y="5" width="4" height="14" fill="currentColor"/><rect x="14" y="5" width="4" height="14" fill="currentColor"/>' : '<path d="M7 4l13 8-13 8z" fill="currentColor"/>';
+  $('#play').setAttribute('aria-label', on?'반주 멈추기':'반주 시작');
+}
+function renderChart(){
+  const el=$('#chart'); el.innerHTML='';
+  if(!state.bars.length){ el.innerHTML='<div class="empty">코드를 적거나 들려주면 여기에 마디가 생겨요.</div>'; return; }
+  state.bars.forEach((bar,i)=>{
+    const d=document.createElement('div'); d.className='bar';
+    d.innerHTML = bar.map(c=>`<span class="tape">${c.name}</span>`).join('') + `<span class="num">${i+1}</span><span class="head"></span>`;
+    el.appendChild(d);
+  });
+}
+function setBars(bars){
+  state.bars=bars; state.arr=buildArrangement(bars); renderChart();
+  if(state.playing && !bars.length) stop();
+}
+function readText(){
+  const {bars,bad}=parseProgression($('#prog').value);
+  $('#parse-err').textContent = bad.length ? `읽을 수 없는 코드: ${bad.join(', ')} — 예: Am7, Cmaj7, G/B` : '';
+  setBars(bars);
+}
+
+const INST = [
+  {k:'bass', name:'베이스', c:'var(--bass)'},
+  {k:'keys', name:'키보드', c:'var(--keys)'},
+  {k:'guitar', name:'기타', c:'var(--gtr)'},
+  {k:'drums', name:'드럼', c:'var(--drum)'}
+];
+const ROLE = {
+  pop:{bass:'루트 8비트, 다음 코드로 반음 접근', keys:'일렉 피아노 코드 유지', guitar:'다운·다운업·업다운업 스트로크', drums:'킥 1·3, 스네어 2·4'},
+  rock:{bass:'루트 8분음 밀어붙이기', keys:'오르간 패드', guitar:'파워코드, 사이사이 브리지 뮤트', drums:'강한 백비트, 오픈 하이햇'},
+  ballad:{bass:'온음표 루트와 5도', keys:'분산화음 아르페지오', guitar:'느린 스트로크', drums:'하프타임, 3박 스네어'},
+  funk:{bass:'싱코페이션 옥타브', keys:'짧게 끊는 스탭', guitar:'16비트 커팅', drums:'16비트 하이햇, 고스트노트'},
+  shuffle:{bass:'R-3-5-6-♭7 워킹', keys:'뒷박 콤핑', guitar:'뮤트 셔플', drums:'스윙 8분음'},
+  bossa:{bass:'루트-5도 바이언', keys:'옅은 패드', guitar:'나일론 콤핑', drums:'림샷 클라베'}
+};
+function renderMixer(){
+  const el=$('#mixer'); el.innerHTML='';
+  for(const i of INST){
+    const d=document.createElement('div'); d.className='strip'+(mix[i.k].mute?' muted':''); d.dataset.k=i.k; d.style.setProperty('--c',i.c);
+    d.innerHTML=`<h3>${i.name}<span class="led"></span></h3><p>${ROLE[state.style][i.k]}</p>
+      <input type="range" min="0" max="1" step="0.01" value="${mix[i.k].vol}" aria-label="${i.name} 볼륨">
+      <button class="mute" aria-pressed="${mix[i.k].mute}">${mix[i.k].mute?'꺼짐':'켜짐'}</button>`;
+    d.querySelector('input').oninput=e=>{ mix[i.k].vol=+e.target.value; applyMix(i.k); };
+    d.querySelector('.mute').onclick=()=>{ mix[i.k].mute=!mix[i.k].mute; applyMix(i.k); renderMixer(); };
+    el.appendChild(d);
+  }
+}
+function renderStyles(){
+  const el=$('#styles'); el.innerHTML='';
+  for(const [k,s] of Object.entries(STYLES)){
+    const b=document.createElement('button'); b.className='style'; b.textContent=s.name; b.setAttribute('aria-pressed', k===state.style);
+    b.onclick=()=>{ state.style=k; setBpm(s.bpm); renderStyles(); renderMixer(); };
+    el.appendChild(b);
+  }
+}
+function setBpm(v){ state.bpm=Math.max(40,Math.min(220,Math.round(v))); $('#bpm').value=state.bpm; }
+
+/* =========================================================
+   7. 듣기: 크로마 → 코드 추정
+   ========================================================= */
+const FFT_N = 4096;
+function fft(re,im){
+  const n=re.length;
+  for(let i=1,j=0;i<n;i++){ let bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit; if(i<j){ [re[i],re[j]]=[re[j],re[i]]; [im[i],im[j]]=[im[j],im[i]]; } }
+  for(let len=2;len<=n;len<<=1){
+    const ang=-2*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang);
+    for(let i=0;i<n;i+=len){ let cr=1,ci=0;
+      for(let j=0;j<len/2;j++){
+        const a=i+j,b=a+len/2, xr=re[b]*cr-im[b]*ci, xi=re[b]*ci+im[b]*cr;
+        re[b]=re[a]-xr; im[b]=im[a]-xi; re[a]+=xr; im[a]+=xi;
+        const t=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=t;
+      }
+    }
+  }
+}
+const binMaps = new Map();
+function binMap(sr,n){
+  const key=sr+'/'+n; if(binMaps.has(key)) return binMaps.get(key);
+  const pc=new Int8Array(n/2).fill(-1), bass=new Int8Array(n/2).fill(-1), w=new Float32Array(n/2);
+  for(let k=1;k<n/2;k++){
+    const f=k*sr/n; if(f<40||f>2500) continue;
+    const p=12*Math.log2(f/440)+69, r=Math.round(p), dev=Math.abs(p-r);
+    if(dev>.42) continue;
+    w[k]=1-dev;
+    if(f>=80) pc[k]=((r%12)+12)%12;
+    if(f<=220) bass[k]=((r%12)+12)%12;
+  }
+  const m={pc,bass,w}; binMaps.set(key,m); return m;
+}
+function chromaFromMag(mag,sr,n){
+  const {pc,bass,w}=binMap(sr,n), c=new Float32Array(12), b=new Float32Array(12);
+  for(let k=1;k<n/2;k++){ if(!w[k]) continue; const a=Math.sqrt(mag[k])*w[k]; if(pc[k]>=0) c[pc[k]]+=a; if(bass[k]>=0) b[bass[k]]+=a; }
+  return {c,b};
+}
+/* 코드 사전 (루트 12 × 성격 7) */
+const DETECT_Q = [['',0],['m',0],['7',.035],['maj7',.04],['m7',.035],['dim',.08],['sus4',.08]];
+const TEMPLATES = [];
+for(let r=0;r<12;r++) for(const [q,pen] of DETECT_Q){
+  const t=new Float32Array(12); QUALITY[q].forEach((iv,i)=>{ t[(r+iv)%12] = i===0?1.0:(i===1?.9:.8); });
+  let nrm=0; for(const x of t) nrm+=x*x; nrm=Math.sqrt(nrm); for(let i=0;i<12;i++) t[i]/=nrm;
+  TEMPLATES.push({r,q,t,pen});
+}
+function scoreChroma(c,b){
+  let n=0; for(const x of c) n+=x*x; n=Math.sqrt(n)||1;
+  let bn=0; for(const x of b) bn=Math.max(bn,x); bn=bn||1;
+  return TEMPLATES.map(T=>{ let s=0; for(let i=0;i<12;i++) s+=T.t[i]*c[i]/n; return s - T.pen + .22*(b[T.r]/bn); });
+}
+function bestChord(c,b){ const sc=scoreChroma(c,b); let bi=0; for(let i=1;i<sc.length;i++) if(sc[i]>sc[bi]) bi=i; return {i:bi, s:sc[bi]}; }
+
+/* 표본 → (2배 솎아내기) → 프레임별 크로마 + 온셋 */
+function analyzeFrames(samples, sr){
+  const fac = sr>32000?2:1, s2=new Float32Array(Math.floor(samples.length/fac));
+  for(let i=0;i<s2.length;i++){ let a=0; for(let j=0;j<fac;j++) a+=samples[i*fac+j]; s2[i]=a/fac; }
+  const esr=sr/fac, hop=FFT_N/2, win=new Float32Array(FFT_N);
+  for(let i=0;i<FFT_N;i++) win[i]=.5-.5*Math.cos(2*Math.PI*i/FFT_N);
+  const frames=[], re=new Float64Array(FFT_N), im=new Float64Array(FFT_N), mag=new Float32Array(FFT_N/2);
+  for(let st=0; st+FFT_N<=s2.length; st+=hop){
+    let e=0;
+    for(let i=0;i<FFT_N;i++){ const x=s2[st+i]; re[i]=x*win[i]; im[i]=0; e+=x*x; }
+    fft(re,im);
+    for(let k=0;k<FFT_N/2;k++) mag[k]=re[k]*re[k]+im[k]*im[k];
+    const {c,b}=chromaFromMag(mag,esr,FFT_N);
+    frames.push({t:(st+FFT_N/2)/esr, c, b, e:Math.sqrt(e/FFT_N)});
+  }
+  // 온셋(에너지 증가) 곡선: 512 간격
+  const oh=512, env=[];
+  for(let st=0; st+oh<=s2.length; st+=oh){ let e=0; for(let i=0;i<oh;i++) e+=s2[st+i]*s2[st+i]; env.push(Math.log(1e-6+e)); }
+  const onset=env.map((v,i)=>i?Math.max(0,v-env[i-1]):0);
+  return {frames, onset, ohSec:oh/esr, dur:s2.length/esr};
+}
+function estimateTempo(onset, ohSec){
+  // 평균 빼기 → 자기상관, 60~180 BPM, 110 근처 선호
+  const n=onset.length, mean=onset.reduce((a,b)=>a+b,0)/n, o=onset.map(v=>v-mean);
+  let best=null;
+  for(let bpm=60;bpm<=180;bpm+=.5){
+    const lag=60/bpm/ohSec, l0=Math.floor(lag), fr=lag-l0; let s=0;
+    for(let i=0;i+l0+1<n;i++) s+=o[i]*(o[i+l0]*(1-fr)+o[i+l0+1]*fr);
+    s*=Math.exp(-.5*Math.pow(Math.log2(bpm/110)/.9,2));
+    if(!best||s>best.s) best={bpm,s};
+  }
+  const period=60/best.bpm/ohSec; let bp=0,bs=-1;
+  for(let ph=0;ph<period;ph+=.5){ let s=0,c=0; for(let x=ph;x<n;x+=period){ s+=onset[Math.round(x)]||0; c++; } s/=c||1; if(s>bs){bs=s;bp=ph;} }
+  return {bpm:best.bpm, phase:bp*ohSec};
+}
+/* 박마다 크로마 평균 → 비터비로 매끄럽게 */
+function beatChords(frames, beatTimes){
+  const obs=[];
+  const maxE = Math.max(...frames.map(f=>f.e), 1e-9);
+  for(let i=0;i<beatTimes.length-1;i++){
+    const t0=beatTimes[i], t1=beatTimes[i+1], c=new Float32Array(12), b=new Float32Array(12); let cnt=0, e=0;
+    for(const f of frames){ if(f.t>=t0 && f.t<t1){ for(let k=0;k<12;k++){ c[k]+=f.c[k]; b[k]+=f.b[k]; } e+=f.e; cnt++; } }
+    obs.push({sc: cnt?scoreChroma(c,b):null, quiet: !cnt || e/cnt < maxE*.04});
+  }
+  const S=TEMPLATES.length, P=.14; let V=new Float32Array(S); const back=[];
+  for(let t=0;t<obs.length;t++){
+    const sc=obs[t].sc && !obs[t].quiet ? obs[t].sc : null;
+    let bi=0; for(let s=1;s<S;s++) if(V[s]>V[bi]) bi=s;
+    const NV=new Float32Array(S), bk=new Int16Array(S);
+    for(let s=0;s<S;s++){
+      const stay=V[s], sw=V[bi]-P;
+      if(stay>=sw){ NV[s]=stay; bk[s]=s; } else { NV[s]=sw; bk[s]=bi; }
+      NV[s]+= sc? sc[s] : 0;
+    }
+    V=NV; back.push(bk);
+  }
+  let s=0; for(let i=1;i<S;i++) if(V[i]>V[s]) s=i;
+  const path=new Array(obs.length);
+  for(let t=obs.length-1;t>=0;t--){ path[t]=s; s=back[t][s]; }
+  return path.map((p,i)=>({tpl:TEMPLATES[p], quiet:obs[i].quiet}));
+}
+function tplChord(T){ return parseChord(NAMES[T.r]+T.q); }
+/* 박 → 마디 */
+function beatsToBars(beats, offset, allowSplit){
+  const bars=[];
+  for(let i=offset;i+3<beats.length;i+=4){
+    const q=beats.slice(i,i+4);
+    if(q.every(x=>x.quiet)) { if(bars.length) bars.push(bars[bars.length-1]); continue; }
+    const id=x=>x.tpl.r*100+DETECT_Q.findIndex(d=>d[0]===x.tpl.q);
+    const a=id(q[0]),b=id(q[1]),c=id(q[2]),d=id(q[3]);
+    if(allowSplit && a===b && c===d && a!==c){ bars.push([tplChord(q[0].tpl), tplChord(q[2].tpl)]); continue; }
+    const cnt={}; q.forEach(x=>{ const k=id(x); cnt[k]=(cnt[k]||0)+1; });
+    let win=q[0]; for(const x of q) if(cnt[id(x)]>cnt[id(win)]) win=x;
+    bars.push([tplChord(win.tpl)]);
+  }
+  return bars;
+}
+function changesInside(beats, offset){
+  let n=0; for(let i=offset;i+3<beats.length;i+=4){ for(let j=1;j<4;j++){ if(beats[i+j].tpl!==beats[i+j-1].tpl) n += (j===2?.5:1); } } return n;
+}
+/* 노래 파일 분석 (BPM 모름) */
+function analyzeSong(samples, sr, bpmHint){
+  const A=analyzeFrames(samples,sr);
+  const tempo = estimateTempo(A.onset, A.ohSec);
+  const bpm = bpmHint>0 ? bpmHint : tempo.bpm, beat=60/bpm;
+  const times=[]; for(let t=tempo.phase; t<A.dur; t+=beat) times.push(t);
+  const beats=beatChords(A.frames, times);
+  let bo=0, bc=1e9; for(let o=0;o<4;o++){ const c=changesInside(beats,o); if(c<bc){bc=c;bo=o;} }
+  // 앞뒤 무음 마디 정리
+  let bars=beatsToBars(beats, bo, true);
+  return {bpm:Math.round(bpm), bars};
+}
+/* 마이크 녹음 분석 (BPM·박 위치를 앎) */
+function analyzeTake(samples, sr, bpm, nBars, split){
+  const A=analyzeFrames(samples,sr), beat=60/bpm, times=[];
+  for(let i=0;i<=nBars*4;i++) times.push(i*beat);
+  const beats=beatChords(A.frames, times);
+  return beatsToBars(beats, 0, split);
+}
+window.__jam = {parseProgression, parseChord, analyzeSong, analyzeTake, keysVoicing, guitarVoicing, STYLES, state};
+
+/* =========================================================
+   8. 마이크 녹음
+   ========================================================= */
+const mic = {stream:null, src:null, proc:null, an:null, chunks:[], on:false, raf:0, t0:0};
+function buildChromaUI(){
+  $('#chroma').innerHTML = NAMES.map(()=>'<div></div>').join('');
+  $('#chroma-labels').innerHTML = NAMES.map(n=>`<span>${n}</span>`).join('');
+}
+async function startMic(){
+  initAudio(); await ctx.resume();
+  if(state.playing) stop();
+  try{
+    mic.stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  }catch(e){
+    $('#mic-status').textContent='마이크를 쓸 수 없어요. 브라우저 주소창의 마이크 권한을 허용한 뒤 다시 눌러 주세요.'; return;
+  }
+  const bpm=Math.max(40,Math.min(220,+$('#mic-bpm').value||90)), nBars=+$('#mic-bars').value, split=$('#mic-split').value==='2';
+  const beat=60/bpm, sr=ctx.sampleRate;
+  mic.src=ctx.createMediaStreamSource(mic.stream);
+  mic.an=ctx.createAnalyser(); mic.an.fftSize=8192; mic.an.smoothingTimeConstant=.6;
+  mic.proc=ctx.createScriptProcessor(4096,1,1); mic.chunks=[];
+  const sink=ctx.createGain(); sink.gain.value=0;
+  mic.src.connect(mic.an); mic.src.connect(mic.proc); mic.proc.connect(sink).connect(ctx.destination);
+  mic.on=true; mic.t0=ctx.currentTime;
+  mic.proc.onaudioprocess=e=>{ if(mic.on) mic.chunks.push(new Float32Array(e.inputBuffer.getChannelData(0))); };
+  const start = ctx.currentTime+.3, recStart = start+4*beat, end = recStart+nBars*4*beat;
+  for(let i=0;i<4+nBars*4;i++) click(start+i*beat, i%4===0);
+  $('#mic-btn').textContent='그만 듣기'; $('#mic-btn').classList.remove('rec');
+  const fbuf=new Float32Array(mic.an.frequencyBinCount), tbuf=new Float32Array(mic.an.fftSize);
+  const tick=()=>{
+    if(!mic.on) return;
+    const now=ctx.currentTime;
+    if(now<recStart){ $('#mic-status').textContent=`준비… ${Math.max(1,4-Math.floor((now-start)/beat))}`; }
+    else { const b=Math.floor((now-recStart)/(4*beat))+1; $('#mic-status').textContent=`듣는 중 ${Math.min(b,nBars)} / ${nBars}마디`; }
+    mic.an.getFloatFrequencyData(fbuf);
+    const mag=new Float32Array(fbuf.length); for(let i=0;i<fbuf.length;i++) mag[i]=Math.pow(10,fbuf[i]/10);
+    const {c,b}=chromaFromMag(mag,sr,mic.an.fftSize);
+    const mx=Math.max(...c,1e-9); [...$('#chroma').children].forEach((d,i)=>d.style.height=(4+96*c[i]/mx)+'%');
+    mic.an.getFloatTimeDomainData(tbuf); let rms=0; for(const x of tbuf) rms+=x*x; rms=Math.sqrt(rms/tbuf.length);
+    $('#mic-meter').style.width=Math.min(100,rms*400)+'%';
+    if(rms>.01){ const bc=bestChord(c,b); $('#mic-chord').textContent=NAMES[TEMPLATES[bc.i].r]+TEMPLATES[bc.i].q; }
+    if(now>=end+.15){ finishMic(true, {bpm,nBars,split,recStart}); return; }
+    mic.raf=requestAnimationFrame(tick);
+  };
+  mic.raf=requestAnimationFrame(tick);
+}
+function finishMic(ok, opt){
+  mic.on=false; cancelAnimationFrame(mic.raf);
+  try{ mic.proc.disconnect(); mic.src.disconnect(); }catch(e){}
+  if(mic.stream) mic.stream.getTracks().forEach(t=>t.stop());
+  $('#mic-btn').textContent='듣기 시작'; $('#mic-btn').classList.add('rec');
+  if(!ok){ $('#mic-status').textContent='멈췄어요. 다시 들으려면 ‘듣기 시작’을 누르세요.'; return; }
+  const total=mic.chunks.reduce((a,c)=>a+c.length,0), all=new Float32Array(total); let o=0;
+  for(const c of mic.chunks){ all.set(c,o); o+=c.length; }
+  const sr=ctx.sampleRate, lat=(ctx.baseLatency||0)+(ctx.outputLatency||0);
+  const from=Math.max(0,Math.round((opt.recStart - mic.t0 + lat*.5)*sr));
+  const take=all.subarray(from);
+  $('#mic-status').textContent='코드를 찾는 중…';
+  setTimeout(()=>{
+    const bars=analyzeTake(take, sr, opt.bpm, opt.nBars, opt.split);
+    if(!bars.length){ $('#mic-status').textContent='소리가 너무 작아서 코드를 못 찾았어요. 악기를 마이크 가까이에 두고 다시 해 보세요.'; return; }
+    applyDetected(bars, opt.bpm);
+    $('#mic-status').textContent=`${bars.length}마디를 적었어요. 틀린 코드는 ‘직접 적기’에서 고칠 수 있어요.`;
+  },30);
+}
+
+/* =========================================================
+   9. 노래 파일
+   ========================================================= */
+async function handleFile(file){
+  if(!file) return;
+  initAudio();
+  const st=$('#file-status'); st.textContent='파일을 여는 중…';
+  try{
+    const buf = await ctx.decodeAudioData(await file.arrayBuffer());
+    st.textContent=`${Math.round(buf.duration)}초짜리 노래를 분석하는 중…`;
+    await new Promise(r=>setTimeout(r,30));
+    const L=buf.getChannelData(0), R=buf.numberOfChannels>1?buf.getChannelData(1):L, mono=new Float32Array(L.length);
+    for(let i=0;i<L.length;i++) mono[i]=(L[i]+R[i])*.5;
+    const res=analyzeSong(mono, buf.sampleRate, +$('#file-bpm').value||0);
+    if(!res.bars.length){ st.textContent='코드를 찾지 못했어요. 반주가 또렷한 구간이 있는 파일로 다시 해 보세요.'; return; }
+    applyDetected(res.bars, res.bpm);
+    st.textContent=`템포 약 ${res.bpm} BPM, ${res.bars.length}마디를 적었어요. 필요한 구간만 남기려면 ‘직접 적기’에서 지우면 돼요.`;
+  }catch(e){
+    st.textContent='이 파일은 열 수 없어요. mp3, m4a, wav 파일로 다시 골라 주세요.';
+  }
+}
+function applyDetected(bars,bpm){
+  $('#prog').value=progressionToText(bars);
+  setBpm(bpm); readText();
+}
+
+/* =========================================================
+   10. 연결
+   ========================================================= */
+const PRESETS = [
+  ['C G Am F','팝 4코드'], ['Am F C G','감성 진행'], ['Dm7 G7 Cmaj7 A7','투파이브'],
+  ['A % D A E D A E','12마디 블루스 앞부분'], ['Fmaj7 E7 Am7 Gm7,C7','시티팝'], ['E B C#m A','록 진행']
+];
+function init(){
+  const pe=$('#presets');
+  for(const [p,label] of PRESETS){ const b=document.createElement('button'); b.className='chip'; b.textContent=label; b.title=p;
+    b.onclick=()=>{ $('#prog').value=p; readText(); if(label.includes('블루스')){ state.style='shuffle'; setBpm(STYLES.shuffle.bpm); renderStyles(); renderMixer(); } }; pe.appendChild(b); }
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected', x===t));
+    document.querySelectorAll('.pane').forEach(p=>p.hidden = p.id!==t.dataset.pane);
+  });
+  $('#prog').addEventListener('input', readText);
+  $('#play').onclick=()=> state.playing?stop():play();
+  $('#bpm').onchange=e=>setBpm(+e.target.value||96);
+  let taps=[];
+  $('#tap').onclick=()=>{ const n=performance.now(); taps=taps.filter(t=>n-t<2500); taps.push(n);
+    if(taps.length>=3){ const d=(taps[taps.length-1]-taps[0])/(taps.length-1); setBpm(60000/d); } };
+  $('#tr-up').onclick=()=>{ $('#prog').value=progressionToText(transposeBars(state.bars,1)); readText(); };
+  $('#tr-down').onclick=()=>{ $('#prog').value=progressionToText(transposeBars(state.bars,-1)); readText(); };
+  $('#mic-btn').onclick=()=> mic.on ? finishMic(false) : startMic();
+  $('#file-in').onchange=e=>handleFile(e.target.files[0]);
+  document.addEventListener('keydown',e=>{ if(e.code==='Space' && !/TEXTAREA|INPUT|SELECT|BUTTON/.test(e.target.tagName)){ e.preventDefault(); state.playing?stop():play(); } });
+  buildChromaUI(); renderStyles(); renderMixer(); setBpm(STYLES.pop.bpm); readText();
+}
+init();
+</script>
+</body>
+</html>
