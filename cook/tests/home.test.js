@@ -262,9 +262,9 @@ test("아이가 잘 먹는 목록에서 '← 전체 보기'로 돌아오고, 맛
   await page.click(".df-kid");
   assert.ok((await page.innerText("#dishResults")).includes("아이가 잘 먹는 요리"));
   await page.click(".df-all");
-  assert.ok((await page.innerText("#dishResults")).includes("처음이라면"));
+  assert.ok(!(await page.innerText("#dishResults")).includes("아이가 잘 먹는 요리"));
   await page.click(".df-kid");
   await page.click('.nav button[data-view="cart"]');
   await page.click('.nav button[data-view="sense"]');
-  assert.ok((await page.innerText("#dishResults")).includes("처음이라면"));
+  assert.ok(!(await page.innerText("#dishResults")).includes("아이가 잘 먹는 요리"));
 }));

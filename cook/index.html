@@ -373,6 +373,22 @@
   .cook-seas b{color:var(--accent)}
   .cook-ask{font-size:15px;margin:0 0 10px}
   .cook-taste{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .today{margin:12px 16px 0;padding:14px 14px 12px;background:var(--surface);border:1.5px solid var(--accent);border-radius:16px}
+  .today-title{font-size:17px;font-weight:800;margin:0 0 4px;word-break:keep-all}
+  .today-dots{display:flex;gap:5px;margin:0 0 10px}
+  .today-dots i{width:7px;height:7px;border-radius:50%;background:var(--border)}
+  .today-dots i.on{background:var(--accent)}
+  .today-q{font-size:15px;font-weight:700;margin:0 0 10px;word-break:keep-all}
+  .today-ans{display:flex;flex-wrap:wrap;gap:8px}
+  .today-ans button,.today-btns button,.today-again{font-family:var(--body);font-size:15px;font-weight:800;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:12px 14px;min-height:44px;cursor:pointer}
+  .today-ans button{flex:1 1 30%}
+  .today-again{margin-top:10px;width:100%;font-size:13px}
+  .today-dish{font-size:20px;font-weight:800;margin:2px 0 4px;word-break:keep-all}
+  .today-meta{font-size:12.5px;font-weight:700;color:var(--muted);margin:0 0 6px}
+  .today-note{font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:10px;padding:8px 10px;margin:0 0 8px}
+  .today-btns{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+  .today-btns .today-go{background:var(--accent);border-color:var(--accent);color:#1a130c}
+  .today-none{font-size:13px;color:var(--muted);margin:0}
   .dish-find{padding:12px 16px 4px}
   .dish-find input{width:100%;box-sizing:border-box;font-family:var(--body);font-size:15px;padding:13px 14px;border:1.5px solid var(--accent);border-radius:14px;background:#fff;color:var(--text)}
   .df-head{font-size:12.5px;font-weight:800;color:var(--muted);margin:12px 2px 8px}
@@ -680,6 +696,7 @@
         <div><div class="name">맛 고르기</div><div class="sub">처음이어도 괜찮아요. 하나씩 같이 해요</div></div>
       </div>
     </div>
+    <div class="today" id="todayPick" aria-live="polite"></div>
     <div class="dish-find">
       <input type="search" id="dishSearch" placeholder="뭐 해 먹을까요? 요리 이름이나 재료를 쳐 보세요" aria-label="요리 찾기" autocomplete="off" />
       <div id="dishResults"></div>
@@ -2380,11 +2397,12 @@ function renderDishSearch(){
   const raw=$("dishSearch").value.trim(), q=_norm(raw), list=allDishes();
   let hits, head, pre="";
   if(!q&&_kidList){ hits=list.filter(d=>d.kid); pre=`<button class="df-kid df-all">← 전체 보기</button>`; head=`<div class="df-head">👶 아이가 잘 먹는 요리 ${hits.length}개</div>`; }
-  else if(!q){ const hm=list.filter(d=>d.easy&&d.home).slice(0,4), ot=list.filter(d=>d.easy&&!d.home).slice(0,8-hm.length); hits=[...ot.slice(0,4),...hm,...ot.slice(4)]; pre=`<button class="df-kid">👶 아이가 잘 먹는</button>`; head=`<div class="df-head">🍳 처음이라면 이런 요리부터</div>`;
+  else if(!q){ hits=[]; pre=`<button class="df-kid">👶 아이가 잘 먹는</button>`; head="";
     const wins=loadKidLog(); const good=Object.keys(wins).filter(n=>wins[n].good>0&&list.some(d=>d.name===n)).sort((a,b)=>wins[b].last-wins[a].last);
-    if(good.length) head=`<div class="df-head">🏆 우리 집 성공 요리</div><div class="df-list df-wins">${good.map(n=>{ const d=list.find(x=>x.name===n); return `<button class="df-item" data-dish="${escAttr(n)}">${esc(d.emoji)} ${esc(n)}<small>잘 먹은 ${wins[n].good}번</small></button>`; }).join("")}</div>`+head; }
+    if(good.length) head=`<div class="df-head">🏆 우리 집 성공 요리</div><div class="df-list df-wins">${good.map(n=>{ const d=list.find(x=>x.name===n); return `<button class="df-item" data-dish="${escAttr(n)}">${esc(d.emoji)} ${esc(n)}<small>잘 먹은 ${wins[n].good}번</small></button>`; }).join("")}</div>`; }
   else { hits=list.filter(d=>_norm(d.words).includes(q)); hits.sort((a,b)=>(_norm(b.name).includes(q))-(_norm(a.name).includes(q)));
     head=`<div class="df-head">“${esc($("dishSearch").value.trim())}” 요리 ${hits.length}개</div>`; }
+  if(!q&&!_kidList){ $("dishResults").innerHTML=pre+head; return; }
   $("dishResults").innerHTML=pre+head+(hits.length?`<div class="df-list">${hits.map(d=>`<button class="df-item" data-dish="${escAttr(d.name)}">${esc(d.emoji)} ${esc(d.name)}${d.time?`<small>${esc(d.time)}</small>`:""}</button>`).join("")}</div>`
     :`<div class="df-none">아직 이 요리는 없어요. 비슷한 요리를 골라 보거나, 인터넷에서 레시피를 찾아볼 수 있어요.</div><button class="df-web">🌐 인터넷에서 “${esc(raw)}” 레시피 찾기</button>`);
 }
@@ -2394,6 +2412,79 @@ $("dishResults").addEventListener("click",e=>{
   if(e.target.closest(".df-kid")){ _kidList=true; renderDishSearch(); return; }
   if(e.target.closest(".df-web")){ openExternal("https://www.10000recipe.com/recipe/list.html?q="+encodeURIComponent($("dishSearch").value.trim())); return; }
   const b=e.target.closest("[data-dish]"); if(b) openHowTo(b.dataset.dish); });
+
+/* ── 오늘 뭐 먹을까요?: 질문 2~3개로 요리 하나 고르기 ── */
+const TODAY_KEY="cj_today_last", TODAY_SERV={kid:2,solo:1,family:4};
+const TODAY_WHO={kid:"아이랑",solo:"혼자",family:"가족 다"}, TODAY_TIME={15:"15분",30:"30분",0:"넉넉해요"};
+const SPICY_WORDS=["고춧가루","고추장","청양고추","두반장","고추기름","페페론치노","김치"];
+function dishMinutes(t){
+  t=String(t||""); if(/별도/.test(t)) return Infinity;
+  const h=t.match(/(\d+)\s*시간/), m=t.match(/(\d+)\s*분/);
+  return h||m?(h?+h[1]*60:0)+(m?+m[1]:0):Infinity;
+}
+function isSpicyHome(h){ return (h.ing||[]).some(i=>SPICY_WORDS.some(w=>String(i.n||"").includes(w))); }
+function pickToday(a,exclude){
+  const no=loadKidLog(), ex=exclude||[];
+  const fits=(h,useTime,useSpicy)=>(a.who!=="kid"||h.kid)&&(!useSpicy||a.spicy||!isSpicyHome(h))&&(!useTime||!a.time||dishMinutes(h.time)<=a.time);
+  let relaxed=false, pool=HOME.filter(h=>fits(h,true,true));
+  if(!pool.length){ pool=HOME.filter(h=>fits(h,false,true)); relaxed=pool.length>0; }
+  if(!pool.length&&a.who!=="kid"){ pool=HOME.filter(h=>fits(h,false,false)); relaxed=pool.length>0; }
+  if(!pool.length) return {dish:null,relaxed:false};
+  let left=pool.filter(h=>!ex.includes(h.name));
+  if(!left.length) left=pool.length>1?pool.filter(h=>h.name!==ex[ex.length-1]):pool;
+  const rank=h=>(no[h.name]&&no[h.name].no>0?10:0)+(h.level||1);
+  left=left.map(h=>({h,r:rank(h)+Math.random()*0.5})).sort((x,y)=>x.r-y.r);
+  return {dish:left[0].h,relaxed};
+}
+var _today={step:"who",who:"",time:0,spicy:false,shown:[],relaxed:false,dish:null};
+function loadTodayLast(){
+  try{ const o=JSON.parse(localStorage.getItem(TODAY_KEY)||"null");
+    if(o&&TODAY_WHO[o.who]&&TODAY_TIME[o.time]!==undefined) return {who:o.who,time:+o.time,spicy:!!o.spicy}; }catch(e){}
+  return null;
+}
+function todayPickNow(){
+  const p=pickToday({who:_today.who,time:_today.time,spicy:_today.spicy},_today.shown);
+  _today.dish=p.dish; _today.relaxed=p.relaxed; _today.step="result";
+  if(p.dish){ if(_today.shown.includes(p.dish.name)) _today.shown=[p.dish.name]; else _today.shown.push(p.dish.name); }
+  try{ localStorage.setItem(TODAY_KEY,JSON.stringify({who:_today.who,time:_today.time,spicy:_today.spicy})); }catch(e){}
+}
+function renderToday(){
+  const el=$("todayPick"); if(!el) return;
+  const title=`<h2 class="today-title">오늘 뭐 먹을까요?</h2>`;
+  if(!HOME.length){ el.innerHTML=title+`<p class="today-none">요리 목록을 아직 못 불러왔어요. 아래 찾기 칸에 먹고 싶은 걸 쳐 보세요.</p>`; return; }
+  const t=_today, steps=t.who==="kid"?["who","time"]:["who","time","spicy"];
+  const dots=t.step==="result"?"":`<div class="today-dots">${steps.map((s,i)=>`<i class="${i<=steps.indexOf(t.step)?"on":""}"></i>`).join("")}</div>`;
+  let body="";
+  if(t.step==="who"){
+    body=`<p class="today-q">오늘 누구랑 먹어요?</p><div class="today-ans"><button data-today-who="kid">👶 아이랑</button><button data-today-who="solo">🙋 혼자</button><button data-today-who="family">👨‍👩‍👧 가족 다</button></div>`;
+    const l=loadTodayLast();
+    if(l) body+=`<button class="today-again" data-today="again">지난번처럼(${esc(TODAY_WHO[l.who])} · ${esc(TODAY_TIME[l.time])}) 바로 골라 줘</button>`;
+  } else if(t.step==="time"){
+    body=`<p class="today-q">시간은 얼마나 있어요?</p><div class="today-ans"><button data-today-time="15">⚡ 15분</button><button data-today-time="30">⏱ 30분</button><button data-today-time="0">🍲 넉넉해요</button></div>`;
+  } else if(t.step==="spicy"){
+    body=`<p class="today-q">매운 거 괜찮아요?</p><div class="today-ans"><button data-today-spicy="0">🙅 안 매운 거</button><button data-today-spicy="1">🌶 좋아요</button></div>`;
+  } else {
+    const d=t.dish;
+    body=d?`<p class="today-q">오늘은 이거 어때요?</p>`+(t.relaxed?`<p class="today-note">조건을 조금 넓혀서 골랐어요</p>`:"")+
+      `<div class="today-dish" data-name="${escAttr(d.name)}">${esc(d.emoji||"")} ${esc(d.name)}</div><div class="today-meta">🍳 ${esc(levelText(d.level))} · ⏱ ${esc(d.time)}</div>`+
+      `<div class="today-btns"><button class="today-go" data-today="go">이걸로 할게요</button><button data-today="next">다른 거 보기</button><button data-today="reset">처음부터</button></div>`
+      :`<p class="today-none">맞는 요리를 못 찾았어요. 아래 찾기 칸을 써 보세요.</p><div class="today-btns"><button data-today="reset">처음부터</button></div>`;
+  }
+  el.innerHTML=title+dots+body;
+}
+$("todayPick").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return; const t=_today, d=b.dataset;
+  if(d.todayWho){ t.who=d.todayWho; t.step="time"; }
+  else if(d.todayTime!==undefined){ t.time=+d.todayTime; if(t.who==="kid"){ t.spicy=false; t.shown=[]; todayPickNow(); } else t.step="spicy"; }
+  else if(d.todaySpicy!==undefined){ t.spicy=d.todaySpicy==="1"; t.shown=[]; todayPickNow(); }
+  else if(d.today==="again"){ const l=loadTodayLast(); if(!l) return; Object.assign(t,l,{shown:[]}); if(t.who==="kid") t.spicy=false; todayPickNow(); }
+  else if(d.today==="next") todayPickNow();
+  else if(d.today==="reset"){ _today={step:"who",who:"",time:0,spicy:false,shown:[],relaxed:false,dish:null}; }
+  else if(d.today==="go"){ if(!t.dish) return; saveCookServ(t.dish.name,TODAY_SERV[t.who]||2); openHowTo(t.dish.name); return; }
+  else return;
+  renderToday();
+});
+renderToday();
 renderDishSearch();
 function openDishPicker(styleId){
   const dishes=TASTE_DISHES[styleId]; if(!dishes||!dishes.length) return;

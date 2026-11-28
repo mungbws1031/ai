@@ -8,11 +8,13 @@ async function withApp(fn) {
   try { await fn(page); assert.deepStrictEqual(page.__errors, []); } finally { await browser.close(); }
 }
 
-test("첫 화면에 요리 찾기 칸과 '처음이라면' 추천 요리가 보인다", () => withApp(async page => {
+test("첫 화면에 요리 찾기 칸과 오늘 카드가 보이고 '처음이라면' 목록은 없다", () => withApp(async page => {
   assert.ok(await page.isVisible("#dishSearch"));
+  assert.ok(await page.isVisible("#todayPick"));
   const t = await page.innerText("#dishResults");
-  assert.ok(t.includes("처음이라면"), t);
-  assert.ok(await page.locator("#dishResults .df-item").count() >= 5);
+  assert.ok(!t.includes("처음이라면"), t);
+  assert.ok(t.includes("아이가 잘 먹는"), t);
+  assert.strictEqual(await page.locator("#dishResults .df-item").count(), 0);
 }));
 
 test("요리 이름으로 찾아 한 번에 만드는 법을 연다", () => withApp(async page => {

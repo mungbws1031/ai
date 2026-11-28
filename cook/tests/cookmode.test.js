@@ -53,7 +53,7 @@ test("dishes.js 를 못 불러와도 오류 없이 찾기·만드는 법이 된�
     page.on("pageerror", e => errors.push(String(e)));
     await page.goto(pathToFileURL(path.join(dir, "index.html")).href);
     assert.strictEqual(await page.evaluate(() => typeof HOME_DISHES), "undefined");
-    assert.ok(await page.locator("#dishResults .df-item").count() >= 5);
+    assert.ok(await page.isVisible("#todayPick"));
     await page.fill("#dishSearch", "기름떡볶이");
     await page.click('#dishResults [data-dish="기름떡볶이"]');
     assert.ok((await page.innerText("#dishSheet")).includes("기름떡볶이 · 2인분"));
@@ -111,7 +111,7 @@ test("😋 잘 먹었어요를 누른 즉시 (검색어를 지우지 않아도) 
 /* 6. 망가진 아이 반응 기록이 있어도 시작할 때 멈추지 않는다 */
 test("cj_kid_log 가 망가져 있어도 오류 없이 시작하고, 숫자 문자열은 숫자로 바꾼다", () => withApp(async page => {
   const t = await page.innerText("#dishResults");
-  assert.ok(t.includes("처음이라면"), t);
+  assert.ok(!t.includes("처음이라면"), t);
   assert.ok(t.includes("🏆 우리 집 성공 요리") && t.includes("김치볶음밥") && t.includes("잘 먹은 2번"), t);
   const log = await page.evaluate(() => loadKidLog());
   assert.deepStrictEqual(Object.keys(log), ["김치볶음밥"]);
@@ -151,12 +151,10 @@ test("개·대·모·마리·장·공기·봉은 0.5 단위, 아주 적으면 '�
   assert.strictEqual(r2, "0.5대");
 }));
 
-/* 10. 빈 검색 '처음이라면' 목록에 요리 사전(쉬운 요리)도 섞인다 */
-test("'처음이라면' 목록에 기존 쉬운 요리 4개 + 요리 사전 쉬운 요리 4개", () => withApp(async page => {
-  const names = await page.$$eval("#dishResults .df-item", b => b.map(x => x.dataset.dish));
-  const home = await page.evaluate(ns => ns.filter(n => HOME_DISHES.some(h => h.name === n && h.level === 1)), names);
-  assert.strictEqual(names.length, 8, names.join(","));
-  assert.strictEqual(home.length, 4, names.join(","));
+/* 10. 빈 검색 화면에는 추천 목록이 없다 (추천은 '오늘 뭐 먹을까요?' 카드가 맡는다) */
+test("빈 검색에는 '처음이라면' 목록 없이 👶 버튼만 있다", () => withApp(async page => {
+  assert.strictEqual(await page.locator("#dishResults .df-item").count(), 0);
+  assert.ok(await page.isVisible("#dishResults .df-kid"));
 }));
 
 /* 11. 뒤로가기는 열린 시트만 닫는다 */
