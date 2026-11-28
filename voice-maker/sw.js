@@ -1,5 +1,5 @@
 // 목소리 공방 service worker — offline app shell cache
-const CACHE = "voice-maker-v2";
+const CACHE = "voice-maker-v3";
 const ASSETS = ["./", "./index.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", e => {
