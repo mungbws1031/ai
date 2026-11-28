@@ -88,6 +88,14 @@ input[type=range]{width:100%;accent-color:var(--violet)}
 .take .t{font-variant-numeric:tabular-nums;font-weight:600}
 .file-label{font-size:14px;color:var(--violet);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .file-label input{position:absolute;width:1px;height:1px;opacity:0}
+.eq-head{display:flex;justify-content:space-between;align-items:baseline}
+#eqCurve{display:block;width:100%;height:72px;background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:12px}
+.eq{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center}
+.band{display:flex;flex-direction:column;align-items:center;gap:4px}
+.band input{writing-mode:vertical-lr;direction:rtl;width:26px;height:132px;margin:0}
+.band .db{font-size:12px;color:var(--violet);font-variant-numeric:tabular-nums;min-height:1.5em}
+.band .f{font-size:12px;font-weight:600;line-height:1.2}
+.band .d{font-size:11px;color:var(--dim);line-height:1.2;white-space:nowrap}
 .note{font-size:13px;color:var(--dim);background:var(--foam);border-radius:10px;padding:10px 12px;margin-top:14px}
 
 @media (prefers-reduced-motion:reduce){.dot.live{animation:none}}
@@ -184,6 +192,14 @@ input[type=range]{width:100%;accent-color:var(--violet)}
         <label for="fxEcho">메아리 <output id="fxEchoOut"></output></label>
         <input type="range" id="fxEcho" min="0" max="0.8" step="0.05" value="0">
       </div>
+      <div class="field">
+        <label for="fxBreath">공기 섞인 소리 <output id="fxBreathOut"></output></label>
+        <input type="range" id="fxBreath" min="0" max="1" step="0.05" value="0">
+      </div>
+      <div class="field">
+        <label for="fxNasal">비음 섞인 소리 <output id="fxNasalOut"></output></label>
+        <input type="range" id="fxNasal" min="0" max="1" step="0.05" value="0">
+      </div>
 
       <div class="actions">
         <button class="btn primary" id="fxPlay" disabled>바뀐 목소리 듣기</button>
@@ -198,6 +214,12 @@ input[type=range]{width:100%;accent-color:var(--violet)}
         <h2>캐릭터</h2>
         <div class="chips" id="fxPresets"></div>
         <p class="hint">캐릭터를 고른 뒤 ‘바뀐 목소리 듣기’를 눌러 보세요.</p>
+      </section>
+      <section>
+        <div class="eq-head"><h2>이퀄라이저</h2><button class="icon-btn" id="eqReset">평평하게</button></div>
+        <canvas id="eqCurve" aria-hidden="true"></canvas>
+        <div class="eq" id="eq"></div>
+        <p class="hint">올리면 그 음역이 커지고, 내리면 작아져요. 듣는 중에 움직이면 바로 반영돼요.</p>
       </section>
     </aside>
   </section>
@@ -387,32 +409,103 @@ let source = null;      // decoded AudioBuffer
 let rec = null, recStart = 0, recTimer = null, micStream = null, micAnalyser = null;
 let playing = null;     // {nodes, src}
 
+const EQ_BANDS = [
+  {f:100,  l:'100',  d:'울림'},
+  {f:250,  l:'250',  d:'따뜻함'},
+  {f:500,  l:'500',  d:'몸통'},
+  {f:1000, l:'1k',   d:'또렷함'},
+  {f:2000, l:'2k',   d:'존재감'},
+  {f:4000, l:'4k',   d:'치찰음'},
+  {f:8000, l:'8k',   d:'공기'},
+];
+const EQ_FLAT = EQ_BANDS.map(() => 0);
 const FX_PRESETS = [
   {name:'그대로', slug:'original', pitch:1, echo:0, type:'none'},
+  {name:'숨소리', slug:'breathy', pitch:1, echo:0.1, type:'none', breath:0.6, eq:[-2,-1,0,0,1,3,5]},
+  {name:'콧소리', slug:'nasal', pitch:1.05, echo:0, type:'none', nasal:0.75, eq:[-3,-2,0,2,0,-2,-3]},
   {name:'헬륨', slug:'helium', pitch:1.6, echo:0, type:'none'},
-  {name:'거인', slug:'giant', pitch:0.65, echo:0.2, type:'none'},
+  {name:'거인', slug:'giant', pitch:0.65, echo:0.2, type:'none', eq:[4,2,0,0,0,-1,-2]},
   {name:'로봇', slug:'robot', pitch:1, echo:0.1, type:'robot'},
   {name:'무전기', slug:'radio', pitch:1.05, echo:0, type:'radio'},
   {name:'동굴', slug:'cave', pitch:0.9, echo:0.6, type:'none'},
   {name:'외계인', slug:'alien', pitch:1.3, echo:0.25, type:'alien'},
   {name:'거꾸로', slug:'reverse', pitch:1, echo:0, type:'reverse'},
-];
-let fx = {...FX_PRESETS[0]};
+].map(p => ({breath:0, nasal:0, ...p, eq:[...(p.eq || EQ_FLAT)]}));
+let fx = {...FX_PRESETS[0], eq:[...EQ_FLAT]};
+
+/* EQ sliders */
+const eqBox = $('eq');
+EQ_BANDS.forEach((b,i) => {
+  const wrap = document.createElement('div'); wrap.className = 'band';
+  wrap.innerHTML = `<output class="db" id="eqOut${i}">0</output>
+    <input type="range" id="eq${i}" min="-12" max="12" step="0.5" value="0" aria-label="${b.l}Hz ${b.d}">
+    <span class="f">${b.l}</span><span class="d">${b.d}</span>`;
+  eqBox.appendChild(wrap);
+});
+const sliderIds = ['fxPitch','fxEcho','fxBreath','fxNasal', ...EQ_BANDS.map((_,i) => 'eq'+i)];
+function loadSliders(p){
+  $('fxPitch').value = p.pitch; $('fxEcho').value = p.echo;
+  $('fxBreath').value = p.breath; $('fxNasal').value = p.nasal;
+  p.eq.forEach((v,i) => $('eq'+i).value = v);
+}
+
 const fxBox = $('fxPresets');
 FX_PRESETS.forEach(p => {
   const b = document.createElement('button');
   b.className='chip'; b.textContent=p.name; b.dataset.name=p.name; b.dataset.slug=p.slug; b.setAttribute('aria-pressed','false');
-  b.onclick = () => { fx = {...p}; $('fxPitch').value=p.pitch; $('fxEcho').value=p.echo; syncFx(); markPreset(fxBox,p.name); if (source) playFx(); };
+  b.onclick = () => {
+    const typeChanged = fx.type !== p.type;
+    fx = {...p, eq:[...p.eq]}; loadSliders(fx); syncFx(); markPreset(fxBox,p.name);
+    if (source && (typeChanged || !playing)) playFx(); else if (playing) playing.apply(true);
+  };
   fxBox.appendChild(b);
 });
 markPreset(fxBox,'그대로');
 function syncFx(){
   fx.pitch = +$('fxPitch').value; fx.echo = +$('fxEcho').value;
+  fx.breath = +$('fxBreath').value; fx.nasal = +$('fxNasal').value;
+  fx.eq = EQ_BANDS.map((_,i) => +$('eq'+i).value);
   $('fxPitchOut').textContent = fmt(fx.pitch)+'배';
   $('fxEchoOut').textContent = Math.round(fx.echo*100)+'%';
+  $('fxBreathOut').textContent = Math.round(fx.breath*100)+'%';
+  $('fxNasalOut').textContent = Math.round(fx.nasal*100)+'%';
+  fx.eq.forEach((v,i) => $('eqOut'+i).textContent = (v>0?'+':'') + fmt(v));
+  drawEq();
 }
-['fxPitch','fxEcho'].forEach(id => $(id).addEventListener('input', syncFx));
-syncFx();
+sliderIds.forEach(id => $(id).addEventListener('input', () => {
+  syncFx(); markPreset(fxBox, null);
+  if (playing) playing.apply(true);   // changes are heard right away
+}));
+$('eqReset').onclick = () => {
+  EQ_BANDS.forEach((_,i) => $('eq'+i).value = 0);
+  syncFx(); markPreset(fxBox, null); if (playing) playing.apply(true);
+};
+
+/* response curve of nasal + EQ, so fine-tuning is visible */
+let curveCtx = null;
+function drawEq(){
+  const c = $('eqCurve'), r = devicePixelRatio || 1;
+  const w = c.clientWidth, h = c.clientHeight; if (!w) return;
+  c.width = w*r; c.height = h*r;
+  const g2 = c.getContext('2d'); g2.setTransform(r,0,0,r,0,0); g2.clearRect(0,0,w,h);
+  try { curveCtx ||= new OfflineAudioContext(1, 128, 44100); } catch { return; }
+  const N = 160, freqs = new Float32Array(N), mag = new Float32Array(N), ph = new Float32Array(N);
+  for (let i=0;i<N;i++) freqs[i] = 40 * Math.pow(12000/40, i/(N-1));
+  const total = new Float32Array(N);
+  const filters = [
+    ...NASAL.map(([t,f,q,gn]) => { const x = makeFilter(curveCtx,t,f,q); x.gain.value = gn*fx.nasal; return x; }),
+    ...eqFilters(curveCtx).map((x,i) => { x.gain.value = fx.eq[i]; return x; }),
+  ];
+  filters.forEach(f => { f.getFrequencyResponse(freqs, mag, ph); for (let i=0;i<N;i++) total[i] += 20*Math.log10(mag[i] || 1e-6); });
+  const y = db => h/2 - Math.max(-18, Math.min(18, db)) / 18 * (h/2 - 6);
+  g2.strokeStyle = '#D5D1E3'; g2.lineWidth = 1;
+  g2.beginPath(); g2.moveTo(0, h/2); g2.lineTo(w, h/2); g2.stroke();
+  g2.beginPath();
+  for (let i=0;i<N;i++){ const x = i/(N-1)*w; i ? g2.lineTo(x, y(total[i])) : g2.moveTo(x, y(total[i])); }
+  g2.strokeStyle = '#5A3FD4'; g2.lineWidth = 2; g2.stroke();
+  g2.lineTo(w, h/2); g2.lineTo(0, h/2); g2.closePath();
+  g2.fillStyle = 'rgba(90,63,212,.12)'; g2.fill();
+}
 
 const mmss = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
 function setSource(buffer, label){
@@ -466,7 +559,24 @@ $('fileIn').onchange = async e => {
   e.target.value = '';
 };
 
-/* build the effect graph on any context (live or offline) */
+/* build the effect graph on any context (live or offline).
+   Chain: source → character fx → (dry + breath noise) → nasal filters → 7-band EQ → limiter → out (+ echo) */
+const noiseCache = new WeakMap();
+function noiseBuffer(ctx){
+  if (noiseCache.has(ctx)) return noiseCache.get(ctx);
+  const len = ctx.sampleRate * 2, b = ctx.createBuffer(1, len, ctx.sampleRate), d = b.getChannelData(0);
+  for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+  noiseCache.set(ctx, b); return b;
+}
+function makeFilter(ctx, type, freq, q){
+  const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq;
+  if (q) f.Q.value = q; return f;
+}
+// nasal = narrow boosts where the nose resonates (~1k, ~2.6k) + less chest and less air
+const NASAL = [['peaking',1000,3,12],['peaking',2600,4,6],['lowshelf',300,0,-9],['highshelf',5000,0,-8]];
+function eqFilters(ctx){
+  return EQ_BANDS.map((b,i) => makeFilter(ctx, i===0 ? 'lowshelf' : i===EQ_BANDS.length-1 ? 'highshelf' : 'peaking', b.f, 1.1));
+}
 function buildGraph(ctx, buffer, dest){
   let buf = buffer;
   if (fx.type === 'reverse'){
@@ -477,6 +587,7 @@ function buildGraph(ctx, buffer, dest){
   }
   const src = ctx.createBufferSource(); src.buffer = buf;
   src.playbackRate.value = fx.pitch;
+  const stoppers = [src];
   let node = src;
   const out = ctx.createGain(); out.gain.value = 0.9;
 
@@ -487,14 +598,13 @@ function buildGraph(ctx, buffer, dest){
     if (fx.type === 'alien'){
       const lfo = ctx.createOscillator(); lfo.frequency.value = 5;
       const depth = ctx.createGain(); depth.gain.value = 18;
-      lfo.connect(depth).connect(osc.frequency); lfo.start();
+      lfo.connect(depth).connect(osc.frequency); lfo.start(); stoppers.push(lfo);
     }
-    osc.connect(ring.gain); osc.start();
+    osc.connect(ring.gain); osc.start(); stoppers.push(osc);
     node.connect(ring); node = ring;
   }
   if (fx.type === 'radio'){
-    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 500;
-    const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value = 3200;
+    const hp = makeFilter(ctx,'highpass',500), lp = makeFilter(ctx,'lowpass',3200);
     const shaper = ctx.createWaveShaper();
     const curve = new Float32Array(1024);
     for (let i=0;i<1024;i++){ const x=i/512-1; curve[i] = Math.tanh(x*4); }
@@ -502,20 +612,51 @@ function buildGraph(ctx, buffer, dest){
     node.connect(hp).connect(lp).connect(shaper); node = shaper;
     out.gain.value = 0.55;
   }
-  node.connect(out);
-  if (fx.echo > 0){
-    const delay = ctx.createDelay(2); delay.delayTime.value = 0.18 + fx.echo*0.25;
-    const fb = ctx.createGain(); fb.gain.value = fx.echo*0.75;
-    const wet = ctx.createGain(); wet.gain.value = fx.echo;
-    node.connect(delay); delay.connect(fb).connect(delay); delay.connect(wet).connect(out);
-  }
+
+  // breath: hiss that follows the loudness of the voice (envelope → noise gain)
+  const mix = ctx.createGain();
+  const dry = ctx.createGain(); node.connect(dry).connect(mix);
+  const rect = ctx.createWaveShaper(), rc = new Float32Array(2049);
+  for (let i=0;i<rc.length;i++) rc[i] = Math.abs(i/1024-1);
+  rect.curve = rc;
+  const envScale = ctx.createGain();
+  const breathGain = ctx.createGain(); breathGain.gain.value = 0;
+  node.connect(rect).connect(makeFilter(ctx,'lowpass',25)).connect(envScale).connect(breathGain.gain);
+  const noise = ctx.createBufferSource(); noise.buffer = noiseBuffer(ctx); noise.loop = true;
+  noise.connect(makeFilter(ctx,'highpass',1500)).connect(makeFilter(ctx,'bandpass',4000,0.5)).connect(breathGain).connect(mix);
+  noise.start(); stoppers.push(noise);
+
+  const nasal = NASAL.map(([t,f,q]) => makeFilter(ctx,t,f,q));
+  const eq = eqFilters(ctx);
+  const limiter = ctx.createDynamicsCompressor();
+  limiter.threshold.value = -6; limiter.knee.value = 4; limiter.ratio.value = 12;
+  limiter.attack.value = 0.003; limiter.release.value = 0.15;
+  [mix, ...nasal, ...eq, limiter, out].reduce((a,b) => a.connect(b));
+
+  // echo (always built so it can be turned up while listening)
+  const delay = ctx.createDelay(2), fb = ctx.createGain(), wet = ctx.createGain();
+  limiter.connect(delay); delay.connect(fb).connect(delay); delay.connect(wet).connect(out);
   out.connect(dest);
-  return {src, out};
+
+  const set = (param, v, live) => live ? param.setTargetAtTime(v, ctx.currentTime, 0.03) : (param.value = v);
+  function apply(live){
+    set(src.playbackRate, fx.pitch, live);
+    set(dry.gain, 1 - fx.breath*0.45, live);
+    set(envScale.gain, fx.breath*7, live);
+    NASAL.forEach(([, , , g], i) => set(nasal[i].gain, g*fx.nasal, live));
+    eq.forEach((f,i) => set(f.gain, fx.eq[i], live));
+    set(delay.delayTime, 0.18 + fx.echo*0.25, live);
+    set(fb.gain, fx.echo*0.75, live);
+    set(wet.gain, fx.echo, live);
+  }
+  apply(false);
+  const stop = () => stoppers.forEach(s => { try{ s.stop(); }catch{} });
+  return {src, out, apply, stop};
 }
 const tailSec = () => fx.echo > 0 ? 0.5 + fx.echo*4 : 0.1;
 
 function stopFx(){
-  if (playing){ try{ playing.src.stop(); }catch{} playing.out.disconnect(); playing = null; }
+  if (playing){ playing.stop(); playing.out.disconnect(); playing = null; }
   if (!rec || rec.state !== 'recording') analyser = null;
   $('fxStop').disabled = true;
 }
@@ -526,13 +667,14 @@ async function playFx(){
   const an = ctx.createAnalyser(); an.fftSize = 2048; an.connect(ctx.destination);
   const g = buildGraph(ctx, source, an);
   playing = g; analyser = an;
-  g.src.onended = () => { if (playing === g){ setTimeout(() => { if (playing===g){ analyser=null; playing=null; $('fxStop').disabled=true; status('다 들었어요.'); } }, tailSec()*1000); } };
+  g.src.onended = () => { if (playing === g){ setTimeout(() => { if (playing===g){ stopFx(); status('다 들었어요.'); } }, tailSec()*1000); } };
   g.src.start(); $('fxStop').disabled = false;
   status(`‘${document.querySelector('#fxPresets [aria-pressed=true]')?.dataset.name || '내 설정'}’ 목소리로 재생 중`);
 }
 $('fxPlay').onclick = playFx;
 $('fxStop').onclick = () => { stopFx(); status('멈췄어요.'); };
-['fxPitch','fxEcho'].forEach(id => $(id).addEventListener('input', () => markPreset(fxBox, null)));
+syncFx();
+if (window.ResizeObserver) new ResizeObserver(drawEq).observe($('eqCurve')); else addEventListener('resize', drawEq);
 
 $('fxSave').onclick = async () => {
   if (!source) return;
@@ -571,7 +713,7 @@ function toWav(buffer){
   }
   return new Blob([ab], {type:'audio/wav'});
 }
-window.__vm = { toWav, buildGraph, setFx: p => Object.assign(fx, p), setSource };
+window.__vm = { toWav, buildGraph, setFx: p => Object.assign(fx, p), setSource, getFx: () => fx };
 
 /* ───────── PWA ───────── */
 let deferred = null;
