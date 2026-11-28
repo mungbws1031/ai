@@ -41,10 +41,11 @@ const shot = async (name) => {
 await page.click('.nav button[data-view="sense"]');
 await page.click(".scard:has-text('기름떡볶이맛')");
 await page.waitForTimeout(500);
-await page.evaluate(() => {
-  const t = [...document.querySelectorAll(".sense-cat-title")].find(e => e.textContent.includes("요즘 말하는 맛"));
-  if (t) window.scrollTo(0, t.getBoundingClientRect().top + window.scrollY - 12);
-});
+// 첫 화면 카드: 아이랑 · 30분 → 오늘의 추천 결과, 맨 위에서 찍는다
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.click('#todayPick [data-today-who="kid"]');
+await page.click('#todayPick [data-today-time="30"]');
+await page.evaluate(() => window.scrollTo(0, 0));
 await shot("1-gamseong.png");
 
 // 2) 요리 고르기 시트

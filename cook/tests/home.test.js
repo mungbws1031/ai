@@ -93,7 +93,7 @@ test("👶 아이가 잘 먹는 바로가기", () => withApp(async page => {
 }));
 
 test("placeholder·sub 문구", () => withApp(async page => {
-  assert.strictEqual(await page.getAttribute("#dishSearch", "placeholder"), "뭐 해 먹을까요? 요리 이름이나 재료를 쳐 보세요");
+  assert.strictEqual(await page.getAttribute("#dishSearch", "placeholder"), "먹고 싶은 게 있어요? 요리 이름이나 재료를 쳐 보세요");
   assert.strictEqual((await page.innerText("#view-sense .hd .sub")).trim(), "처음이어도 괜찮아요. 하나씩 같이 해요");
 }));
 

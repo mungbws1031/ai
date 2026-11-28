@@ -698,7 +698,7 @@
     </div>
     <div class="today" id="todayPick" aria-live="polite"></div>
     <div class="dish-find">
-      <input type="search" id="dishSearch" placeholder="뭐 해 먹을까요? 요리 이름이나 재료를 쳐 보세요" aria-label="요리 찾기" autocomplete="off" />
+      <input type="search" id="dishSearch" placeholder="먹고 싶은 게 있어요? 요리 이름이나 재료를 쳐 보세요" aria-label="요리 찾기" autocomplete="off" />
       <div id="dishResults"></div>
     </div>
     <div class="savedhdr sense-or">또는 땡기는 맛으로 고르기</div>
@@ -2428,7 +2428,6 @@ function pickToday(a,exclude){
   const fits=(h,useTime,useSpicy)=>(a.who!=="kid"||h.kid)&&(!useSpicy||a.spicy||!isSpicyHome(h))&&(!useTime||!a.time||dishMinutes(h.time)<=a.time);
   let relaxed=false, pool=HOME.filter(h=>fits(h,true,true));
   if(!pool.length){ pool=HOME.filter(h=>fits(h,false,true)); relaxed=pool.length>0; }
-  if(!pool.length&&a.who!=="kid"){ pool=HOME.filter(h=>fits(h,false,false)); relaxed=pool.length>0; }
   if(!pool.length) return {dish:null,relaxed:false};
   let left=pool.filter(h=>!ex.includes(h.name));
   if(!left.length) left=pool.length>1?pool.filter(h=>h.name!==ex[ex.length-1]):pool;
@@ -2439,7 +2438,7 @@ function pickToday(a,exclude){
 var _today={step:"who",who:"",time:0,spicy:false,shown:[],relaxed:false,dish:null};
 function loadTodayLast(){
   try{ const o=JSON.parse(localStorage.getItem(TODAY_KEY)||"null");
-    if(o&&TODAY_WHO[o.who]&&TODAY_TIME[o.time]!==undefined) return {who:o.who,time:+o.time,spicy:!!o.spicy}; }catch(e){}
+    if(o&&Object.prototype.hasOwnProperty.call(TODAY_WHO,o.who)&&[15,30,0].includes(+o.time)) return {who:o.who,time:+o.time,spicy:!!o.spicy}; }catch(e){}
   return null;
 }
 function todayPickNow(){
@@ -2466,7 +2465,7 @@ function renderToday(){
   } else {
     const d=t.dish;
     body=d?`<p class="today-q">오늘은 이거 어때요?</p>`+(t.relaxed?`<p class="today-note">조건을 조금 넓혀서 골랐어요</p>`:"")+
-      `<div class="today-dish" data-name="${escAttr(d.name)}">${esc(d.emoji||"")} ${esc(d.name)}</div><div class="today-meta">🍳 ${esc(levelText(d.level))} · ⏱ ${esc(d.time)}</div>`+
+      `<div class="today-dish" data-name="${escAttr(d.name)}">${esc(d.emoji||"")} ${esc(d.name)}</div><div class="today-meta">🍳 ${esc(levelText(d.level))} · ⏱ ${esc(d.time)}</div>`+(t.who==="kid"&&d.kidTip?`<p class="today-note">👶 ${esc(d.kidTip)}</p>`:"")+
       `<div class="today-btns"><button class="today-go" data-today="go">이걸로 할게요</button><button data-today="next">다른 거 보기</button><button data-today="reset">처음부터</button></div>`
       :`<p class="today-none">맞는 요리를 못 찾았어요. 아래 찾기 칸을 써 보세요.</p><div class="today-btns"><button data-today="reset">처음부터</button></div>`;
   }
