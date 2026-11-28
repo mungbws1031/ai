@@ -40,12 +40,13 @@ h1{font-family:"Do Hyeon",sans-serif;font-weight:400;font-size:clamp(44px,8vw,84
 
 /* ── mode switch ── */
 .modes{max-width:1040px;margin:0 auto;padding:22px 16px 0;display:flex;gap:6px}
-.mode{border:0;background:transparent;padding:10px 18px;border-radius:12px 12px 0 0;cursor:pointer;color:var(--dim);font-weight:600}
+.mode{white-space:nowrap;border:0;background:transparent;padding:10px 18px;border-radius:12px 12px 0 0;cursor:pointer;color:var(--dim);font-weight:600}
 .mode[aria-selected="true"]{background:var(--paper);color:var(--ink)}
 main{max-width:1040px;margin:0 auto 48px;padding:0 16px}
 .panel{background:var(--paper);border-radius:0 18px 18px 18px;padding:24px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px}
 .panel[hidden]{display:none}
-@media (max-width:760px){.panel{grid-template-columns:1fr;padding:18px;gap:24px}}
+@media (max-width:480px){.modes{gap:0;overflow-x:auto}.mode{padding:10px 12px;font-size:15px}}
+@media (max-width:760px){.panel{grid-template-columns:minmax(0,1fr);padding:18px;gap:24px}}
 
 h2{font-size:17px;margin:0 0 10px;font-weight:600}
 .hint{color:var(--dim);font-size:14px;margin:4px 0 0}
@@ -96,6 +97,29 @@ input[type=range]{width:100%;accent-color:var(--violet)}
 .band .db{font-size:12px;color:var(--violet);font-variant-numeric:tabular-nums;min-height:1.5em}
 .band .f{font-size:12px;font-weight:600;line-height:1.2}
 .band .d{font-size:11px;color:var(--dim);line-height:1.2;white-space:nowrap}
+.lines-head{display:flex;align-items:baseline;gap:10px;margin-top:26px}
+.lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.lines:empty::before{content:"원고를 넣고 ‘줄로 나누기’를 누르면 여기에 줄이 생겨요.";color:var(--dim);font-size:14px}
+.line{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.line.now{border-color:var(--violet);box-shadow:0 0 0 3px var(--violet-soft)}
+.l-top,.l-bot{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.l-num{font-weight:600;color:var(--dim);min-width:1.6em;font-variant-numeric:tabular-nums}
+.line select{width:auto;max-width:100%;padding:4px 8px;font-size:14px;border-radius:8px}
+.line .l-text{min-height:44px;margin:8px 0 6px;padding:8px 10px;font-size:15px;line-height:1.5}
+.l-status{margin-left:auto;font-size:13px;color:var(--dim)}
+.l-status[data-status=ready]{color:#2E7D4F}
+.l-status[data-status=error]{color:var(--danger)}
+.l-status[data-status=stale]{color:#9A6B00}
+.l-status[data-status=busy],.l-status[data-status=recording]{color:var(--violet);font-weight:600}
+.l-pause-l{font-size:13px;color:var(--dim)}
+.l-pause{width:4.4em;padding:3px 6px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.speakers{list-style:none;margin:0 0 6px;padding:0}
+.spk{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;padding:10px 0;border-bottom:1px solid var(--line)}
+.spk .spk-name{grid-column:1/-1;padding:6px 10px;border:1px solid var(--line);border-radius:8px;font-weight:600;background:#fff}
+.spk select{padding:6px 8px;font-size:14px}
+.spk .spk-btns{grid-column:1/-1;display:flex;gap:4px}
+.key-row{display:flex;gap:8px}
+.key-row input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff}
 .note{font-size:13px;color:var(--dim);background:var(--foam);border-radius:10px;padding:10px 12px;margin-top:14px}
 
 @media (prefers-reduced-motion:reduce){.dot.live{animation:none}}
@@ -107,7 +131,7 @@ input[type=range]{width:100%;accent-color:var(--violet)}
   <div class="stage-inner">
     <div>
       <h1>목소리 공방</h1>
-      <p class="tagline">글을 소리 내어 읽어주고, 내 목소리를 다른 캐릭터 목소리로 바꿔요.</p>
+      <p class="tagline">글을 읽어주고, 내 목소리를 캐릭터 목소리로 바꾸고, 내레이션 한 편을 만들어요.</p>
     </div>
     <button class="install" id="installBtn">앱으로 설치</button>
   </div>
@@ -118,6 +142,7 @@ input[type=range]{width:100%;accent-color:var(--violet)}
 <nav class="modes" role="tablist" aria-label="만들기 방식">
   <button class="mode" role="tab" id="tab-tts" aria-controls="p-tts" aria-selected="true">글 → 목소리</button>
   <button class="mode" role="tab" id="tab-fx" aria-controls="p-fx" aria-selected="false">내 목소리 바꾸기</button>
+  <button class="mode" role="tab" id="tab-narr" aria-controls="p-narr" aria-selected="false">내레이션</button>
 </nav>
 
 <main>
@@ -223,6 +248,44 @@ input[type=range]{width:100%;accent-color:var(--violet)}
       </section>
     </aside>
   </section>
+  <!-- ── 내레이션 ── -->
+  <section class="panel" id="p-narr" role="tabpanel" aria-labelledby="tab-narr" hidden>
+    <div>
+      <label for="script"><h2>원고</h2></label>
+      <textarea id="script" placeholder="원고를 붙여 넣으세요. 문장과 대사 단위로 나눠 드려요."></textarea>
+      <div class="actions"><button class="btn" id="splitBtn">줄로 나누기</button></div>
+
+      <div class="lines-head"><h2>줄</h2><span class="hint" id="linesInfo"></span></div>
+      <ol class="lines" id="lines"></ol>
+
+      <div class="actions">
+        <button class="btn" id="genAll">AI 줄 생성</button>
+        <button class="btn primary" id="playAll">전체 듣기</button>
+        <button class="btn" id="saveWav">WAV 저장</button>
+        <button class="btn" id="saveSrt">자막 SRT 저장</button>
+      </div>
+      <p class="note">줄마다 직접 녹음하거나 AI로 만든 뒤, 한 파일로 이어 붙여 저장해요. 자막 SRT는 영상 편집기에 그대로 올릴 수 있어요.</p>
+    </div>
+
+    <aside class="side">
+      <section>
+        <h2>목소리</h2>
+        <ul class="speakers" id="speakers"></ul>
+        <button class="icon-btn" id="addSpeaker">목소리 추가</button>
+        <p class="hint">줄마다 목소리를 고르면 그 목소리의 효과가 걸려요. ‘지금 설정 가져오기’는 ‘내 목소리 바꾸기’ 탭에서 맞춘 높이·공기·비음·이퀄라이저를 그대로 가져와요.</p>
+      </section>
+      <section>
+        <h2>AI 음성 (ElevenLabs)</h2>
+        <div class="key-row">
+          <input id="elKey" autocomplete="off" spellcheck="false" placeholder="API 키" aria-label="ElevenLabs API 키">
+          <button class="btn" id="elSave">저장</button>
+        </div>
+        <p class="hint" id="elRemain">키를 저장하면 목소리 목록과 남은 글자 수를 불러와요.</p>
+        <button class="icon-btn del" id="elClear">키 지우기</button>
+        <p class="note">AI 줄의 글만 ElevenLabs로 보내요. 키는 이 기기에만 저장되고, 직접 녹음한 줄은 어디로도 보내지 않아요. 만들 때마다 요금제의 글자 수가 차감돼요.</p>
+      </section>
+    </aside>
+  </section>
 </main>
 
 <script>
@@ -284,12 +347,12 @@ function draw(){
 requestAnimationFrame(draw);
 
 /* ───────── tabs ───────── */
-const tabs = [['tab-tts','p-tts'],['tab-fx','p-fx']];
+const tabs = [['tab-tts','p-tts'],['tab-fx','p-fx'],['tab-narr','p-narr']];
 tabs.forEach(([t,p]) => $(t).addEventListener('click', () => {
   tabs.forEach(([t2,p2]) => { $(t2).setAttribute('aria-selected', t2===t); $(p2).hidden = t2!==t; });
   store.set('vm-tab', t);
 }));
-const lastTab = store.get('vm-tab','tab-tts'); if (lastTab==='tab-fx') $('tab-fx').click();
+const lastTab = store.get('vm-tab','tab-tts'); if (lastTab !== 'tab-tts' && $(lastTab)) $(lastTab).click();
 
 /* ───────── 글 → 목소리 ───────── */
 const synth = window.speechSynthesis;
@@ -719,7 +782,393 @@ function toWav(buffer){
   }
   return new Blob([ab], {type:'audio/wav'});
 }
-window.__vm = { toWav, buildGraph, setFx: p => Object.assign(fx, p), setSource, getFx: () => fx };
+
+/* ───────── 내레이션 작업실 ───────── */
+const esc = v => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+/* 원고를 문장·대사 단위로 나눔. 빈 줄(문단 경계) 앞 줄은 쉼 0.9초. */
+function splitScript(text){
+  const out = [];
+  const paras = text.replace(/\r/g,'').split(/\n\s*\n/);
+  paras.forEach(p => {
+    const parts = (p.match(/"[^"]*"|“[^”]*”|「[^」]*」|[^.!?。…"“「\n]+[.!?。…]*|[.!?。…]+/g) || [])
+      .map(s => s.trim()).filter(Boolean);
+    parts.forEach((t, i) => out.push(newLine(t, i === parts.length-1 ? 0.9 : 0.4)));
+  });
+  if (out.length) out[out.length-1].pause = 0.4;
+  return out;
+}
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+const newLine = (text, pause=0.4) => ({ id: uid('l'), text, speakerId:'narrator', source: store.get('vm-el-key','') ? 'ai' : 'rec',
+  pause, audioKey:null, audioFrom:null, aiSig:null, error:null });
+const defaultSpeaker = () => ({ id:'narrator', name:'내레이터', preset:'그대로', fx:{...FX_PRESETS[0], eq:[...EQ_FLAT]}, aiVoiceId:null });
+
+let narr = store.get('vm-narration', null) || { script:'', lines:[], speakers:[defaultSpeaker()] };
+const saveNarr = () => store.set('vm-narration', narr);
+const speakerOf = line => narr.speakers.find(s => s.id === line.speakerId) || narr.speakers[0];
+const aiSig = line => (speakerOf(line).aiVoiceId || '') + '|' + line.text;
+
+/* 오디오 저장: IndexedDB(voice-maker/audio), 실패하면 이 세션 메모리에만 */
+const idb = (() => {
+  let dbp = null; const mem = new Map();
+  const open = () => dbp ||= new Promise((res, rej) => {
+    const r = indexedDB.open('voice-maker', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('audio');
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+  const tx = async (mode, fn) => {
+    const db = await open();
+    return new Promise((res, rej) => {
+      const t = db.transaction('audio', mode), rq = fn(t.objectStore('audio'));
+      t.oncomplete = () => res(rq.result); t.onerror = () => rej(t.error);
+    });
+  };
+  return {
+    put: async (k, v) => { mem.set(k, v); try { await tx('readwrite', s => s.put(v, k)); } catch {} },
+    get: async k => { if (mem.has(k)) return mem.get(k); try { return await tx('readonly', s => s.get(k)); } catch { return undefined; } },
+    del: async k => { mem.delete(k); try { await tx('readwrite', s => s.delete(k)); } catch {} },
+  };
+})();
+const bufCache = new Map();
+async function lineBuffer(line){
+  if (!line.audioKey) return null;
+  if (bufCache.has(line.audioKey)) return bufCache.get(line.audioKey);
+  const blob = await idb.get(line.audioKey);
+  if (!blob) return null;
+  const b = await getAC().decodeAudioData(await blob.arrayBuffer());
+  bufCache.set(line.audioKey, b); return b;
+}
+async function setLineAudio(line, blob, from){
+  const key = `${from}-${line.id}-${Date.now()}`;
+  const b = await getAC().decodeAudioData(await blob.arrayBuffer());  // throws if not audio
+  if (line.audioKey){ idb.del(line.audioKey); bufCache.delete(line.audioKey); }
+  await idb.put(key, blob); bufCache.set(key, b);
+  Object.assign(line, { audioKey:key, audioFrom:from, aiSig: from === 'ai' ? aiSig(line) : null, error:null });
+}
+function dropLineAudio(line){
+  if (line.audioKey){ idb.del(line.audioKey); bufCache.delete(line.audioKey); }
+  Object.assign(line, { audioKey:null, audioFrom:null, aiSig:null });
+}
+
+const busy = new Set();      // line ids being generated
+let lineRec = null;          // {line, rec, stream}
+function lineState(line){
+  if (lineRec && lineRec.line === line) return 'recording';
+  if (busy.has(line.id)) return 'busy';
+  if (line.audioKey && line.audioFrom === line.source){
+    if (line.source === 'ai' && line.aiSig !== aiSig(line)) return 'stale';
+    return 'ready';
+  }
+  return line.error ? 'error' : 'empty';
+}
+const STATE_LABEL = { empty:'비어 있음', ready:'준비됨', busy:'만드는 중…', recording:'녹음 중', error:'실패', stale:'다시 만들어야 해요' };
+
+/* ── 목소리(화자) 패널 ── */
+function renderSpeakers(){
+  const ul = $('speakers'); ul.innerHTML = '';
+  const voices = store.get('vm-el-voices', []);
+  narr.speakers.forEach(sp => {
+    const li = document.createElement('li'); li.className = 'spk'; li.dataset.id = sp.id;
+    const name = document.createElement('input'); name.className = 'spk-name'; name.value = sp.name; name.setAttribute('aria-label','목소리 이름');
+    name.onchange = () => { const v = name.value.trim() || '이름 없음'; if (v === sp.name) return; sp.name = v; saveNarr(); renderLines(); };
+    const preset = document.createElement('select'); preset.className = 'spk-preset'; preset.setAttribute('aria-label', `${sp.name} 효과`);
+    preset.innerHTML = FX_PRESETS.map(p => `<option>${esc(p.name)}</option>`).join('') + '<option value="">내 설정</option>';
+    preset.value = sp.preset || '';
+    preset.onchange = () => {
+      const p = FX_PRESETS.find(x => x.name === preset.value); if (!p) return;
+      sp.preset = p.name; sp.fx = {...p, eq:[...p.eq]}; saveNarr();
+    };
+    const ai = document.createElement('select'); ai.className = 'spk-ai'; ai.setAttribute('aria-label', `${sp.name} AI 목소리`);
+    ai.innerHTML = voices.length
+      ? '<option value="">AI 목소리 고르기</option>' + voices.map(v => `<option value="${esc(v.voice_id)}">${esc(v.name)}</option>`).join('')
+      : '<option value="">AI 키를 넣으면 고를 수 있어요</option>';
+    ai.value = sp.aiVoiceId || '';
+    ai.onchange = () => { sp.aiVoiceId = ai.value || null; saveNarr(); renderLines(); };
+    const btns = document.createElement('div'); btns.className = 'spk-btns';
+    const grab = document.createElement('button'); grab.className = 'icon-btn spk-grab'; grab.textContent = '지금 설정 가져오기';
+    grab.onclick = () => { sp.fx = {...fx, eq:[...fx.eq]}; sp.preset = document.querySelector('#fxPresets [aria-pressed=true]')?.dataset.name || ''; saveNarr(); renderSpeakers(); status(`‘${sp.name}’에 지금 효과 설정을 넣었어요.`); };
+    btns.append(grab);
+    if (sp.id !== 'narrator'){
+      const del = document.createElement('button'); del.className = 'icon-btn del spk-del'; del.textContent = '삭제';
+      del.onclick = () => {
+        narr.lines.forEach(l => { if (l.speakerId === sp.id) l.speakerId = 'narrator'; });
+        narr.speakers = narr.speakers.filter(s => s !== sp); saveNarr(); renderSpeakers(); renderLines();
+        status(`‘${sp.name}’을 지웠어요. 그 목소리를 쓰던 줄은 내레이터로 바꿨어요.`);
+      };
+      btns.append(del);
+    }
+    li.append(name, preset, ai, btns); ul.appendChild(li);
+  });
+}
+$('addSpeaker').onclick = () => {
+  narr.speakers.push({ id: uid('s'), name: `목소리 ${narr.speakers.length+1}`, preset:'그대로', fx:{...FX_PRESETS[0], eq:[...EQ_FLAT]}, aiVoiceId:null });
+  saveNarr(); renderSpeakers(); renderLines();
+  $('speakers').lastElementChild.querySelector('.spk-name').select();
+};
+
+/* ── 줄 목록 ── */
+function renderLines(){
+  const ol = $('lines'); ol.innerHTML = '';
+  narr.lines.forEach((line, i) => {
+    const st = lineState(line);
+    const li = document.createElement('li'); li.className = 'line'; li.dataset.id = line.id;
+    li.innerHTML = `<div class="l-top">
+        <span class="l-num">${i+1}</span>
+        <select class="l-speaker" aria-label="${i+1}번 줄 목소리">${narr.speakers.map(s => `<option value="${esc(s.id)}">${esc(s.name)}</option>`).join('')}</select>
+        <select class="l-src" aria-label="${i+1}번 줄 만드는 방식"><option value="ai">AI 음성</option><option value="rec">직접 녹음</option></select>
+        <span class="l-status" data-status="${st}">${STATE_LABEL[st]}</span>
+      </div>
+      <textarea class="l-text" rows="1" aria-label="${i+1}번 줄 글"></textarea>
+      <div class="l-bot">
+        <button class="icon-btn l-rec" ${line.source==='rec'?'':'hidden'} ${st==='busy'?'disabled':''}>${st==='recording'?'녹음 끝내기':'녹음'}</button>
+        <button class="icon-btn l-gen" ${line.source==='ai'?'':'hidden'} ${st==='busy'?'disabled':''}>AI로 만들기</button>
+        <button class="icon-btn l-play" ${st==='ready'?'':'disabled'}>듣기</button>
+        <label class="l-pause-l">쉼 <input type="number" class="l-pause" min="0" max="5" step="0.1" value="${line.pause}"> 초</label>
+        <button class="icon-btn l-merge" ${i < narr.lines.length-1 ? '' : 'hidden'}>다음 줄과 합치기</button>
+        <button class="icon-btn del l-del">삭제</button>
+      </div>`;
+    const q = s => li.querySelector(s);
+    q('.l-speaker').value = line.speakerId in Object.fromEntries(narr.speakers.map(s=>[s.id,1])) ? line.speakerId : 'narrator';
+    q('.l-src').value = line.source;
+    q('.l-text').value = line.text;
+    q('.l-speaker').onchange = e => { line.speakerId = e.target.value; saveNarr(); renderLines(); };
+    q('.l-src').onchange = e => { line.source = e.target.value; saveNarr(); renderLines(); };
+    q('.l-text').onchange = e => {
+      const t = e.target.value.trim(); if (t === line.text) return;
+      line.text = t;
+      if (line.source === 'ai') dropLineAudio(line);   // 녹음 줄은 자막 글만 고치고 녹음은 유지
+      line.error = null; saveNarr(); renderLines();
+    };
+    q('.l-pause').onchange = e => { line.pause = Math.max(0, Math.min(5, +e.target.value || 0)); saveNarr(); };
+    q('.l-rec').onclick = () => toggleLineRec(line);
+    q('.l-gen').onclick = () => generateLines([line]);
+    q('.l-play').onclick = () => playLine(line);
+    q('.l-merge').onclick = () => {
+      const next = narr.lines[i+1];
+      line.text = `${line.text} ${next.text}`; line.pause = next.pause;
+      dropLineAudio(line); dropLineAudio(next);
+      narr.lines.splice(i+1, 1); saveNarr(); renderLines();
+    };
+    q('.l-del').onclick = () => { dropLineAudio(line); narr.lines.splice(i, 1); saveNarr(); renderLines(); };
+    ol.appendChild(li);
+  });
+  const ready = narr.lines.filter(l => lineState(l) === 'ready').length;
+  $('linesInfo').textContent = narr.lines.length ? `${narr.lines.length}줄 중 ${ready}줄 준비됨` : '';
+  const todo = aiTodo();
+  const chars = todo.reduce((n, l) => n + l.text.length, 0);
+  $('genAll').textContent = todo.length ? `AI 줄 만들기 (${todo.length}줄, ${chars.toLocaleString('ko-KR')}자)` : 'AI 줄 만들기';
+}
+const aiTodo = () => narr.lines.filter(l => l.source === 'ai' && l.text && ['empty','stale','error'].includes(lineState(l)));
+
+$('script').value = narr.script || '';
+$('script').oninput = () => { narr.script = $('script').value; saveNarr(); };
+$('splitBtn').onclick = () => {
+  const lines = splitScript($('script').value);
+  if (!lines.length){ status('나눌 원고가 없어요. 원고를 먼저 붙여 넣어 주세요.'); $('script').focus(); return; }
+  if (narr.lines.some(l => l.audioKey) && !confirm('지금 있는 줄과 녹음·AI 음성을 지우고 새로 나눌까요?')) return;
+  narr.lines.forEach(dropLineAudio);
+  narr.lines = lines; saveNarr(); renderLines();
+  status(`${lines.length}줄로 나눴어요. 줄마다 목소리와 만드는 방식을 골라 주세요.`);
+};
+
+/* ── 줄 녹음 ── */
+async function toggleLineRec(line){
+  if (busy.size) return;   // 마이크 켜는 중이거나 AI로 만드는 중이면 무시
+  if (lineRec){ const same = lineRec.line === line; lineRec.rec.stop(); if (same) return; }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){ status('이 브라우저는 녹음을 지원하지 않아요.'); return; }
+  let stream;
+  busy.add(line.id); renderLines(); status('마이크를 켜는 중…');
+  try { stream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); }
+  catch { busy.delete(line.id); renderLines(); status('마이크 권한이 필요해요. 주소창의 마이크 아이콘에서 허용한 뒤 다시 눌러 주세요.'); return; }
+  busy.delete(line.id);
+  stopNarr(); stopFx(); synth && synth.cancel();
+  const ctx = getAC(); await ctx.resume();
+  const an = ctx.createAnalyser(); an.fftSize = 2048; ctx.createMediaStreamSource(stream).connect(an); analyser = an;
+  const chunks = [], rec = new MediaRecorder(stream);
+  lineRec = { line, rec, stream };
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = async () => {
+    stream.getTracks().forEach(t => t.stop()); clearTimeout(lineRec?.timer);
+    lineRec = null; analyser = null;
+    try { await setLineAudio(line, new Blob(chunks, {type: rec.mimeType}), 'rec'); status('녹음했어요.'); }
+    catch { line.error = '녹음을 읽지 못했어요'; status('녹음을 읽지 못했어요. 다시 녹음해 주세요.'); }
+    saveNarr(); renderLines();
+  };
+  rec.start(); lineRec.timer = setTimeout(() => rec.state === 'recording' && rec.stop(), 60000);
+  status(`${narr.lines.indexOf(line)+1}번 줄 녹음 중이에요. 다 읽었으면 ‘녹음 끝내기’를 누르세요.`);
+  renderLines();
+}
+
+/* ── ElevenLabs ── */
+const EL = 'https://api.elevenlabs.io/v1';
+const elErr = (kind, msg) => Object.assign(new Error(msg), { kind });
+async function elFetch(p, opts = {}){
+  const key = store.get('vm-el-key', '');
+  if (!key) throw elErr('auth', 'AI 음성 칸에 ElevenLabs API 키를 먼저 저장해 주세요.');
+  let res;
+  try { res = await fetch(EL + p, { ...opts, headers: { 'xi-api-key': key, ...(opts.headers || {}) } }); }
+  catch { throw elErr('network', '브라우저에서 ElevenLabs에 연결하지 못했어요. 인터넷 연결을 확인하고, 계속 안 되면 그 줄을 직접 녹음으로 바꿔 주세요.'); }
+  if (res.status === 401) throw elErr('auth', 'ElevenLabs가 API 키를 거부했어요. 키를 확인해 다시 저장해 주세요.');
+  if (res.status === 402 || res.status === 429) throw elErr('quota', 'ElevenLabs 사용 한도에 걸렸어요. 남은 글자 수나 요금제를 확인해 주세요.');
+  if (!res.ok) throw elErr('other', `ElevenLabs가 오류를 돌려줬어요 (${res.status}). 잠시 뒤 다시 해 주세요.`);
+  return res;
+}
+const el = {
+  voices: async () => ((await (await elFetch('/voices')).json()).voices || []).map(v => ({ voice_id: v.voice_id, name: v.name })),
+  remaining: async () => { try { const j = await (await elFetch('/user/subscription')).json(); return j.character_limit - j.character_count; } catch { return null; } },
+  tts: async (voiceId, text) => (await elFetch(`/text-to-speech/${encodeURIComponent(voiceId)}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+    body: JSON.stringify({ text, model_id: 'eleven_multilingual_v2' }),
+  })).blob(),
+};
+const maskKey = k => k ? k.slice(0, 4) + '••••••••' : '';
+async function refreshRemaining(){
+  const n = await el.remaining();
+  if (n != null) $('elRemain').textContent = `남은 글자 ${n.toLocaleString('ko-KR')}자`;
+}
+$('elKey').value = maskKey(store.get('vm-el-key', ''));
+$('elKey').onfocus = () => { if ($('elKey').value.includes('•')) $('elKey').value = ''; };
+$('elSave').onclick = async () => {
+  const v = $('elKey').value.trim();
+  if (v && !v.includes('•')) store.set('vm-el-key', v);
+  if (!store.get('vm-el-key', '')){ status('API 키를 입력해 주세요.'); return; }
+  $('elKey').value = maskKey(store.get('vm-el-key', ''));
+  status('ElevenLabs에서 목소리 목록을 불러오는 중…');
+  try {
+    store.set('vm-el-voices', await el.voices());
+    renderSpeakers(); await refreshRemaining();
+    status('목소리 목록을 불러왔어요. 목소리마다 AI 목소리를 골라 주세요.');
+  } catch (e){ status(e.message); }
+};
+$('elClear').onclick = () => {
+  try { localStorage.removeItem('vm-el-key'); localStorage.removeItem('vm-el-voices'); } catch {}
+  $('elKey').value = ''; $('elRemain').textContent = '키를 저장하면 목소리 목록과 남은 글자 수를 불러와요.';
+  renderSpeakers(); status('API 키를 지웠어요.');
+};
+
+async function generateLines(targets){
+  targets = targets.filter(l => l.text);
+  if (!targets.length){ status('새로 만들 AI 줄이 없어요.'); return; }
+  const noVoice = targets.filter(l => !speakerOf(l).aiVoiceId);
+  if (noVoice.length){
+    const names = [...new Set(noVoice.map(l => speakerOf(l).name))].join(', ');
+    status(`‘${names}’ 목소리에 AI 목소리를 먼저 골라 주세요.`); return;
+  }
+  if (!store.get('vm-el-key', '')){ status('AI 음성 칸에 ElevenLabs API 키를 먼저 저장해 주세요.'); return; }
+  const chars = targets.reduce((n, l) => n + l.text.length, 0);
+  if (!confirm(`AI로 ${targets.length}줄, ${chars.toLocaleString('ko-KR')}자를 만들어요.\nElevenLabs 요금제의 글자 수가 그만큼 차감돼요. 계속할까요?`)) return;
+  let done = 0;
+  for (const line of targets){
+    busy.add(line.id); renderLines();
+    status(`AI로 만드는 중 (${done+1}/${targets.length})`);
+    try {
+      await setLineAudio(line, await el.tts(speakerOf(line).aiVoiceId, line.text), 'ai');
+      done++;
+    } catch (e){
+      line.error = e.message;
+      busy.delete(line.id); saveNarr(); renderLines();
+      status(e.kind ? e.message : 'AI 음성을 읽지 못했어요. 다시 만들어 주세요.');
+      if (e.kind === 'network' || e.kind === 'auth' || e.kind === 'quota') return;
+      continue;
+    }
+    busy.delete(line.id); saveNarr(); renderLines();
+  }
+  status(`AI로 ${done}줄을 만들었어요.`);
+  refreshRemaining();
+}
+$('genAll').onclick = () => generateLines(aiTodo());
+
+/* ── 듣기·내보내기 ── */
+let narrPlay = null;   // {src, timers}
+function stopNarr(){
+  if (!narrPlay) return;
+  try { narrPlay.src.stop(); } catch {}
+  narrPlay.timers.forEach(clearTimeout);
+  document.querySelectorAll('.line.now').forEach(el => el.classList.remove('now'));
+  narrPlay = null; analyser = null; $('playAll').textContent = '전체 듣기';
+}
+async function playBuffer(buffer, onEnd){
+  stopNarr(); stopFx(); synth && synth.cancel();
+  const ctx = getAC(); await ctx.resume();
+  const an = ctx.createAnalyser(); an.fftSize = 2048; an.connect(ctx.destination);
+  const src = ctx.createBufferSource(); src.buffer = buffer; src.connect(an);
+  narrPlay = { src, timers: [] }; analyser = an;
+  src.onended = () => { if (narrPlay && narrPlay.src === src){ stopNarr(); onEnd && onEnd(); } };
+  src.start();
+  return narrPlay;
+}
+async function playLine(line){
+  const b = await lineBuffer(line);
+  if (!b){ status('이 줄은 아직 소리가 없어요.'); return; }
+  await playBuffer(await renderFx(b, speakerOf(line).fx), () => status('다 들었어요.'));
+  status(`${narr.lines.indexOf(line)+1}번 줄을 ‘${speakerOf(line).name}’ 목소리로 듣는 중`);
+}
+async function renderNarration(){
+  const parts = []; let skipped = 0;
+  for (const line of narr.lines){
+    const b = lineState(line) === 'ready' ? await lineBuffer(line).catch(() => null) : null;
+    if (!b){ skipped++; continue; }
+    parts.push({ line, buf: await renderFx(b, speakerOf(line).fx) });
+  }
+  if (!parts.length) return { buffer:null, cues:[], skipped };
+  const sr = 44100, cues = [], sched = [];
+  let t = 0;
+  parts.forEach((p, i) => {
+    const d = p.buf.duration;
+    cues.push({ start:t, end:t+d, text:p.line.text, id:p.line.id });
+    sched.push([p.buf, t]);
+    t += d + (i < parts.length-1 ? p.line.pause : 0);
+  });
+  const off = new OfflineAudioContext(1, Math.ceil((t + 0.05) * sr), sr);
+  sched.forEach(([b, at]) => { const s = off.createBufferSource(); s.buffer = b; s.connect(off.destination); s.start(at); });
+  return { buffer: await off.startRendering(), cues, skipped };
+}
+const pad = (n, w=2) => String(n).padStart(w, '0');
+function srtTime(t){
+  const ms = Math.round(t * 1000);
+  return `${pad(Math.floor(ms/3600000))}:${pad(Math.floor(ms%3600000/60000))}:${pad(Math.floor(ms%60000/1000))},${pad(ms%1000, 3)}`;
+}
+const toSrt = cues => cues.map((c, i) => `${i+1}\n${srtTime(c.start)} --> ${srtTime(c.end)}\n${c.text}\n`).join('\n');
+const skippedNote = n => n ? ` 비어 있거나 실패한 ${n}줄은 건너뛰었어요.` : '';
+async function withRender(label, fn){
+  if (!narr.lines.length){ status('줄이 없어요. 원고를 넣고 ‘줄로 나누기’를 눌러 주세요.'); return; }
+  status(`${label} 준비 중…`);
+  try {
+    const r = await renderNarration();
+    if (!r.buffer){ status('아직 소리가 있는 줄이 없어요. 줄을 녹음하거나 AI로 만들어 주세요.'); return; }
+    await fn(r);
+  } catch (e){ status(`${label}에 실패했어요: ${e.message}`); }
+}
+$('playAll').onclick = () => {
+  if (narrPlay){ stopNarr(); status('멈췄어요.'); return; }
+  withRender('전체 듣기', async r => {
+    const pl = await playBuffer(r.buffer, () => status('끝까지 들었어요.'));
+    $('playAll').textContent = '멈춤';
+    r.cues.forEach(c => pl.timers.push(setTimeout(() => {
+      document.querySelectorAll('.line.now').forEach(el => el.classList.remove('now'));
+      const li = document.querySelector(`.line[data-id="${c.id}"]`);
+      if (li){ li.classList.add('now'); li.scrollIntoView({ block:'nearest', behavior: reduce ? 'auto' : 'smooth' }); }
+    }, c.start * 1000)));
+    status('전체 듣는 중.' + skippedNote(r.skipped));
+  });
+};
+$('saveWav').onclick = () => withRender('WAV 저장', async r => {
+  download(toWav(r.buffer), `narration-${Date.now()}.wav`);
+  status(`WAV를 저장했어요 (${mmss(r.buffer.duration)}).` + skippedNote(r.skipped));
+});
+$('saveSrt').onclick = () => withRender('자막 저장', async r => {
+  download(new Blob([toSrt(r.cues)], { type:'application/x-subrip;charset=utf-8' }), `narration-${Date.now()}.srt`);
+  status(`자막 ${r.cues.length}개를 저장했어요.` + skippedNote(r.skipped));
+});
+
+/* 시작: 저장된 오디오가 사라졌으면(브라우저 정리 등) 그 줄을 비움 */
+renderSpeakers(); renderLines();
+(async () => {
+  let lost = 0;
+  for (const l of narr.lines) if (l.audioKey && !(await idb.get(l.audioKey))){ Object.assign(l, { audioKey:null, audioFrom:null, aiSig:null }); lost++; }
+  if (lost){ saveNarr(); renderLines(); status(`저장된 소리 ${lost}줄을 찾지 못했어요. 그 줄은 다시 녹음하거나 만들어 주세요.`); }
+})();
+
+window.__vm = { toWav, buildGraph, setFx: p => Object.assign(fx, p), setSource, getFx: () => fx, splitScript, toSrt };
 
 /* ───────── PWA ───────── */
 let deferred = null;

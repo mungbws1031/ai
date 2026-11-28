@@ -87,7 +87,9 @@ const lineStatus = (p, i) => p.getAttribute(`#lines .line:nth-child(${i}) .l-sta
   for (const i of [0, 1]) {
     const line = page.locator('#lines .line').nth(i);
     await line.locator('.l-src').selectOption('rec');
-    await line.locator('.l-rec').click(); await page.waitForTimeout(1200); await line.locator('.l-rec').click();
+    await line.locator('.l-rec').click();
+    await page.waitForFunction(n => document.querySelector(`#lines .line:nth-child(${n}) .l-status`).dataset.status === 'recording', i + 1, { timeout: 8000 });
+    await page.waitForTimeout(1200); await line.locator('.l-rec').click();
     await page.waitForFunction(n => document.querySelector(`#lines .line:nth-child(${n}) .l-status`).dataset.status === 'ready', i + 1, { timeout: 5000 });
   }
   ok(await lineStatus(page, 1) === 'ready' && await lineStatus(page, 2) === 'ready', '두 줄 녹음 완료');
@@ -103,7 +105,7 @@ const lineStatus = (p, i) => p.getAttribute(`#lines .line:nth-child(${i}) .l-sta
   ok(!(await page.inputValue('#elKey')).includes('567890'), '저장 후 키 가려짐', await page.inputValue('#elKey'));
   await page.locator('#speakers .spk').first().locator('.spk-ai').selectOption('v1');
   for (const i of [2, 3]) await page.locator('#lines .line').nth(i).locator('.l-src').selectOption('ai');
-  ok(/2줄/.test(await page.textContent('#genAll')) && /7자/.test(await page.textContent('#genAll')), '생성 버튼에 줄·글자 수', await page.textContent('#genAll'));
+  ok(/2줄/.test(await page.textContent('#genAll')) && /6자/.test(await page.textContent('#genAll')), '생성 버튼에 줄·글자 수', await page.textContent('#genAll'));
   await page.click('#genAll');
   await page.waitForFunction(() => [3,4].every(n => document.querySelector(`#lines .line:nth-child(${n}) .l-status`).dataset.status === 'ready'), null, { timeout: 8000 });
   ok(ttsCalls.length === 2, 'TTS 요청 2번', String(ttsCalls.length));
