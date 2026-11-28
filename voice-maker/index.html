@@ -456,7 +456,7 @@ FX_PRESETS.forEach(p => {
   b.onclick = () => {
     const typeChanged = fx.type !== p.type;
     fx = {...p, eq:[...p.eq]}; loadSliders(fx); syncFx(); markPreset(fxBox,p.name);
-    if (source && (typeChanged || !playing)) playFx(); else if (playing) playing.apply(true);
+    if (source && (typeChanged || !playing)) playFx(); else if (playing) playing.apply(true, fx);
   };
   fxBox.appendChild(b);
 });
@@ -474,11 +474,11 @@ function syncFx(){
 }
 sliderIds.forEach(id => $(id).addEventListener('input', () => {
   syncFx(); markPreset(fxBox, null);
-  if (playing) playing.apply(true);   // changes are heard right away
+  if (playing) playing.apply(true, fx);   // changes are heard right away
 }));
 $('eqReset').onclick = () => {
   EQ_BANDS.forEach((_,i) => $('eq'+i).value = 0);
-  syncFx(); markPreset(fxBox, null); if (playing) playing.apply(true);
+  syncFx(); markPreset(fxBox, null); if (playing) playing.apply(true, fx);
 };
 
 /* response curve of nasal + EQ, so fine-tuning is visible */
@@ -577,25 +577,25 @@ const NASAL = [['peaking',1000,3,12],['peaking',2600,4,6],['lowshelf',300,0,-9],
 function eqFilters(ctx){
   return EQ_BANDS.map((b,i) => makeFilter(ctx, i===0 ? 'lowshelf' : i===EQ_BANDS.length-1 ? 'highshelf' : 'peaking', b.f, 1.1));
 }
-function buildGraph(ctx, buffer, dest){
+function buildGraph(ctx, buffer, dest, s = fx){
   let buf = buffer;
-  if (fx.type === 'reverse'){
+  if (s.type === 'reverse'){
     buf = ctx.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
     for (let c=0;c<buffer.numberOfChannels;c++){
       const d = buffer.getChannelData(c).slice().reverse(); buf.copyToChannel(d, c);
     }
   }
   const src = ctx.createBufferSource(); src.buffer = buf;
-  src.playbackRate.value = fx.pitch;
+  src.playbackRate.value = s.pitch;
   const stoppers = [src];
   let node = src;
   const out = ctx.createGain(); out.gain.value = 0.9;
 
-  if (fx.type === 'robot' || fx.type === 'alien'){
+  if (s.type === 'robot' || s.type === 'alien'){
     // ring modulation: multiply voice by a sine carrier
     const ring = ctx.createGain(); ring.gain.value = 0;
-    const osc = ctx.createOscillator(); osc.frequency.value = fx.type==='robot' ? 55 : 30;
-    if (fx.type === 'alien'){
+    const osc = ctx.createOscillator(); osc.frequency.value = s.type==='robot' ? 55 : 30;
+    if (s.type === 'alien'){
       const lfo = ctx.createOscillator(); lfo.frequency.value = 5;
       const depth = ctx.createGain(); depth.gain.value = 18;
       lfo.connect(depth).connect(osc.frequency); lfo.start(); stoppers.push(lfo);
@@ -603,7 +603,7 @@ function buildGraph(ctx, buffer, dest){
     osc.connect(ring.gain); osc.start(); stoppers.push(osc);
     node.connect(ring); node = ring;
   }
-  if (fx.type === 'radio'){
+  if (s.type === 'radio'){
     const hp = makeFilter(ctx,'highpass',500), lp = makeFilter(ctx,'lowpass',3200);
     const shaper = ctx.createWaveShaper();
     const curve = new Float32Array(1024);
@@ -639,21 +639,31 @@ function buildGraph(ctx, buffer, dest){
   out.connect(dest);
 
   const set = (param, v, live) => live ? param.setTargetAtTime(v, ctx.currentTime, 0.03) : (param.value = v);
-  function apply(live){
-    set(src.playbackRate, fx.pitch, live);
-    set(dry.gain, 1 - fx.breath*0.45, live);
-    set(envScale.gain, fx.breath*7, live);
-    NASAL.forEach(([, , , g], i) => set(nasal[i].gain, g*fx.nasal, live));
-    eq.forEach((f,i) => set(f.gain, fx.eq[i], live));
-    set(delay.delayTime, 0.18 + fx.echo*0.25, live);
-    set(fb.gain, fx.echo*0.75, live);
-    set(wet.gain, fx.echo, live);
+  function apply(live, next){
+    if (next) s = next;
+    set(src.playbackRate, s.pitch, live);
+    set(dry.gain, 1 - s.breath*0.45, live);
+    set(envScale.gain, s.breath*7, live);
+    NASAL.forEach(([, , , g], i) => set(nasal[i].gain, g*s.nasal, live));
+    eq.forEach((f,i) => set(f.gain, s.eq[i], live));
+    set(delay.delayTime, 0.18 + s.echo*0.25, live);
+    set(fb.gain, s.echo*0.75, live);
+    set(wet.gain, s.echo, live);
   }
   apply(false);
   const stop = () => stoppers.forEach(s => { try{ s.stop(); }catch{} });
   return {src, out, apply, stop};
 }
-const tailSec = () => fx.echo > 0 ? 0.5 + fx.echo*4 : 0.1;
+const tailSec = (s = fx) => s.echo > 0 ? 0.5 + s.echo*4 : 0.1;
+/* render one buffer through a voice setting, offline (used by WAV save and narration) */
+async function renderFx(buffer, s = fx){
+  const sr = buffer.sampleRate;
+  const len = Math.max(1, Math.ceil((buffer.duration / s.pitch + tailSec(s)) * sr));
+  const off = new OfflineAudioContext(1, len, sr);
+  const g = buildGraph(off, buffer, off.destination, s);
+  g.src.start();
+  return off.startRendering();
+}
 
 function stopFx(){
   if (playing){ playing.stop(); playing.out.disconnect(); playing = null; }
@@ -680,23 +690,19 @@ $('fxSave').onclick = async () => {
   if (!source) return;
   status('WAV 파일을 만드는 중…'); $('fxSave').disabled = true;
   try {
-    const sr = source.sampleRate;
-    const len = Math.ceil((source.duration / fx.pitch + tailSec()) * sr);
-    const off = new OfflineAudioContext(1, len, sr);
-    const g = buildGraph(off, source, off.destination);
-    g.src.start();
-    const rendered = await off.startRendering();
-    const blob = toWav(rendered);
-    const a = document.createElement('a');
     const name = document.querySelector('#fxPresets [aria-pressed=true]')?.dataset.slug || 'custom';
-    a.href = URL.createObjectURL(blob); a.download = `voice-${name}-${Date.now()}.wav`;
-    document.body.appendChild(a); a.click();
-    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 4000);
+    download(toWav(await renderFx(source, fx)), `voice-${name}-${Date.now()}.wav`);
     status('WAV 파일을 저장했어요.');
   } catch(err){ status('파일을 만들지 못했어요: ' + err.message); }
   $('fxSave').disabled = false;
 };
 
+function download(blob, filename){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 4000);
+}
 function toWav(buffer){
   const data = buffer.getChannelData(0), sr = buffer.sampleRate;
   let peak = 0; for (let i=0;i<data.length;i++) peak = Math.max(peak, Math.abs(data[i]));
