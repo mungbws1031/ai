@@ -165,6 +165,7 @@
       <button class="tab" role="tab" aria-selected="true" data-pane="p-text" id="t-text">직접 적기</button>
       <button class="tab" role="tab" aria-selected="false" data-pane="p-mic" id="t-mic">마이크로 연주하기</button>
       <button class="tab" role="tab" aria-selected="false" data-pane="p-file" id="t-file">노래 파일 넣기</button>
+      <button class="tab" role="tab" aria-selected="false" data-pane="p-find" id="t-find">곡 제목으로 찾기</button>
     </div>
 
     <div class="pane" id="p-text" role="tabpanel" aria-labelledby="t-text">
@@ -197,6 +198,21 @@
           <div class="chroma-labels" id="chroma-labels"></div>
         </div>
       </div>
+    </div>
+
+    <div class="pane" id="p-find" role="tabpanel" aria-labelledby="t-find" hidden>
+      <p class="hint" style="margin-top:0">곡 제목으로 코드 악보를 검색해 드려요. 찾은 악보 페이지를 통째로 복사해 붙여 넣으면 가사는 버리고 코드만 뽑아 마디로 정리해요.</p>
+      <div class="row" style="margin-top:10px">
+        <input type="search" id="find-q" placeholder="곡 제목 (예: 가수 이름 + 제목)" style="flex:1;min-width:200px;background:var(--wall);border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 10px" />
+        <button class="btn primary" id="find-go">코드 악보 검색</button>
+        <button class="btn" id="find-yt">유튜브 기타 커버 검색</button>
+      </div>
+      <textarea id="sheet" spellcheck="false" placeholder="찾은 코드 악보를 여기에 붙여 넣으세요 (가사가 섞여 있어도 돼요)" style="margin-top:12px;font-size:15px;min-height:140px" aria-label="코드 악보 붙여넣기"></textarea>
+      <div class="row" style="margin-top:8px">
+        <button class="btn primary" id="sheet-go">코드만 뽑기</button>
+        <label class="inline"><input type="checkbox" id="sheet-dedupe" checked /> 같은 코드가 연달아 나오면 한 마디로 합치기</label>
+      </div>
+      <div class="status" id="sheet-status"></div>
     </div>
 
     <div class="pane" id="p-file" role="tabpanel" aria-labelledby="t-file" hidden>
@@ -886,7 +902,7 @@ function analyzeTake(samples, sr, bpm, nBars, split){
   const beats=beatChords(A.frames, times);
   return beatsToBars(beats, 0, split);
 }
-window.__jam = {song, estimateTempo, refineTempo, parseProgression, parseChord, analyzeSong, analyzeTake, keysVoicing, guitarVoicing, STYLES, state};
+window.__jam = {extractChords, song, estimateTempo, refineTempo, parseProgression, parseChord, analyzeSong, analyzeTake, keysVoicing, guitarVoicing, STYLES, state};
 
 /* =========================================================
    8. 마이크 녹음
@@ -978,6 +994,45 @@ async function handleFile(file, hint){
     st.textContent='이 파일은 열 수 없어요. mp3, m4a, wav 파일로 다시 골라 주세요.';
   }
 }
+/* =========================================================
+   9-1. 붙여 넣은 코드 악보에서 코드만 뽑기
+   - [C] 꼴(ChordPro)은 괄호 안만
+   - 한 줄 토큰의 대부분이 코드이고 한글이 없으면 코드 줄로 봄 (가사 줄은 버림)
+   - | 로 마디가 나뉘어 있으면 그대로, 아니면 코드 하나 = 한 마디
+   - Capo N 표기가 있으면 실제 소리 나는 키로 옮김
+   ========================================================= */
+function extractChords(text, dedupe){
+  const capoM = /capo\s*[:.]?\s*(\d{1,2})|카포\s*(\d{1,2})/i.exec(text);
+  const capo = capoM ? +(capoM[1]||capoM[2]) : 0;
+  const bars=[]; let chordLines=0;
+  const clean = t=>t.replace(/^[(\[]+|[)\],.:;]+$/g,'').replace(/^x\d$|^×\d$/i,'');
+  for(const raw of text.split(/\r?\n/)){
+    const line=raw.trim(); if(!line) continue;
+    const bracket=[...line.matchAll(/\[([^\]\s]{1,10})\]/g)].map(m=>m[1]).filter(t=>parseChord(t));
+    if(bracket.length){ bracket.forEach(t=>bars.push([parseChord(t)])); chordLines++; continue; }
+    if(/[가-힣ぁ-んァ-ン一-龥]/.test(line)) continue;
+    if(line.includes('|')){
+      const cells=line.split('|').map(c=>c.trim()).filter(Boolean);
+      const parsed=cells.map(c=>c.split(/\s+/).map(clean).filter(Boolean).map(t=>t==='%'?'%':parseChord(t)));
+      const ok=parsed.flat().filter(Boolean).length, all=parsed.flat().length;
+      if(all && ok/all>=.7){ chordLines++;
+        for(const cell of parsed){ if(cell[0]==='%'&&bars.length){ bars.push(bars[bars.length-1]); continue; }
+          const cs=cell.filter(c=>c&&c!=='%'); if(cs.length) bars.push(cs.slice(0,4)); }
+      }
+      continue;
+    }
+    const toks=line.split(/\s+/).map(clean).filter(Boolean);
+    const cs=toks.map(t=>parseChord(t));
+    const ok=cs.filter(Boolean).length;
+    if(toks.length && ok/toks.length>=.7 && !(toks.length>=4 && toks.every(t=>t.length===1&&/[aA]/.test(t)))){
+      chordLines++; cs.filter(Boolean).forEach(c=>bars.push([c]));
+    }
+  }
+  let out=bars;
+  if(dedupe){ out=[]; for(const b of bars){ const k=b.map(c=>c.name).join(','); if(!out.length || out[out.length-1].map(c=>c.name).join(',')!==k) out.push(b); } }
+  if(capo) out=transposeBars(out, capo);
+  return {bars:out, capo, chordLines};
+}
 function applyDetected(bars,bpm){
   $('#prog').value=progressionToText(bars);
   setBpm(bpm); readText();
@@ -1008,6 +1063,16 @@ function init(){
   $('#tr-down').onclick=()=>{ $('#prog').value=progressionToText(transposeBars(state.bars,-1)); readText(); };
   $('#mic-btn').onclick=()=> mic.on ? finishMic(false) : startMic();
   $('#file-in').onchange=e=>handleFile(e.target.files[0]);
+  const q=()=>($('#find-q').value.trim());
+  $('#find-go').onclick=()=>{ if(!q()) { $('#find-q').focus(); return; } window.open('https://www.google.com/search?q='+encodeURIComponent(q()+' 코드 악보'),'_blank','noopener'); };
+  $('#find-yt').onclick=()=>{ if(!q()) { $('#find-q').focus(); return; } window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(q()+' 기타 코드 커버'),'_blank','noopener'); };
+  $('#find-q').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#find-go').click(); });
+  $('#sheet-go').onclick=()=>{
+    const r=extractChords($('#sheet').value, $('#sheet-dedupe').checked), st=$('#sheet-status');
+    if(!r.bars.length){ st.textContent='코드를 찾지 못했어요. 악보에서 코드가 적힌 부분까지 함께 복사했는지 확인해 주세요.'; return; }
+    $('#prog').value=progressionToText(r.bars); readText();
+    st.textContent=`코드 줄 ${r.chordLines}개에서 ${r.bars.length}마디를 뽑았어요${r.capo?` (카포 ${r.capo}프렛 위치를 반영해 실제 키로 옮겼어요)`:''}. 마디가 원곡과 다르면 ‘직접 적기’에서 고쳐 주세요.`;
+  };
   $('#tempo-x2').onclick=()=>{ if(song.bpm*2<=220) handleFile($('#file-in').files[0], song.bpm*2); };
   $('#tempo-h').onclick=()=>{ if(song.bpm/2>=40) handleFile($('#file-in').files[0], song.bpm/2); };
   $('#song-vol').oninput=e=>{ if(song.gain) song.gain.gain.value=+e.target.value; };
