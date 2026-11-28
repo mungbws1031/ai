@@ -1,0 +1,14 @@
+{
+  "name": "목소리 공방",
+  "short_name": "목소리 공방",
+  "description": "글을 목소리로 읽어주고 내 목소리를 캐릭터 목소리로 바꾸는 앱",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#1E1A30",
+  "theme_color": "#1E1A30",
+  "lang": "ko",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

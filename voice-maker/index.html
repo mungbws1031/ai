@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>목소리 공방</title>
+<meta name="description" content="글을 목소리로 읽어주고, 내 목소리를 캐릭터 목소리로 바꿔 WAV로 저장하는 앱">
+<meta name="theme-color" content="#1E1A30">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --foam:#ECEAF3; --paper:#F7F6FB; --ink:#1E1A30; --dim:#6E6985;
+  --violet:#5A3FD4; --violet-soft:#E2DCFA; --amber:#F0B23E; --line:#D5D1E3;
+  --danger:#C2364B;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--foam); color:var(--ink);
+  font:16px/1.6 "IBM Plex Sans KR",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+/* ── hero: the waveform is the identity ── */
+.stage{background:var(--ink);color:var(--foam);padding:28px 16px 0;position:relative;overflow:hidden}
+.stage-inner{max-width:1040px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-family:"Do Hyeon",sans-serif;font-weight:400;font-size:clamp(44px,8vw,84px);line-height:.95;margin:0;letter-spacing:-.01em}
+.tagline{margin:10px 0 0;color:#B9B3D3;max-width:34ch;font-size:15px}
+.install{background:transparent;border:1px solid #4A4466;color:var(--foam);border-radius:999px;padding:8px 16px;cursor:pointer;display:none}
+.install:hover{border-color:var(--amber)}
+#scope{display:block;width:100%;height:120px;margin-top:12px}
+.status{max-width:1040px;margin:0 auto;padding:6px 0 14px;font-size:13px;color:#9A94B6;min-height:1.6em}
+
+/* ── mode switch ── */
+.modes{max-width:1040px;margin:0 auto;padding:22px 16px 0;display:flex;gap:6px}
+.mode{border:0;background:transparent;padding:10px 18px;border-radius:12px 12px 0 0;cursor:pointer;color:var(--dim);font-weight:600}
+.mode[aria-selected="true"]{background:var(--paper);color:var(--ink)}
+main{max-width:1040px;margin:0 auto 48px;padding:0 16px}
+.panel{background:var(--paper);border-radius:0 18px 18px 18px;padding:24px;display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:32px}
+.panel[hidden]{display:none}
+@media (max-width:760px){.panel{grid-template-columns:1fr;padding:18px;gap:24px}}
+
+h2{font-size:17px;margin:0 0 10px;font-weight:600}
+.hint{color:var(--dim);font-size:14px;margin:4px 0 0}
+textarea{width:100%;min-height:170px;resize:vertical;border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff;line-height:1.7}
+textarea:focus{border-color:var(--violet);outline:none;box-shadow:0 0 0 3px var(--violet-soft)}
+.count{text-align:right;font-size:13px;color:var(--dim);margin-top:4px}
+
+.field{margin-top:18px}
+.field label{display:flex;justify-content:space-between;font-size:14px;font-weight:500;margin-bottom:6px}
+.field output{color:var(--violet);font-variant-numeric:tabular-nums}
+select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input[type=range]{width:100%;accent-color:var(--violet)}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.btn{border:0;border-radius:999px;padding:12px 22px;font-weight:600;cursor:pointer;background:var(--violet-soft);color:var(--ink)}
+.btn:hover{filter:brightness(.96)}
+.btn.primary{background:var(--violet);color:#fff}
+.btn.rec{background:var(--danger);color:#fff}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* presets: character chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;cursor:pointer;font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--foam);border-color:var(--ink)}
+
+.side section+section{margin-top:28px}
+.history{list-style:none;margin:0;padding:0}
+.history li{display:flex;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.history li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.icon-btn{border:0;background:transparent;cursor:pointer;padding:4px 8px;border-radius:8px;font-size:14px;color:var(--violet)}
+.icon-btn:hover{background:var(--violet-soft)}
+.icon-btn.del{color:var(--dim)}
+.empty{color:var(--dim);font-size:14px}
+
+/* recorder */
+.take{display:flex;align-items:center;gap:14px;border:1px dashed var(--line);border-radius:14px;padding:16px;background:#fff}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--line);flex:none}
+.dot.live{background:var(--danger);animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.25}}
+.take .t{font-variant-numeric:tabular-nums;font-weight:600}
+.file-label{font-size:14px;color:var(--violet);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.file-label input{position:absolute;width:1px;height:1px;opacity:0}
+.note{font-size:13px;color:var(--dim);background:var(--foam);border-radius:10px;padding:10px 12px;margin-top:14px}
+
+@media (prefers-reduced-motion:reduce){.dot.live{animation:none}}
+</style>
+</head>
+<body>
+
+<header class="stage">
+  <div class="stage-inner">
+    <div>
+      <h1>목소리 공방</h1>
+      <p class="tagline">글을 소리 내어 읽어주고, 내 목소리를 다른 캐릭터 목소리로 바꿔요.</p>
+    </div>
+    <button class="install" id="installBtn">앱으로 설치</button>
+  </div>
+  <canvas id="scope" aria-hidden="true"></canvas>
+  <p class="status" id="status" role="status">준비됐어요.</p>
+</header>
+
+<nav class="modes" role="tablist" aria-label="만들기 방식">
+  <button class="mode" role="tab" id="tab-tts" aria-controls="p-tts" aria-selected="true">글 → 목소리</button>
+  <button class="mode" role="tab" id="tab-fx" aria-controls="p-fx" aria-selected="false">내 목소리 바꾸기</button>
+</nav>
+
+<main>
+  <!-- ── 글 → 목소리 ── -->
+  <section class="panel" id="p-tts" role="tabpanel" aria-labelledby="tab-tts">
+    <div>
+      <label for="text"><h2>읽어줄 글</h2></label>
+      <textarea id="text" maxlength="3000">안녕하세요! 오늘은 목소리 공방에서 원하는 목소리를 만들어 볼게요. 글을 바꾸고 아래 재생 버튼을 눌러 보세요.</textarea>
+      <div class="count"><span id="count">0</span> / 3000자</div>
+
+      <div class="field">
+        <label for="voice">목소리</label>
+        <select id="voice"></select>
+        <p class="hint" id="voiceHint"></p>
+      </div>
+      <div class="field">
+        <label for="rate">빠르기 <output id="rateOut"></output></label>
+        <input type="range" id="rate" min="0.5" max="2" step="0.05" value="1">
+      </div>
+      <div class="field">
+        <label for="pitch">높낮이 <output id="pitchOut"></output></label>
+        <input type="range" id="pitch" min="0" max="2" step="0.05" value="1">
+      </div>
+      <div class="field">
+        <label for="volume">크기 <output id="volOut"></output></label>
+        <input type="range" id="volume" min="0" max="1" step="0.05" value="1">
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="speak">재생</button>
+        <button class="btn" id="pause" disabled>일시정지</button>
+        <button class="btn" id="stop" disabled>멈춤</button>
+        <button class="btn" id="save">문장 저장</button>
+      </div>
+      <p class="note">브라우저에 내장된 음성으로 읽어줘서 인터넷·가입 없이 무료로 쓸 수 있어요. 브라우저 정책상 이 소리는 파일로 저장할 수 없어요. 파일이 필요하면 ‘내 목소리 바꾸기’에서 녹음해 WAV로 저장하세요.</p>
+    </div>
+
+    <aside class="side">
+      <section>
+        <h2>캐릭터</h2>
+        <div class="chips" id="ttsPresets"></div>
+        <p class="hint">누르면 빠르기와 높낮이가 바뀌어요.</p>
+      </section>
+      <section>
+        <h2>저장한 문장</h2>
+        <ul class="history" id="history"></ul>
+      </section>
+    </aside>
+  </section>
+
+  <!-- ── 내 목소리 바꾸기 ── -->
+  <section class="panel" id="p-fx" role="tabpanel" aria-labelledby="tab-fx" hidden>
+    <div>
+      <h2>녹음하기</h2>
+      <div class="take">
+        <span class="dot" id="recDot"></span>
+        <div style="flex:1">
+          <div class="t" id="recTime">0:00</div>
+          <div class="hint" id="recInfo">아직 녹음이 없어요. 최대 60초까지 녹음돼요.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn rec" id="recBtn">녹음 시작</button>
+        <label class="file-label">오디오 파일 불러오기<input type="file" id="fileIn" accept="audio/*"></label>
+      </div>
+
+      <div class="field">
+        <label for="fxPitch">목소리 높이 <output id="fxPitchOut"></output></label>
+        <input type="range" id="fxPitch" min="0.5" max="2" step="0.05" value="1">
+      </div>
+      <div class="field">
+        <label for="fxEcho">메아리 <output id="fxEchoOut"></output></label>
+        <input type="range" id="fxEcho" min="0" max="0.8" step="0.05" value="0">
+      </div>
+
+      <div class="actions">
+        <button class="btn primary" id="fxPlay" disabled>바뀐 목소리 듣기</button>
+        <button class="btn" id="fxStop" disabled>멈춤</button>
+        <button class="btn" id="fxSave" disabled>WAV로 저장</button>
+      </div>
+      <p class="note">녹음은 이 기기 안에서만 처리돼요. 어디에도 올라가지 않아요.</p>
+    </div>
+
+    <aside class="side">
+      <section>
+        <h2>캐릭터</h2>
+        <div class="chips" id="fxPresets"></div>
+        <p class="hint">캐릭터를 고른 뒤 ‘바뀐 목소리 듣기’를 눌러 보세요.</p>
+      </section>
+    </aside>
+  </section>
+</main>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const status = msg => { $('status').textContent = msg; };
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} }
+};
+
+/* ───────── waveform hero ───────── */
+const cv = $('scope'), g = cv.getContext('2d');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let analyser = null, energy = 0, targetEnergy = 0, phase = 0;
+function sizeCanvas(){
+  const r = devicePixelRatio || 1;
+  cv.width = cv.clientWidth * r; cv.height = cv.clientHeight * r;
+  g.setTransform(r,0,0,r,0,0);
+}
+addEventListener('resize', sizeCanvas); sizeCanvas();
+const buf = new Uint8Array(1024);
+function draw(){
+  const w = cv.clientWidth, h = cv.clientHeight, mid = h/2;
+  g.clearRect(0,0,w,h);
+  const bars = Math.max(24, Math.floor(w/9));
+  const gap = w / bars;
+  let levels = null;
+  if (analyser){
+    analyser.getByteTimeDomainData(buf);
+    levels = [];
+    const step = Math.floor(buf.length / bars);
+    for (let i=0;i<bars;i++){
+      let peak = 0;
+      for (let j=0;j<step;j++) peak = Math.max(peak, Math.abs(buf[i*step+j]-128));
+      levels.push(peak/128);
+    }
+  }
+  energy += (targetEnergy - energy) * 0.12;
+  targetEnergy *= 0.94;
+  if (!reduce) phase += 0.05;
+  for (let i=0;i<bars;i++){
+    let a;
+    if (levels) a = Math.min(1, levels[i]*1.8);
+    else {
+      const idle = 0.05 + 0.03*Math.sin(i*0.35 + phase);
+      const talk = energy * (0.35 + 0.65*Math.abs(Math.sin(i*0.9 + phase*3) * Math.cos(i*0.23 - phase)));
+      a = idle + talk;
+    }
+    const bh = Math.max(2, a * (h*0.9));
+    const x = i*gap + gap*0.2;
+    g.fillStyle = a > 0.55 ? '#F0B23E' : (a > 0.12 ? '#8C75F0' : '#463F66');
+    g.beginPath();
+    g.roundRect ? g.roundRect(x, mid-bh/2, gap*0.6, bh, 3) : g.rect(x, mid-bh/2, gap*0.6, bh);
+    g.fill();
+  }
+  requestAnimationFrame(draw);
+}
+requestAnimationFrame(draw);
+
+/* ───────── tabs ───────── */
+const tabs = [['tab-tts','p-tts'],['tab-fx','p-fx']];
+tabs.forEach(([t,p]) => $(t).addEventListener('click', () => {
+  tabs.forEach(([t2,p2]) => { $(t2).setAttribute('aria-selected', t2===t); $(p2).hidden = t2!==t; });
+  store.set('vm-tab', t);
+}));
+const lastTab = store.get('vm-tab','tab-tts'); if (lastTab==='tab-fx') $('tab-fx').click();
+
+/* ───────── 글 → 목소리 ───────── */
+const synth = window.speechSynthesis;
+const text = $('text'), voiceSel = $('voice');
+const rate = $('rate'), pitch = $('pitch'), vol = $('volume');
+const fmt = v => (+v).toFixed(2).replace(/\.?0+$/,'') ;
+function syncOut(){
+  $('rateOut').textContent = fmt(rate.value)+'배';
+  $('pitchOut').textContent = fmt(pitch.value);
+  $('volOut').textContent = Math.round(vol.value*100)+'%';
+  $('count').textContent = text.value.length;
+}
+[rate,pitch,vol].forEach(el => el.addEventListener('input', () => { syncOut(); markPreset(ttsBox, null); }));
+text.addEventListener('input', syncOut);
+syncOut();
+
+let voices = [];
+function loadVoices(){
+  if (!synth) return;
+  voices = synth.getVoices().slice().sort((a,b) => {
+    const ka = a.lang.startsWith('ko') ? 0 : 1, kb = b.lang.startsWith('ko') ? 0 : 1;
+    return ka-kb || a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name);
+  });
+  const saved = store.get('vm-voice', null);
+  voiceSel.innerHTML = '';
+  voices.forEach((v,i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = `${v.name} (${v.lang})`;
+    voiceSel.appendChild(o);
+  });
+  const idx = voices.findIndex(v => v.voiceURI === saved);
+  if (idx >= 0) voiceSel.value = idx;
+  const ko = voices.filter(v => v.lang.startsWith('ko')).length;
+  $('voiceHint').textContent = voices.length === 0
+    ? '이 브라우저에서 쓸 수 있는 음성을 찾지 못했어요. Chrome이나 Edge, Safari에서 열어 보세요.'
+    : ko ? `한국어 음성 ${ko}개를 포함해 ${voices.length}개가 있어요.` : `한국어 음성이 없어요. 기기 설정에서 한국어 음성을 추가하면 더 자연스러워요.`;
+}
+if (synth){ loadVoices(); synth.onvoiceschanged = loadVoices; }
+else { $('voiceHint').textContent = '이 브라우저는 음성 읽기를 지원하지 않아요.'; $('speak').disabled = true; }
+voiceSel.addEventListener('change', () => { const v = voices[voiceSel.value]; if (v) store.set('vm-voice', v.voiceURI); });
+
+const TTS_PRESETS = [
+  {name:'기본', rate:1, pitch:1},
+  {name:'아나운서', rate:0.95, pitch:0.9},
+  {name:'꼬마', rate:1.15, pitch:1.8},
+  {name:'할아버지', rate:0.75, pitch:0.45},
+  {name:'로봇', rate:0.85, pitch:0.05},
+  {name:'다람쥐', rate:1.7, pitch:2},
+  {name:'자장가', rate:0.7, pitch:1.15},
+];
+const ttsBox = $('ttsPresets');
+function markPreset(box, name){ box.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', c.dataset.name===name)); }
+TTS_PRESETS.forEach(p => {
+  const b = document.createElement('button');
+  b.className='chip'; b.textContent=p.name; b.dataset.name=p.name; b.setAttribute('aria-pressed','false');
+  b.onclick = () => { rate.value=p.rate; pitch.value=p.pitch; syncOut(); markPreset(ttsBox,p.name); };
+  ttsBox.appendChild(b);
+});
+markPreset(ttsBox,'기본');
+
+function setSpeaking(on){
+  $('pause').disabled = !on; $('stop').disabled = !on;
+  $('pause').textContent = '일시정지';
+}
+$('speak').onclick = () => {
+  const t = text.value.trim();
+  if (!t){ status('읽어줄 글을 먼저 입력하세요.'); text.focus(); return; }
+  synth.cancel(); stopFx();
+  // Chrome stops long utterances after ~15s, so speak sentence by sentence.
+  const parts = t.match(/[^.!?。\n]+[.!?。]*|\n+/g)?.map(s=>s.trim()).filter(Boolean) || [t];
+  const v = voices[voiceSel.value];
+  parts.forEach((p, i) => {
+    const u = new SpeechSynthesisUtterance(p);
+    if (v){ u.voice = v; u.lang = v.lang; } else u.lang = 'ko-KR';
+    u.rate = +rate.value; u.pitch = +pitch.value; u.volume = +vol.value;
+    u.onstart = () => { targetEnergy = 0.9*u.volume + 0.1; status(`읽는 중 (${i+1}/${parts.length})`); setSpeaking(true); };
+    u.onboundary = () => { targetEnergy = 0.7 + Math.random()*0.3; };
+    u.onend = () => { if (i === parts.length-1){ status('다 읽었어요.'); setSpeaking(false); } };
+    u.onerror = e => { if (e.error !== 'interrupted' && e.error !== 'canceled') status('읽는 중 문제가 생겼어요: '+e.error); setSpeaking(false); };
+    synth.speak(u);
+  });
+};
+// keep the bars alive between boundary events while talking
+setInterval(() => { if (synth && synth.speaking && !synth.paused) targetEnergy = Math.max(targetEnergy, 0.45 + Math.random()*0.4); }, 140);
+$('pause').onclick = () => {
+  if (synth.paused){ synth.resume(); $('pause').textContent='일시정지'; status('다시 읽는 중'); }
+  else { synth.pause(); $('pause').textContent='이어서'; status('잠시 멈췄어요.'); }
+};
+$('stop').onclick = () => { synth.cancel(); setSpeaking(false); status('멈췄어요.'); };
+
+/* saved phrases */
+let hist = store.get('vm-history', []);
+function renderHist(){
+  const ul = $('history'); ul.innerHTML='';
+  if (!hist.length){ ul.innerHTML = '<li class="empty">자주 쓰는 문장을 저장해 두면 여기서 바로 다시 들을 수 있어요.</li>'; return; }
+  hist.forEach((h,i) => {
+    const li = document.createElement('li');
+    const s = document.createElement('span'); s.textContent = h.text; s.title = h.text;
+    const play = document.createElement('button'); play.className='icon-btn'; play.textContent='불러오기';
+    play.onclick = () => { text.value=h.text; rate.value=h.rate; pitch.value=h.pitch; syncOut(); markPreset(ttsBox,null); $('speak').click(); };
+    const del = document.createElement('button'); del.className='icon-btn del'; del.textContent='삭제'; del.setAttribute('aria-label','문장 삭제');
+    del.onclick = () => { hist.splice(i,1); store.set('vm-history',hist); renderHist(); };
+    li.append(s,play,del); ul.appendChild(li);
+  });
+}
+$('save').onclick = () => {
+  const t = text.value.trim(); if (!t){ status('저장할 글이 없어요.'); return; }
+  hist = [{text:t, rate:+rate.value, pitch:+pitch.value}, ...hist.filter(h=>h.text!==t)].slice(0,20);
+  store.set('vm-history',hist); renderHist(); status('문장을 저장했어요.');
+};
+renderHist();
+
+/* ───────── 내 목소리 바꾸기 ───────── */
+let ac = null;
+const getAC = () => (ac ||= new (window.AudioContext||window.webkitAudioContext)());
+let source = null;      // decoded AudioBuffer
+let rec = null, recStart = 0, recTimer = null, micStream = null, micAnalyser = null;
+let playing = null;     // {nodes, src}
+
+const FX_PRESETS = [
+  {name:'그대로', slug:'original', pitch:1, echo:0, type:'none'},
+  {name:'헬륨', slug:'helium', pitch:1.6, echo:0, type:'none'},
+  {name:'거인', slug:'giant', pitch:0.65, echo:0.2, type:'none'},
+  {name:'로봇', slug:'robot', pitch:1, echo:0.1, type:'robot'},
+  {name:'무전기', slug:'radio', pitch:1.05, echo:0, type:'radio'},
+  {name:'동굴', slug:'cave', pitch:0.9, echo:0.6, type:'none'},
+  {name:'외계인', slug:'alien', pitch:1.3, echo:0.25, type:'alien'},
+  {name:'거꾸로', slug:'reverse', pitch:1, echo:0, type:'reverse'},
+];
+let fx = {...FX_PRESETS[0]};
+const fxBox = $('fxPresets');
+FX_PRESETS.forEach(p => {
+  const b = document.createElement('button');
+  b.className='chip'; b.textContent=p.name; b.dataset.name=p.name; b.dataset.slug=p.slug; b.setAttribute('aria-pressed','false');
+  b.onclick = () => { fx = {...p}; $('fxPitch').value=p.pitch; $('fxEcho').value=p.echo; syncFx(); markPreset(fxBox,p.name); if (source) playFx(); };
+  fxBox.appendChild(b);
+});
+markPreset(fxBox,'그대로');
+function syncFx(){
+  fx.pitch = +$('fxPitch').value; fx.echo = +$('fxEcho').value;
+  $('fxPitchOut').textContent = fmt(fx.pitch)+'배';
+  $('fxEchoOut').textContent = Math.round(fx.echo*100)+'%';
+}
+['fxPitch','fxEcho'].forEach(id => $(id).addEventListener('input', syncFx));
+syncFx();
+
+const mmss = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+function setSource(buffer, label){
+  source = buffer;
+  $('recTime').textContent = mmss(buffer.duration);
+  $('recInfo').textContent = label;
+  ['fxPlay','fxSave'].forEach(id => $(id).disabled = false);
+  status('준비됐어요. 캐릭터를 골라 들어 보세요.');
+}
+
+$('recBtn').onclick = async () => {
+  if (rec && rec.state === 'recording'){ rec.stop(); return; }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder){
+    status('이 브라우저는 녹음을 지원하지 않아요. 오디오 파일을 불러와 주세요.'); return;
+  }
+  try { micStream = await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}}); }
+  catch { status('마이크 권한이 필요해요. 주소창의 마이크 아이콘에서 허용한 뒤 다시 눌러 주세요.'); return; }
+  stopFx(); synth && synth.cancel();
+  const ctx = getAC(); await ctx.resume();
+  micAnalyser = ctx.createAnalyser(); micAnalyser.fftSize = 2048;
+  ctx.createMediaStreamSource(micStream).connect(micAnalyser);
+  analyser = micAnalyser;
+  const chunks = [];
+  rec = new MediaRecorder(micStream);
+  rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = async () => {
+    clearInterval(recTimer); micStream.getTracks().forEach(t=>t.stop());
+    analyser = null; $('recDot').classList.remove('live');
+    $('recBtn').textContent = '다시 녹음';
+    try {
+      const ab = await new Blob(chunks, {type: rec.mimeType}).arrayBuffer();
+      const b = await getAC().decodeAudioData(ab);
+      setSource(b, '방금 녹음한 목소리');
+    } catch { status('녹음을 읽지 못했어요. 다시 녹음해 주세요.'); }
+  };
+  rec.start(); recStart = performance.now();
+  $('recDot').classList.add('live'); $('recBtn').textContent = '녹음 끝내기';
+  $('recInfo').textContent = '말해 보세요. 다 했으면 ‘녹음 끝내기’를 누르세요.';
+  status('녹음 중');
+  recTimer = setInterval(() => {
+    const s = (performance.now()-recStart)/1000;
+    $('recTime').textContent = mmss(s);
+    if (s >= 60) rec.stop();
+  }, 200);
+};
+
+$('fileIn').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try { setSource(await getAC().decodeAudioData(await f.arrayBuffer()), f.name); }
+  catch { status('이 파일은 열 수 없어요. mp3, wav, m4a 같은 오디오 파일을 골라 주세요.'); }
+  e.target.value = '';
+};
+
+/* build the effect graph on any context (live or offline) */
+function buildGraph(ctx, buffer, dest){
+  let buf = buffer;
+  if (fx.type === 'reverse'){
+    buf = ctx.createBuffer(buffer.numberOfChannels, buffer.length, buffer.sampleRate);
+    for (let c=0;c<buffer.numberOfChannels;c++){
+      const d = buffer.getChannelData(c).slice().reverse(); buf.copyToChannel(d, c);
+    }
+  }
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  src.playbackRate.value = fx.pitch;
+  let node = src;
+  const out = ctx.createGain(); out.gain.value = 0.9;
+
+  if (fx.type === 'robot' || fx.type === 'alien'){
+    // ring modulation: multiply voice by a sine carrier
+    const ring = ctx.createGain(); ring.gain.value = 0;
+    const osc = ctx.createOscillator(); osc.frequency.value = fx.type==='robot' ? 55 : 30;
+    if (fx.type === 'alien'){
+      const lfo = ctx.createOscillator(); lfo.frequency.value = 5;
+      const depth = ctx.createGain(); depth.gain.value = 18;
+      lfo.connect(depth).connect(osc.frequency); lfo.start();
+    }
+    osc.connect(ring.gain); osc.start();
+    node.connect(ring); node = ring;
+  }
+  if (fx.type === 'radio'){
+    const hp = ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value = 500;
+    const lp = ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value = 3200;
+    const shaper = ctx.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i=0;i<1024;i++){ const x=i/512-1; curve[i] = Math.tanh(x*4); }
+    shaper.curve = curve;
+    node.connect(hp).connect(lp).connect(shaper); node = shaper;
+    out.gain.value = 0.55;
+  }
+  node.connect(out);
+  if (fx.echo > 0){
+    const delay = ctx.createDelay(2); delay.delayTime.value = 0.18 + fx.echo*0.25;
+    const fb = ctx.createGain(); fb.gain.value = fx.echo*0.75;
+    const wet = ctx.createGain(); wet.gain.value = fx.echo;
+    node.connect(delay); delay.connect(fb).connect(delay); delay.connect(wet).connect(out);
+  }
+  out.connect(dest);
+  return {src, out};
+}
+const tailSec = () => fx.echo > 0 ? 0.5 + fx.echo*4 : 0.1;
+
+function stopFx(){
+  if (playing){ try{ playing.src.stop(); }catch{} playing.out.disconnect(); playing = null; }
+  if (!rec || rec.state !== 'recording') analyser = null;
+  $('fxStop').disabled = true;
+}
+async function playFx(){
+  if (!source) return;
+  stopFx(); synth && synth.cancel();
+  const ctx = getAC(); await ctx.resume();
+  const an = ctx.createAnalyser(); an.fftSize = 2048; an.connect(ctx.destination);
+  const g = buildGraph(ctx, source, an);
+  playing = g; analyser = an;
+  g.src.onended = () => { if (playing === g){ setTimeout(() => { if (playing===g){ analyser=null; playing=null; $('fxStop').disabled=true; status('다 들었어요.'); } }, tailSec()*1000); } };
+  g.src.start(); $('fxStop').disabled = false;
+  status(`‘${document.querySelector('#fxPresets [aria-pressed=true]')?.dataset.name || '내 설정'}’ 목소리로 재생 중`);
+}
+$('fxPlay').onclick = playFx;
+$('fxStop').onclick = () => { stopFx(); status('멈췄어요.'); };
+['fxPitch','fxEcho'].forEach(id => $(id).addEventListener('input', () => markPreset(fxBox, null)));
+
+$('fxSave').onclick = async () => {
+  if (!source) return;
+  status('WAV 파일을 만드는 중…'); $('fxSave').disabled = true;
+  try {
+    const sr = source.sampleRate;
+    const len = Math.ceil((source.duration / fx.pitch + tailSec()) * sr);
+    const off = new OfflineAudioContext(1, len, sr);
+    const g = buildGraph(off, source, off.destination);
+    g.src.start();
+    const rendered = await off.startRendering();
+    const blob = toWav(rendered);
+    const a = document.createElement('a');
+    const name = document.querySelector('#fxPresets [aria-pressed=true]')?.dataset.slug || 'custom';
+    a.href = URL.createObjectURL(blob); a.download = `voice-${name}-${Date.now()}.wav`;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { a.remove(); URL.revokeObjectURL(a.href); }, 4000);
+    status('WAV 파일을 저장했어요.');
+  } catch(err){ status('파일을 만들지 못했어요: ' + err.message); }
+  $('fxSave').disabled = false;
+};
+
+function toWav(buffer){
+  const data = buffer.getChannelData(0), sr = buffer.sampleRate;
+  let peak = 0; for (let i=0;i<data.length;i++) peak = Math.max(peak, Math.abs(data[i]));
+  const norm = peak > 0.98 ? 0.98/peak : 1;
+  const ab = new ArrayBuffer(44 + data.length*2), v = new DataView(ab);
+  const w = (o,s) => { for (let i=0;i<s.length;i++) v.setUint8(o+i, s.charCodeAt(i)); };
+  w(0,'RIFF'); v.setUint32(4, 36+data.length*2, true); w(8,'WAVE');
+  w(12,'fmt '); v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,1,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
+  w(36,'data'); v.setUint32(40, data.length*2, true);
+  for (let i=0;i<data.length;i++){
+    const s = Math.max(-1, Math.min(1, data[i]*norm));
+    v.setInt16(44+i*2, s<0 ? s*0x8000 : s*0x7FFF, true);
+  }
+  return new Blob([ab], {type:'audio/wav'});
+}
+window.__vm = { toWav, buildGraph, setFx: p => Object.assign(fx, p), setSource };
+
+/* ───────── PWA ───────── */
+let deferred = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; $('installBtn').style.display='inline-block'; });
+$('installBtn').onclick = async () => { if (!deferred) return; deferred.prompt(); await deferred.userChoice; deferred = null; $('installBtn').style.display='none'; };
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
