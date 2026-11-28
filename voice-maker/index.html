@@ -837,12 +837,12 @@ async function lineBuffer(line){
   const b = await getAC().decodeAudioData(await blob.arrayBuffer());
   bufCache.set(line.audioKey, b); return b;
 }
-async function setLineAudio(line, blob, from){
+async function setLineAudio(line, blob, from, sig){
   const key = `${from}-${line.id}-${Date.now()}`;
   const b = await getAC().decodeAudioData(await blob.arrayBuffer());  // throws if not audio
   if (line.audioKey){ idb.del(line.audioKey); bufCache.delete(line.audioKey); }
   await idb.put(key, blob); bufCache.set(key, b);
-  Object.assign(line, { audioKey:key, audioFrom:from, aiSig: from === 'ai' ? aiSig(line) : null, error:null });
+  Object.assign(line, { audioKey:key, audioFrom:from, aiSig: from === 'ai' ? (sig ?? aiSig(line)) : null, error:null });
 }
 function dropLineAudio(line){
   if (line.audioKey){ idb.del(line.audioKey); bufCache.delete(line.audioKey); }
@@ -907,6 +907,9 @@ $('addSpeaker').onclick = () => {
 
 /* ── 줄 목록 ── */
 function renderLines(){
+  const a = document.activeElement;
+  const keep = a && a.classList && a.classList.contains('l-text')
+    ? { id: a.closest('.line').dataset.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
   const ol = $('lines'); ol.innerHTML = '';
   narr.lines.forEach((line, i) => {
     const st = lineState(line);
@@ -920,7 +923,7 @@ function renderLines(){
       <textarea class="l-text" rows="1" aria-label="${i+1}번 줄 글"></textarea>
       <div class="l-bot">
         <button class="icon-btn l-rec" ${line.source==='rec'?'':'hidden'} ${st==='busy'?'disabled':''}>${st==='recording'?'녹음 끝내기':'녹음'}</button>
-        <button class="icon-btn l-gen" ${line.source==='ai'?'':'hidden'} ${st==='busy'?'disabled':''}>AI로 만들기</button>
+        <button class="icon-btn l-gen" ${line.source==='ai'?'':'hidden'} ${st==='busy'||generating?'disabled':''}>AI로 만들기</button>
         <button class="icon-btn l-play" ${st==='ready'?'':'disabled'}>듣기</button>
         <label class="l-pause-l">쉼 <input type="number" class="l-pause" min="0" max="5" step="0.1" value="${line.pause}"> 초</label>
         <button class="icon-btn l-merge" ${i < narr.lines.length-1 ? '' : 'hidden'}>다음 줄과 합치기</button>
@@ -951,10 +954,15 @@ function renderLines(){
     q('.l-del').onclick = () => { dropLineAudio(line); narr.lines.splice(i, 1); saveNarr(); renderLines(); };
     ol.appendChild(li);
   });
+  if (keep){
+    const t = ol.querySelector(`.line[data-id="${CSS.escape(keep.id)}"] .l-text`);
+    if (t){ t.value = keep.v; t.focus(); t.setSelectionRange(keep.s, keep.e); }
+  }
   const ready = narr.lines.filter(l => lineState(l) === 'ready').length;
   $('linesInfo').textContent = narr.lines.length ? `${narr.lines.length}줄 중 ${ready}줄 준비됨` : '';
   const todo = aiTodo();
   const chars = todo.reduce((n, l) => n + l.text.length, 0);
+  $('genAll').disabled = generating;
   $('genAll').textContent = todo.length ? `AI 줄 만들기 (${todo.length}줄, ${chars.toLocaleString('ko-KR')}자)` : 'AI 줄 만들기';
 }
 const aiTodo = () => narr.lines.filter(l => l.source === 'ai' && l.text && ['empty','stale','error'].includes(lineState(l)));
@@ -984,16 +992,17 @@ async function toggleLineRec(line){
   const ctx = getAC(); await ctx.resume();
   const an = ctx.createAnalyser(); an.fftSize = 2048; ctx.createMediaStreamSource(stream).connect(an); analyser = an;
   const chunks = [], rec = new MediaRecorder(stream);
-  lineRec = { line, rec, stream };
+  const mine = { line, rec, stream, timer: null };
+  lineRec = mine;
   rec.ondataavailable = e => e.data.size && chunks.push(e.data);
   rec.onstop = async () => {
-    stream.getTracks().forEach(t => t.stop()); clearTimeout(lineRec?.timer);
-    lineRec = null; analyser = null;
+    stream.getTracks().forEach(t => t.stop()); clearTimeout(mine.timer);
+    if (lineRec === mine){ lineRec = null; analyser = null; }
     try { await setLineAudio(line, new Blob(chunks, {type: rec.mimeType}), 'rec'); status('녹음했어요.'); }
     catch { line.error = '녹음을 읽지 못했어요'; status('녹음을 읽지 못했어요. 다시 녹음해 주세요.'); }
     saveNarr(); renderLines();
   };
-  rec.start(); lineRec.timer = setTimeout(() => rec.state === 'recording' && rec.stop(), 60000);
+  rec.start(); mine.timer = setTimeout(() => rec.state === 'recording' && rec.stop(), 60000);
   status(`${narr.lines.indexOf(line)+1}번 줄 녹음 중이에요. 다 읽었으면 ‘녹음 끝내기’를 누르세요.`);
   renderLines();
 }
@@ -1007,8 +1016,15 @@ async function elFetch(p, opts = {}){
   let res;
   try { res = await fetch(EL + p, { ...opts, headers: { 'xi-api-key': key, ...(opts.headers || {}) } }); }
   catch { throw elErr('network', '브라우저에서 ElevenLabs에 연결하지 못했어요. 인터넷 연결을 확인하고, 계속 안 되면 그 줄을 직접 녹음으로 바꿔 주세요.'); }
-  if (res.status === 401) throw elErr('auth', 'ElevenLabs가 API 키를 거부했어요. 키를 확인해 다시 저장해 주세요.');
-  if (res.status === 402 || res.status === 429) throw elErr('quota', 'ElevenLabs 사용 한도에 걸렸어요. 남은 글자 수나 요금제를 확인해 주세요.');
+  if (res.status === 401){
+    let code = '';
+    try { code = (await res.json())?.detail?.status || ''; } catch {}
+    if (/quota/.test(code)) throw elErr('quota', 'ElevenLabs 사용 한도를 넘었어요. 남은 글자 수나 요금제를 확인해 주세요.');
+    if (/unusual_activity/.test(code)) throw elErr('auth', 'ElevenLabs가 이 계정의 무료 사용을 막았어요. ElevenLabs 사이트에서 계정 상태를 확인해 주세요.');
+    throw elErr('auth', 'ElevenLabs가 API 키를 거부했어요. 키를 확인해 다시 저장해 주세요.');
+  }
+  if (res.status === 402) throw elErr('quota', 'ElevenLabs 사용 한도를 넘었어요. 남은 글자 수나 요금제를 확인해 주세요.');
+  if (res.status === 429) throw elErr('quota', 'ElevenLabs가 지금 요청이 많다고 해요. 잠시 뒤 다시 눌러 주세요.');
   if (!res.ok) throw elErr('other', `ElevenLabs가 오류를 돌려줬어요 (${res.status}). 잠시 뒤 다시 해 주세요.`);
   return res;
 }
@@ -1045,7 +1061,9 @@ $('elClear').onclick = () => {
   renderSpeakers(); status('API 키를 지웠어요.');
 };
 
+let generating = false;
 async function generateLines(targets){
+  if (generating){ status('이미 AI로 만드는 중이에요. 끝난 뒤 다시 눌러 주세요.'); return; }
   targets = targets.filter(l => l.text);
   if (!targets.length){ status('새로 만들 AI 줄이 없어요.'); return; }
   const noVoice = targets.filter(l => !speakerOf(l).aiVoiceId);
@@ -1056,12 +1074,20 @@ async function generateLines(targets){
   if (!store.get('vm-el-key', '')){ status('AI 음성 칸에 ElevenLabs API 키를 먼저 저장해 주세요.'); return; }
   const chars = targets.reduce((n, l) => n + l.text.length, 0);
   if (!confirm(`AI로 ${targets.length}줄, ${chars.toLocaleString('ko-KR')}자를 만들어요.\nElevenLabs 요금제의 글자 수가 그만큼 차감돼요. 계속할까요?`)) return;
+  generating = true;
+  try { await runGeneration(targets); }
+  finally { generating = false; renderLines(); }
+}
+async function runGeneration(targets){
   let done = 0;
   for (const line of targets){
     busy.add(line.id); renderLines();
     status(`AI로 만드는 중 (${done+1}/${targets.length})`);
     try {
-      await setLineAudio(line, await el.tts(speakerOf(line).aiVoiceId, line.text), 'ai');
+      const sig = aiSig(line);   // 요청 시점의 글·목소리 (도중에 고치면 stale)
+      const blob = await el.tts(speakerOf(line).aiVoiceId, line.text);
+      if (!narr.lines.includes(line)){ busy.delete(line.id); continue; }   // 만드는 동안 지워진 줄
+      await setLineAudio(line, blob, 'ai', sig);
       done++;
     } catch (e){
       line.error = e.message;

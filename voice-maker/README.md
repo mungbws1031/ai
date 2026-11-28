@@ -22,6 +22,7 @@ python3 -m http.server 8000   # http://localhost:8000
 
 ## 테스트
 `node voice-maker/tests/regression.js` — PC·폰 폭, 글 읽기 UI, 가짜 마이크 녹음, 프리셋 10종 WAV 저장·길이·숨소리 잡음, EQ 실시간 조절, 파일 불러오기, 마이크 거부 안내까지 40개 항목 확인.
+`node voice-maker/tests/review-fixes.js` — 서비스 워커 캐시 범위, AI 중복 생성 방지, 생성 중 글 수정, 입력 중 글 보존, 한도 초과 문구, 줄 녹음 전환 11개 항목.
 `node voice-maker/tests/narration.js` — 내레이션: 원고 나누기, 화자, 줄 녹음·복원, ElevenLabs(가짜 응답: 목록·남은 글자·생성·캐시·401·연결 실패), WAV·SRT 내보내기 26개 항목.
 
 ## 구성
